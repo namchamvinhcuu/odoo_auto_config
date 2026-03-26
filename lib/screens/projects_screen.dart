@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/project_info.dart';
 import '../services/storage_service.dart';
+import 'quick_create_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
@@ -44,6 +45,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 p.description.toLowerCase().contains(q) ||
                 p.httpPort.toString().contains(q);
           }).toList();
+  }
+
+  Future<void> _quickCreate() async {
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => const QuickCreateDialog(),
+    );
+    if (created == true) {
+      await _load();
+    }
   }
 
   Future<void> _importProject() async {
@@ -207,8 +218,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               FilledButton.icon(
+                onPressed: _quickCreate,
+                icon: const Icon(Icons.rocket_launch),
+                label: const Text('Create'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
                 onPressed: _importProject,
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.download),
                 label: const Text('Import'),
               ),
               const SizedBox(width: 8),

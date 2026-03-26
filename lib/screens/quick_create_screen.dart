@@ -11,14 +11,14 @@ import '../templates/odoo_templates.dart';
 import '../widgets/directory_picker_field.dart';
 import '../widgets/log_output.dart';
 
-class QuickCreateScreen extends StatefulWidget {
-  const QuickCreateScreen({super.key});
+class QuickCreateDialog extends StatefulWidget {
+  const QuickCreateDialog({super.key});
 
   @override
-  State<QuickCreateScreen> createState() => _QuickCreateScreenState();
+  State<QuickCreateDialog> createState() => _QuickCreateDialogState();
 }
 
-class _QuickCreateScreenState extends State<QuickCreateScreen> {
+class _QuickCreateDialogState extends State<QuickCreateDialog> {
   final _folderService = FolderStructureService();
   final _projectNameController = TextEditingController();
   final _httpPortController = TextEditingController();
@@ -30,6 +30,7 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
   String _baseDir = '';
   bool _loading = true;
   bool _creating = false;
+  bool _done = false;
   String? _portError;
 
   @override
@@ -43,21 +44,18 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
     final profilesJson = await StorageService.loadProfiles();
     final projectsJson = await StorageService.loadProjects();
 
-    // Find max ports from existing projects
     int maxHttp = 8068;
     int maxLp = 8071;
-    for (final p in projectsJson) {
-      final hp = p['httpPort'] as int? ?? 0;
-      final lp = p['longpollingPort'] as int? ?? 0;
+    for (final pr in projectsJson) {
+      final hp = pr['httpPort'] as int? ?? 0;
+      final lp = pr['longpollingPort'] as int? ?? 0;
       if (hp > maxHttp) maxHttp = hp;
       if (lp > maxLp) maxLp = lp;
     }
 
     setState(() {
       _profiles = profilesJson.map((j) => Profile.fromJson(j)).toList();
-      if (_profiles.isNotEmpty) {
-        _selectedProfile = _profiles.first;
-      }
+      if (_profiles.isNotEmpty) _selectedProfile = _profiles.first;
       _httpPortController.text = '${maxHttp + 1}';
       _longpollingPortController.text = '${maxLp + 1}';
       _loading = false;
@@ -69,28 +67,26 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
     final lpPort = int.tryParse(_longpollingPortController.text) ?? 0;
 
     if (httpPort == lpPort) {
-      setState(() => _portError = 'HTTP and longpolling ports must be different');
+      setState(
+          () => _portError = 'HTTP and longpolling ports must be different');
       return;
     }
 
-    final conflict = await StorageService.checkPortConflict(
-        httpPort, lpPort, null);
+    final conflict =
+        await StorageService.checkPortConflict(httpPort, lpPort, null);
     setState(() => _portError = conflict);
   }
 
   Future<void> _create() async {
     final profile = _selectedProfile;
     final projectName = _projectNameController.text.trim();
-    if (profile == null || _baseDir.isEmpty || projectName.isEmpty) {
-      return;
-    }
+    if (profile == null || _baseDir.isEmpty || projectName.isEmpty) return;
 
     final httpPort = int.tryParse(_httpPortController.text) ?? 8069;
     final lpPort = int.tryParse(_longpollingPortController.text) ?? 8072;
 
-    // Validate ports before creating
-    final conflict = await StorageService.checkPortConflict(
-        httpPort, lpPort, null);
+    final conflict =
+        await StorageService.checkPortConflict(httpPort, lpPort, null);
     if (conflict != null) {
       setState(() {
         _portError = conflict;
@@ -108,7 +104,6 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
     });
 
     try {
-      // 1. Create folder structure
       final folderConfig = FolderStructureConfig(
         baseDirectory: _baseDir,
         projectName: projectName,
@@ -124,7 +119,6 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
 
       final projectPath = folderConfig.projectPath;
 
-      // 2. Create odoo.conf at project root
       final confPath = p.join(projectPath, 'odoo.conf');
       final filestorePath = p.join(projectPath, 'filestore');
       await File(confPath).writeAsString(
@@ -142,7 +136,6 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
       );
       setState(() => _logs.add('[+] Written: $confPath'));
 
-      // 3. Create .vscode/launch.json
       final vscodePath = p.join(projectPath, '.vscode');
       await Directory(vscodePath).create(recursive: true);
       setState(() => _logs.add('[+] Created: $vscodePath'));
@@ -175,7 +168,6 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
       );
       setState(() => _logs.add('[+] Written: $launchPath'));
 
-      // 4. Create README
       final readmePath = p.join(projectPath, 'README.md');
       await File(readmePath).writeAsString(
         OdooTemplates.readme(
@@ -186,7 +178,6 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
       );
       setState(() => _logs.add('[+] Written: $readmePath'));
 
-      // 5. Save project to storage
       final projectInfo = ProjectInfo(
         name: projectName,
         path: projectPath,
@@ -202,10 +193,7 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
         _logs.add('[+] Project created and saved!');
         _logs.add('[+] Path: $projectPath');
         _logs.add('[+] HTTP: $httpPort | Longpolling: $lpPort');
-        _logs.add('');
-        _logs.add('[+] Open $projectPath in VSCode');
-        _logs.add(
-            '[+] Select "Debug ${profile.name}" in debug panel');
+        _done = true;
       });
     } catch (e) {
       setState(() => _logs.add('[ERROR] $e'));
@@ -213,6 +201,13 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
       setState(() => _creating = false);
     }
   }
+
+  bool get _canCreate =>
+      !_creating &&
+      _selectedProfile != null &&
+      _baseDir.isNotEmpty &&
+      _projectNameController.text.trim().isNotEmpty &&
+      _portError == null;
 
   @override
   void dispose() {
@@ -224,175 +219,156 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.rocket_launch, size: 28),
-              const SizedBox(width: 12),
-              Text('Quick Create',
-                  style: Theme.of(context).textTheme.headlineSmall),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Select a profile, choose directory, name your project, done.',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-
-          if (_profiles.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 650, maxHeight: 700),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.info, color: Colors.orange),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                          'No profiles found. Go to Profiles tab to create one first.'),
+                    Row(
+                      children: [
+                        const Icon(Icons.rocket_launch, size: 24),
+                        const SizedBox(width: 8),
+                        Text('Quick Create',
+                            style: Theme.of(context).textTheme.titleLarge),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context, _done),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            // Profile selector
-            DropdownButtonFormField<Profile>(
-              isExpanded: true,
-              initialValue: _selectedProfile,
-              decoration: const InputDecoration(
-                labelText: 'Profile',
-                border: OutlineInputBorder(),
-                isDense: true,
-                prefixIcon: Icon(Icons.person),
-              ),
-              items: _profiles
-                  .map((pr) => DropdownMenuItem(
-                        value: pr,
+                    const SizedBox(height: 16),
+
+                    if (_profiles.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(16),
                         child: Text(
-                            '${pr.name}  (Odoo ${pr.odooVersion})'),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedProfile = v),
-            ),
-            const SizedBox(height: 16),
+                            'No profiles found. Create a profile first.'),
+                      )
+                    else ...[
+                      // Profile
+                      DropdownButtonFormField<Profile>(
+                        isExpanded: true,
+                        initialValue: _selectedProfile,
+                        decoration: const InputDecoration(
+                          labelText: 'Profile',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        items: _profiles
+                            .map((pr) => DropdownMenuItem(
+                                  value: pr,
+                                  child: Text(
+                                      '${pr.name}  (Odoo ${pr.odooVersion})'),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedProfile = v),
+                      ),
+                      const SizedBox(height: 12),
 
-            // Base directory
-            DirectoryPickerField(
-              label: 'Base Directory',
-              value: _baseDir,
-              onChanged: (v) => setState(() => _baseDir = v),
-            ),
-            const SizedBox(height: 16),
+                      // Base directory
+                      DirectoryPickerField(
+                        label: 'Base Directory',
+                        value: _baseDir,
+                        onChanged: (v) => setState(() => _baseDir = v),
+                      ),
+                      const SizedBox(height: 12),
 
-            // Project name
-            TextField(
-              controller: _projectNameController,
-              decoration: const InputDecoration(
-                labelText: 'Project Name',
-                hintText: 'e.g. my_odoo_project',
-                border: OutlineInputBorder(),
-                isDense: true,
-                prefixIcon: Icon(Icons.folder),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
+                      // Project name
+                      TextField(
+                        controller: _projectNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Project Name',
+                          hintText: 'e.g. my_odoo_project',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      const SizedBox(height: 12),
 
-            // Ports
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _httpPortController,
-                    decoration: const InputDecoration(
-                      labelText: 'HTTP Port',
-                      hintText: '8069',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      prefixIcon: Icon(Icons.lan),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _validatePorts(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _longpollingPortController,
-                    decoration: const InputDecoration(
-                      labelText: 'Longpolling Port',
-                      hintText: '8072',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      prefixIcon: Icon(Icons.sync),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _validatePorts(),
-                  ),
-                ),
-              ],
-            ),
+                      // Ports
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _httpPortController,
+                              decoration: const InputDecoration(
+                                labelText: 'HTTP Port',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _validatePorts(),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _longpollingPortController,
+                              decoration: const InputDecoration(
+                                labelText: 'Longpolling Port',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _validatePorts(),
+                            ),
+                          ),
+                        ],
+                      ),
 
-            // Port error
-            if (_portError != null) ...[
-              const SizedBox(height: 8),
-              Card(
-                color: Colors.red.withValues(alpha: 0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error, color: Colors.red, size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(_portError!,
-                            style: const TextStyle(color: Colors.red)),
+                      if (_portError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(_portError!,
+                            style: const TextStyle(
+                                color: Colors.red, fontSize: 12)),
+                      ],
+                      const SizedBox(height: 12),
+
+                      // Create button
+                      Row(
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _canCreate ? _create : null,
+                            icon: _creating
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white),
+                                  )
+                                : const Icon(Icons.rocket_launch),
+                            label: Text(_creating
+                                ? 'Creating...'
+                                : 'Create Project'),
+                          ),
+                          if (_done) ...[
+                            const SizedBox(width: 12),
+                            const Icon(Icons.check_circle,
+                                color: Colors.green),
+                            const SizedBox(width: 4),
+                            const Text('Done!',
+                                style: TextStyle(color: Colors.green)),
+                          ],
+                        ],
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 12),
+
+                    // Log output
+                    Flexible(child: LogOutput(lines: _logs, height: 180)),
+                  ],
                 ),
-              ),
-            ],
-            const SizedBox(height: 20),
-
-            // Create button
-            FilledButton.icon(
-              onPressed: (_creating ||
-                      _selectedProfile == null ||
-                      _baseDir.isEmpty ||
-                      _projectNameController.text.trim().isEmpty ||
-                      _portError != null)
-                  ? null
-                  : _create,
-              icon: _creating
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.rocket_launch),
-              label:
-                  Text(_creating ? 'Creating...' : 'Create Project'),
-            ),
-          ],
-          const SizedBox(height: 16),
-
-          Expanded(child: LogOutput(lines: _logs)),
-        ],
+        ),
       ),
     );
   }

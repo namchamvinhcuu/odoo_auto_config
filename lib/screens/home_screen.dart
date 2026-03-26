@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'quick_create_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
 import 'python_check_screen.dart';
@@ -18,7 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const _screens = <Widget>[
     ProjectsScreen(),
-    QuickCreateScreen(),
     ProfileScreen(),
     PythonCheckScreen(),
     VenvScreen(),
@@ -62,12 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 selectedIcon:
                     Icon(Icons.folder_special, color: Colors.blue),
                 label: Text('Projects'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.rocket_launch),
-                selectedIcon:
-                    Icon(Icons.rocket_launch, color: Colors.blue),
-                label: Text('Quick Create'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.person),
