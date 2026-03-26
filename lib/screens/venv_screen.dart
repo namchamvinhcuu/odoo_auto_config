@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -169,6 +170,13 @@ class _VenvScreenState extends State<VenvScreen>
       await StorageService.removeRegisteredVenv(venv.path);
       await _loadRegisteredVenvs();
     }
+  }
+
+  Future<void> _showPackages(VenvInfo venv) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => _PackageListDialog(venvPath: venv.path),
+    );
   }
 
   Future<void> _pipInstallPackage(VenvInfo venv) async {
@@ -675,6 +683,11 @@ class _VenvScreenState extends State<VenvScreen>
                 if (showRemove) ...[
                   if (venv.isValid) ...[
                     IconButton(
+                      onPressed: () => _showPackages(venv),
+                      icon: const Icon(Icons.list_alt),
+                      tooltip: 'List installed packages',
+                    ),
+                    IconButton(
                       onPressed: () => _pipInstallPackage(venv),
                       icon: const Icon(Icons.add_box),
                       tooltip: 'pip install package',
@@ -816,4 +829,210 @@ class _VenvScreenState extends State<VenvScreen>
       ],
     );
   }
+}
+
+// ── Package List Dialog ──
+
+class _PackageListDialog extends StatefulWidget {
+  final String venvPath;
+
+  const _PackageListDialog({required this.venvPath});
+
+  @override
+  State<_PackageListDialog> createState() => _PackageListDialogState();
+}
+
+class _PackageListDialogState extends State<_PackageListDialog> {
+  final _searchController = TextEditingController();
+  List<_PkgInfo> _all = [];
+  List<_PkgInfo> _filtered = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final pip = '${widget.venvPath}/bin/pip';
+    try {
+      final result = await Process.run(pip, ['list', '--format=json']);
+      if (result.exitCode == 0) {
+        final list = (jsonDecode(result.stdout.toString()) as List<dynamic>)
+            .map((e) => _PkgInfo(
+                  name: e['name']?.toString() ?? '',
+                  version: e['version']?.toString() ?? '',
+                ))
+            .toList();
+        list.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        setState(() {
+          _all = list;
+          _applyFilter();
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _error = result.stderr.toString();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  void _applyFilter() {
+    final q = _searchController.text.toLowerCase();
+    _filtered = q.isEmpty
+        ? _all
+        : _all.where((p) => p.name.toLowerCase().contains(q)).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.list_alt),
+          const SizedBox(width: 8),
+          const Expanded(child: Text('Installed Packages')),
+          if (!_loading)
+            Text('${_all.length} packages',
+                style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+      content: SizedBox(
+        width: 550,
+        height: 450,
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search packages...',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _applyFilter());
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (_) => setState(() => _applyFilter()),
+            ),
+            const SizedBox(height: 12),
+            if (_loading)
+              const Expanded(
+                  child: Center(child: CircularProgressIndicator()))
+            else if (_error != null)
+              Expanded(
+                child: Center(
+                    child: Text('Error: $_error',
+                        style: const TextStyle(color: Colors.red))),
+              )
+            else ...[
+              // Table header
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(8)),
+                ),
+                child: const Row(
+                  children: [
+                    Expanded(
+                        flex: 3,
+                        child: Text('Package',
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(
+                        child: Text('Version',
+                            style:
+                                TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                ),
+              ),
+              // Table body
+              Expanded(
+                child: _filtered.isEmpty
+                    ? const Center(child: Text('No packages found.'))
+                    : ListView.builder(
+                        itemCount: _filtered.length,
+                        itemBuilder: (context, index) {
+                          final pkg = _filtered[index];
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                    color: Colors.grey.withValues(
+                                        alpha: 0.2)),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(pkg.name,
+                                      style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: 13)),
+                                ),
+                                Expanded(
+                                  child: Text(pkg.version,
+                                      style: TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          color: Colors.grey.shade500)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close')),
+      ],
+    );
+  }
+}
+
+class _PkgInfo {
+  final String name;
+  final String version;
+  const _PkgInfo({required this.name, required this.version});
 }
