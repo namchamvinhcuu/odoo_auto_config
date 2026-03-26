@@ -67,15 +67,25 @@ class _VenvScreenState extends State<VenvScreen>
     final List<VenvInfo> venvs = [];
     for (final json in saved) {
       final info = VenvInfo.fromJson(json);
-      // Re-validate each venv
-      final valid = await _venvService.validateVenv(info.path);
-      venvs.add(VenvInfo(
-        path: info.path,
-        pythonVersion: info.pythonVersion,
-        pipVersion: info.pipVersion,
-        isValid: valid,
-        label: info.label,
-      ));
+      // Re-inspect to get fresh python/pip version
+      final inspected = await _venvService.inspectVenv(info.path);
+      if (inspected != null) {
+        venvs.add(VenvInfo(
+          path: inspected.path,
+          pythonVersion: inspected.pythonVersion,
+          pipVersion: inspected.pipVersion,
+          isValid: inspected.isValid,
+          label: info.label,
+        ));
+      } else {
+        venvs.add(VenvInfo(
+          path: info.path,
+          pythonVersion: info.pythonVersion,
+          pipVersion: info.pipVersion,
+          isValid: false,
+          label: info.label,
+        ));
+      }
     }
     setState(() {
       _registeredVenvs = venvs;
@@ -180,100 +190,10 @@ class _VenvScreenState extends State<VenvScreen>
   }
 
   Future<void> _pipInstallPackage(VenvInfo venv) async {
-    final controller = TextEditingController();
-    final packages = await showDialog<String>(
+    await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Install Packages'),
-        content: SizedBox(
-          width: 450,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Venv: ${venv.name}',
-                  style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Colors.grey.shade500)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: 'Package(s)',
-                  hintText: 'e.g. requests flask psycopg2-binary',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  helperText: 'Space-separated, supports pip syntax (==, >=)',
-                ),
-                autofocus: true,
-                onSubmitted: (v) => Navigator.pop(ctx, v),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Install')),
-        ],
-      ),
+      builder: (ctx) => _PipInstallDialog(venvPath: venv.path, venvName: venv.name),
     );
-    controller.dispose();
-
-    if (packages == null || packages.trim().isEmpty) return;
-
-    _tabController.animateTo(2);
-
-    setState(() {
-      _logs.clear();
-      _logs.add('[+] pip install ${packages.trim()}');
-      _logs.add('    Venv: ${venv.path}');
-      _logs.add('');
-    });
-
-    // Split packages and install
-    final args = packages.trim().split(RegExp(r'\s+'));
-    final installResult = await _venvService.installPackage(
-      venv.path,
-      args.first,
-    );
-
-    // For multiple packages, run with full args list
-    if (args.length > 1) {
-      final pip = '${venv.path}/bin/pip';
-      final result = await Process.run(pip, ['install', ...args]);
-      setState(() {
-        final stdout = result.stdout.toString().trim();
-        final stderr = result.stderr.toString().trim();
-        if (result.exitCode == 0) {
-          if (stdout.isNotEmpty) _logs.addAll(stdout.split('\n'));
-          _logs.add('');
-          _logs.add('[+] Packages installed successfully!');
-        } else {
-          _logs.add('[ERROR] Installation failed');
-          if (stderr.isNotEmpty) _logs.addAll(stderr.split('\n'));
-        }
-      });
-    } else {
-      setState(() {
-        if (installResult.isSuccess) {
-          if (installResult.stdout.isNotEmpty) {
-            _logs.addAll(installResult.stdout.split('\n'));
-          }
-          _logs.add('');
-          _logs.add('[+] Package installed successfully!');
-        } else {
-          _logs.add('[ERROR] Installation failed');
-          if (installResult.stderr.isNotEmpty) {
-            _logs.addAll(installResult.stderr.split('\n'));
-          }
-        }
-      });
-    }
   }
 
   Future<void> _installRequirements(VenvInfo venv) async {
@@ -299,7 +219,7 @@ class _VenvScreenState extends State<VenvScreen>
     }
 
     // Switch to Create New tab to show logs
-    _tabController.animateTo(2);
+    _tabController.animateTo(0);
 
     setState(() {
       _logs.clear();
@@ -1025,6 +945,166 @@ class _PackageListDialogState extends State<_PackageListDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
+            child: const Text('Close')),
+      ],
+    );
+  }
+}
+
+// ── Pip Install Dialog ──
+
+class _PipInstallDialog extends StatefulWidget {
+  final String venvPath;
+  final String venvName;
+
+  const _PipInstallDialog({required this.venvPath, required this.venvName});
+
+  @override
+  State<_PipInstallDialog> createState() => _PipInstallDialogState();
+}
+
+class _PipInstallDialogState extends State<_PipInstallDialog> {
+  final _controller = TextEditingController();
+  final _logs = <String>[];
+  bool _installing = false;
+
+  Future<void> _install() async {
+    var input = _controller.text.trim();
+    if (input.isEmpty) return;
+
+    // Strip "pip install" prefix if user typed it
+    input = input.replaceFirst(
+        RegExp(r'^pip\s+install\s+', caseSensitive: false), '');
+    if (input.isEmpty) return;
+
+    setState(() {
+      _installing = true;
+      _logs.add('[+] pip install $input');
+      _logs.add('    Venv: ${widget.venvPath}');
+      _logs.add('');
+    });
+
+    final pip = '${widget.venvPath}/bin/pip';
+    final args = input.split(RegExp(r'\s+'));
+    final result = await Process.run(pip, ['install', ...args]);
+
+    if (!mounted) return;
+
+    setState(() {
+      final stdout = result.stdout.toString().trim();
+      final stderr = result.stderr.toString().trim();
+      if (result.exitCode == 0) {
+        if (stdout.isNotEmpty) _logs.addAll(stdout.split('\n'));
+        _logs.add('');
+        _logs.add('[+] Packages installed successfully!');
+      } else {
+        _logs.add('[ERROR] Installation failed');
+        if (stderr.isNotEmpty) _logs.addAll(stderr.split('\n'));
+      }
+      _installing = false;
+      _controller.clear();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.add_box),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Install Packages — ${widget.venvName}')),
+        ],
+      ),
+      content: SizedBox(
+        width: 550,
+        height: 400,
+        child: Column(
+          children: [
+            Text(widget.venvPath,
+                style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: Colors.grey.shade500)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Package(s)',
+                      hintText: 'e.g. requests paramiko flask>=2.0',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    enabled: !_installing,
+                    autofocus: true,
+                    onSubmitted: (_) => _install(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: _installing ? null : _install,
+                  child: _installing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Install'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade700),
+                ),
+                child: _logs.isEmpty
+                    ? const Center(
+                        child: Text('Output will appear here...',
+                            style: TextStyle(
+                                color: Colors.grey,
+                                fontFamily: 'monospace')),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _logs.length,
+                        itemBuilder: (context, index) {
+                          final line = _logs[index];
+                          Color color = Colors.grey.shade300;
+                          if (line.startsWith('[+]')) {
+                            color = Colors.greenAccent;
+                          } else if (line.startsWith('[ERROR]')) {
+                            color = Colors.redAccent;
+                          }
+                          return Text(line,
+                              style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                  color: color));
+                        },
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: _installing ? null : () => Navigator.pop(context),
             child: const Text('Close')),
       ],
     );

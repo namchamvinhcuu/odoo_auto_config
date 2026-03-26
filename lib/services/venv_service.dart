@@ -27,7 +27,7 @@ class VenvService {
     try {
       final cfgFile = File('${dir.path}/pyvenv.cfg');
       if (await cfgFile.exists()) {
-        final info = await _inspectVenv(dir.path);
+        final info = await inspectVenv(dir.path);
         if (info != null) results.add(info);
         return; // Don't scan inside a venv
       }
@@ -44,7 +44,7 @@ class VenvService {
     }
   }
 
-  Future<VenvInfo?> _inspectVenv(String venvPath) async {
+  Future<VenvInfo?> inspectVenv(String venvPath) async {
     final pythonExe = PlatformService.venvPython(venvPath);
     final isValid = await File(pythonExe).exists();
 
