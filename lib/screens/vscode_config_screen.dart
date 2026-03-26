@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/venv_info.dart';
 import '../services/storage_service.dart';
+import '../services/platform_service.dart';
 import '../services/vscode_config_service.dart';
 import '../widgets/directory_picker_field.dart';
 import '../widgets/log_output.dart';
@@ -230,7 +231,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
           'name': _nameController.text,
           'type': 'debugpy',
           'request': 'launch',
-          'python': '${_selectedVenv!.path}/bin/python',
+          'python': PlatformService.venvPython(_selectedVenv!.path),
           'program': _odooBinPath,
           'args': ['-c', '\${workspaceFolder}/odoo.conf', '--dev', 'xml'],
           'env': <String, dynamic>{},

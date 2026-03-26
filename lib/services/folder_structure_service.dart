@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import '../models/folder_structure_config.dart';
 
 class FolderStructureService {
@@ -12,19 +13,19 @@ class FolderStructureService {
     // Create odoo symlink to source code
     if (config.odooSourcePath.isNotEmpty) {
       await _createSymlink(
-          config.odooSourcePath, '$basePath/odoo', logs);
+          config.odooSourcePath, p.join(basePath, 'odoo'), logs);
     }
 
     if (config.createAddons) {
-      await _createDir('$basePath/addons', logs);
+      await _createDir(p.join(basePath, 'addons'), logs);
     }
 
     if (config.createThirdPartyAddons) {
-      await _createDir('$basePath/third_party_addons', logs);
+      await _createDir(p.join(basePath, 'third_party_addons'), logs);
     }
 
     // Create filestore directory
-    await _createDir('$basePath/filestore', logs);
+    await _createDir(p.join(basePath, 'filestore'), logs);
 
     return logs;
   }

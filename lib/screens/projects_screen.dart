@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../constants/app_constants.dart';
 import '../models/project_info.dart';
 import '../l10n/l10n_extension.dart';
@@ -452,8 +453,8 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
 
   Future<void> _autoDetectFromConf(String projectPath) async {
     final confPaths = [
-      '$projectPath/odoo.conf',
-      '$projectPath/config/odoo.conf',
+      p.join(projectPath, 'odoo.conf'),
+      p.join(projectPath, 'config', 'odoo.conf'),
     ];
 
     for (final confPath in confPaths) {

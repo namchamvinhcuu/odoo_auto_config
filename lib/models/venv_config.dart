@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 class VenvConfig {
   final String pythonPath;
   final String targetDirectory;
@@ -9,5 +11,5 @@ class VenvConfig {
     this.venvName = 'venv',
   });
 
-  String get fullPath => '$targetDirectory/$venvName';
+  String get fullPath => p.join(targetDirectory, venvName);
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'platform_service.dart';
 
 class VscodeConfigService {
   Future<List<String>> generate({
@@ -24,7 +25,7 @@ class VscodeConfigService {
       'name': configName,
       'type': 'debugpy',
       'request': 'launch',
-      'python': '$venvPath/bin/python',
+      'python': PlatformService.venvPython(venvPath),
       'program': odooBinPath,
       'args': [
         '-c',

@@ -8,6 +8,7 @@ import '../models/venv_config.dart';
 import '../models/venv_info.dart';
 import '../services/python_checker_service.dart';
 import '../services/storage_service.dart';
+import '../services/platform_service.dart';
 import '../services/venv_service.dart';
 import '../widgets/directory_picker_field.dart';
 import '../widgets/log_output.dart';
@@ -220,36 +221,17 @@ class _VenvScreenState extends State<VenvScreen>
       return;
     }
 
-    // Switch to Create New tab to show logs
-    _tabController.animateTo(0);
+    if (!mounted) return;
 
-    setState(() {
-      _logs.clear();
-      _logs.add('[+] Installing packages from: $reqFile');
-      _logs.add('    Venv: ${venv.path}');
-      _logs.add('    pip: ${venv.path}/bin/pip');
-      _logs.add('');
-    });
-
-    final installResult = await _venvService.installRequirements(
-      venv.path,
-      reqFile,
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _InstallRequirementsDialog(
+        venvPath: venv.path,
+        requirementsFile: reqFile,
+        venvService: _venvService,
+      ),
     );
-
-    setState(() {
-      if (installResult.isSuccess) {
-        if (installResult.stdout.isNotEmpty) {
-          _logs.addAll(installResult.stdout.split('\n'));
-        }
-        _logs.add('');
-        _logs.add('[+] Requirements installed successfully!');
-      } else {
-        _logs.add('[ERROR] Installation failed');
-        if (installResult.stderr.isNotEmpty) {
-          _logs.addAll(installResult.stderr.split('\n'));
-        }
-      }
-    });
   }
 
   Future<void> _renameVenv(VenvInfo venv) async {
@@ -300,7 +282,7 @@ class _VenvScreenState extends State<VenvScreen>
       _logs.clear();
       _logs.add('[+] Starting venv creation...');
       _logs.add('    Python: ${_selectedPython!.executablePath}');
-      _logs.add('    Target: $_targetDir/${_venvNameController.text}');
+      _logs.add('    Target: $_targetDir${Platform.pathSeparator}${_venvNameController.text}');
     });
 
     final config = VenvConfig(
@@ -781,7 +763,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
       _error = null;
     });
 
-    final pip = '${widget.venvPath}/bin/pip';
+    final pip = PlatformService.venvPip(widget.venvPath);
     try {
       final result = await Process.run(pip, ['list', '--format=json']);
       if (result.exitCode == 0) {
@@ -984,7 +966,7 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
       _logs.add('');
     });
 
-    final pip = '${widget.venvPath}/bin/pip';
+    final pip = PlatformService.venvPip(widget.venvPath);
     final args = input.split(RegExp(r'\s+'));
     final result = await Process.run(pip, ['install', ...args]);
 
@@ -1115,4 +1097,87 @@ class _PkgInfo {
   final String name;
   final String version;
   const _PkgInfo({required this.name, required this.version});
+}
+
+class _InstallRequirementsDialog extends StatefulWidget {
+  final String venvPath;
+  final String requirementsFile;
+  final VenvService venvService;
+
+  const _InstallRequirementsDialog({
+    required this.venvPath,
+    required this.requirementsFile,
+    required this.venvService,
+  });
+
+  @override
+  State<_InstallRequirementsDialog> createState() =>
+      _InstallRequirementsDialogState();
+}
+
+class _InstallRequirementsDialogState
+    extends State<_InstallRequirementsDialog> {
+  final _logs = <String>[];
+  bool _running = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  Future<void> _run() async {
+    setState(() {
+      _logs.add('[+] Installing packages from: ${widget.requirementsFile}');
+      _logs.add('    Venv: ${widget.venvPath}');
+      _logs.add('    pip: ${PlatformService.venvPip(widget.venvPath)}');
+      _logs.add('');
+    });
+
+    final result = await widget.venvService.installRequirements(
+      widget.venvPath,
+      widget.requirementsFile,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      if (result.isSuccess) {
+        if (result.stdout.isNotEmpty) {
+          _logs.addAll(result.stdout.split('\n'));
+        }
+        _logs.add('');
+        _logs.add('[+] Requirements installed successfully!');
+      } else {
+        _logs.add('[ERROR] Installation failed');
+        if (result.stderr.isNotEmpty) {
+          _logs.addAll(result.stderr.split('\n'));
+        }
+      }
+      _running = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.installRequirements),
+      content: SizedBox(
+        width: 600,
+        child: LogOutput(lines: _logs),
+      ),
+      actions: [
+        if (_running)
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
 }

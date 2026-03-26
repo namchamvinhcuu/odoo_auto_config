@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 class FolderStructureConfig {
   final String baseDirectory;
   final String projectName;
@@ -19,5 +21,5 @@ class FolderStructureConfig {
     this.createVenvDir = true,
   });
 
-  String get projectPath => '$baseDirectory/$projectName';
+  String get projectPath => p.join(baseDirectory, projectName);
 }

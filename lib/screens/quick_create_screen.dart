@@ -8,6 +8,7 @@ import '../models/folder_structure_config.dart';
 import '../models/profile.dart';
 import '../models/project_info.dart';
 import '../services/folder_structure_service.dart';
+import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import '../templates/odoo_templates.dart';
 import '../widgets/directory_picker_field.dart';
@@ -146,7 +147,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
         'name': 'Debug ${profile.name}',
         'type': 'debugpy',
         'request': 'launch',
-        'python': '${profile.venvPath}/bin/python',
+        'python': PlatformService.venvPython(profile.venvPath),
         'program': profile.odooBinPath,
         'args': [
           '-c',

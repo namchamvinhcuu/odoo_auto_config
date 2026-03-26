@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:path/path.dart' as p;
 
 class OdooTemplates {
   static String odooConf({
@@ -56,7 +57,7 @@ pidfile =
 proxy_mode = True
 reportgz = False
 screencasts =
-screenshots = $projectPath/screenshots
+screenshots = ${p.join(projectPath, 'screenshots')}
 server_wide_modules = base,web
 smtp_password = False
 smtp_port = 25
