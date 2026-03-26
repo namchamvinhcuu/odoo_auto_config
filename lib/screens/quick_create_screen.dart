@@ -307,6 +307,7 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
                 isDense: true,
                 prefixIcon: Icon(Icons.folder),
               ),
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
 
