@@ -17,8 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static const _screens = <Widget>[
-    QuickCreateScreen(),
     ProjectsScreen(),
+    QuickCreateScreen(),
     ProfileScreen(),
     PythonCheckScreen(),
     VenvScreen(),
@@ -58,16 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             destinations: const [
               NavigationRailDestination(
-                icon: Icon(Icons.rocket_launch),
-                selectedIcon:
-                    Icon(Icons.rocket_launch, color: Colors.blue),
-                label: Text('Quick Create'),
-              ),
-              NavigationRailDestination(
                 icon: Icon(Icons.folder_special),
                 selectedIcon:
                     Icon(Icons.folder_special, color: Colors.blue),
                 label: Text('Projects'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.rocket_launch),
+                selectedIcon:
+                    Icon(Icons.rocket_launch, color: Colors.blue),
+                label: Text('Quick Create'),
               ),
               NavigationRailDestination(
                 icon: Icon(Icons.person),

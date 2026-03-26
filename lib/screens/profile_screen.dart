@@ -135,6 +135,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text('odoo src: ${p.odooSourcePath}',
                               style: const TextStyle(
                                   fontFamily: 'monospace', fontSize: 11)),
+                          Text('db: ${p.dbUser}@${p.dbHost}:${p.dbPort}',
+                              style: const TextStyle(
+                                  fontFamily: 'monospace', fontSize: 11)),
                         ],
                       ),
                       isThreeLine: true,
@@ -179,6 +182,11 @@ class _ProfileDialog extends StatefulWidget {
 
 class _ProfileDialogState extends State<_ProfileDialog> {
   late final TextEditingController _nameController;
+  late final TextEditingController _dbHostController;
+  late final TextEditingController _dbPortController;
+  late final TextEditingController _dbUserController;
+  late final TextEditingController _dbPasswordController;
+  late final TextEditingController _dbSslmodeController;
   String _venvPath = '';
   String _odooBinPath = '';
   String _odooSourcePath = '';
@@ -194,6 +202,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     super.initState();
     final p = widget.profile;
     _nameController = TextEditingController(text: p?.name ?? '');
+    _dbHostController = TextEditingController(text: p?.dbHost ?? 'localhost');
+    _dbPortController = TextEditingController(text: '${p?.dbPort ?? 5432}');
+    _dbUserController = TextEditingController(text: p?.dbUser ?? 'odoo');
+    _dbPasswordController = TextEditingController(text: p?.dbPassword ?? '');
+    _dbSslmodeController = TextEditingController(text: p?.dbSslmode ?? 'prefer');
     _venvPath = p?.venvPath ?? '';
     _odooBinPath = p?.odooBinPath ?? '';
     _odooSourcePath = p?.odooSourcePath ?? '';
@@ -244,6 +257,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
       createAddons: _addons,
       createThirdPartyAddons: _thirdPartyAddons,
       createConfigDir: _configDir,
+      dbHost: _dbHostController.text,
+      dbPort: int.tryParse(_dbPortController.text) ?? 5432,
+      dbUser: _dbUserController.text,
+      dbPassword: _dbPasswordController.text,
+      dbSslmode: _dbSslmodeController.text,
     );
 
     Navigator.pop(context, profile);
@@ -252,6 +270,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _dbHostController.dispose();
+    _dbPortController.dispose();
+    _dbUserController.dispose();
+    _dbPasswordController.dispose();
+    _dbSslmodeController.dispose();
     super.dispose();
   }
 
@@ -386,6 +409,77 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   _chip('config', _configDir,
                       (v) => setState(() => _configDir = v)),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // DB Connection
+              Text('Database Connection',
+                  style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      controller: _dbHostController,
+                      decoration: const InputDecoration(
+                        labelText: 'Host',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _dbPortController,
+                      decoration: const InputDecoration(
+                        labelText: 'Port',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _dbUserController,
+                      decoration: const InputDecoration(
+                        labelText: 'User',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _dbPasswordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        hintText: 'Leave empty to auto-generate',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      obscureText: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _dbSslmodeController,
+                decoration: const InputDecoration(
+                  labelText: 'SSL Mode',
+                  hintText: 'prefer, disable, require',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
               ),
             ],
           ),

@@ -8,6 +8,12 @@ class Profile {
   final bool createAddons;
   final bool createThirdPartyAddons;
   final bool createConfigDir;
+  // DB connection
+  final String dbHost;
+  final int dbPort;
+  final String dbUser;
+  final String dbPassword;
+  final String dbSslmode;
 
   const Profile({
     required this.id,
@@ -19,6 +25,11 @@ class Profile {
     this.createAddons = true,
     this.createThirdPartyAddons = true,
     this.createConfigDir = true,
+    this.dbHost = 'localhost',
+    this.dbPort = 5432,
+    this.dbUser = 'odoo',
+    this.dbPassword = '',
+    this.dbSslmode = 'prefer',
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +42,11 @@ class Profile {
         'createAddons': createAddons,
         'createThirdPartyAddons': createThirdPartyAddons,
         'createConfigDir': createConfigDir,
+        'dbHost': dbHost,
+        'dbPort': dbPort,
+        'dbUser': dbUser,
+        'dbPassword': dbPassword,
+        'dbSslmode': dbSslmode,
       };
 
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
@@ -44,5 +60,10 @@ class Profile {
         createThirdPartyAddons:
             json['createThirdPartyAddons'] as bool? ?? true,
         createConfigDir: json['createConfigDir'] as bool? ?? true,
+        dbHost: (json['dbHost'] ?? 'localhost').toString(),
+        dbPort: json['dbPort'] as int? ?? 5432,
+        dbUser: (json['dbUser'] ?? 'odoo').toString(),
+        dbPassword: (json['dbPassword'] ?? '').toString(),
+        dbSslmode: (json['dbSslmode'] ?? 'prefer').toString(),
       );
 }

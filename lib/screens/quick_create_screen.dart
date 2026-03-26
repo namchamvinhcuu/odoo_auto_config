@@ -21,8 +21,8 @@ class QuickCreateScreen extends StatefulWidget {
 class _QuickCreateScreenState extends State<QuickCreateScreen> {
   final _folderService = FolderStructureService();
   final _projectNameController = TextEditingController();
-  final _httpPortController = TextEditingController(text: '8069');
-  final _longpollingPortController = TextEditingController(text: '8072');
+  final _httpPortController = TextEditingController();
+  final _longpollingPortController = TextEditingController();
   final _logs = <String>[];
 
   List<Profile> _profiles = [];
@@ -35,17 +35,31 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProfiles();
+    _loadData();
   }
 
-  Future<void> _loadProfiles() async {
+  Future<void> _loadData() async {
     setState(() => _loading = true);
-    final json = await StorageService.loadProfiles();
+    final profilesJson = await StorageService.loadProfiles();
+    final projectsJson = await StorageService.loadProjects();
+
+    // Find max ports from existing projects
+    int maxHttp = 8068;
+    int maxLp = 8071;
+    for (final p in projectsJson) {
+      final hp = p['httpPort'] as int? ?? 0;
+      final lp = p['longpollingPort'] as int? ?? 0;
+      if (hp > maxHttp) maxHttp = hp;
+      if (lp > maxLp) maxLp = lp;
+    }
+
     setState(() {
-      _profiles = json.map((j) => Profile.fromJson(j)).toList();
+      _profiles = profilesJson.map((j) => Profile.fromJson(j)).toList();
       if (_profiles.isNotEmpty) {
         _selectedProfile = _profiles.first;
       }
+      _httpPortController.text = '${maxHttp + 1}';
+      _longpollingPortController.text = '${maxLp + 1}';
       _loading = false;
     });
   }
@@ -119,6 +133,11 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
           longpollingPort: lpPort,
           projectPath: projectPath,
           filestorePath: filestorePath,
+          dbHost: profile.dbHost,
+          dbPort: profile.dbPort,
+          dbUser: profile.dbUser,
+          dbPassword: profile.dbPassword,
+          dbSslmode: profile.dbSslmode,
         ),
       );
       setState(() => _logs.add('[+] Written: $confPath'));
@@ -171,7 +190,7 @@ class _QuickCreateScreenState extends State<QuickCreateScreen> {
       final projectInfo = ProjectInfo(
         name: projectName,
         path: projectPath,
-        profileName: profile.name,
+        description: profile.name,
         httpPort: httpPort,
         longpollingPort: lpPort,
         createdAt: DateTime.now().toIso8601String(),

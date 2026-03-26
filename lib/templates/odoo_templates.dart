@@ -6,9 +6,15 @@ class OdooTemplates {
     required int longpollingPort,
     required String projectPath,
     required String filestorePath,
+    String dbHost = 'localhost',
+    int dbPort = 5432,
+    String dbUser = 'odoo',
+    String dbPassword = '',
+    String dbSslmode = 'prefer',
   }) {
     final adminPasswd = _generatePassword(16);
-    final dbPassword = _generatePassword(48);
+    final effectiveDbPassword =
+        dbPassword.isEmpty ? _generatePassword(48) : dbPassword;
 
     return '''[options]
 addons_path = ./addons,./odoo/addons
@@ -19,13 +25,13 @@ longpolling_port = $longpollingPort
 dbfilter = ^%d\$
 csv_internal_sep = ,
 data_dir = $filestorePath
-db_host = localhost
+db_host = $dbHost
 db_maxconn = 64
 db_name = False
-db_user = odoo
-db_password = $dbPassword
-db_port = 5432
-db_sslmode = prefer
+db_user = $dbUser
+db_password = $effectiveDbPassword
+db_port = $dbPort
+db_sslmode = $dbSslmode
 db_template = template0
 demo = {}
 email_from = False

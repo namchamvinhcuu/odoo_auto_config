@@ -1,7 +1,7 @@
 class ProjectInfo {
   final String name;
   final String path;
-  final String profileName;
+  final String description;
   final int httpPort;
   final int longpollingPort;
   final String createdAt;
@@ -9,7 +9,7 @@ class ProjectInfo {
   const ProjectInfo({
     required this.name,
     required this.path,
-    required this.profileName,
+    required this.description,
     required this.httpPort,
     required this.longpollingPort,
     required this.createdAt,
@@ -18,7 +18,7 @@ class ProjectInfo {
   Map<String, dynamic> toJson() => {
         'name': name,
         'path': path,
-        'profileName': profileName,
+        'description': description,
         'httpPort': httpPort,
         'longpollingPort': longpollingPort,
         'createdAt': createdAt,
@@ -27,7 +27,7 @@ class ProjectInfo {
   factory ProjectInfo.fromJson(Map<String, dynamic> json) => ProjectInfo(
         name: (json['name'] ?? '').toString(),
         path: (json['path'] ?? '').toString(),
-        profileName: (json['profileName'] ?? '').toString(),
+        description: (json['description'] ?? '').toString(),
         httpPort: json['httpPort'] as int? ?? 8069,
         longpollingPort: json['longpollingPort'] as int? ?? 8072,
         createdAt: (json['createdAt'] ?? '').toString(),
