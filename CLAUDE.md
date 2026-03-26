@@ -12,7 +12,7 @@ Flutter desktop app (macOS/Linux/Windows) giup developer Odoo thiet lap va quan 
 ## Architecture
 ```
 lib/
-├── main.dart                    # Entry point, ThemeService + Provider setup
+├── main.dart                    # Entry point, ThemeService + Provider setup + global error handlers
 ├── constants/app_constants.dart # Design tokens: spacing, font-size, colors
 ├── models/                      # Data classes (immutable, fromJson/toJson)
 │   ├── profile.dart             # Cau hinh Odoo dev profile
@@ -24,13 +24,13 @@ lib/
 │   └── folder_structure_config.dart # Config tao folder structure
 ├── services/                    # Business logic (stateless)
 │   ├── storage_service.dart     # Luu tru JSON tai ~/.config/odoo_auto_config/
-│   ├── command_runner.dart      # Wrap Process.run() -> CommandResult
-│   ├── python_checker_service.dart # Detect Python installations
+│   ├── command_runner.dart      # Wrap Process.run() -> CommandResult (runInShell: true)
+│   ├── python_checker_service.dart # Detect Python installations (absolute paths + dedup shims)
 │   ├── venv_service.dart        # Tao/scan/inspect venv, pip install
 │   ├── folder_structure_service.dart # Tao cau truc thu muc Odoo project
 │   ├── vscode_config_service.dart   # Sinh .vscode/launch.json (debugpy)
 │   ├── theme_service.dart       # Theme mode + accent color (ChangeNotifier)
-│   └── platform_service.dart    # Platform abstraction (paths, executables)
+│   └── platform_service.dart    # Platform abstraction (paths, executables, python candidates)
 ├── screens/                     # UI screens (StatefulWidget)
 │   ├── home_screen.dart         # NavigationRail chinh
 │   ├── projects_screen.dart     # CRUD projects, quick create dialog
@@ -72,11 +72,36 @@ Gom: profiles, projects, registered venvs, settings (theme)
 
 ## Commands
 ```bash
-# Run app
+# Run debug
 flutter run -d macos   # hoac linux, windows
 
-# Build
-flutter build macos
+# Build release
+flutter build macos --release
+
+# Tao DMG installer (macOS)
+# Xem script ben duoi
+
+# Cai dat tu DMG: keo "Odoo Config.app" vao /Applications
+```
+
+## Build & Deploy (macOS)
+```bash
+# Build release
+flutter build macos --release
+
+# Tao DMG
+APP_PATH="build/macos/Build/Products/Release/odoo_auto_config.app"
+DMG_PATH="build/Odoo Config.dmg"
+TMP_DIR=$(mktemp -d)
+cp -R "$APP_PATH" "$TMP_DIR/Odoo Config.app"
+ln -s /Applications "$TMP_DIR/Applications"
+hdiutil create -volname "Odoo Config" -srcfolder "$TMP_DIR" -ov -format UDZO "$DMG_PATH"
+rm -rf "$TMP_DIR"
+
+# Cai vao Applications (neu khong dung DMG)
+cp -R "$APP_PATH" "/Applications/Odoo Config.app"
+xattr -cr "/Applications/Odoo Config.app"
+codesign --force --deep --sign - "/Applications/Odoo Config.app"
 ```
 
 ## Notes
@@ -85,3 +110,21 @@ flutter build macos
 - Symlink `project/odoo` -> Odoo source directory (optional)
 - Admin password: random 16-char, DB password: random 48-char neu de trong
 - Odoo versions supported: 14-18
+- App name hien thi: "OdooAutoConfig" (CFBundleName trong Info.plist)
+- App icon: pngegg.png (Odoo logo, 512x512)
+
+## macOS-Specific Issues (da fix)
+- **App Sandbox PHAI tat** (`com.apple.security.app-sandbox = false`) trong ca
+  DebugProfile.entitlements va Release.entitlements. Sandbox chan Process.run.
+- **Release.entitlements** phai co `allow-jit` va `network.server` giong DebugProfile,
+  neu khong app crash khi cai dat.
+- **Process.run PHAI dung `runInShell: true`** trong release mode (AOT).
+  Khong co shell, Dart native crash khi executable khong ton tai trong PATH.
+  Da apply cho ca CommandRunner va PythonCheckerService.
+- **macOS GUI app khong load ~/.zshrc** nen PATH rat toi gian.
+  Fix: PlatformService.pythonCandidates tra ve absolute paths
+  (pyenv shims, pyenv versions, homebrew, /usr/local/bin, /usr/bin).
+- **Open folder**: dung `open` (macOS), `xdg-open` (Linux), `explorer` (Windows).
+- **Open VSCode**: dung `open -a "Visual Studio Code"` tren macOS (tranh PATH issue).
+- **Dedup pyenv shims**: loai bo shim entry khi da co real binary cung version.
+- **Sau khi copy/rename .app**: can `xattr -cr` va `codesign --force --deep --sign -`.
