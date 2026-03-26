@@ -495,7 +495,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     return AlertDialog(
       title: Text(widget.existing != null ? 'Edit Project' : 'Import Existing Project'),
       content: SizedBox(
-        width: 500,
+        width: 700,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

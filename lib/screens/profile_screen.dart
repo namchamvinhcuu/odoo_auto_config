@@ -128,16 +128,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text('Venv: ${p.venvPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 13)),
+                                  fontFamily: 'monospace', fontSize: 17)),
                           Text('odoo-bin: ${p.odooBinPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 13)),
+                                  fontFamily: 'monospace', fontSize: 17)),
                           Text('odoo src: ${p.odooSourcePath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 13)),
+                                  fontFamily: 'monospace', fontSize: 17)),
                           Text('db: ${p.dbUser}@${p.dbHost}:${p.dbPort}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 13)),
+                                  fontFamily: 'monospace', fontSize: 17)),
                         ],
                       ),
                       isThreeLine: true,
@@ -285,7 +285,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     return AlertDialog(
       title: Text(isEdit ? 'Edit Profile' : 'New Profile'),
       content: SizedBox(
-        width: 500,
+        width: 900,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

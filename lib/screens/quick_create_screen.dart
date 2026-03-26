@@ -221,7 +221,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 650, maxHeight: 700),
+        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 750),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: _loading
