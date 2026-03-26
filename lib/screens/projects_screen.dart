@@ -115,23 +115,78 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _remove(ProjectInfo project) async {
+    bool deleteFiles = false;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove project?'),
-        content: Text(
-            'Remove "${project.name}" from the list?\nThis does NOT delete project files.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove')),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Delete project?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Remove "${project.name}" from the list?'),
+              const SizedBox(height: 4),
+              Text(project.path,
+                  style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.grey.shade500)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: deleteFiles,
+                    onChanged: (v) =>
+                        setDialogState(() => deleteFiles = v ?? false),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Also delete project directory from disk',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Delete')),
+          ],
+        ),
       ),
     );
+
     if (confirmed == true) {
+      if (deleteFiles) {
+        try {
+          final dir = Directory(project.path);
+          if (await dir.exists()) {
+            await dir.delete(recursive: true);
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Deleted: ${project.path}')),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
       await StorageService.removeProject(project.path);
       await _load();
     }
