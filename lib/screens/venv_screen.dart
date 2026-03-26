@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../models/python_info.dart';
 import '../models/venv_config.dart';
@@ -168,6 +169,157 @@ class _VenvScreenState extends State<VenvScreen>
       await StorageService.removeRegisteredVenv(venv.path);
       await _loadRegisteredVenvs();
     }
+  }
+
+  Future<void> _pipInstallPackage(VenvInfo venv) async {
+    final controller = TextEditingController();
+    final packages = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Install Packages'),
+        content: SizedBox(
+          width: 450,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Venv: ${venv.name}',
+                  style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.grey.shade500)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Package(s)',
+                  hintText: 'e.g. requests flask psycopg2-binary',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  helperText: 'Space-separated, supports pip syntax (==, >=)',
+                ),
+                autofocus: true,
+                onSubmitted: (v) => Navigator.pop(ctx, v),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text),
+              child: const Text('Install')),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (packages == null || packages.trim().isEmpty) return;
+
+    _tabController.animateTo(2);
+
+    setState(() {
+      _logs.clear();
+      _logs.add('[+] pip install ${packages.trim()}');
+      _logs.add('    Venv: ${venv.path}');
+      _logs.add('');
+    });
+
+    // Split packages and install
+    final args = packages.trim().split(RegExp(r'\s+'));
+    final installResult = await _venvService.installPackage(
+      venv.path,
+      args.first,
+    );
+
+    // For multiple packages, run with full args list
+    if (args.length > 1) {
+      final pip = '${venv.path}/bin/pip';
+      final result = await Process.run(pip, ['install', ...args]);
+      setState(() {
+        final stdout = result.stdout.toString().trim();
+        final stderr = result.stderr.toString().trim();
+        if (result.exitCode == 0) {
+          if (stdout.isNotEmpty) _logs.addAll(stdout.split('\n'));
+          _logs.add('');
+          _logs.add('[+] Packages installed successfully!');
+        } else {
+          _logs.add('[ERROR] Installation failed');
+          if (stderr.isNotEmpty) _logs.addAll(stderr.split('\n'));
+        }
+      });
+    } else {
+      setState(() {
+        if (installResult.isSuccess) {
+          if (installResult.stdout.isNotEmpty) {
+            _logs.addAll(installResult.stdout.split('\n'));
+          }
+          _logs.add('');
+          _logs.add('[+] Package installed successfully!');
+        } else {
+          _logs.add('[ERROR] Installation failed');
+          if (installResult.stderr.isNotEmpty) {
+            _logs.addAll(installResult.stderr.split('\n'));
+          }
+        }
+      });
+    }
+  }
+
+  Future<void> _installRequirements(VenvInfo venv) async {
+    final result = await FilePicker.platform.pickFiles(
+      dialogTitle: 'Select requirements.txt',
+      type: FileType.any,
+    );
+    if (result == null || result.files.single.path == null) return;
+
+    final reqFile = result.files.single.path!;
+
+    // Verify file exists
+    if (!await File(reqFile).exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('File not found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Switch to Create New tab to show logs
+    _tabController.animateTo(2);
+
+    setState(() {
+      _logs.clear();
+      _logs.add('[+] Installing packages from: $reqFile');
+      _logs.add('    Venv: ${venv.path}');
+      _logs.add('    pip: ${venv.path}/bin/pip');
+      _logs.add('');
+    });
+
+    final installResult = await _venvService.installRequirements(
+      venv.path,
+      reqFile,
+    );
+
+    setState(() {
+      if (installResult.isSuccess) {
+        if (installResult.stdout.isNotEmpty) {
+          _logs.addAll(installResult.stdout.split('\n'));
+        }
+        _logs.add('');
+        _logs.add('[+] Requirements installed successfully!');
+      } else {
+        _logs.add('[ERROR] Installation failed');
+        if (installResult.stderr.isNotEmpty) {
+          _logs.addAll(installResult.stderr.split('\n'));
+        }
+      }
+    });
   }
 
   Future<void> _renameVenv(VenvInfo venv) async {
@@ -521,6 +673,18 @@ class _VenvScreenState extends State<VenvScreen>
                     label: Text('Registered'),
                   ),
                 if (showRemove) ...[
+                  if (venv.isValid) ...[
+                    IconButton(
+                      onPressed: () => _pipInstallPackage(venv),
+                      icon: const Icon(Icons.add_box),
+                      tooltip: 'pip install package',
+                    ),
+                    IconButton(
+                      onPressed: () => _installRequirements(venv),
+                      icon: const Icon(Icons.install_desktop),
+                      tooltip: 'Install requirements.txt',
+                    ),
+                  ],
                   IconButton(
                     onPressed: () => _renameVenv(venv),
                     icon: const Icon(Icons.edit),
