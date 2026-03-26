@@ -30,15 +30,19 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
     });
     try {
       final results = await _checker.detectAll();
-      setState(() {
-        _results = results;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 

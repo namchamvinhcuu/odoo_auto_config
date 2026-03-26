@@ -1,5 +1,5 @@
+import 'dart:io';
 import '../models/python_info.dart';
-import 'command_runner.dart';
 import 'platform_service.dart';
 
 class PythonCheckerService {
@@ -8,40 +8,51 @@ class PythonCheckerService {
     final seen = <String>{};
 
     for (final candidate in PlatformService.pythonCandidates) {
-      final info = await _checkPython(candidate);
-      if (info != null && !seen.contains(info.executablePath)) {
-        seen.add(info.executablePath);
-        results.add(info);
+      try {
+        final info = await _checkPython(candidate);
+        if (info != null && !seen.contains(info.executablePath)) {
+          seen.add(info.executablePath);
+          results.add(info);
+        }
+      } catch (_) {
+        // Skip candidates that cause errors
       }
     }
 
     if (PlatformService.isWindows) {
-      final pyLauncherResults = await _checkPyLauncher();
-      for (final info in pyLauncherResults) {
-        if (!seen.contains(info.executablePath)) {
-          seen.add(info.executablePath);
-          results.add(info);
+      try {
+        final pyLauncherResults = await _checkPyLauncher();
+        for (final info in pyLauncherResults) {
+          if (!seen.contains(info.executablePath)) {
+            seen.add(info.executablePath);
+            results.add(info);
+          }
         }
-      }
+      } catch (_) {}
     }
 
     // Remove shim entries that resolve to the same version as a real binary.
-    // e.g. pyenv shim reporting 3.9.6 is redundant when /usr/bin/python3 3.9.6 exists.
     if (PlatformService.isMacOS) {
       final realEntries = results
           .where((r) => !r.executablePath.contains('/shims/'))
           .map((r) => r.version)
           .toSet();
-      results.removeWhere(
-          (r) => r.executablePath.contains('/shims/') && realEntries.contains(r.version));
+      results.removeWhere((r) =>
+          r.executablePath.contains('/shims/') &&
+          realEntries.contains(r.version));
     }
 
     return results;
   }
 
   Future<PythonInfo?> _checkPython(String executable) async {
-    final versionResult = await CommandRunner.run(executable, ['--version']);
-    if (!versionResult.isSuccess) return null;
+    // Check if absolute path exists before trying to run it
+    if (executable.startsWith('/')) {
+      if (!File(executable).existsSync()) return null;
+    }
+
+    final versionResult = await _run(executable, ['--version']);
+    if (versionResult == null || versionResult.exitCode != 0) return null;
 
     final versionStr = versionResult.stdout.isNotEmpty
         ? versionResult.stdout
@@ -52,31 +63,28 @@ class PythonCheckerService {
     // Get the real path
     String realPath = executable;
     if (PlatformService.isLinux || PlatformService.isMacOS) {
-      final whichResult = await CommandRunner.run('which', [executable]);
-      if (whichResult.isSuccess) {
+      final whichResult = await _run('which', [executable]);
+      if (whichResult != null && whichResult.exitCode == 0) {
         realPath = whichResult.stdout;
       }
     } else if (PlatformService.isWindows) {
-      final whereResult =
-          await CommandRunner.run('where', [executable], runInShell: true);
-      if (whereResult.isSuccess) {
+      final whereResult = await _run('where', [executable], runInShell: true);
+      if (whereResult != null && whereResult.exitCode == 0) {
         realPath = whereResult.stdout.split('\n').first.trim();
       }
     }
 
     // Check pip
-    final pipResult =
-        await CommandRunner.run(executable, ['-m', 'pip', '--version']);
-    final hasPip = pipResult.isSuccess;
+    final pipResult = await _run(executable, ['-m', 'pip', '--version']);
+    final hasPip = pipResult != null && pipResult.exitCode == 0;
     String pipVersion = '';
     if (hasPip) {
       pipVersion = _parsePipVersion(pipResult.stdout);
     }
 
     // Check venv module
-    final venvResult =
-        await CommandRunner.run(executable, ['-c', 'import venv']);
-    final hasVenv = venvResult.isSuccess;
+    final venvResult = await _run(executable, ['-c', 'import venv']);
+    final hasVenv = venvResult != null && venvResult.exitCode == 0;
 
     return PythonInfo(
       executablePath: realPath,
@@ -87,9 +95,31 @@ class PythonCheckerService {
     );
   }
 
+  /// Runs a process via shell to avoid native crashes in release mode.
+  Future<_SimpleResult?> _run(
+    String executable,
+    List<String> args, {
+    bool runInShell = true,
+  }) async {
+    try {
+      final result = await Process.run(
+        executable,
+        args,
+        runInShell: true,
+      );
+      return _SimpleResult(
+        exitCode: result.exitCode,
+        stdout: result.stdout.toString().trim(),
+        stderr: result.stderr.toString().trim(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<PythonInfo>> _checkPyLauncher() async {
-    final result = await CommandRunner.run('py', ['--list'], runInShell: true);
-    if (!result.isSuccess) return [];
+    final result = await _run('py', ['--list'], runInShell: true);
+    if (result == null || result.exitCode != 0) return [];
 
     final List<PythonInfo> results = [];
     final lines = result.stdout.split('\n');
@@ -113,4 +143,15 @@ class PythonCheckerService {
     final match = RegExp(r'pip (\S+)').firstMatch(output);
     return match?.group(1) ?? '';
   }
+}
+
+class _SimpleResult {
+  final int exitCode;
+  final String stdout;
+  final String stderr;
+  _SimpleResult({
+    required this.exitCode,
+    required this.stdout,
+    required this.stderr,
+  });
 }

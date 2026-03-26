@@ -1,9 +1,23 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'services/theme_service.dart';
 
 void main() async {
+  // Log uncaught Flutter errors to stderr so we can see crashes
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    stderr.writeln('FlutterError: ${details.exception}');
+    stderr.writeln('${details.stack}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    stderr.writeln('Unhandled error: $error');
+    stderr.writeln('$stack');
+    return true;
+  };
+
   WidgetsFlutterBinding.ensureInitialized();
   final themeService = ThemeService();
   await themeService.load();
