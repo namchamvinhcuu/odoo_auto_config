@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/python_info.dart';
 import '../models/venv_config.dart';
@@ -90,24 +91,80 @@ class _VenvScreenState extends State<VenvScreen>
     }
   }
 
-  Future<void> _unregisterVenv(VenvInfo venv) async {
+  Future<void> _deleteVenv(VenvInfo venv) async {
+    bool deleteFiles = false;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove registration?'),
-        content: Text(
-            'Remove "${venv.name}" from registered list?\nThis does NOT delete the venv files.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove')),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Delete virtual environment?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Remove "${venv.name}" from registered list?'),
+              const SizedBox(height: 4),
+              Text(venv.path,
+                  style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.grey.shade500)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: deleteFiles,
+                    onChanged: (v) =>
+                        setDialogState(() => deleteFiles = v ?? false),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Also delete venv directory from disk',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red),
+                child: const Text('Delete')),
+          ],
+        ),
       ),
     );
+
     if (confirmed == true) {
+      if (deleteFiles) {
+        try {
+          final dir = Directory(venv.path);
+          if (await dir.exists()) {
+            await dir.delete(recursive: true);
+          }
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Deleted: ${venv.path}')),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to delete: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
       await StorageService.removeRegisteredVenv(venv.path);
       await _loadRegisteredVenvs();
     }
@@ -470,9 +527,9 @@ class _VenvScreenState extends State<VenvScreen>
                     tooltip: 'Rename',
                   ),
                   IconButton(
-                    onPressed: () => _unregisterVenv(venv),
-                    icon: const Icon(Icons.bookmark_remove),
-                    tooltip: 'Unregister',
+                    onPressed: () => _deleteVenv(venv),
+                    icon: const Icon(Icons.delete),
+                    tooltip: 'Delete',
                     color: Colors.red,
                   ),
                 ],
