@@ -12,13 +12,19 @@ class PlatformService {
     // On macOS GUI apps don't inherit the user's shell PATH,
     // so we must also probe well-known absolute paths.
     final candidates = <String>['python3', 'python'];
+    final home = Platform.environment['HOME'] ?? '';
     if (isMacOS) {
-      final home = Platform.environment['HOME'] ?? '';
       candidates.addAll([
         if (home.isNotEmpty) '$home/.pyenv/shims/python3',
         if (home.isNotEmpty) '$home/.pyenv/shims/python',
-        if (home.isNotEmpty) '$home/.pyenv/versions/3.11.14/bin/python3',
         '/opt/homebrew/bin/python3',
+        '/usr/local/bin/python3',
+        '/usr/bin/python3',
+      ]);
+    } else if (isLinux) {
+      candidates.addAll([
+        if (home.isNotEmpty) '$home/.pyenv/shims/python3',
+        if (home.isNotEmpty) '$home/.pyenv/shims/python',
         '/usr/local/bin/python3',
         '/usr/bin/python3',
       ]);

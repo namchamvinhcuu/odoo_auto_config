@@ -32,7 +32,7 @@ class PythonCheckerService {
     }
 
     // Remove shim entries that resolve to the same version as a real binary.
-    if (PlatformService.isMacOS) {
+    if (PlatformService.isMacOS || PlatformService.isLinux) {
       final realEntries = results
           .where((r) => !r.executablePath.contains('/shims/'))
           .map((r) => r.version)
