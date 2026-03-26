@@ -128,16 +128,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text('Venv: ${p.venvPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 11)),
+                                  fontFamily: 'monospace', fontSize: 13)),
                           Text('odoo-bin: ${p.odooBinPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 11)),
+                                  fontFamily: 'monospace', fontSize: 13)),
                           Text('odoo src: ${p.odooSourcePath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 11)),
+                                  fontFamily: 'monospace', fontSize: 13)),
                           Text('db: ${p.dbUser}@${p.dbHost}:${p.dbPort}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 11)),
+                                  fontFamily: 'monospace', fontSize: 13)),
                         ],
                       ),
                       isThreeLine: true,
