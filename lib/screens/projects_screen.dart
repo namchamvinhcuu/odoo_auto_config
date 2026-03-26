@@ -83,7 +83,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Future<void> _openInFileManager(String path) async {
     try {
-      await Process.run('xdg-open', [path]);
+      if (Platform.isMacOS) {
+        await Process.run('open', [path]);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [path]);
+      } else {
+        await Process.run('xdg-open', [path]);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +101,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Future<void> _openInVscode(String path) async {
     try {
-      await Process.run('code', [path]);
+      if (Platform.isMacOS) {
+        // Use 'open -a' to launch VSCode by app name (avoids PATH issues in GUI apps)
+        await Process.run('open', ['-a', 'Visual Studio Code', path]);
+      } else {
+        await Process.run('code', [path]);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
