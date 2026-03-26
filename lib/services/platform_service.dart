@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'dart:io' show Directory, Platform;
 
 class PlatformService {
   static bool get isLinux => Platform.isLinux;
@@ -15,19 +15,28 @@ class PlatformService {
     final home = Platform.environment['HOME'] ?? '';
     if (isMacOS) {
       candidates.addAll([
-        if (home.isNotEmpty) '$home/.pyenv/shims/python3',
-        if (home.isNotEmpty) '$home/.pyenv/shims/python',
         '/opt/homebrew/bin/python3',
         '/usr/local/bin/python3',
         '/usr/bin/python3',
       ]);
     } else if (isLinux) {
       candidates.addAll([
-        if (home.isNotEmpty) '$home/.pyenv/shims/python3',
-        if (home.isNotEmpty) '$home/.pyenv/shims/python',
         '/usr/local/bin/python3',
         '/usr/bin/python3',
       ]);
+    }
+    // Discover pyenv-installed versions directly (shims don't work in GUI apps)
+    if ((isMacOS || isLinux) && home.isNotEmpty) {
+      final versionsDir = Directory('$home/.pyenv/versions');
+      if (versionsDir.existsSync()) {
+        try {
+          for (final entry in versionsDir.listSync()) {
+            if (entry is Directory) {
+              candidates.add('${entry.path}/bin/python3');
+            }
+          }
+        } catch (_) {}
+      }
     }
     return candidates;
   }
