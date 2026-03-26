@@ -46,12 +46,18 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
   }
 
   Future<void> _pickOdooBin() async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Select odoo-bin',
-      type: FileType.any,
-    );
-    if (result != null && result.files.single.path != null) {
-      setState(() => _odooBinPath = result.files.single.path!);
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickFile(dialogTitle: 'Select odoo-bin');
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: 'Select odoo-bin',
+        type: FileType.any,
+      );
+      path = result?.files.single.path;
+    }
+    if (path != null) {
+      setState(() => _odooBinPath = path!);
     }
   }
 

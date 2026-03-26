@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../constants/app_constants.dart';
 import '../models/project_info.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import 'quick_create_screen.dart';
 
@@ -104,8 +105,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _openInVscode(String path) async {
     try {
       if (Platform.isMacOS) {
-        // Use 'open -a' to launch VSCode by app name (avoids PATH issues in GUI apps)
         await Process.run('open', ['-a', 'Visual Studio Code', path]);
+      } else if (Platform.isWindows) {
+        // Use cmd /c to find 'code' via PATH even in MSIX sandbox
+        await Process.run('cmd', ['/c', 'code', path], runInShell: true);
       } else {
         await Process.run('code', [path]);
       }
@@ -437,13 +440,20 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   }
 
   Future<void> _pickDir() async {
-    final path = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: context.l10n.selectProjectDirectory,
-    );
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+        dialogTitle: context.l10n.selectProjectDirectory,
+      );
+    } else {
+      path = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: context.l10n.selectProjectDirectory,
+      );
+    }
     if (path == null) return;
 
     setState(() {
-      _projectPath = path;
+      _projectPath = path!;
       _nameController.text = path.split('/').last.split('\\').last;
     });
 

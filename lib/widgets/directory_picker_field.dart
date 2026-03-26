@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/platform_service.dart';
 
 class DirectoryPickerField extends StatefulWidget {
   final String label;
@@ -42,6 +43,21 @@ class _DirectoryPickerFieldState extends State<DirectoryPickerField> {
     super.dispose();
   }
 
+  Future<void> _pickDirectory() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(dialogTitle: widget.label);
+    } else {
+      path = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: widget.label,
+      );
+    }
+    if (path != null) {
+      _controller.text = path;
+      widget.onChanged(path);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -59,15 +75,7 @@ class _DirectoryPickerFieldState extends State<DirectoryPickerField> {
         ),
         const SizedBox(width: AppSpacing.sm),
         IconButton.filled(
-          onPressed: () async {
-            final path = await FilePicker.platform.getDirectoryPath(
-              dialogTitle: widget.label,
-            );
-            if (path != null) {
-              _controller.text = path;
-              widget.onChanged(path);
-            }
-          },
+          onPressed: _pickDirectory,
           icon: const Icon(Icons.folder_open),
           tooltip: context.l10n.browse,
         ),

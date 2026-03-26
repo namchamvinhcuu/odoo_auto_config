@@ -4,6 +4,7 @@ import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/profile.dart';
 import '../models/venv_info.dart';
+import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -223,21 +224,36 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   }
 
   Future<void> _pickOdooBin() async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: context.l10n.selectOdooBin,
-      type: FileType.any,
-    );
-    if (result != null && result.files.single.path != null) {
-      setState(() => _odooBinPath = result.files.single.path!);
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickFile(
+        dialogTitle: context.l10n.selectOdooBin,
+      );
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: context.l10n.selectOdooBin,
+        type: FileType.any,
+      );
+      path = result?.files.single.path;
+    }
+    if (path != null) {
+      setState(() => _odooBinPath = path!);
     }
   }
 
   Future<void> _pickOdooSource() async {
-    final path = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: context.l10n.selectOdooSourceDirectory,
-    );
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+        dialogTitle: context.l10n.selectOdooSourceDirectory,
+      );
+    } else {
+      path = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: context.l10n.selectOdooSourceDirectory,
+      );
+    }
     if (path != null) {
-      setState(() => _odooSourcePath = path);
+      setState(() => _odooSourcePath = path!);
     }
   }
 

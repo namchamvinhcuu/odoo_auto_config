@@ -200,13 +200,20 @@ class _VenvScreenState extends State<VenvScreen>
   }
 
   Future<void> _installRequirements(VenvInfo venv) async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Select requirements.txt',
-      type: FileType.any,
-    );
-    if (result == null || result.files.single.path == null) return;
-
-    final reqFile = result.files.single.path!;
+    String? reqFile;
+    if (PlatformService.isWindows) {
+      reqFile = await PlatformService.pickFile(
+        dialogTitle: 'Select requirements.txt',
+        filter: 'Text files (*.txt)|*.txt|All files (*.*)|*.*',
+      );
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: 'Select requirements.txt',
+        type: FileType.any,
+      );
+      reqFile = result?.files.single.path;
+    }
+    if (reqFile == null) return;
 
     // Verify file exists
     if (!await File(reqFile).exists()) {
@@ -228,7 +235,7 @@ class _VenvScreenState extends State<VenvScreen>
       barrierDismissible: false,
       builder: (ctx) => _InstallRequirementsDialog(
         venvPath: venv.path,
-        requirementsFile: reqFile,
+        requirementsFile: reqFile!,
         venvService: _venvService,
       ),
     );
