@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/python_info.dart';
 import '../services/python_checker_service.dart';
 import '../widgets/status_card.dart';
@@ -58,49 +59,48 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
               const Icon(Icons.search, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
               Text(
-                'Python Configuration Check',
+                context.l10n.pythonCheckTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const Spacer(),
               FilledButton.icon(
                 onPressed: _loading ? null : _scan,
                 icon: const Icon(Icons.refresh),
-                label: const Text('Rescan'),
+                label: Text(context.l10n.rescan),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Detect installed Python versions, pip, and venv module availability.',
+            context.l10n.pythonCheckSubtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey,
                 ),
           ),
           const SizedBox(height: AppSpacing.xxl),
           if (_loading)
-            const Expanded(
+            Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: AppSpacing.lg),
-                    Text('Scanning for Python installations...'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(context.l10n.scanningPython),
                   ],
                 ),
               ),
             )
           else if (_error != null)
             StatusCard(
-              title: 'Error',
+              title: context.l10n.error,
               subtitle: _error!,
               status: StatusType.error,
             )
           else if (_results != null && _results!.isEmpty)
-            const StatusCard(
-              title: 'No Python Found',
-              subtitle:
-                  'No Python installation detected. Please install Python 3.8+.',
+            StatusCard(
+              title: context.l10n.noPythonFound,
+              subtitle: context.l10n.noPythonFoundSubtitle,
               status: StatusType.warning,
             )
           else if (_results != null)
@@ -131,7 +131,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
                 const Icon(Icons.code, color: Colors.blue),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  'Python ${info.version}',
+                  context.l10n.pythonVersion(info.version),
                   style: const TextStyle(
                     fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.bold,
@@ -141,7 +141,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Path: ${info.executablePath}',
+              context.l10n.pathLabel(info.executablePath),
               style: TextStyle(
                 fontFamily: 'monospace',
                 color: Colors.grey.shade600,
@@ -151,12 +151,12 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
             Row(
               children: [
                 _buildChip(
-                  'pip ${info.pipVersion}',
+                  context.l10n.pipVersion(info.pipVersion),
                   info.hasPip,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _buildChip(
-                  'venv module',
+                  context.l10n.venvModule,
                   info.hasVenv,
                 ),
               ],

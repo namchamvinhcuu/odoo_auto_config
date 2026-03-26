@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 
 class LogOutput extends StatefulWidget {
   final List<String> lines;
@@ -51,10 +52,10 @@ class _LogOutputState extends State<LogOutput> {
         border: Border.all(color: Colors.grey.shade700),
       ),
       child: widget.lines.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
-                'No output yet...',
-                style: TextStyle(color: Colors.grey, fontFamily: 'monospace'),
+                context.l10n.noOutputYet,
+                style: const TextStyle(color: Colors.grey, fontFamily: 'monospace'),
               ),
             )
           : ListView.builder(

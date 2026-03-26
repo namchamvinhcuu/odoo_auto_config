@@ -1,0 +1,616 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Vietnamese (`vi`).
+class AppLocalizationsVi extends AppLocalizations {
+  AppLocalizationsVi([String locale = 'vi']) : super(locale);
+
+  @override
+  String get appTitle => 'Odoo Auto Config';
+
+  @override
+  String get navProjects => 'Dự án';
+
+  @override
+  String get navProfiles => 'Hồ sơ';
+
+  @override
+  String get navPythonCheck => 'Kiểm tra Python';
+
+  @override
+  String get navVenvManager => 'Quản lý Venv';
+
+  @override
+  String get navVscodeConfig => 'Cấu hình VSCode';
+
+  @override
+  String get navSettings => 'Cài đặt';
+
+  @override
+  String get cancel => 'Hủy';
+
+  @override
+  String get delete => 'Xóa';
+
+  @override
+  String get save => 'Lưu';
+
+  @override
+  String get create => 'Tạo';
+
+  @override
+  String get edit => 'Sửa';
+
+  @override
+  String get import_ => 'Nhập';
+
+  @override
+  String get close => 'Đóng';
+
+  @override
+  String get install => 'Cài đặt';
+
+  @override
+  String get refresh => 'Làm mới';
+
+  @override
+  String get rescan => 'Quét lại';
+
+  @override
+  String get rename => 'Đổi tên';
+
+  @override
+  String get browse => 'Duyệt...';
+
+  @override
+  String get settingsTitle => 'Cài đặt';
+
+  @override
+  String get settingsSubtitle => 'Tùy chỉnh giao diện và hiển thị.';
+
+  @override
+  String get themeMode => 'Chế độ giao diện';
+
+  @override
+  String get themeSystem => 'Hệ thống';
+
+  @override
+  String get themeLight => 'Sáng';
+
+  @override
+  String get themeDark => 'Tối';
+
+  @override
+  String get accentColor => 'Màu chủ đạo';
+
+  @override
+  String get preview => 'Xem trước';
+
+  @override
+  String get filledButton => 'Nút đặc';
+
+  @override
+  String get tonalButton => 'Nút tonal';
+
+  @override
+  String get outlined => 'Viền';
+
+  @override
+  String get language => 'Ngôn ngữ';
+
+  @override
+  String get projectsTitle => 'Dự án';
+
+  @override
+  String get projectsSubtitle =>
+      'Tất cả dự án với truy cập nhanh. Nhập dự án có sẵn hoặc tạo mới.';
+
+  @override
+  String get projectsSearchHint => 'Tìm theo tên, đường dẫn, nhãn, port...';
+
+  @override
+  String get projectsEmpty =>
+      'Chưa có dự án. Dùng Tạo nhanh hoặc Nhập để thêm.';
+
+  @override
+  String get projectsNoMatch => 'Không có dự án phù hợp.';
+
+  @override
+  String projectHttpPort(int port) {
+    return 'HTTP: $port';
+  }
+
+  @override
+  String projectLpPort(int port) {
+    return 'LP: $port';
+  }
+
+  @override
+  String get openInVscode => 'Mở trong VSCode';
+
+  @override
+  String get openFolder => 'Mở thư mục';
+
+  @override
+  String get removeFromList => 'Xóa khỏi danh sách';
+
+  @override
+  String get deleteProjectTitle => 'Xóa dự án?';
+
+  @override
+  String deleteProjectConfirm(String name) {
+    return 'Xóa \"$name\" khỏi danh sách?';
+  }
+
+  @override
+  String get alsoDeleteFromDisk => 'Đồng thời xóa thư mục dự án trên ổ đĩa';
+
+  @override
+  String deletedPath(String path) {
+    return 'Đã xóa: $path';
+  }
+
+  @override
+  String failedToDelete(String error) {
+    return 'Xóa thất bại: $error';
+  }
+
+  @override
+  String couldNotOpen(String path) {
+    return 'Không thể mở: $path';
+  }
+
+  @override
+  String get couldNotOpenVscode => 'Không thể mở VSCode';
+
+  @override
+  String get editProject => 'Sửa dự án';
+
+  @override
+  String get importExistingProject => 'Nhập dự án có sẵn';
+
+  @override
+  String get projectDirectory => 'Thư mục dự án';
+
+  @override
+  String get browseToSelect => 'Duyệt để chọn...';
+
+  @override
+  String get portsAutoDetected => 'Ports được tự động phát hiện từ odoo.conf';
+
+  @override
+  String get projectName => 'Tên dự án';
+
+  @override
+  String get descriptionOptional => 'Mô tả (tùy chọn)';
+
+  @override
+  String get descriptionHint => 'VD: Dự án thuế Ba Lan cho khách hàng X';
+
+  @override
+  String get httpPort => 'Cổng HTTP';
+
+  @override
+  String get longpollingPort => 'Cổng Longpolling';
+
+  @override
+  String get selectProjectDirectory => 'Chọn thư mục dự án Odoo có sẵn';
+
+  @override
+  String get quickCreateTitle => 'Tạo nhanh';
+
+  @override
+  String get noProfilesFound => 'Chưa có hồ sơ. Vui lòng tạo hồ sơ trước.';
+
+  @override
+  String get profile => 'Hồ sơ';
+
+  @override
+  String get baseDirectory => 'Thư mục gốc';
+
+  @override
+  String get projectNameHint => 'VD: my_odoo_project';
+
+  @override
+  String get portsMustBeDifferent => 'Cổng HTTP và longpolling phải khác nhau';
+
+  @override
+  String get creating => 'Đang tạo...';
+
+  @override
+  String get createProject => 'Tạo dự án';
+
+  @override
+  String get done => 'Hoàn tất!';
+
+  @override
+  String get profilesTitle => 'Hồ sơ';
+
+  @override
+  String get newProfile => 'Hồ sơ mới';
+
+  @override
+  String get profilesSubtitle =>
+      'Lưu cấu hình venv + odoo-bin để tạo dự án nhanh.';
+
+  @override
+  String get profilesEmpty => 'Chưa có hồ sơ. Tạo một hồ sơ để bắt đầu.';
+
+  @override
+  String get deleteProfileTitle => 'Xóa hồ sơ?';
+
+  @override
+  String deleteProfileConfirm(String name) {
+    return 'Xóa \"$name\"?';
+  }
+
+  @override
+  String get editProfile => 'Sửa hồ sơ';
+
+  @override
+  String get profileName => 'Tên hồ sơ';
+
+  @override
+  String get profileNameHint => 'VD: Odoo 17';
+
+  @override
+  String get virtualEnvironment => 'Môi trường ảo';
+
+  @override
+  String get selectVenv => 'Chọn venv';
+
+  @override
+  String get odooBinPath => 'Đường dẫn odoo-bin';
+
+  @override
+  String get odooBinPathHint => '/đường/dẫn/tới/odoo/odoo-bin';
+
+  @override
+  String get selectOdooBin => 'Chọn odoo-bin';
+
+  @override
+  String get odooSourceDirectory => 'Thư mục mã nguồn Odoo';
+
+  @override
+  String get odooSourceHint => '/đường/dẫn/tới/odoo (sẽ tạo symlink)';
+
+  @override
+  String get selectOdooSourceDirectory => 'Chọn thư mục mã nguồn Odoo';
+
+  @override
+  String get odooVersion => 'Phiên bản Odoo';
+
+  @override
+  String odooVersionLabel(String version) {
+    return 'Odoo $version';
+  }
+
+  @override
+  String get databaseConnection => 'Kết nối cơ sở dữ liệu';
+
+  @override
+  String get host => 'Host';
+
+  @override
+  String get port => 'Port';
+
+  @override
+  String get user => 'Tên đăng nhập';
+
+  @override
+  String get password => 'Mật khẩu';
+
+  @override
+  String get passwordHint => 'Để trống sẽ tự động tạo';
+
+  @override
+  String get sslMode => 'Chế độ SSL';
+
+  @override
+  String get sslModeHint => 'prefer, disable, require';
+
+  @override
+  String venvLabel(String path) {
+    return 'Venv: $path';
+  }
+
+  @override
+  String odooBinLabel(String path) {
+    return 'odoo-bin: $path';
+  }
+
+  @override
+  String odooSrcLabel(String path) {
+    return 'odoo src: $path';
+  }
+
+  @override
+  String dbLabel(String user, String host, String port) {
+    return 'db: $user@$host:$port';
+  }
+
+  @override
+  String get pythonCheckTitle => 'Kiểm tra cấu hình Python';
+
+  @override
+  String get pythonCheckSubtitle =>
+      'Phát hiện các phiên bản Python, pip và module venv đã cài đặt.';
+
+  @override
+  String get scanningPython => 'Đang quét các phiên bản Python...';
+
+  @override
+  String get error => 'Lỗi';
+
+  @override
+  String get noPythonFound => 'Không tìm thấy Python';
+
+  @override
+  String get noPythonFoundSubtitle =>
+      'Không phát hiện Python nào. Vui lòng cài đặt Python 3.8+.';
+
+  @override
+  String pythonVersion(String version) {
+    return 'Python $version';
+  }
+
+  @override
+  String pathLabel(String path) {
+    return 'Đường dẫn: $path';
+  }
+
+  @override
+  String pipVersion(String version) {
+    return 'pip $version';
+  }
+
+  @override
+  String get venvModule => 'module venv';
+
+  @override
+  String get venvTitle => 'Môi trường ảo';
+
+  @override
+  String get registered => 'Đã đăng ký';
+
+  @override
+  String get scan => 'Quét';
+
+  @override
+  String get createNew => 'Tạo mới';
+
+  @override
+  String get venvRegisteredSubtitle =>
+      'Các môi trường ảo đã lưu để truy cập nhanh.';
+
+  @override
+  String get noRegisteredVenvs => 'Chưa có venv nào';
+
+  @override
+  String get noRegisteredVenvsSubtitle =>
+      'Tạo venv mới hoặc quét và đăng ký venv có sẵn.';
+
+  @override
+  String get scanSubtitle => 'Quét thư mục để tìm các môi trường ảo có sẵn.';
+
+  @override
+  String get scanDirectory => 'Thư mục quét';
+
+  @override
+  String get scanning => 'Đang quét...';
+
+  @override
+  String get scanningVenvs => 'Đang quét tìm môi trường ảo...';
+
+  @override
+  String get noVenvsFound => 'Không tìm thấy môi trường ảo';
+
+  @override
+  String get noVenvsFoundSubtitle => 'Thử quét thư mục khác hoặc tăng độ sâu.';
+
+  @override
+  String get registerThisVenv => 'Đăng ký venv này';
+
+  @override
+  String get registeredChip => 'Đã đăng ký';
+
+  @override
+  String get listInstalledPackages => 'Xem danh sách package';
+
+  @override
+  String get pipInstallPackage => 'pip install package';
+
+  @override
+  String get installRequirements => 'Cài đặt requirements.txt';
+
+  @override
+  String get valid => 'Hợp lệ';
+
+  @override
+  String get broken => 'Hỏng';
+
+  @override
+  String get deleteVenvTitle => 'Xóa môi trường ảo?';
+
+  @override
+  String deleteVenvConfirm(String name) {
+    return 'Xóa \"$name\" khỏi danh sách?';
+  }
+
+  @override
+  String get alsoDeleteVenvFromDisk => 'Đồng thời xóa thư mục venv trên ổ đĩa';
+
+  @override
+  String registeredVenv(String name) {
+    return 'Đã đăng ký: $name';
+  }
+
+  @override
+  String get filePNotFound => 'Không tìm thấy file';
+
+  @override
+  String get renameVenv => 'Đổi tên venv';
+
+  @override
+  String get labelField => 'Nhãn';
+
+  @override
+  String get labelHint => 'VD: Odoo 17 Production';
+
+  @override
+  String get createVenvSubtitle => 'Tạo môi trường ảo Python cho dự án Odoo.';
+
+  @override
+  String get pythonVersionLabel => 'Phiên bản Python';
+
+  @override
+  String pythonVersionDetail(String version, String path) {
+    return 'Python $version ($path)';
+  }
+
+  @override
+  String get noPythonWithVenv => 'Không tìm thấy Python hỗ trợ venv';
+
+  @override
+  String get targetDirectory => 'Thư mục đích';
+
+  @override
+  String get venvName => 'Tên môi trường ảo';
+
+  @override
+  String get venvNameHint => 'venv';
+
+  @override
+  String get createVenv => 'Tạo Venv';
+
+  @override
+  String get installedPackages => 'Packages đã cài';
+
+  @override
+  String packagesCount(int count) {
+    return '$count packages';
+  }
+
+  @override
+  String get searchPackages => 'Tìm packages...';
+
+  @override
+  String errorLabel(String error) {
+    return 'Lỗi: $error';
+  }
+
+  @override
+  String get packageHeader => 'Package';
+
+  @override
+  String get versionHeader => 'Phiên bản';
+
+  @override
+  String get noPackagesFound => 'Không tìm thấy package.';
+
+  @override
+  String installPackagesTitle(String name) {
+    return 'Cài đặt Packages — $name';
+  }
+
+  @override
+  String get packagesField => 'Package(s)';
+
+  @override
+  String get packagesFieldHint => 'VD: requests paramiko flask>=2.0';
+
+  @override
+  String get outputPlaceholder => 'Kết quả sẽ hiển thị ở đây...';
+
+  @override
+  String get vscodeConfigTitle => 'Cấu hình VSCode';
+
+  @override
+  String get vscodeConfigSubtitle =>
+      'Sinh file .vscode/launch.json để debug Odoo.';
+
+  @override
+  String get configurationName => 'Tên cấu hình';
+
+  @override
+  String get configurationNameHint => 'VD: Debug Odoo Thuế Ba Lan';
+
+  @override
+  String get projectDirectoryVscode => 'Thư mục dự án (nơi tạo .vscode/)';
+
+  @override
+  String get noRegisteredVenvsHint => 'Chưa có venv đăng ký';
+
+  @override
+  String get generating => 'Đang tạo...';
+
+  @override
+  String get generateLaunchJson => 'Tạo launch.json';
+
+  @override
+  String get previewLabel => 'Xem trước:';
+
+  @override
+  String get folderStructureTitle => 'Tạo cấu trúc thư mục';
+
+  @override
+  String get folderStructureSubtitle =>
+      'Tạo cấu trúc thư mục dự án Odoo tiêu chuẩn.';
+
+  @override
+  String get generateStructure => 'Tạo cấu trúc';
+
+  @override
+  String get addons => 'addons';
+
+  @override
+  String get thirdPartyAddons => 'third_party_addons';
+
+  @override
+  String get config => 'config';
+
+  @override
+  String get venv => 'venv';
+
+  @override
+  String get noOutputYet => 'Chưa có kết quả...';
+
+  @override
+  String get colorOdooPurple => 'Tím Odoo';
+
+  @override
+  String get colorBlue => 'Xanh dương';
+
+  @override
+  String get colorTeal => 'Xanh mòng két';
+
+  @override
+  String get colorGreen => 'Xanh lá';
+
+  @override
+  String get colorOrange => 'Cam';
+
+  @override
+  String get colorRed => 'Đỏ';
+
+  @override
+  String get colorPink => 'Hồng';
+
+  @override
+  String get colorIndigo => 'Chàm';
+
+  @override
+  String get colorCyan => 'Lam';
+
+  @override
+  String get colorDeepPurple => 'Tím đậm';
+
+  @override
+  String get colorAmber => 'Hổ phách';
+
+  @override
+  String get colorBrown => 'Nâu';
+}

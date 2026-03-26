@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
+import '../services/locale_service.dart';
 import '../services/theme_service.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -9,6 +11,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
+    final localeService = context.watch<LocaleService>();
 
     return Padding(
       padding: AppSpacing.screenPadding,
@@ -19,13 +22,13 @@ class SettingsScreen extends StatelessWidget {
             children: [
               const Icon(Icons.settings, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
-              Text('Settings',
+              Text(context.l10n.settingsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Customize theme and appearance.',
+            context.l10n.settingsSubtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -33,26 +36,51 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xxl),
 
+          // Language
+          Text(context.l10n.language,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          SegmentedButton<Locale?>(
+            segments: LocaleService.supportedLocales.map((locale) {
+              return ButtonSegment(
+                value: locale,
+                label: Text(
+                    LocaleService.localeNames[locale.languageCode] ?? ''),
+              );
+            }).toList(),
+            selected: {
+              localeService.locale ??
+                  LocaleService.supportedLocales.firstWhere(
+                    (l) =>
+                        l.languageCode ==
+                        Localizations.localeOf(context).languageCode,
+                    orElse: () => const Locale('en'),
+                  ),
+            },
+            onSelectionChanged: (v) => localeService.setLocale(v.first),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+
           // Theme mode
-          Text('Theme Mode',
+          Text(context.l10n.themeMode,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
           SegmentedButton<ThemeMode>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ThemeMode.system,
-                icon: Icon(Icons.brightness_auto),
-                label: Text('System'),
+                icon: const Icon(Icons.brightness_auto),
+                label: Text(context.l10n.themeSystem),
               ),
               ButtonSegment(
                 value: ThemeMode.light,
-                icon: Icon(Icons.light_mode),
-                label: Text('Light'),
+                icon: const Icon(Icons.light_mode),
+                label: Text(context.l10n.themeLight),
               ),
               ButtonSegment(
                 value: ThemeMode.dark,
-                icon: Icon(Icons.dark_mode),
-                label: Text('Dark'),
+                icon: const Icon(Icons.dark_mode),
+                label: Text(context.l10n.themeDark),
               ),
             ],
             selected: {theme.themeMode},
@@ -61,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxxl),
 
           // Accent color
-          Text('Accent Color',
+          Text(context.l10n.accentColor,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
           Wrap(
@@ -99,19 +127,19 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxxl),
 
           // Preview
-          Text('Preview',
+          Text(context.l10n.preview,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               FilledButton(
-                  onPressed: () {}, child: const Text('Filled Button')),
+                  onPressed: () {}, child: Text(context.l10n.filledButton)),
               const SizedBox(width: AppSpacing.sm),
               FilledButton.tonal(
-                  onPressed: () {}, child: const Text('Tonal Button')),
+                  onPressed: () {}, child: Text(context.l10n.tonalButton)),
               const SizedBox(width: AppSpacing.sm),
               OutlinedButton(
-                  onPressed: () {}, child: const Text('Outlined')),
+                  onPressed: () {}, child: Text(context.l10n.outlined)),
             ],
           ),
         ],

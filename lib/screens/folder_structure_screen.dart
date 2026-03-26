@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/folder_structure_config.dart';
 import '../services/folder_structure_service.dart';
 import '../widgets/directory_picker_field.dart';
@@ -81,14 +82,14 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
               const Icon(Icons.create_new_folder, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
               Text(
-                'Generate Folder Structure',
+                context.l10n.folderStructureTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Create a standard Odoo development project structure.',
+            context.l10n.folderStructureSubtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey,
                 ),
@@ -97,7 +98,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
 
           // Base directory
           DirectoryPickerField(
-            label: 'Base Directory',
+            label: context.l10n.baseDirectory,
             value: _baseDir,
             onChanged: (v) => setState(() => _baseDir = v),
           ),
@@ -110,9 +111,9 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                 flex: 2,
                 child: TextField(
                   controller: _projectNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Project Name',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.projectName,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                 ),
@@ -121,15 +122,15 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _odooVersion,
-                  decoration: const InputDecoration(
-                    labelText: 'Odoo Version',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.odooVersion,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   items: _odooVersions
                       .map((v) => DropdownMenuItem(
                             value: v,
-                            child: Text('Odoo $v'),
+                            child: Text(context.l10n.odooVersionLabel(v.toString())),
                           ))
                       .toList(),
                   onChanged: (v) {
@@ -145,13 +146,13 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
           Wrap(
             spacing: AppSpacing.lg,
             children: [
-              _buildCheckbox('addons', _createAddons,
+              _buildCheckbox(context.l10n.addons, _createAddons,
                   (v) => setState(() => _createAddons = v!)),
-              _buildCheckbox('third_party_addons', _createThirdPartyAddons,
+              _buildCheckbox(context.l10n.thirdPartyAddons, _createThirdPartyAddons,
                   (v) => setState(() => _createThirdPartyAddons = v!)),
-              _buildCheckbox('config', _createConfigDir,
+              _buildCheckbox(context.l10n.config, _createConfigDir,
                   (v) => setState(() => _createConfigDir = v!)),
-              _buildCheckbox('venv', _createVenvDir,
+              _buildCheckbox(context.l10n.venv, _createVenvDir,
                   (v) => setState(() => _createVenvDir = v!)),
             ],
           ),
@@ -172,7 +173,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                   )
                 : const Icon(Icons.build_circle),
             label:
-                Text(_generating ? 'Generating...' : 'Generate Structure'),
+                Text(_generating ? context.l10n.generating : context.l10n.generateStructure),
           ),
           const SizedBox(height: AppSpacing.xl),
 

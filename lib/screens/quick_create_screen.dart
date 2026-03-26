@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/folder_structure_config.dart';
 import '../models/profile.dart';
 import '../models/project_info.dart';
@@ -69,7 +70,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
 
     if (httpPort == lpPort) {
       setState(
-          () => _portError = 'HTTP and longpolling ports must be different');
+          () => _portError = context.l10n.portsMustBeDifferent);
       return;
     }
 
@@ -235,7 +236,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                       children: [
                         const Icon(Icons.rocket_launch, size: AppIconSize.lg),
                         const SizedBox(width: AppSpacing.sm),
-                        Text('Quick Create',
+                        Text(context.l10n.quickCreateTitle,
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
                         IconButton(
@@ -249,17 +250,17 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                     if (_profiles.isEmpty)
                       Padding(
                         padding: AppSpacing.cardPadding,
-                        child: const Text(
-                            'No profiles found. Create a profile first.'),
+                        child: Text(
+                            context.l10n.noProfilesFound),
                       )
                     else ...[
                       // Profile
                       DropdownButtonFormField<Profile>(
                         isExpanded: true,
                         initialValue: _selectedProfile,
-                        decoration: const InputDecoration(
-                          labelText: 'Profile',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.profile,
+                          border: const OutlineInputBorder(),
                           isDense: true,
                         ),
                         items: _profiles
@@ -276,7 +277,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
 
                       // Base directory
                       DirectoryPickerField(
-                        label: 'Base Directory',
+                        label: context.l10n.baseDirectory,
                         value: _baseDir,
                         onChanged: (v) => setState(() => _baseDir = v),
                       ),
@@ -285,10 +286,10 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                       // Project name
                       TextField(
                         controller: _projectNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Project Name',
-                          hintText: 'e.g. my_odoo_project',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.projectName,
+                          hintText: context.l10n.projectNameHint,
+                          border: const OutlineInputBorder(),
                           isDense: true,
                         ),
                         onChanged: (_) => setState(() {}),
@@ -301,9 +302,9 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                           Expanded(
                             child: TextField(
                               controller: _httpPortController,
-                              decoration: const InputDecoration(
-                                labelText: 'HTTP Port',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: context.l10n.httpPort,
+                                border: const OutlineInputBorder(),
                                 isDense: true,
                               ),
                               keyboardType: TextInputType.number,
@@ -314,9 +315,9 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                           Expanded(
                             child: TextField(
                               controller: _longpollingPortController,
-                              decoration: const InputDecoration(
-                                labelText: 'Longpolling Port',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: context.l10n.longpollingPort,
+                                border: const OutlineInputBorder(),
                                 isDense: true,
                               ),
                               keyboardType: TextInputType.number,
@@ -349,16 +350,16 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                                   )
                                 : const Icon(Icons.rocket_launch),
                             label: Text(_creating
-                                ? 'Creating...'
-                                : 'Create Project'),
+                                ? context.l10n.creating
+                                : context.l10n.createProject),
                           ),
                           if (_done) ...[
                             const SizedBox(width: AppSpacing.md),
                             const Icon(Icons.check_circle,
                                 color: Colors.green),
                             const SizedBox(width: AppSpacing.xs),
-                            const Text('Done!',
-                                style: TextStyle(color: Colors.green)),
+                            Text(context.l10n.done,
+                                style: const TextStyle(color: Colors.green)),
                           ],
                         ],
                       ),

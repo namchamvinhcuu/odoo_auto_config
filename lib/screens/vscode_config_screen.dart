@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/venv_info.dart';
 import '../services/storage_service.dart';
 import '../services/vscode_config_service.dart';
@@ -106,14 +107,14 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
               const Icon(Icons.code, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
               Text(
-                'VSCode Configuration',
+                context.l10n.vscodeConfigTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Generate .vscode/launch.json for Odoo debug.',
+            context.l10n.vscodeConfigSubtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -124,10 +125,10 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
           // Config name
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Configuration Name',
-              hintText: 'e.g. Debug Polish Tax Odoo',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.configurationName,
+              hintText: context.l10n.configurationNameHint,
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
           ),
@@ -135,7 +136,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
 
           // Project directory
           DirectoryPickerField(
-            label: 'Project Directory (where .vscode/ will be created)',
+            label: context.l10n.projectDirectoryVscode,
             value: _projectDir,
             onChanged: (v) => setState(() => _projectDir = v),
           ),
@@ -144,9 +145,9 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
           // Venv selector
           DropdownButtonFormField<VenvInfo>(
             initialValue: _selectedVenv,
-            decoration: const InputDecoration(
-              labelText: 'Virtual Environment',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.virtualEnvironment,
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
             items: _registeredVenvs
@@ -159,7 +160,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
                     ))
                 .toList(),
             onChanged: (v) => setState(() => _selectedVenv = v),
-            hint: const Text('No registered venvs'),
+            hint: Text(context.l10n.noRegisteredVenvsHint),
           ),
           const SizedBox(height: AppSpacing.lg),
 
@@ -169,10 +170,10 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
               Expanded(
                 child: TextField(
                   controller: TextEditingController(text: _odooBinPath),
-                  decoration: const InputDecoration(
-                    labelText: 'odoo-bin Path',
-                    hintText: '/path/to/odoo/odoo-bin',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.odooBinPath,
+                    hintText: context.l10n.odooBinPathHint,
+                    border: const OutlineInputBorder(),
                     isDense: true,
                   ),
                   readOnly: true,
@@ -182,7 +183,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
               IconButton.filled(
                 onPressed: _pickOdooBin,
                 icon: const Icon(Icons.file_open),
-                tooltip: 'Browse...',
+                tooltip: context.l10n.browse,
               ),
             ],
           ),
@@ -211,7 +212,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
                   )
                 : const Icon(Icons.build_circle),
             label: Text(
-                _generating ? 'Generating...' : 'Generate launch.json'),
+                _generating ? context.l10n.generating : context.l10n.generateLaunchJson),
           ),
           const SizedBox(height: AppSpacing.lg),
 
@@ -245,7 +246,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Preview:', style: Theme.of(context).textTheme.titleSmall),
+            Text(context.l10n.previewLabel, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: AppSpacing.sm),
             Container(
               width: double.infinity,

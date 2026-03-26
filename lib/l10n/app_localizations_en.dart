@@ -1,0 +1,621 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get appTitle => 'Odoo Auto Config';
+
+  @override
+  String get navProjects => 'Projects';
+
+  @override
+  String get navProfiles => 'Profiles';
+
+  @override
+  String get navPythonCheck => 'Python Check';
+
+  @override
+  String get navVenvManager => 'Venv Manager';
+
+  @override
+  String get navVscodeConfig => 'VSCode Config';
+
+  @override
+  String get navSettings => 'Settings';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get import_ => 'Import';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get install => 'Install';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get rescan => 'Rescan';
+
+  @override
+  String get rename => 'Rename';
+
+  @override
+  String get browse => 'Browse...';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsSubtitle => 'Customize theme and appearance.';
+
+  @override
+  String get themeMode => 'Theme Mode';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get accentColor => 'Accent Color';
+
+  @override
+  String get preview => 'Preview';
+
+  @override
+  String get filledButton => 'Filled Button';
+
+  @override
+  String get tonalButton => 'Tonal Button';
+
+  @override
+  String get outlined => 'Outlined';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get projectsTitle => 'Projects';
+
+  @override
+  String get projectsSubtitle =>
+      'All projects with quick access. Import existing or create new ones.';
+
+  @override
+  String get projectsSearchHint => 'Search by name, path, label, port...';
+
+  @override
+  String get projectsEmpty =>
+      'No projects yet. Use Quick Create or Import to add.';
+
+  @override
+  String get projectsNoMatch => 'No projects match your search.';
+
+  @override
+  String projectHttpPort(int port) {
+    return 'HTTP: $port';
+  }
+
+  @override
+  String projectLpPort(int port) {
+    return 'LP: $port';
+  }
+
+  @override
+  String get openInVscode => 'Open in VSCode';
+
+  @override
+  String get openFolder => 'Open folder';
+
+  @override
+  String get removeFromList => 'Remove from list';
+
+  @override
+  String get deleteProjectTitle => 'Delete project?';
+
+  @override
+  String deleteProjectConfirm(String name) {
+    return 'Remove \"$name\" from the list?';
+  }
+
+  @override
+  String get alsoDeleteFromDisk => 'Also delete project directory from disk';
+
+  @override
+  String deletedPath(String path) {
+    return 'Deleted: $path';
+  }
+
+  @override
+  String failedToDelete(String error) {
+    return 'Failed to delete: $error';
+  }
+
+  @override
+  String couldNotOpen(String path) {
+    return 'Could not open: $path';
+  }
+
+  @override
+  String get couldNotOpenVscode => 'Could not open VSCode';
+
+  @override
+  String get editProject => 'Edit Project';
+
+  @override
+  String get importExistingProject => 'Import Existing Project';
+
+  @override
+  String get projectDirectory => 'Project Directory';
+
+  @override
+  String get browseToSelect => 'Browse to select...';
+
+  @override
+  String get portsAutoDetected => 'Ports auto-detected from odoo.conf';
+
+  @override
+  String get projectName => 'Project Name';
+
+  @override
+  String get descriptionOptional => 'Description (optional)';
+
+  @override
+  String get descriptionHint => 'e.g. Polish tax project for client X';
+
+  @override
+  String get httpPort => 'HTTP Port';
+
+  @override
+  String get longpollingPort => 'Longpolling Port';
+
+  @override
+  String get selectProjectDirectory => 'Select existing Odoo project directory';
+
+  @override
+  String get quickCreateTitle => 'Quick Create';
+
+  @override
+  String get noProfilesFound => 'No profiles found. Create a profile first.';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get baseDirectory => 'Base Directory';
+
+  @override
+  String get projectNameHint => 'e.g. my_odoo_project';
+
+  @override
+  String get portsMustBeDifferent =>
+      'HTTP and longpolling ports must be different';
+
+  @override
+  String get creating => 'Creating...';
+
+  @override
+  String get createProject => 'Create Project';
+
+  @override
+  String get done => 'Done!';
+
+  @override
+  String get profilesTitle => 'Profiles';
+
+  @override
+  String get newProfile => 'New Profile';
+
+  @override
+  String get profilesSubtitle =>
+      'Save venv + odoo-bin + settings as a profile for quick project creation.';
+
+  @override
+  String get profilesEmpty => 'No profiles yet. Create one to get started.';
+
+  @override
+  String get deleteProfileTitle => 'Delete profile?';
+
+  @override
+  String deleteProfileConfirm(String name) {
+    return 'Delete \"$name\"?';
+  }
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get profileName => 'Profile Name';
+
+  @override
+  String get profileNameHint => 'e.g. Odoo 17';
+
+  @override
+  String get virtualEnvironment => 'Virtual Environment';
+
+  @override
+  String get selectVenv => 'Select venv';
+
+  @override
+  String get odooBinPath => 'odoo-bin Path';
+
+  @override
+  String get odooBinPathHint => '/path/to/odoo/odoo-bin';
+
+  @override
+  String get selectOdooBin => 'Select odoo-bin';
+
+  @override
+  String get odooSourceDirectory => 'Odoo Source Code Directory';
+
+  @override
+  String get odooSourceHint => '/path/to/odoo (will be symlinked)';
+
+  @override
+  String get selectOdooSourceDirectory => 'Select Odoo source code directory';
+
+  @override
+  String get odooVersion => 'Odoo Version';
+
+  @override
+  String odooVersionLabel(String version) {
+    return 'Odoo $version';
+  }
+
+  @override
+  String get databaseConnection => 'Database Connection';
+
+  @override
+  String get host => 'Host';
+
+  @override
+  String get port => 'Port';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get passwordHint => 'Leave empty to auto-generate';
+
+  @override
+  String get sslMode => 'SSL Mode';
+
+  @override
+  String get sslModeHint => 'prefer, disable, require';
+
+  @override
+  String venvLabel(String path) {
+    return 'Venv: $path';
+  }
+
+  @override
+  String odooBinLabel(String path) {
+    return 'odoo-bin: $path';
+  }
+
+  @override
+  String odooSrcLabel(String path) {
+    return 'odoo src: $path';
+  }
+
+  @override
+  String dbLabel(String user, String host, String port) {
+    return 'db: $user@$host:$port';
+  }
+
+  @override
+  String get pythonCheckTitle => 'Python Configuration Check';
+
+  @override
+  String get pythonCheckSubtitle =>
+      'Detect installed Python versions, pip, and venv module availability.';
+
+  @override
+  String get scanningPython => 'Scanning for Python installations...';
+
+  @override
+  String get error => 'Error';
+
+  @override
+  String get noPythonFound => 'No Python Found';
+
+  @override
+  String get noPythonFoundSubtitle =>
+      'No Python installation detected. Please install Python 3.8+.';
+
+  @override
+  String pythonVersion(String version) {
+    return 'Python $version';
+  }
+
+  @override
+  String pathLabel(String path) {
+    return 'Path: $path';
+  }
+
+  @override
+  String pipVersion(String version) {
+    return 'pip $version';
+  }
+
+  @override
+  String get venvModule => 'venv module';
+
+  @override
+  String get venvTitle => 'Virtual Environments';
+
+  @override
+  String get registered => 'Registered';
+
+  @override
+  String get scan => 'Scan';
+
+  @override
+  String get createNew => 'Create New';
+
+  @override
+  String get venvRegisteredSubtitle =>
+      'Saved virtual environments for quick access.';
+
+  @override
+  String get noRegisteredVenvs => 'No registered venvs';
+
+  @override
+  String get noRegisteredVenvsSubtitle =>
+      'Create a new venv or scan & register existing ones.';
+
+  @override
+  String get scanSubtitle =>
+      'Scan a directory to find existing virtual environments.';
+
+  @override
+  String get scanDirectory => 'Scan Directory';
+
+  @override
+  String get scanning => 'Scanning...';
+
+  @override
+  String get scanningVenvs => 'Scanning for virtual environments...';
+
+  @override
+  String get noVenvsFound => 'No virtual environments found';
+
+  @override
+  String get noVenvsFoundSubtitle =>
+      'Try scanning a different directory or increase depth.';
+
+  @override
+  String get registerThisVenv => 'Register this venv';
+
+  @override
+  String get registeredChip => 'Registered';
+
+  @override
+  String get listInstalledPackages => 'List installed packages';
+
+  @override
+  String get pipInstallPackage => 'pip install package';
+
+  @override
+  String get installRequirements => 'Install requirements.txt';
+
+  @override
+  String get valid => 'Valid';
+
+  @override
+  String get broken => 'Broken';
+
+  @override
+  String get deleteVenvTitle => 'Delete virtual environment?';
+
+  @override
+  String deleteVenvConfirm(String name) {
+    return 'Remove \"$name\" from registered list?';
+  }
+
+  @override
+  String get alsoDeleteVenvFromDisk => 'Also delete venv directory from disk';
+
+  @override
+  String registeredVenv(String name) {
+    return 'Registered: $name';
+  }
+
+  @override
+  String get filePNotFound => 'File not found';
+
+  @override
+  String get renameVenv => 'Rename venv';
+
+  @override
+  String get labelField => 'Label';
+
+  @override
+  String get labelHint => 'e.g. Odoo 17 Production';
+
+  @override
+  String get createVenvSubtitle =>
+      'Create a Python virtual environment for your Odoo project.';
+
+  @override
+  String get pythonVersionLabel => 'Python Version';
+
+  @override
+  String pythonVersionDetail(String version, String path) {
+    return 'Python $version ($path)';
+  }
+
+  @override
+  String get noPythonWithVenv => 'No Python with venv support found';
+
+  @override
+  String get targetDirectory => 'Target Directory';
+
+  @override
+  String get venvName => 'Virtual Environment Name';
+
+  @override
+  String get venvNameHint => 'venv';
+
+  @override
+  String get createVenv => 'Create Venv';
+
+  @override
+  String get installedPackages => 'Installed Packages';
+
+  @override
+  String packagesCount(int count) {
+    return '$count packages';
+  }
+
+  @override
+  String get searchPackages => 'Search packages...';
+
+  @override
+  String errorLabel(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get packageHeader => 'Package';
+
+  @override
+  String get versionHeader => 'Version';
+
+  @override
+  String get noPackagesFound => 'No packages found.';
+
+  @override
+  String installPackagesTitle(String name) {
+    return 'Install Packages — $name';
+  }
+
+  @override
+  String get packagesField => 'Package(s)';
+
+  @override
+  String get packagesFieldHint => 'e.g. requests paramiko flask>=2.0';
+
+  @override
+  String get outputPlaceholder => 'Output will appear here...';
+
+  @override
+  String get vscodeConfigTitle => 'VSCode Configuration';
+
+  @override
+  String get vscodeConfigSubtitle =>
+      'Generate .vscode/launch.json for Odoo debug.';
+
+  @override
+  String get configurationName => 'Configuration Name';
+
+  @override
+  String get configurationNameHint => 'e.g. Debug Polish Tax Odoo';
+
+  @override
+  String get projectDirectoryVscode =>
+      'Project Directory (where .vscode/ will be created)';
+
+  @override
+  String get noRegisteredVenvsHint => 'No registered venvs';
+
+  @override
+  String get generating => 'Generating...';
+
+  @override
+  String get generateLaunchJson => 'Generate launch.json';
+
+  @override
+  String get previewLabel => 'Preview:';
+
+  @override
+  String get folderStructureTitle => 'Generate Folder Structure';
+
+  @override
+  String get folderStructureSubtitle =>
+      'Create a standard Odoo development project structure.';
+
+  @override
+  String get generateStructure => 'Generate Structure';
+
+  @override
+  String get addons => 'addons';
+
+  @override
+  String get thirdPartyAddons => 'third_party_addons';
+
+  @override
+  String get config => 'config';
+
+  @override
+  String get venv => 'venv';
+
+  @override
+  String get noOutputYet => 'No output yet...';
+
+  @override
+  String get colorOdooPurple => 'Odoo Purple';
+
+  @override
+  String get colorBlue => 'Blue';
+
+  @override
+  String get colorTeal => 'Teal';
+
+  @override
+  String get colorGreen => 'Green';
+
+  @override
+  String get colorOrange => 'Orange';
+
+  @override
+  String get colorRed => 'Red';
+
+  @override
+  String get colorPink => 'Pink';
+
+  @override
+  String get colorIndigo => 'Indigo';
+
+  @override
+  String get colorCyan => 'Cyan';
+
+  @override
+  String get colorDeepPurple => 'Deep Purple';
+
+  @override
+  String get colorAmber => 'Amber';
+
+  @override
+  String get colorBrown => 'Brown';
+}

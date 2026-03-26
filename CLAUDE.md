@@ -104,6 +104,18 @@ xattr -cr "/Applications/Odoo Config.app"
 codesign --force --deep --sign - "/Applications/Odoo Config.app"
 ```
 
+## Internationalization (i18n)
+- **Framework**: Flutter official `flutter_localizations` + `gen-l10n` (ARB files)
+- **Supported locales**: English (default), Vietnamese (`vi`), Korean (`ko`)
+- **ARB files**: `lib/l10n/app_en.arb`, `app_vi.arb`, `app_ko.arb`
+- **Generated files**: `lib/l10n/app_localizations*.dart` (auto-generated, DO NOT edit manually)
+- **Config**: `l10n.yaml` o project root
+- **Extension**: `context.l10n.keyName` qua `lib/l10n/l10n_extension.dart`
+- **LocaleService**: `lib/services/locale_service.dart` - luu locale vao StorageService, dung Provider
+- **Language selector**: trong Settings screen (SegmentedButton)
+- **Log messages**: giu nguyen tieng Anh (technical output)
+- Khi them string moi: them vao ca 3 file ARB, chay `flutter gen-l10n`
+
 ## Notes
 - Venv detection bang marker file `pyvenv.cfg`
 - VSCode config merge voi existing launch.json (khong ghi de)

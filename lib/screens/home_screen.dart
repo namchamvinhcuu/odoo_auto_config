@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
 import 'python_check_screen.dart';
@@ -49,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Odoo Auto Config',
+                    context.l10n.appTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -57,37 +58,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            destinations: const [
+            destinations: [
               NavigationRailDestination(
-                icon: Icon(Icons.folder_special),
+                icon: const Icon(Icons.folder_special),
                 selectedIcon:
-                    Icon(Icons.folder_special, color: Colors.blue),
-                label: Text('Projects'),
+                    const Icon(Icons.folder_special, color: Colors.blue),
+                label: Text(context.l10n.navProjects),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.person),
-                selectedIcon: Icon(Icons.person, color: Colors.blue),
-                label: Text('Profiles'),
+                icon: const Icon(Icons.person),
+                selectedIcon: const Icon(Icons.person, color: Colors.blue),
+                label: Text(context.l10n.navProfiles),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.search),
-                selectedIcon: Icon(Icons.search, color: Colors.blue),
-                label: Text('Python Check'),
+                icon: const Icon(Icons.search),
+                selectedIcon: const Icon(Icons.search, color: Colors.blue),
+                label: Text(context.l10n.navPythonCheck),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.terminal),
-                selectedIcon: Icon(Icons.terminal, color: Colors.blue),
-                label: Text('Venv Manager'),
+                icon: const Icon(Icons.terminal),
+                selectedIcon: const Icon(Icons.terminal, color: Colors.blue),
+                label: Text(context.l10n.navVenvManager),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.code),
-                selectedIcon: Icon(Icons.code, color: Colors.blue),
-                label: Text('VSCode Config'),
+                icon: const Icon(Icons.code),
+                selectedIcon: const Icon(Icons.code, color: Colors.blue),
+                label: Text(context.l10n.navVscodeConfig),
               ),
               NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                selectedIcon: Icon(Icons.settings, color: Colors.blue),
-                label: Text('Settings'),
+                icon: const Icon(Icons.settings),
+                selectedIcon: const Icon(Icons.settings, color: Colors.blue),
+                label: Text(context.l10n.navSettings),
               ),
             ],
           ),

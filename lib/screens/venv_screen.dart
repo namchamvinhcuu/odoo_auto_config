@@ -11,6 +11,7 @@ import '../services/storage_service.dart';
 import '../services/venv_service.dart';
 import '../widgets/directory_picker_field.dart';
 import '../widgets/log_output.dart';
+import '../l10n/l10n_extension.dart';
 import '../widgets/status_card.dart';
 
 class VenvScreen extends StatefulWidget {
@@ -99,7 +100,7 @@ class _VenvScreenState extends State<VenvScreen>
     await _loadRegisteredVenvs();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Registered: ${venv.name}')),
+        SnackBar(content: Text(context.l10n.registeredVenv(venv.name))),
       );
     }
   }
@@ -111,12 +112,12 @@ class _VenvScreenState extends State<VenvScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Delete virtual environment?'),
+          title: Text(context.l10n.deleteVenvTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Remove "${venv.name}" from registered list?'),
+              Text(context.l10n.deleteVenvConfirm(venv.name)),
               const SizedBox(height: AppSpacing.xs),
               Text(venv.path,
                   style: TextStyle(
@@ -131,10 +132,10 @@ class _VenvScreenState extends State<VenvScreen>
                     onChanged: (v) =>
                         setDialogState(() => deleteFiles = v ?? false),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Also delete venv directory from disk',
-                      style: TextStyle(color: Colors.red),
+                      context.l10n.alsoDeleteVenvFromDisk,
+                      style: const TextStyle(color: Colors.red),
                     ),
                   ),
                 ],
@@ -144,12 +145,12 @@ class _VenvScreenState extends State<VenvScreen>
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+                child: Text(context.l10n.cancel)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(
                     backgroundColor: Colors.red),
-                child: const Text('Delete')),
+                child: Text(context.l10n.delete)),
           ],
         ),
       ),
@@ -164,14 +165,14 @@ class _VenvScreenState extends State<VenvScreen>
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Deleted: ${venv.path}')),
+              SnackBar(content: Text(context.l10n.deletedPath(venv.path))),
             );
           }
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to delete: $e'),
+                content: Text(context.l10n.failedToDelete(e.toString())),
                 backgroundColor: Colors.red,
               ),
             );
@@ -210,8 +211,8 @@ class _VenvScreenState extends State<VenvScreen>
     if (!await File(reqFile).exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File not found'),
+          SnackBar(
+            content: Text(context.l10n.filePNotFound),
             backgroundColor: Colors.red,
           ),
         );
@@ -256,13 +257,13 @@ class _VenvScreenState extends State<VenvScreen>
     final newLabel = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename venv'),
+        title: Text(context.l10n.renameVenv),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Label',
-            hintText: 'e.g. Odoo 17 Production',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.l10n.labelField,
+            hintText: context.l10n.labelHint,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
           onSubmitted: (v) => Navigator.pop(ctx, v),
@@ -270,10 +271,10 @@ class _VenvScreenState extends State<VenvScreen>
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, controller.text),
-              child: const Text('Save')),
+              child: Text(context.l10n.save)),
         ],
       ),
     );
@@ -391,7 +392,7 @@ class _VenvScreenState extends State<VenvScreen>
               const Icon(Icons.terminal, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
               Text(
-                'Virtual Environments',
+                context.l10n.venvTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
@@ -399,10 +400,10 @@ class _VenvScreenState extends State<VenvScreen>
           const SizedBox(height: AppSpacing.lg),
           TabBar(
             controller: _tabController,
-            tabs: const [
-              Tab(icon: Icon(Icons.bookmark), text: 'Registered'),
-              Tab(icon: Icon(Icons.search), text: 'Scan'),
-              Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
+            tabs: [
+              Tab(icon: const Icon(Icons.bookmark), text: context.l10n.registered),
+              Tab(icon: const Icon(Icons.search), text: context.l10n.scan),
+              Tab(icon: const Icon(Icons.add_circle), text: context.l10n.createNew),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -434,7 +435,7 @@ class _VenvScreenState extends State<VenvScreen>
           children: [
             Expanded(
               child: Text(
-                'Saved virtual environments for quick access.',
+                context.l10n.venvRegisteredSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey,
                     ),
@@ -443,18 +444,17 @@ class _VenvScreenState extends State<VenvScreen>
             IconButton.filled(
               onPressed: _loadRegisteredVenvs,
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              tooltip: context.l10n.refresh,
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
         if (_registeredVenvs.isEmpty)
-          const Expanded(
+          Expanded(
             child: Center(
               child: StatusCard(
-                title: 'No registered venvs',
-                subtitle:
-                    'Create a new venv or scan & register existing ones.',
+                title: context.l10n.noRegisteredVenvs,
+                subtitle: context.l10n.noRegisteredVenvsSubtitle,
                 status: StatusType.info,
               ),
             ),
@@ -480,7 +480,7 @@ class _VenvScreenState extends State<VenvScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Scan a directory to find existing virtual environments.',
+          context.l10n.scanSubtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey,
               ),
@@ -490,7 +490,7 @@ class _VenvScreenState extends State<VenvScreen>
           children: [
             Expanded(
               child: DirectoryPickerField(
-                label: 'Scan Directory',
+                label: context.l10n.scanDirectory,
                 value: _scanDir,
                 onChanged: (v) => setState(() => _scanDir = v),
               ),
@@ -509,31 +509,30 @@ class _VenvScreenState extends State<VenvScreen>
                       ),
                     )
                   : const Icon(Icons.search),
-              label: Text(_scanning ? 'Scanning...' : 'Scan'),
+              label: Text(_scanning ? context.l10n.scanning : context.l10n.scan),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
         if (_scanning)
-          const Expanded(
+          Expanded(
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: AppSpacing.lg),
-                  Text('Scanning for virtual environments...'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(context.l10n.scanningVenvs),
                 ],
               ),
             ),
           )
         else if (_foundVenvs.isEmpty && _scanDir.isNotEmpty)
-          const Expanded(
+          Expanded(
             child: Center(
               child: StatusCard(
-                title: 'No virtual environments found',
-                subtitle:
-                    'Try scanning a different directory or increase depth.',
+                title: context.l10n.noVenvsFound,
+                subtitle: context.l10n.noVenvsFoundSubtitle,
                 status: StatusType.info,
               ),
             ),
@@ -594,40 +593,40 @@ class _VenvScreenState extends State<VenvScreen>
                   IconButton(
                     onPressed: () => _registerVenv(venv),
                     icon: const Icon(Icons.bookmark_add),
-                    tooltip: 'Register this venv',
+                    tooltip: context.l10n.registerThisVenv,
                   ),
                 if (showRegister && isAlreadyRegistered)
-                  const Chip(
-                    avatar: Icon(Icons.bookmark, size: AppIconSize.md),
-                    label: Text('Registered'),
+                  Chip(
+                    avatar: const Icon(Icons.bookmark, size: AppIconSize.md),
+                    label: Text(context.l10n.registeredChip),
                   ),
                 if (showRemove) ...[
                   if (venv.isValid) ...[
                     IconButton(
                       onPressed: () => _showPackages(venv),
                       icon: const Icon(Icons.list_alt),
-                      tooltip: 'List installed packages',
+                      tooltip: context.l10n.listInstalledPackages,
                     ),
                     IconButton(
                       onPressed: () => _pipInstallPackage(venv),
                       icon: const Icon(Icons.add_box),
-                      tooltip: 'pip install package',
+                      tooltip: context.l10n.pipInstallPackage,
                     ),
                     IconButton(
                       onPressed: () => _installRequirements(venv),
                       icon: const Icon(Icons.install_desktop),
-                      tooltip: 'Install requirements.txt',
+                      tooltip: context.l10n.installRequirements,
                     ),
                   ],
                   IconButton(
                     onPressed: () => _renameVenv(venv),
                     icon: const Icon(Icons.edit),
-                    tooltip: 'Rename',
+                    tooltip: context.l10n.rename,
                   ),
                   IconButton(
                     onPressed: () => _deleteVenv(venv),
                     icon: const Icon(Icons.delete),
-                    tooltip: 'Delete',
+                    tooltip: context.l10n.delete,
                     color: Colors.red,
                   ),
                 ],
@@ -657,7 +656,7 @@ class _VenvScreenState extends State<VenvScreen>
                       size: AppIconSize.md,
                       color: venv.isValid ? Colors.green : Colors.red,
                     ),
-                    label: Text(venv.isValid ? 'Valid' : 'Broken'),
+                    label: Text(venv.isValid ? context.l10n.valid : context.l10n.broken),
                   ),
                 ],
               ),
@@ -678,7 +677,7 @@ class _VenvScreenState extends State<VenvScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Create a Python virtual environment for your Odoo project.',
+          context.l10n.createVenvSubtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.grey,
               ),
@@ -688,26 +687,26 @@ class _VenvScreenState extends State<VenvScreen>
         // Python selector
         DropdownButtonFormField<PythonInfo>(
           initialValue: _selectedPython,
-          decoration: const InputDecoration(
-            labelText: 'Python Version',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.l10n.pythonVersionLabel,
+            border: const OutlineInputBorder(),
             isDense: true,
           ),
           items: _pythons
               .map((p) => DropdownMenuItem(
                     value: p,
                     child:
-                        Text('Python ${p.version} (${p.executablePath})'),
+                        Text(context.l10n.pythonVersionDetail(p.version, p.executablePath)),
                   ))
               .toList(),
           onChanged: (v) => setState(() => _selectedPython = v),
-          hint: const Text('No Python with venv support found'),
+          hint: Text(context.l10n.noPythonWithVenv),
         ),
         const SizedBox(height: AppSpacing.lg),
 
         // Target directory
         DirectoryPickerField(
-          label: 'Target Directory',
+          label: context.l10n.targetDirectory,
           value: _targetDir,
           onChanged: (v) => setState(() => _targetDir = v),
         ),
@@ -716,11 +715,11 @@ class _VenvScreenState extends State<VenvScreen>
         // Venv name
         TextField(
           controller: _venvNameController,
-          decoration: const InputDecoration(
-            labelText: 'Virtual Environment Name',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: context.l10n.venvName,
+            border: const OutlineInputBorder(),
             isDense: true,
-            hintText: 'venv',
+            hintText: context.l10n.venvNameHint,
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
@@ -741,7 +740,7 @@ class _VenvScreenState extends State<VenvScreen>
                   ),
                 )
               : const Icon(Icons.add_circle),
-          label: Text(_creating ? 'Creating...' : 'Create Venv'),
+          label: Text(_creating ? context.l10n.creating : context.l10n.createVenv),
         ),
         const SizedBox(height: AppSpacing.xl),
 
@@ -833,9 +832,9 @@ class _PackageListDialogState extends State<_PackageListDialog> {
         children: [
           const Icon(Icons.list_alt),
           const SizedBox(width: AppSpacing.sm),
-          const Expanded(child: Text('Installed Packages')),
+          Expanded(child: Text(context.l10n.installedPackages)),
           if (!_loading)
-            Text('${_all.length} packages',
+            Text(context.l10n.packagesCount(_all.length),
                 style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
@@ -847,7 +846,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search packages...',
+                hintText: context.l10n.searchPackages,
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
                 isDense: true,
@@ -870,7 +869,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
             else if (_error != null)
               Expanded(
                 child: Center(
-                    child: Text('Error: $_error',
+                    child: Text(context.l10n.errorLabel(_error!),
                         style: const TextStyle(color: Colors.red))),
               )
             else ...[
@@ -885,16 +884,16 @@ class _PackageListDialogState extends State<_PackageListDialog> {
                   borderRadius: BorderRadius.vertical(
                       top: Radius.circular(AppRadius.md)),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Expanded(
                         flex: 3,
-                        child: Text('Package',
-                            style:
+                        child: Text(context.l10n.packageHeader,
+                            style: const
                                 TextStyle(fontWeight: FontWeight.bold))),
                     Expanded(
-                        child: Text('Version',
-                            style:
+                        child: Text(context.l10n.versionHeader,
+                            style: const
                                 TextStyle(fontWeight: FontWeight.bold))),
                   ],
                 ),
@@ -902,7 +901,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
               // Table body
               Expanded(
                 child: _filtered.isEmpty
-                    ? const Center(child: Text('No packages found.'))
+                    ? Center(child: Text(context.l10n.noPackagesFound))
                     : ListView.builder(
                         itemCount: _filtered.length,
                         itemBuilder: (context, index) {
@@ -946,7 +945,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close')),
+            child: Text(context.l10n.close)),
       ],
     );
   }
@@ -1020,7 +1019,7 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
         children: [
           const Icon(Icons.add_box),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text('Install Packages — ${widget.venvName}')),
+          Expanded(child: Text(context.l10n.installPackagesTitle(widget.venvName))),
         ],
       ),
       content: SizedBox(
@@ -1039,10 +1038,10 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      labelText: 'Package(s)',
-                      hintText: 'e.g. requests paramiko flask>=2.0',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.packagesField,
+                      hintText: context.l10n.packagesFieldHint,
+                      border: const OutlineInputBorder(),
                       isDense: true,
                     ),
                     enabled: !_installing,
@@ -1060,7 +1059,7 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Install'),
+                      : Text(context.l10n.install),
                 ),
               ],
             ),
@@ -1074,9 +1073,9 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                   border: Border.all(color: Colors.grey.shade700),
                 ),
                 child: _logs.isEmpty
-                    ? const Center(
-                        child: Text('Output will appear here...',
-                            style: TextStyle(
+                    ? Center(
+                        child: Text(context.l10n.outputPlaceholder,
+                            style: const TextStyle(
                                 color: Colors.grey,
                                 fontFamily: 'monospace')),
                       )
@@ -1106,7 +1105,7 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
       actions: [
         TextButton(
             onPressed: _installing ? null : () => Navigator.pop(context),
-            child: const Text('Close')),
+            child: Text(context.l10n.close)),
       ],
     );
   }

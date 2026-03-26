@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../models/project_info.dart';
+import '../l10n/l10n_extension.dart';
 import '../services/storage_service.dart';
 import 'quick_create_screen.dart';
 
@@ -93,7 +94,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open: $path')),
+          SnackBar(content: Text(context.l10n.couldNotOpen(path))),
         );
       }
     }
@@ -110,7 +111,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open VSCode')),
+          SnackBar(content: Text(context.l10n.couldNotOpenVscode)),
         );
       }
     }
@@ -144,12 +145,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Delete project?'),
+          title: Text(context.l10n.deleteProjectTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Remove "${project.name}" from the list?'),
+              Text(context.l10n.deleteProjectConfirm(project.name)),
               const SizedBox(height: AppSpacing.xs),
               Text(project.path,
                   style: TextStyle(
@@ -164,10 +165,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     onChanged: (v) =>
                         setDialogState(() => deleteFiles = v ?? false),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Also delete project directory from disk',
-                      style: TextStyle(color: Colors.red),
+                      context.l10n.alsoDeleteFromDisk,
+                      style: const TextStyle(color: Colors.red),
                     ),
                   ),
                 ],
@@ -177,11 +178,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+                child: Text(context.l10n.cancel)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Delete')),
+                child: Text(context.l10n.delete)),
           ],
         ),
       ),
@@ -196,14 +197,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Deleted: ${project.path}')),
+              SnackBar(content: Text(context.l10n.deletedPath(project.path))),
             );
           }
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to delete: $e'),
+                content: Text(context.l10n.failedToDelete(e.toString())),
                 backgroundColor: Colors.red,
               ),
             );
@@ -226,31 +227,31 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             children: [
               const Icon(Icons.folder_special, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
-              Text('Projects',
+              Text(context.l10n.projectsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               FilledButton.icon(
                 onPressed: _quickCreate,
                 icon: const Icon(Icons.rocket_launch),
-                label: const Text('Create'),
+                label: Text(context.l10n.create),
               ),
               const SizedBox(width: AppSpacing.sm),
               FilledButton.tonalIcon(
                 onPressed: _importProject,
                 icon: const Icon(Icons.download),
-                label: const Text('Import'),
+                label: Text(context.l10n.import_),
               ),
               const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh',
+                tooltip: context.l10n.refresh,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'All projects with quick access. Import existing or create new ones.',
+            context.l10n.projectsSubtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -261,7 +262,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search by name, path, label, port...',
+              hintText: context.l10n.projectsSearchHint,
               prefixIcon: const Icon(Icons.search),
               border: const OutlineInputBorder(),
               isDense: true,
@@ -282,15 +283,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             const Expanded(
                 child: Center(child: CircularProgressIndicator()))
           else if (_projects.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
-                child: Text(
-                    'No projects yet. Use Quick Create or Import to add.'),
+                child: Text(context.l10n.projectsEmpty),
               ),
             )
           else if (_filtered.isEmpty)
-            const Expanded(
-              child: Center(child: Text('No projects match your search.')),
+            Expanded(
+              child: Center(child: Text(context.l10n.projectsNoMatch)),
             )
           else
             Expanded(
@@ -353,14 +353,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 avatar:
                                     const Icon(Icons.lan, size: AppIconSize.sm),
                                 label: Text(
-                                    'HTTP: ${proj.httpPort}'),
+                                    context.l10n.projectHttpPort(proj.httpPort)),
                               ),
                               const SizedBox(width: AppSpacing.sm),
                               Chip(
                                 avatar:
                                     const Icon(Icons.sync, size: AppIconSize.sm),
                                 label: Text(
-                                    'LP: ${proj.longpollingPort}'),
+                                    context.l10n.projectLpPort(proj.longpollingPort)),
                               ),
                               const Spacer(),
                               if (exists) ...[
@@ -368,25 +368,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   onPressed: () =>
                                       _openInVscode(proj.path),
                                   icon: const Icon(Icons.code),
-                                  tooltip: 'Open in VSCode',
+                                  tooltip: context.l10n.openInVscode,
                                 ),
                                 IconButton(
                                   onPressed: () =>
                                       _openInFileManager(proj.path),
                                   icon: const Icon(Icons.folder_open),
-                                  tooltip: 'Open folder',
+                                  tooltip: context.l10n.openFolder,
                                 ),
                               ],
                               IconButton(
                                 onPressed: () => _editProject(proj),
                                 icon: const Icon(Icons.edit),
-                                tooltip: 'Edit',
+                                tooltip: context.l10n.edit,
                               ),
                               IconButton(
                                 onPressed: () => _remove(proj),
                                 icon: const Icon(Icons.delete),
                                 color: Colors.red,
-                                tooltip: 'Remove from list',
+                                tooltip: context.l10n.removeFromList,
                               ),
                             ],
                           ),
@@ -437,7 +437,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
 
   Future<void> _pickDir() async {
     final path = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select existing Odoo project directory',
+      dialogTitle: context.l10n.selectProjectDirectory,
     );
     if (path == null) return;
 
@@ -505,7 +505,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing != null ? 'Edit Project' : 'Import Existing Project'),
+      title: Text(widget.existing != null ? context.l10n.editProject : context.l10n.importExistingProject),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: SingleChildScrollView(
@@ -518,10 +518,10 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   Expanded(
                     child: TextField(
                       controller: TextEditingController(text: _projectPath),
-                      decoration: const InputDecoration(
-                        labelText: 'Project Directory',
-                        hintText: 'Browse to select...',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.projectDirectory,
+                        hintText: context.l10n.browseToSelect,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       readOnly: true,
@@ -546,7 +546,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                         Icon(Icons.auto_fix_high,
                             color: Colors.green, size: AppIconSize.md),
                         SizedBox(width: AppSpacing.sm),
-                        Text('Ports auto-detected from odoo.conf'),
+                        Text(context.l10n.portsAutoDetected),
                       ],
                     ),
                   ),
@@ -558,9 +558,9 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
               // Project name
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Project Name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.projectName,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -570,10 +570,10 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
               TextField(
                 controller: TextEditingController(text: _description),
                 onChanged: (v) => _description = v,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                  hintText: 'e.g. Polish tax project for client X',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.descriptionOptional,
+                  hintText: context.l10n.descriptionHint,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -585,9 +585,9 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   Expanded(
                     child: TextField(
                       controller: _httpPortController,
-                      decoration: const InputDecoration(
-                        labelText: 'HTTP Port',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.httpPort,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       keyboardType: TextInputType.number,
@@ -597,9 +597,9 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   Expanded(
                     child: TextField(
                       controller: _lpPortController,
-                      decoration: const InputDecoration(
-                        labelText: 'Longpolling Port',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.longpollingPort,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       keyboardType: TextInputType.number,
@@ -614,13 +614,13 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+            child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed: (_projectPath.isNotEmpty &&
                   _nameController.text.isNotEmpty)
               ? _save
               : null,
-          child: Text(widget.existing != null ? 'Save' : 'Import'),
+          child: Text(widget.existing != null ? context.l10n.save : context.l10n.import_),
         ),
       ],
     );

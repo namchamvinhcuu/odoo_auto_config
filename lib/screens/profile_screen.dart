@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/profile.dart';
 import '../models/venv_info.dart';
 import '../services/storage_service.dart';
@@ -52,15 +53,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete profile?'),
-        content: Text('Delete "${profile.name}"?'),
+        title: Text(context.l10n.deleteProfileTitle),
+        content: Text(context.l10n.deleteProfileConfirm(profile.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete')),
+              child: Text(context.l10n.delete)),
         ],
       ),
     );
@@ -81,19 +82,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               const Icon(Icons.person, size: AppIconSize.xl),
               const SizedBox(width: AppSpacing.md),
-              Text('Profiles',
+              Text(context.l10n.profilesTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
               FilledButton.icon(
                 onPressed: () => _createOrEdit(),
                 icon: const Icon(Icons.add),
-                label: const Text('New Profile'),
+                label: Text(context.l10n.newProfile),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Save venv + odoo-bin + settings as a profile for quick project creation.',
+            context.l10n.profilesSubtitle,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -104,9 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const Expanded(
                 child: Center(child: CircularProgressIndicator()))
           else if (_profiles.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
-                child: Text('No profiles yet. Create one to get started.'),
+                child: Text(context.l10n.profilesEmpty),
               ),
             )
           else
@@ -127,16 +128,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Venv: ${p.venvPath}',
+                          Text(context.l10n.venvLabel(p.venvPath),
                               style: const TextStyle(
                                   fontFamily: 'monospace', fontSize: AppFontSize.xl)),
-                          Text('odoo-bin: ${p.odooBinPath}',
+                          Text(context.l10n.odooBinLabel(p.odooBinPath),
                               style: const TextStyle(
                                   fontFamily: 'monospace', fontSize: AppFontSize.xl)),
-                          Text('odoo src: ${p.odooSourcePath}',
+                          Text(context.l10n.odooSrcLabel(p.odooSourcePath),
                               style: const TextStyle(
                                   fontFamily: 'monospace', fontSize: AppFontSize.xl)),
-                          Text('db: ${p.dbUser}@${p.dbHost}:${p.dbPort}',
+                          Text(context.l10n.dbLabel(p.dbUser, p.dbHost, p.dbPort.toString()),
                               style: const TextStyle(
                                   fontFamily: 'monospace', fontSize: AppFontSize.xl)),
                         ],
@@ -148,13 +149,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           IconButton(
                             onPressed: () => _createOrEdit(p),
                             icon: const Icon(Icons.edit),
-                            tooltip: 'Edit',
+                            tooltip: context.l10n.edit,
                           ),
                           IconButton(
                             onPressed: () => _delete(p),
                             icon: const Icon(Icons.delete),
                             color: Colors.red,
-                            tooltip: 'Delete',
+                            tooltip: context.l10n.delete,
                           ),
                         ],
                       ),
@@ -223,7 +224,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
 
   Future<void> _pickOdooBin() async {
     final result = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Select odoo-bin',
+      dialogTitle: context.l10n.selectOdooBin,
       type: FileType.any,
     );
     if (result != null && result.files.single.path != null) {
@@ -233,7 +234,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
 
   Future<void> _pickOdooSource() async {
     final path = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select Odoo source code directory',
+      dialogTitle: context.l10n.selectOdooSourceDirectory,
     );
     if (path != null) {
       setState(() => _odooSourcePath = path);
@@ -284,7 +285,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     final isEdit = widget.profile != null;
 
     return AlertDialog(
-      title: Text(isEdit ? 'Edit Profile' : 'New Profile'),
+      title: Text(isEdit ? context.l10n.editProfile : context.l10n.newProfile),
       content: SizedBox(
         width: AppDialog.widthXl,
         child: SingleChildScrollView(
@@ -293,10 +294,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             children: [
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Profile Name',
-                  hintText: 'e.g. Odoo 17',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.profileName,
+                  hintText: context.l10n.profileNameHint,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 autofocus: true,
@@ -310,9 +311,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     widget.venvs.any((v) => v.path == _venvPath)
                         ? _venvPath
                         : null,
-                decoration: const InputDecoration(
-                  labelText: 'Virtual Environment',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.virtualEnvironment,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: widget.venvs
@@ -327,7 +328,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                 onChanged: (v) {
                   if (v != null) setState(() => _venvPath = v);
                 },
-                hint: const Text('Select venv'),
+                hint: Text(context.l10n.selectVenv),
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -338,10 +339,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     child: TextField(
                       controller:
                           TextEditingController(text: _odooBinPath),
-                      decoration: const InputDecoration(
-                        labelText: 'odoo-bin Path',
-                        hintText: '/path/to/odoo/odoo-bin',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.odooBinPath,
+                        hintText: context.l10n.odooBinPathHint,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       readOnly: true,
@@ -363,10 +364,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     child: TextField(
                       controller:
                           TextEditingController(text: _odooSourcePath),
-                      decoration: const InputDecoration(
-                        labelText: 'Odoo Source Code Directory',
-                        hintText: '/path/to/odoo (will be symlinked)',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.odooSourceDirectory,
+                        hintText: context.l10n.odooSourceHint,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       readOnly: true,
@@ -384,14 +385,14 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               // Odoo version
               DropdownButtonFormField<int>(
                 initialValue: _odooVersion,
-                decoration: const InputDecoration(
-                  labelText: 'Odoo Version',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.odooVersion,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: _odooVersions
                     .map((v) => DropdownMenuItem(
-                        value: v, child: Text('Odoo $v')))
+                        value: v, child: Text(context.l10n.odooVersionLabel(v.toString()))))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _odooVersion = v);
@@ -403,18 +404,18 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               Wrap(
                 spacing: AppSpacing.sm,
                 children: [
-                  _chip('addons', _addons,
+                  _chip(context.l10n.addons, _addons,
                       (v) => setState(() => _addons = v)),
-                  _chip('third_party_addons', _thirdPartyAddons,
+                  _chip(context.l10n.thirdPartyAddons, _thirdPartyAddons,
                       (v) => setState(() => _thirdPartyAddons = v)),
-                  _chip('config', _configDir,
+                  _chip(context.l10n.config, _configDir,
                       (v) => setState(() => _configDir = v)),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
 
               // DB Connection
-              Text('Database Connection',
+              Text(context.l10n.databaseConnection,
                   style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: AppSpacing.md),
               Row(
@@ -423,9 +424,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                     flex: 3,
                     child: TextField(
                       controller: _dbHostController,
-                      decoration: const InputDecoration(
-                        labelText: 'Host',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.host,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -434,9 +435,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   Expanded(
                     child: TextField(
                       controller: _dbPortController,
-                      decoration: const InputDecoration(
-                        labelText: 'Port',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.port,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       keyboardType: TextInputType.number,
@@ -450,9 +451,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   Expanded(
                     child: TextField(
                       controller: _dbUserController,
-                      decoration: const InputDecoration(
-                        labelText: 'User',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.user,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -461,10 +462,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   Expanded(
                     child: TextField(
                       controller: _dbPasswordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Leave empty to auto-generate',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.password,
+                        hintText: context.l10n.passwordHint,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       obscureText: true,
@@ -475,10 +476,10 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _dbSslmodeController,
-                decoration: const InputDecoration(
-                  labelText: 'SSL Mode',
-                  hintText: 'prefer, disable, require',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.sslMode,
+                  hintText: context.l10n.sslModeHint,
+                  border: const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -489,13 +490,13 @@ class _ProfileDialogState extends State<_ProfileDialog> {
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
+            child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed:
               (_nameController.text.isNotEmpty && _odooBinPath.isNotEmpty)
                   ? _save
                   : null,
-          child: Text(isEdit ? 'Save' : 'Create'),
+          child: Text(isEdit ? context.l10n.save : context.l10n.create),
         ),
       ],
     );

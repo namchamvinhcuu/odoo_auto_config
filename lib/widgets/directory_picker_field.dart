@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
+import '../l10n/l10n_extension.dart';
 
 class DirectoryPickerField extends StatefulWidget {
   final String label;
@@ -68,7 +69,7 @@ class _DirectoryPickerFieldState extends State<DirectoryPickerField> {
             }
           },
           icon: const Icon(Icons.folder_open),
-          tooltip: 'Browse...',
+          tooltip: context.l10n.browse,
         ),
       ],
     );

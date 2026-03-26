@@ -2,7 +2,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
+import 'services/locale_service.dart';
 import 'services/theme_service.dart';
 
 void main() async {
@@ -20,10 +22,14 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   final themeService = ThemeService();
-  await themeService.load();
+  final localeService = LocaleService();
+  await Future.wait([themeService.load(), localeService.load()]);
   runApp(
-    ChangeNotifierProvider.value(
-      value: themeService,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeService),
+        ChangeNotifierProvider.value(value: localeService),
+      ],
       child: const OdooAutoConfigApp(),
     ),
   );
@@ -35,10 +41,14 @@ class OdooAutoConfigApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeService>();
+    final localeService = context.watch<LocaleService>();
 
     return MaterialApp(
       title: 'Odoo Auto Config',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: localeService.locale,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: theme.seedColor,
