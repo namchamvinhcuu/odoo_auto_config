@@ -1,64 +1,64 @@
 # Odoo Auto Config
 
-Flutter desktop app (macOS/Linux/Windows) giup developer Odoo thiet lap va quan ly moi truong phat trien.
+Ứng dụng Flutter desktop (macOS/Linux/Windows) giúp developer Odoo thiết lập và quản lý môi trường phát triển.
 
-## Installation (Windows)
+## Cài đặt (Windows)
 
-### Cach 1: Chay truc tiep (Portable)
+### Cách 1: Chạy trực tiếp (Portable)
 
-Copy toan bo folder `build\windows\x64\runner\Release\` va chay `odoo_auto_config.exe`.
+Copy toàn bộ folder `build\windows\x64\runner\Release\` và chạy `odoo_auto_config.exe`.
 
-### Cach 2: Cai dat bang MSIX
+### Cách 2: Cài đặt bằng MSIX
 
-MSIX duoc ky bang self-signed certificate. Truoc khi cai `.msix`, ban can cai certificate truoc.
+MSIX được ký bằng self-signed certificate. Trước khi cài `.msix`, bạn cần cài certificate trước.
 
-#### Buoc 1: Cai dat Certificate
+#### Bước 1: Cài đặt Certificate
 
-**Cach A: Dung PowerShell (Admin)**
+**Cách A: Dùng PowerShell (Admin)**
 
-1. Mo PowerShell voi quyen **Run as Administrator**
-2. Chay lenh sau (thay duong dan tuong ung):
+1. Mở PowerShell với quyền **Run as Administrator**
+2. Chạy lệnh sau (thay đường dẫn tương ứng):
 
 ```powershell
 $pwd = ConvertTo-SecureString -String "odoo123" -Force -AsPlainText
 Import-PfxCertificate -FilePath "C:\duong\dan\toi\certificate.pfx" -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" -Password $pwd
 ```
 
-**Cach B: Cai thu cong qua GUI**
+**Cách B: Cài thủ công qua GUI**
 
 1. Double-click file `certificate.pfx`
-2. Chon **Local Machine** → Next
-3. Nhap password: `odoo123` → Next
-4. Chon **Place all certificates in the following store** → Browse
-5. Chon **Trusted People** → OK → Next → Finish
+2. Chọn **Local Machine** → Next
+3. Nhập password: `odoo123` → Next
+4. Chọn **Place all certificates in the following store** → Browse
+5. Chọn **Trusted People** → OK → Next → Finish
 
-#### Buoc 2: Cai dat MSIX
+#### Bước 2: Cài đặt MSIX
 
-Double-click file `odoo_auto_config.msix` → nhan **Install**.
+Double-click file `odoo_auto_config.msix` → nhấn **Install**.
 
-### Go cai dat (Uninstall)
+### Gỡ cài đặt (Uninstall)
 
-**Cach 1:** Click phai vao app **Odoo Auto Config** trong Start Menu → **Uninstall**.
+**Cách 1:** Click phải vào app **Odoo Auto Config** trong Start Menu → **Uninstall**.
 
-**Cach 2:** Vao **Settings** → **Apps** → **Installed apps** → tim "Odoo Auto Config" → nhan **⋯** → **Uninstall**.
+**Cách 2:** Vào **Settings** → **Apps** → **Installed apps** → tìm "Odoo Auto Config" → nhấn **⋯** → **Uninstall**.
 
-**Cach 3:** Dung PowerShell:
+**Cách 3:** Dùng PowerShell:
 
 ```powershell
 Get-AppxPackage *odoo-auto-config* | Remove-AppxPackage
 ```
 
-> Luu y: Du lieu cau hinh tai `~/.config/odoo_auto_config/` se khong bi xoa khi uninstall. Xoa thu cong neu can.
+> Lưu ý: Dữ liệu cấu hình tại `~/.config/odoo_auto_config/` sẽ không bị xóa khi uninstall. Xóa thủ công nếu cần.
 
 ## Clone Odoo Core
 
-Clone source code Odoo de dung voi odoo-bin. Thay `XX.0` bang version can dung (14.0 - 18.0):
+Clone source code Odoo để dùng với odoo-bin. Thay `XX.0` bằng version cần dùng (14.0 - 18.0):
 
 ```bash
 git clone --branch XX.0 --single-branch --depth 1 https://github.com/odoo/odoo.git odooXX
 ```
 
-Vi du:
+Ví dụ:
 
 ```bash
 # Odoo 17
@@ -68,14 +68,86 @@ git clone --branch 17.0 --single-branch --depth 1 https://github.com/odoo/odoo.g
 git clone --branch 18.0 --single-branch --depth 1 https://github.com/odoo/odoo.git odoo18
 ```
 
-> `--depth 1` chi clone commit moi nhat, giup giam dung luong download.
+> `--depth 1` chỉ clone commit mới nhất, giúp giảm dung lượng download.
+
+
+
+## Xử lý lỗi thường gặp
+
+### 1. Phiên bản Python không tương thích (SyntaxError trong site.py)
+
+**Lỗi:**
+```
+Fatal Python error: init_import_site: Failed to import the site module
+SyntaxError: multiple exception types must be parenthesized
+```
+
+**Nguyên nhân:** VS Code sử dụng Python 3.14 thay vì Python 3.11. Odoo 17 chỉ hỗ trợ Python 3.10 - 3.12.
+
+**Cách sửa:**
+- Mở `.vscode/settings.json`, thêm:
+```json
+{
+  "python.defaultInterpreterPath": "C:\\Users\\Nam\\Workspace\\py-venv\\odoo17\\venv\\Scripts\\python.exe"
+}
+```
+- Hoặc: `Ctrl+Shift+P` > `Python: Select Interpreter` > chọn Python từ venv Odoo 17.
+
+---
+
+### 2. User database 'postgres' bị chặn
+
+**Lỗi:**
+```
+Using the database user 'postgres' is a security risk, aborting.
+SystemExit: 1
+```
+
+**Nguyên nhân:** Odoo 17 không cho phép dùng user `postgres` trực tiếp vì lý do bảo mật.
+
+**Cách sửa:**
+
+**Bước 1:** Tạo PostgreSQL user mới:
+```cmd
+"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -c "CREATE USER odoo WITH CREATEDB PASSWORD 'your_password';"
+```
+
+**Bước 2:** Cập nhật `odoo.conf`:
+```ini
+db_user = odoo
+db_password = your_password
+```
+
+---
+
+### 3. Lệnh `psql` không được nhận diện
+
+**Lỗi:**
+```
+'psql' is not recognized as an internal or external command
+```
+
+**Nguyên nhân:** PostgreSQL chưa được thêm vào biến môi trường PATH.
+
+**Cách sửa:** Dùng đường dẫn đầy đủ:
+```cmd
+"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres
+```
+
+Hoặc thêm `C:\Program Files\PostgreSQL\16\bin` vào biến môi trường PATH của Windows.
+
+---
+
+Generated by **Odoo Auto Config**
+
+
 
 ## Build
 
-### Yeu cau
+### Yêu cầu
 
 - Flutter SDK ^3.9.2 (FVM managed)
-- Visual Studio 2022 voi C++ desktop workload (cho Windows build)
+- Visual Studio 2022 với C++ desktop workload (cho Windows build)
 
 ### Build Windows (Portable)
 
@@ -101,10 +173,10 @@ Output: `build\windows\x64\runner\Release\odoo_auto_config.msix`
 flutter build macos --release
 ```
 
-Xem them CLAUDE.md de biet cach tao DMG installer.
+Xem thêm CLAUDE.md để biết cách tạo DMG installer.
 
 ## Development
 
 ```bash
-flutter run -d windows   # hoac macos, linux
+flutter run -d windows   # hoặc macos, linux
 ```
