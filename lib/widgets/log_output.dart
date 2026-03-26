@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 
 class LogOutput extends StatefulWidget {
   final List<String> lines;
@@ -45,8 +46,8 @@ class _LogOutputState extends State<LogOutput> {
       height: widget.height,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(8),
+        color: AppLogColors.terminalBg,
+        borderRadius: AppRadius.mediumBorderRadius,
         border: Border.all(color: Colors.grey.shade700),
       ),
       child: widget.lines.isEmpty
@@ -58,7 +59,7 @@ class _LogOutputState extends State<LogOutput> {
             )
           : ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppSpacing.md),
               itemCount: widget.lines.length,
               itemBuilder: (context, index) {
                 final line = widget.lines[index];
@@ -66,7 +67,7 @@ class _LogOutputState extends State<LogOutput> {
                   line,
                   style: TextStyle(
                     fontFamily: 'monospace',
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                     color: _getLineColor(line),
                   ),
                 );
@@ -76,12 +77,12 @@ class _LogOutputState extends State<LogOutput> {
   }
 
   Color _getLineColor(String line) {
-    if (line.startsWith('[+]')) return Colors.greenAccent;
+    if (line.startsWith('[+]')) return AppLogColors.success;
     if (line.startsWith('[-]') || line.startsWith('[ERROR]')) {
-      return Colors.redAccent;
+      return AppLogColors.error;
     }
     if (line.startsWith('[=]') || line.startsWith('[WARN]')) {
-      return Colors.orangeAccent;
+      return AppLogColors.warning;
     }
     return Colors.grey.shade300;
   }

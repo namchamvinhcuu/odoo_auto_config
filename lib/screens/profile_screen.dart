@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/profile.dart';
 import '../models/venv_info.dart';
 import '../services/storage_service.dart';
@@ -72,14 +73,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.person, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.person, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text('Profiles',
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Save venv + odoo-bin + settings as a profile for quick project creation.',
             style: Theme.of(context)
@@ -98,7 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 .bodyMedium
                 ?.copyWith(color: Colors.grey),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
           if (_loading)
             const Expanded(
                 child: Center(child: CircularProgressIndicator()))
@@ -115,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 itemBuilder: (context, index) {
                   final p = _profiles[index];
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: ListTile(
                       leading: CircleAvatar(
                         child: Text('${p.odooVersion}'),
@@ -128,16 +129,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Text('Venv: ${p.venvPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 17)),
+                                  fontFamily: 'monospace', fontSize: AppFontSize.xl)),
                           Text('odoo-bin: ${p.odooBinPath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 17)),
+                                  fontFamily: 'monospace', fontSize: AppFontSize.xl)),
                           Text('odoo src: ${p.odooSourcePath}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 17)),
+                                  fontFamily: 'monospace', fontSize: AppFontSize.xl)),
                           Text('db: ${p.dbUser}@${p.dbHost}:${p.dbPort}',
                               style: const TextStyle(
-                                  fontFamily: 'monospace', fontSize: 17)),
+                                  fontFamily: 'monospace', fontSize: AppFontSize.xl)),
                         ],
                       ),
                       isThreeLine: true,
@@ -285,7 +286,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     return AlertDialog(
       title: Text(isEdit ? 'Edit Profile' : 'New Profile'),
       content: SizedBox(
-        width: 900,
+        width: AppDialog.widthXl,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -300,7 +301,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                 ),
                 autofocus: true,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Venv selector
               DropdownButtonFormField<String>(
@@ -328,7 +329,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                 },
                 hint: const Text('Select venv'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // odoo-bin
               Row(
@@ -346,14 +347,14 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       readOnly: true,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
                     onPressed: _pickOdooBin,
                     icon: const Icon(Icons.file_open),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Odoo source directory (for symlink)
               Row(
@@ -371,14 +372,14 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       readOnly: true,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
                     onPressed: _pickOdooSource,
                     icon: const Icon(Icons.folder_open),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Odoo version
               DropdownButtonFormField<int>(
@@ -396,11 +397,11 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   if (v != null) setState(() => _odooVersion = v);
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Folder options
               Wrap(
-                spacing: 8,
+                spacing: AppSpacing.sm,
                 children: [
                   _chip('addons', _addons,
                       (v) => setState(() => _addons = v)),
@@ -410,12 +411,12 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       (v) => setState(() => _configDir = v)),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
 
               // DB Connection
               Text('Database Connection',
                   style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
@@ -429,7 +430,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: TextField(
                       controller: _dbPortController,
@@ -443,7 +444,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
@@ -456,7 +457,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: TextField(
                       controller: _dbPasswordController,
@@ -471,7 +472,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _dbSslmodeController,
                 decoration: const InputDecoration(

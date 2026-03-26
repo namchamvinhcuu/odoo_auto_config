@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/python_info.dart';
 import '../services/python_checker_service.dart';
 import '../widgets/status_card.dart';
@@ -44,14 +45,14 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.search, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.search, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 'Python Configuration Check',
                 style: Theme.of(context).textTheme.headlineSmall,
@@ -64,14 +65,14 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Detect installed Python versions, pip, and venv module availability.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey,
                 ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
           if (_loading)
             const Expanded(
               child: Center(
@@ -79,7 +80,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(),
-                    SizedBox(height: 16),
+                    SizedBox(height: AppSpacing.lg),
                     Text('Scanning for Python installations...'),
                   ],
                 ),
@@ -115,26 +116,26 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
 
   Widget _buildPythonCard(PythonInfo info) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 const Icon(Icons.code, color: Colors.blue),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   'Python ${info.version}',
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Path: ${info.executablePath}',
               style: TextStyle(
@@ -142,14 +143,14 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
                 color: Colors.grey.shade600,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 _buildChip(
                   'pip ${info.pipVersion}',
                   info.hasPip,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 _buildChip(
                   'venv module',
                   info.hasVenv,

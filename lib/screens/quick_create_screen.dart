@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import '../constants/app_constants.dart';
 import '../models/folder_structure_config.dart';
 import '../models/profile.dart';
 import '../models/project_info.dart';
@@ -221,9 +222,9 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 750),
+        constraints: const BoxConstraints(maxWidth: AppDialog.widthLg, maxHeight: AppDialog.heightXl),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.screenPadding,
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : Column(
@@ -232,8 +233,8 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.rocket_launch, size: 24),
-                        const SizedBox(width: 8),
+                        const Icon(Icons.rocket_launch, size: AppIconSize.lg),
+                        const SizedBox(width: AppSpacing.sm),
                         Text('Quick Create',
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
@@ -243,12 +244,12 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.lg),
 
                     if (_profiles.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text(
+                      Padding(
+                        padding: AppSpacing.cardPadding,
+                        child: const Text(
                             'No profiles found. Create a profile first.'),
                       )
                     else ...[
@@ -271,7 +272,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         onChanged: (v) =>
                             setState(() => _selectedProfile = v),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Base directory
                       DirectoryPickerField(
@@ -279,7 +280,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         value: _baseDir,
                         onChanged: (v) => setState(() => _baseDir = v),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Project name
                       TextField(
@@ -292,7 +293,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         ),
                         onChanged: (_) => setState(() {}),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Ports
                       Row(
@@ -309,7 +310,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                               onChanged: (_) => _validatePorts(),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: TextField(
                               controller: _longpollingPortController,
@@ -326,12 +327,12 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                       ),
 
                       if (_portError != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Text(_portError!,
                             style: const TextStyle(
-                                color: Colors.red, fontSize: 12)),
+                                color: Colors.red, fontSize: AppFontSize.sm)),
                       ],
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.md),
 
                       // Create button
                       Row(
@@ -340,8 +341,8 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                             onPressed: _canCreate ? _create : null,
                             icon: _creating
                                 ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
+                                    width: AppIconSize.md,
+                                    height: AppIconSize.md,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         color: Colors.white),
@@ -352,17 +353,17 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                                 : 'Create Project'),
                           ),
                           if (_done) ...[
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppSpacing.md),
                             const Icon(Icons.check_circle,
                                 color: Colors.green),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             const Text('Done!',
                                 style: TextStyle(color: Colors.green)),
                           ],
                         ],
                       ),
                     ],
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
 
                     // Log output
                     Flexible(child: LogOutput(lines: _logs, height: 180)),

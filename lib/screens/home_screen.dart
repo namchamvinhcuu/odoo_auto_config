@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
 import 'python_check_screen.dart';
@@ -32,21 +33,21 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           NavigationRail(
             extended: true,
-            minExtendedWidth: 220,
+            minExtendedWidth: AppNav.minExtendedWidth,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
               setState(() => _selectedIndex = index);
             },
             leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Column(
                 children: [
                   Icon(
                     Icons.settings_suggest,
-                    size: 40,
+                    size: AppIconSize.xxl,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Odoo Auto Config',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(

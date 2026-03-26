@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/project_info.dart';
 import '../services/storage_service.dart';
 import 'quick_create_screen.dart';
@@ -138,13 +139,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Remove "${project.name}" from the list?'),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(project.path,
                   style: TextStyle(
                       fontFamily: 'monospace',
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       color: Colors.grey.shade500)),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Checkbox(
@@ -206,14 +207,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.folder_special, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.folder_special, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text('Projects',
                   style: Theme.of(context).textTheme.headlineSmall),
               const Spacer(),
@@ -222,13 +223,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 icon: const Icon(Icons.rocket_launch),
                 label: const Text('Create'),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               FilledButton.tonalIcon(
                 onPressed: _importProject,
                 icon: const Icon(Icons.download),
                 label: const Text('Import'),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
@@ -236,7 +237,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'All projects with quick access. Import existing or create new ones.',
             style: Theme.of(context)
@@ -244,7 +245,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 .bodyMedium
                 ?.copyWith(color: Colors.grey),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           // Search bar
           TextField(
             controller: _searchController,
@@ -265,7 +266,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
             onChanged: (_) => setState(() => _applyFilter()),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           if (_loading)
             const Expanded(
                 child: Center(child: CircularProgressIndicator()))
@@ -289,9 +290,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   final exists = Directory(proj.path).existsSync();
 
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.cardPadding,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -304,12 +305,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 color:
                                     exists ? Colors.blue : Colors.grey,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Expanded(
                                 child: Text(
                                   proj.name,
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppFontSize.lg,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -320,33 +321,33 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                     label: Text(proj.description,
                                         overflow: TextOverflow.ellipsis),
                                     avatar: const Icon(Icons.description,
-                                        size: 16),
+                                        size: AppIconSize.md),
                                   ),
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             proj.path,
                             style: TextStyle(
                               fontFamily: 'monospace',
-                              fontSize: 12,
+                              fontSize: AppFontSize.sm,
                               color: Colors.grey.shade500,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           Row(
                             children: [
                               Chip(
                                 avatar:
-                                    const Icon(Icons.lan, size: 14),
+                                    const Icon(Icons.lan, size: AppIconSize.sm),
                                 label: Text(
                                     'HTTP: ${proj.httpPort}'),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Chip(
                                 avatar:
-                                    const Icon(Icons.sync, size: 14),
+                                    const Icon(Icons.sync, size: AppIconSize.sm),
                                 label: Text(
                                     'LP: ${proj.longpollingPort}'),
                               ),
@@ -495,7 +496,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     return AlertDialog(
       title: Text(widget.existing != null ? 'Edit Project' : 'Import Existing Project'),
       content: SizedBox(
-        width: 700,
+        width: AppDialog.widthMd,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -515,7 +516,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                       readOnly: true,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   IconButton.filled(
                     onPressed: _pickDir,
                     icon: const Icon(Icons.folder_open),
@@ -524,16 +525,16 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
               ),
 
               if (_autoDetected) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 Card(
                   color: Colors.green.withValues(alpha: 0.1),
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.sm),
                     child: Row(
                       children: [
                         Icon(Icons.auto_fix_high,
-                            color: Colors.green, size: 16),
-                        SizedBox(width: 8),
+                            color: Colors.green, size: AppIconSize.md),
+                        SizedBox(width: AppSpacing.sm),
                         Text('Ports auto-detected from odoo.conf'),
                       ],
                     ),
@@ -541,7 +542,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                 ),
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Project name
               TextField(
@@ -552,7 +553,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   isDense: true,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Profile label (optional)
               TextField(
@@ -565,7 +566,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   isDense: true,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
 
               // Ports
               Row(
@@ -581,7 +582,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                       keyboardType: TextInputType.number,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
                     child: TextField(
                       controller: _lpPortController,

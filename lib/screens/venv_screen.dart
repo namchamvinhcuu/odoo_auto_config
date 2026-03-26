@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/python_info.dart';
 import '../models/venv_config.dart';
 import '../models/venv_info.dart';
@@ -116,13 +117,13 @@ class _VenvScreenState extends State<VenvScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Remove "${venv.name}" from registered list?'),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(venv.path,
                   style: TextStyle(
                       fontFamily: 'monospace',
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       color: Colors.grey.shade500)),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
                   Checkbox(
@@ -381,21 +382,21 @@ class _VenvScreenState extends State<VenvScreen>
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.terminal, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.terminal, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 'Virtual Environments',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           TabBar(
             controller: _tabController,
             tabs: const [
@@ -404,7 +405,7 @@ class _VenvScreenState extends State<VenvScreen>
               Tab(icon: Icon(Icons.add_circle), text: 'Create New'),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -446,7 +447,7 @@ class _VenvScreenState extends State<VenvScreen>
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         if (_registeredVenvs.isEmpty)
           const Expanded(
             child: Center(
@@ -484,7 +485,7 @@ class _VenvScreenState extends State<VenvScreen>
                 color: Colors.grey,
               ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(
@@ -494,14 +495,14 @@ class _VenvScreenState extends State<VenvScreen>
                 onChanged: (v) => setState(() => _scanDir = v),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             FilledButton.icon(
               onPressed:
                   (_scanning || _scanDir.isEmpty) ? null : _scanForVenvs,
               icon: _scanning
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: AppIconSize.md,
+                      height: AppIconSize.md,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -512,7 +513,7 @@ class _VenvScreenState extends State<VenvScreen>
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
         if (_scanning)
           const Expanded(
             child: Center(
@@ -520,7 +521,7 @@ class _VenvScreenState extends State<VenvScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(),
-                  SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.lg),
                   Text('Scanning for virtual environments...'),
                 ],
               ),
@@ -561,9 +562,9 @@ class _VenvScreenState extends State<VenvScreen>
         _registeredVenvs.any((v) => v.path == venv.path);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.cardPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -573,19 +574,19 @@ class _VenvScreenState extends State<VenvScreen>
                   venv.isValid ? Icons.check_circle : Icons.error,
                   color: venv.isValid ? Colors.green : Colors.red,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     venv.name,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 if (venv.isValid && venv.pythonVersion.isNotEmpty)
                   Chip(
-                    avatar: const Icon(Icons.code, size: 16),
+                    avatar: const Icon(Icons.code, size: AppIconSize.md),
                     label: Text('Python ${venv.pythonVersion}'),
                   ),
                 // Actions
@@ -597,7 +598,7 @@ class _VenvScreenState extends State<VenvScreen>
                   ),
                 if (showRegister && isAlreadyRegistered)
                   const Chip(
-                    avatar: Icon(Icons.bookmark, size: 16),
+                    avatar: Icon(Icons.bookmark, size: AppIconSize.md),
                     label: Text('Registered'),
                   ),
                 if (showRemove) ...[
@@ -632,28 +633,28 @@ class _VenvScreenState extends State<VenvScreen>
                 ],
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               venv.path,
               style: TextStyle(
                 fontFamily: 'monospace',
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 color: Colors.grey.shade500,
               ),
             ),
             if (venv.pipVersion.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   Chip(
-                    avatar: const Icon(Icons.inventory_2, size: 16),
+                    avatar: const Icon(Icons.inventory_2, size: AppIconSize.md),
                     label: Text('pip ${venv.pipVersion}'),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Chip(
                     avatar: Icon(
                       venv.isValid ? Icons.check : Icons.close,
-                      size: 16,
+                      size: AppIconSize.md,
                       color: venv.isValid ? Colors.green : Colors.red,
                     ),
                     label: Text(venv.isValid ? 'Valid' : 'Broken'),
@@ -682,7 +683,7 @@ class _VenvScreenState extends State<VenvScreen>
                 color: Colors.grey,
               ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Python selector
         DropdownButtonFormField<PythonInfo>(
@@ -702,7 +703,7 @@ class _VenvScreenState extends State<VenvScreen>
           onChanged: (v) => setState(() => _selectedPython = v),
           hint: const Text('No Python with venv support found'),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Target directory
         DirectoryPickerField(
@@ -710,7 +711,7 @@ class _VenvScreenState extends State<VenvScreen>
           value: _targetDir,
           onChanged: (v) => setState(() => _targetDir = v),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
 
         // Venv name
         TextField(
@@ -722,7 +723,7 @@ class _VenvScreenState extends State<VenvScreen>
             hintText: 'venv',
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl),
 
         // Create button
         FilledButton.icon(
@@ -732,8 +733,8 @@ class _VenvScreenState extends State<VenvScreen>
                   : _createVenv,
           icon: _creating
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: AppIconSize.md,
+                  height: AppIconSize.md,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: Colors.white,
@@ -742,7 +743,7 @@ class _VenvScreenState extends State<VenvScreen>
               : const Icon(Icons.add_circle),
           label: Text(_creating ? 'Creating...' : 'Create Venv'),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.xl),
 
         // Output
         Expanded(child: LogOutput(lines: _logs)),
@@ -831,7 +832,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
       title: Row(
         children: [
           const Icon(Icons.list_alt),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           const Expanded(child: Text('Installed Packages')),
           if (!_loading)
             Text('${_all.length} packages',
@@ -840,7 +841,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
       ),
       content: SizedBox(
         width: 550,
-        height: 450,
+        height: AppDialog.heightMd,
         child: Column(
           children: [
             TextField(
@@ -862,7 +863,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
               ),
               onChanged: (_) => setState(() => _applyFilter()),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             if (_loading)
               const Expanded(
                   child: Center(child: CircularProgressIndicator()))
@@ -876,13 +877,13 @@ class _PackageListDialogState extends State<_PackageListDialog> {
               // Table header
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: Theme.of(context)
                       .colorScheme
                       .surfaceContainerHighest,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(8)),
+                  borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppRadius.md)),
                 ),
                 child: const Row(
                   children: [
@@ -908,7 +909,7 @@ class _PackageListDialogState extends State<_PackageListDialog> {
                           final pkg = _filtered[index];
                           return Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                                horizontal: AppSpacing.md, vertical: 6),
                             decoration: BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
@@ -923,13 +924,13 @@ class _PackageListDialogState extends State<_PackageListDialog> {
                                   child: Text(pkg.name,
                                       style: const TextStyle(
                                           fontFamily: 'monospace',
-                                          fontSize: 13)),
+                                          fontSize: AppFontSize.md)),
                                 ),
                                 Expanded(
                                   child: Text(pkg.version,
                                       style: TextStyle(
                                           fontFamily: 'monospace',
-                                          fontSize: 13,
+                                          fontSize: AppFontSize.md,
                                           color: Colors.grey.shade500)),
                                 ),
                               ],
@@ -1018,21 +1019,21 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
       title: Row(
         children: [
           const Icon(Icons.add_box),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text('Install Packages — ${widget.venvName}')),
         ],
       ),
       content: SizedBox(
         width: 550,
-        height: 400,
+        height: AppDialog.heightSm,
         child: Column(
           children: [
             Text(widget.venvPath,
                 style: TextStyle(
                     fontFamily: 'monospace',
-                    fontSize: 11,
+                    fontSize: AppFontSize.xs,
                     color: Colors.grey.shade500)),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Row(
               children: [
                 Expanded(
@@ -1049,13 +1050,13 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                     onSubmitted: (_) => _install(),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 FilledButton(
                   onPressed: _installing ? null : _install,
                   child: _installing
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: AppIconSize.md,
+                          height: AppIconSize.md,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
@@ -1063,13 +1064,13 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Expanded(
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppLogColors.terminalBg,
+                  borderRadius: AppRadius.mediumBorderRadius,
                   border: Border.all(color: Colors.grey.shade700),
                 ),
                 child: _logs.isEmpty
@@ -1080,20 +1081,20 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
                                 fontFamily: 'monospace')),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.all(AppSpacing.md),
                         itemCount: _logs.length,
                         itemBuilder: (context, index) {
                           final line = _logs[index];
                           Color color = Colors.grey.shade300;
                           if (line.startsWith('[+]')) {
-                            color = Colors.greenAccent;
+                            color = AppLogColors.success;
                           } else if (line.startsWith('[ERROR]')) {
-                            color = Colors.redAccent;
+                            color = AppLogColors.error;
                           }
                           return Text(line,
                               style: TextStyle(
                                   fontFamily: 'monospace',
-                                  fontSize: 12,
+                                  fontSize: AppFontSize.sm,
                                   color: color));
                         },
                       ),

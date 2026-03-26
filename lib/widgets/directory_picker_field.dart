@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 
 class DirectoryPickerField extends StatefulWidget {
   final String label;
@@ -55,7 +56,7 @@ class _DirectoryPickerFieldState extends State<DirectoryPickerField> {
             onChanged: widget.onChanged,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.sm),
         IconButton.filled(
           onPressed: () async {
             final path = await FilePicker.platform.getDirectoryPath(

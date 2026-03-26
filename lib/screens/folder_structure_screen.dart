@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/folder_structure_config.dart';
 import '../services/folder_structure_service.dart';
 import '../widgets/directory_picker_field.dart';
@@ -71,28 +72,28 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.create_new_folder, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.create_new_folder, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 'Generate Folder Structure',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Create a standard Odoo development project structure.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey,
                 ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
 
           // Base directory
           DirectoryPickerField(
@@ -100,7 +101,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
             value: _baseDir,
             onChanged: (v) => setState(() => _baseDir = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Project name & Odoo version row
           Row(
@@ -116,7 +117,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: DropdownButtonFormField<int>(
                   initialValue: _odooVersion,
@@ -138,11 +139,11 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Options
           Wrap(
-            spacing: 16,
+            spacing: AppSpacing.lg,
             children: [
               _buildCheckbox('addons', _createAddons,
                   (v) => setState(() => _createAddons = v!)),
@@ -154,7 +155,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                   (v) => setState(() => _createVenvDir = v!)),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Generate button
           FilledButton.icon(
@@ -162,8 +163,8 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                 (_generating || _baseDir.isEmpty) ? null : _generate,
             icon: _generating
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
@@ -173,7 +174,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
             label:
                 Text(_generating ? 'Generating...' : 'Generate Structure'),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Output
           Expanded(child: LogOutput(lines: _logs)),

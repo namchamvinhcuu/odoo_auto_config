@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 import '../models/venv_info.dart';
 import '../services/storage_service.dart';
 import '../services/vscode_config_service.dart';
@@ -97,20 +98,20 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: AppSpacing.screenPadding,
       child: ListView(
         children: [
           Row(
             children: [
-              const Icon(Icons.code, size: 28),
-              const SizedBox(width: 12),
+              const Icon(Icons.code, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(
                 'VSCode Configuration',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             'Generate .vscode/launch.json for Odoo debug.',
             style: Theme.of(context)
@@ -118,7 +119,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
                 .bodyMedium
                 ?.copyWith(color: Colors.grey),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xxl),
 
           // Config name
           TextField(
@@ -130,7 +131,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
               isDense: true,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Project directory
           DirectoryPickerField(
@@ -138,7 +139,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
             value: _projectDir,
             onChanged: (v) => setState(() => _projectDir = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Venv selector
           DropdownButtonFormField<VenvInfo>(
@@ -160,7 +161,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
             onChanged: (v) => setState(() => _selectedVenv = v),
             hint: const Text('No registered venvs'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // odoo-bin path
           Row(
@@ -177,7 +178,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
                   readOnly: true,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 onPressed: _pickOdooBin,
                 icon: const Icon(Icons.file_open),
@@ -185,13 +186,13 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
 
           // Preview
           if (_selectedVenv != null && _odooBinPath.isNotEmpty)
             _buildPreview(),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           // Generate button
           FilledButton.icon(
@@ -203,8 +204,8 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
                 : _generate,
             icon: _generating
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
@@ -212,7 +213,7 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
             label: Text(
                 _generating ? 'Generating...' : 'Generate launch.json'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           LogOutput(lines: _logs),
         ],
@@ -240,25 +241,25 @@ class _VscodeConfigScreenState extends State<VscodeConfigScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Preview:', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(8),
+                color: AppLogColors.terminalBg,
+                borderRadius: AppRadius.mediumBorderRadius,
               ),
               child: SelectableText(
                 preview,
                 style: const TextStyle(
                   fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Colors.greenAccent,
+                  fontSize: AppFontSize.sm,
+                  color: AppLogColors.success,
                 ),
               ),
             ),
