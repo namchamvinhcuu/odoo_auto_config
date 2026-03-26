@@ -618,4 +618,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorBrown => 'Brown';
+
+  @override
+  String get installPython => 'Install Python';
+
+  @override
+  String get installPythonTitle => 'Install Python';
+
+  @override
+  String get installPythonSubtitle =>
+      'Select a Python version to install using your system package manager.';
+
+  @override
+  String get selectVersion => 'Select Version';
+
+  @override
+  String get installing => 'Installing...';
+
+  @override
+  String get installComplete => 'Installation complete! Rescanning...';
+
+  @override
+  String get installFailed => 'Installation failed. Check log for details.';
+
+  @override
+  String get packageManagerNotFound => 'Package manager not found';
+
+  @override
+  String get packageManagerNotFoundWindows =>
+      'winget is required to install Python. Please install App Installer from Microsoft Store.';
+
+  @override
+  String get packageManagerNotFoundMac =>
+      'Homebrew is required. Install it from https://brew.sh';
+
+  @override
+  String get packageManagerNotFoundLinux =>
+      'apt is required to install Python.';
 }

@@ -605,4 +605,39 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get colorBrown => '갈색';
+
+  @override
+  String get installPython => 'Python 설치';
+
+  @override
+  String get installPythonTitle => 'Python 설치';
+
+  @override
+  String get installPythonSubtitle => '시스템 패키지 관리자를 사용하여 설치할 Python 버전을 선택하세요.';
+
+  @override
+  String get selectVersion => '버전 선택';
+
+  @override
+  String get installing => '설치 중...';
+
+  @override
+  String get installComplete => '설치 완료! 재검색 중...';
+
+  @override
+  String get installFailed => '설치 실패. 로그를 확인하세요.';
+
+  @override
+  String get packageManagerNotFound => '패키지 관리자를 찾을 수 없음';
+
+  @override
+  String get packageManagerNotFoundWindows =>
+      'Python을 설치하려면 winget이 필요합니다. Microsoft Store에서 App Installer를 설치하세요.';
+
+  @override
+  String get packageManagerNotFoundMac =>
+      'Homebrew가 필요합니다. https://brew.sh에서 설치하세요.';
+
+  @override
+  String get packageManagerNotFoundLinux => 'Python을 설치하려면 apt가 필요합니다.';
 }

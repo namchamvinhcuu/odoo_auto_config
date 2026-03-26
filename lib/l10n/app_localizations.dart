@@ -1209,6 +1209,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Brown'**
   String get colorBrown;
+
+  /// No description provided for @installPython.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Python'**
+  String get installPython;
+
+  /// No description provided for @installPythonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Python'**
+  String get installPythonTitle;
+
+  /// No description provided for @installPythonSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a Python version to install using your system package manager.'**
+  String get installPythonSubtitle;
+
+  /// No description provided for @selectVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Version'**
+  String get selectVersion;
+
+  /// No description provided for @installing.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing...'**
+  String get installing;
+
+  /// No description provided for @installComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Installation complete! Rescanning...'**
+  String get installComplete;
+
+  /// No description provided for @installFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Installation failed. Check log for details.'**
+  String get installFailed;
+
+  /// No description provided for @packageManagerNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Package manager not found'**
+  String get packageManagerNotFound;
+
+  /// No description provided for @packageManagerNotFoundWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'winget is required to install Python. Please install App Installer from Microsoft Store.'**
+  String get packageManagerNotFoundWindows;
+
+  /// No description provided for @packageManagerNotFoundMac.
+  ///
+  /// In en, this message translates to:
+  /// **'Homebrew is required. Install it from https://brew.sh'**
+  String get packageManagerNotFoundMac;
+
+  /// No description provided for @packageManagerNotFoundLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'apt is required to install Python.'**
+  String get packageManagerNotFoundLinux;
 }
 
 class _AppLocalizationsDelegate

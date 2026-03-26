@@ -1,0 +1,114 @@
+import 'dart:async';
+import 'dart:io';
+import 'platform_service.dart';
+
+class PythonVersion {
+  final String version;
+  final String label;
+
+  const PythonVersion(this.version, this.label);
+}
+
+class PythonInstallService {
+  static const availableVersions = [
+    PythonVersion('3.13', 'Python 3.13'),
+    PythonVersion('3.12', 'Python 3.12'),
+    PythonVersion('3.11', 'Python 3.11'),
+    PythonVersion('3.10', 'Python 3.10'),
+  ];
+
+  /// Returns the install command and args for the current platform.
+  static ({String executable, List<String> args, String description})
+      installCommand(String version) {
+    if (PlatformService.isWindows) {
+      return (
+        executable: 'winget',
+        args: [
+          'install',
+          'Python.Python.$version',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+        ],
+        description: 'winget install Python.Python.$version',
+      );
+    } else if (PlatformService.isMacOS) {
+      return (
+        executable: 'brew',
+        args: ['install', 'python@$version'],
+        description: 'brew install python@$version',
+      );
+    } else {
+      // Linux
+      return (
+        executable: 'sudo',
+        args: ['apt', 'install', '-y', 'python$version', 'python$version-venv'],
+        description: 'sudo apt install -y python$version python$version-venv',
+      );
+    }
+  }
+
+  /// Check if winget/brew is available.
+  static Future<bool> isPackageManagerAvailable() async {
+    try {
+      final cmd = PlatformService.isWindows
+          ? 'winget'
+          : PlatformService.isMacOS
+              ? 'brew'
+              : 'apt';
+      final result = await Process.run(cmd, ['--version'], runInShell: true);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Install Python with real-time output via callback.
+  static Future<int> install(
+    String version,
+    void Function(String line) onOutput,
+  ) async {
+    final cmd = installCommand(version);
+    onOutput('[+] Running: ${cmd.description}');
+    onOutput('');
+
+    try {
+      final process = await Process.start(
+        cmd.executable,
+        cmd.args,
+        runInShell: true,
+      );
+
+      final stdoutDone = process.stdout
+          .transform(const SystemEncoding().decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) onOutput(line);
+        }
+      }).asFuture();
+
+      final stderrDone = process.stderr
+          .transform(const SystemEncoding().decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) onOutput('[WARN] $line');
+        }
+      }).asFuture();
+
+      await Future.wait([stdoutDone, stderrDone]);
+      final exitCode = await process.exitCode;
+
+      if (exitCode == 0) {
+        onOutput('');
+        onOutput('[+] Python $version installed successfully!');
+      } else {
+        onOutput('');
+        onOutput('[ERROR] Installation failed with exit code $exitCode');
+      }
+
+      return exitCode;
+    } catch (e) {
+      onOutput('[ERROR] $e');
+      return -1;
+    }
+  }
+}

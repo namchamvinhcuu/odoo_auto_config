@@ -197,5 +197,17 @@
   "colorCyan": "Lam",
   "colorDeepPurple": "Tím đậm",
   "colorAmber": "Hổ phách",
-  "colorBrown": "Nâu"
+  "colorBrown": "Nâu",
+
+  "installPython": "Cài đặt Python",
+  "installPythonTitle": "Cài đặt Python",
+  "installPythonSubtitle": "Chọn phiên bản Python để cài đặt bằng trình quản lý gói hệ thống.",
+  "selectVersion": "Chọn phiên bản",
+  "installing": "Đang cài đặt...",
+  "installComplete": "Cài đặt hoàn tất! Đang quét lại...",
+  "installFailed": "Cài đặt thất bại. Kiểm tra log để biết chi tiết.",
+  "packageManagerNotFound": "Không tìm thấy trình quản lý gói",
+  "packageManagerNotFoundWindows": "Cần winget để cài Python. Vui lòng cài App Installer từ Microsoft Store.",
+  "packageManagerNotFoundMac": "Cần Homebrew. Cài đặt tại https://brew.sh",
+  "packageManagerNotFoundLinux": "Cần apt để cài đặt Python."
 }

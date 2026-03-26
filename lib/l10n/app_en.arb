@@ -218,5 +218,17 @@
   "colorCyan": "Cyan",
   "colorDeepPurple": "Deep Purple",
   "colorAmber": "Amber",
-  "colorBrown": "Brown"
+  "colorBrown": "Brown",
+
+  "installPython": "Install Python",
+  "installPythonTitle": "Install Python",
+  "installPythonSubtitle": "Select a Python version to install using your system package manager.",
+  "selectVersion": "Select Version",
+  "installing": "Installing...",
+  "installComplete": "Installation complete! Rescanning...",
+  "installFailed": "Installation failed. Check log for details.",
+  "packageManagerNotFound": "Package manager not found",
+  "packageManagerNotFoundWindows": "winget is required to install Python. Please install App Installer from Microsoft Store.",
+  "packageManagerNotFoundMac": "Homebrew is required. Install it from https://brew.sh",
+  "packageManagerNotFoundLinux": "apt is required to install Python."
 }

@@ -613,4 +613,41 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get colorBrown => 'Nâu';
+
+  @override
+  String get installPython => 'Cài đặt Python';
+
+  @override
+  String get installPythonTitle => 'Cài đặt Python';
+
+  @override
+  String get installPythonSubtitle =>
+      'Chọn phiên bản Python để cài đặt bằng trình quản lý gói hệ thống.';
+
+  @override
+  String get selectVersion => 'Chọn phiên bản';
+
+  @override
+  String get installing => 'Đang cài đặt...';
+
+  @override
+  String get installComplete => 'Cài đặt hoàn tất! Đang quét lại...';
+
+  @override
+  String get installFailed =>
+      'Cài đặt thất bại. Kiểm tra log để biết chi tiết.';
+
+  @override
+  String get packageManagerNotFound => 'Không tìm thấy trình quản lý gói';
+
+  @override
+  String get packageManagerNotFoundWindows =>
+      'Cần winget để cài Python. Vui lòng cài App Installer từ Microsoft Store.';
+
+  @override
+  String get packageManagerNotFoundMac =>
+      'Cần Homebrew. Cài đặt tại https://brew.sh';
+
+  @override
+  String get packageManagerNotFoundLinux => 'Cần apt để cài đặt Python.';
 }
