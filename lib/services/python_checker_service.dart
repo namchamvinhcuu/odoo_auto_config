@@ -25,6 +25,17 @@ class PythonCheckerService {
       }
     }
 
+    // Remove shim entries that resolve to the same version as a real binary.
+    // e.g. pyenv shim reporting 3.9.6 is redundant when /usr/bin/python3 3.9.6 exists.
+    if (PlatformService.isMacOS) {
+      final realEntries = results
+          .where((r) => !r.executablePath.contains('/shims/'))
+          .map((r) => r.version)
+          .toSet();
+      results.removeWhere(
+          (r) => r.executablePath.contains('/shims/') && realEntries.contains(r.version));
+    }
+
     return results;
   }
 
@@ -40,7 +51,7 @@ class PythonCheckerService {
 
     // Get the real path
     String realPath = executable;
-    if (PlatformService.isLinux) {
+    if (PlatformService.isLinux || PlatformService.isMacOS) {
       final whichResult = await CommandRunner.run('which', [executable]);
       if (whichResult.isSuccess) {
         realPath = whichResult.stdout;
