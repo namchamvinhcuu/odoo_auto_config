@@ -112,6 +112,19 @@ class StorageService {
     await saveProjects(projects);
   }
 
+  // ── Settings ──
+
+  static Future<Map<String, dynamic>> loadSettings() async {
+    final config = await _readConfig();
+    return (config['settings'] as Map<String, dynamic>?) ?? {};
+  }
+
+  static Future<void> saveSettings(Map<String, dynamic> settings) async {
+    final config = await _readConfig();
+    config['settings'] = settings;
+    await _writeConfig(config);
+  }
+
   /// Check if a port is already used by another project
   static Future<String?> checkPortConflict(
       int httpPort, int longpollingPort, String? excludePath) async {

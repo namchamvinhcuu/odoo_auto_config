@@ -4,6 +4,7 @@ import 'profile_screen.dart';
 import 'python_check_screen.dart';
 import 'venv_screen.dart';
 import 'vscode_config_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     PythonCheckScreen(),
     VenvScreen(),
     VscodeConfigScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -80,6 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.code),
                 selectedIcon: Icon(Icons.code, color: Colors.blue),
                 label: Text('VSCode Config'),
+              ),
+              NavigationRailDestination(
+                icon: Icon(Icons.settings),
+                selectedIcon: Icon(Icons.settings, color: Colors.blue),
+                label: Text('Settings'),
               ),
             ],
           ),

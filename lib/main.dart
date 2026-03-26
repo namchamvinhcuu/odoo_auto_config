@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
+import 'services/theme_service.dart';
 
-void main() {
-  runApp(const OdooAutoConfigApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final themeService = ThemeService();
+  await themeService.load();
+  runApp(
+    ChangeNotifierProvider.value(
+      value: themeService,
+      child: const OdooAutoConfigApp(),
+    ),
+  );
 }
 
 class OdooAutoConfigApp extends StatelessWidget {
@@ -10,12 +20,14 @@ class OdooAutoConfigApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = context.watch<ThemeService>();
+
     return MaterialApp(
       title: 'Odoo Auto Config',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF714B67), // Odoo purple
+          seedColor: theme.seedColor,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -26,7 +38,7 @@ class OdooAutoConfigApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF714B67),
+          seedColor: theme.seedColor,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
@@ -35,7 +47,7 @@ class OdooAutoConfigApp extends StatelessWidget {
           isDense: true,
         ),
       ),
-      themeMode: ThemeMode.system,
+      themeMode: theme.themeMode,
       home: const HomeScreen(),
     );
   }
