@@ -50,6 +50,26 @@ Get-AppxPackage *odoo-auto-config* | Remove-AppxPackage
 
 > Luu y: Du lieu cau hinh tai `~/.config/odoo_auto_config/` se khong bi xoa khi uninstall. Xoa thu cong neu can.
 
+## Clone Odoo Core
+
+Clone source code Odoo de dung voi odoo-bin. Thay `XX.0` bang version can dung (14.0 - 18.0):
+
+```bash
+git clone --branch XX.0 --single-branch --depth 1 https://github.com/odoo/odoo.git odooXX
+```
+
+Vi du:
+
+```bash
+# Odoo 17
+git clone --branch 17.0 --single-branch --depth 1 https://github.com/odoo/odoo.git odoo17
+
+# Odoo 18
+git clone --branch 18.0 --single-branch --depth 1 https://github.com/odoo/odoo.git odoo18
+```
+
+> `--depth 1` chi clone commit moi nhat, giup giam dung luong download.
+
 ## Build
 
 ### Yeu cau
