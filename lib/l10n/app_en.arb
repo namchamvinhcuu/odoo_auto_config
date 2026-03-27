@@ -230,5 +230,5 @@
   "packageManagerNotFound": "Package manager not found",
   "packageManagerNotFoundWindows": "winget is required to install Python. Please install App Installer from Microsoft Store.",
   "packageManagerNotFoundMac": "Homebrew is required. Install it from https://brew.sh",
-  "packageManagerNotFoundLinux": "apt is required to install Python."
+  "packageManagerNotFoundLinux": "apt and pkexec (polkit) are required to install Python."
 }

@@ -209,5 +209,5 @@
   "packageManagerNotFound": "Không tìm thấy trình quản lý gói",
   "packageManagerNotFoundWindows": "Cần winget để cài Python. Vui lòng cài App Installer từ Microsoft Store.",
   "packageManagerNotFoundMac": "Cần Homebrew. Cài đặt tại https://brew.sh",
-  "packageManagerNotFoundLinux": "Cần apt để cài đặt Python."
+  "packageManagerNotFoundLinux": "Cần apt và pkexec (polkit) để cài đặt Python."
 }

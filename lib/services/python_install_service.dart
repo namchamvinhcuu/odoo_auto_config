@@ -38,25 +38,34 @@ class PythonInstallService {
         description: 'brew install python@$version',
       );
     } else {
-      // Linux
+      // Linux: use pkexec for graphical sudo prompt (works in GUI apps)
       return (
-        executable: 'sudo',
+        executable: 'pkexec',
         args: ['apt', 'install', '-y', 'python$version', 'python$version-venv'],
-        description: 'sudo apt install -y python$version python$version-venv',
+        description: 'pkexec apt install -y python$version python$version-venv',
       );
     }
   }
 
-  /// Check if winget/brew is available.
+  /// Check if winget/brew/pkexec+apt is available.
   static Future<bool> isPackageManagerAvailable() async {
     try {
-      final cmd = PlatformService.isWindows
-          ? 'winget'
-          : PlatformService.isMacOS
-              ? 'brew'
-              : 'apt';
-      final result = await Process.run(cmd, ['--version'], runInShell: true);
-      return result.exitCode == 0;
+      if (PlatformService.isWindows) {
+        final result =
+            await Process.run('winget', ['--version'], runInShell: true);
+        return result.exitCode == 0;
+      } else if (PlatformService.isMacOS) {
+        final result =
+            await Process.run('brew', ['--version'], runInShell: true);
+        return result.exitCode == 0;
+      } else {
+        // Linux: need both pkexec and apt
+        final pkexecResult =
+            await Process.run('which', ['pkexec'], runInShell: true);
+        final aptResult =
+            await Process.run('apt', ['--version'], runInShell: true);
+        return pkexecResult.exitCode == 0 && aptResult.exitCode == 0;
+      }
     } catch (_) {
       return false;
     }

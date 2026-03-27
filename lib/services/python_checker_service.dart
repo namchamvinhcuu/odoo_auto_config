@@ -47,7 +47,7 @@ class PythonCheckerService {
 
   Future<PythonInfo?> _checkPython(String executable) async {
     // Check if absolute path exists before trying to run it
-    if (executable.startsWith('/')) {
+    if (executable.startsWith('/') || RegExp(r'^[A-Za-z]:\\').hasMatch(executable)) {
       if (!File(executable).existsSync()) return null;
     }
 

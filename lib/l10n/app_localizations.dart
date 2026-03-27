@@ -1273,7 +1273,7 @@ abstract class AppLocalizations {
   /// No description provided for @packageManagerNotFoundLinux.
   ///
   /// In en, this message translates to:
-  /// **'apt is required to install Python.'**
+  /// **'apt and pkexec (polkit) are required to install Python.'**
   String get packageManagerNotFoundLinux;
 }
 

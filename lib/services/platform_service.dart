@@ -1,4 +1,4 @@
-import 'dart:io' show Directory, File, Platform, Process;
+import 'dart:io' show Directory, File, Link, Platform, Process;
 
 class PlatformService {
   /// Run a PowerShell script file with -STA flag (required for WinForms dialogs).
@@ -122,7 +122,49 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
 
   static List<String> get pythonCandidates {
     if (isWindows) {
-      return ['python', 'python3', 'py'];
+      final candidates = <String>['python', 'python3', 'py'];
+      final userProfile = Platform.environment['USERPROFILE'] ?? r'C:\Users\Default';
+      final wellKnownDirs = <String>[
+        '$userProfile\\AppData\\Local\\Programs\\Python',
+        r'C:\Python',
+        r'C:\Program Files\Python',
+        r'C:\Program Files (x86)\Python',
+        // Microsoft Store Python
+        '$userProfile\\AppData\\Local\\Microsoft\\WindowsApps',
+        // Scoop
+        '$userProfile\\scoop\\apps\\python\\current',
+        // Chocolatey
+        r'C:\tools\python',
+        // Conda / Miniconda / Anaconda
+        '$userProfile\\miniconda3',
+        '$userProfile\\anaconda3',
+        r'C:\ProgramData\miniconda3',
+        r'C:\ProgramData\anaconda3',
+        // pyenv-win
+        '$userProfile\\.pyenv\\pyenv-win\\versions',
+      ];
+
+      for (final dir in wellKnownDirs) {
+        final d = Directory(dir);
+        if (!d.existsSync()) continue;
+        try {
+          // Check if python.exe exists directly in this directory
+          if (File('$dir\\python.exe').existsSync()) {
+            candidates.add('$dir\\python.exe');
+          }
+          // Scan subdirectories (e.g. Python311, Python312)
+          for (final entry in d.listSync()) {
+            if (entry is Directory) {
+              final exe = File('${entry.path}\\python.exe');
+              if (exe.existsSync()) {
+                candidates.add(exe.path);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
+      return candidates;
     }
     // On macOS GUI apps don't inherit the user's shell PATH,
     // so we must also probe well-known absolute paths.
@@ -134,11 +176,37 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         '/usr/local/bin/python3',
         '/usr/bin/python3',
       ]);
+      // Discover versioned python binaries (e.g. python3.11, python3.12)
+      for (final dir in ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin']) {
+        try {
+          for (final entry in Directory(dir).listSync()) {
+            if (entry is File || entry is Link) {
+              final name = entry.path.split('/').last;
+              if (RegExp(r'^python3\.\d+$').hasMatch(name)) {
+                candidates.add(entry.path);
+              }
+            }
+          }
+        } catch (_) {}
+      }
     } else if (isLinux) {
       candidates.addAll([
         '/usr/local/bin/python3',
         '/usr/bin/python3',
       ]);
+      // Discover versioned python binaries (e.g. python3.11, python3.12)
+      for (final dir in ['/usr/bin', '/usr/local/bin']) {
+        try {
+          for (final entry in Directory(dir).listSync()) {
+            if (entry is File) {
+              final name = entry.path.split('/').last;
+              if (RegExp(r'^python3\.\d+$').hasMatch(name)) {
+                candidates.add(entry.path);
+              }
+            }
+          }
+        } catch (_) {}
+      }
     }
     // Discover pyenv-installed versions directly (shims don't work in GUI apps)
     if ((isMacOS || isLinux) && home.isNotEmpty) {

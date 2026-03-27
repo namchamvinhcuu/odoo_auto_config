@@ -649,5 +649,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cần Homebrew. Cài đặt tại https://brew.sh';
 
   @override
-  String get packageManagerNotFoundLinux => 'Cần apt để cài đặt Python.';
+  String get packageManagerNotFoundLinux =>
+      'Cần apt và pkexec (polkit) để cài đặt Python.';
 }

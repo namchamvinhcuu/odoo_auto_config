@@ -639,5 +639,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'Homebrew가 필요합니다. https://brew.sh에서 설치하세요.';
 
   @override
-  String get packageManagerNotFoundLinux => 'Python을 설치하려면 apt가 필요합니다.';
+  String get packageManagerNotFoundLinux =>
+      'Python을 설치하려면 apt와 pkexec(polkit)이 필요합니다.';
 }

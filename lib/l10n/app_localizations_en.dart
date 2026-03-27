@@ -654,5 +654,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get packageManagerNotFoundLinux =>
-      'apt is required to install Python.';
+      'apt and pkexec (polkit) are required to install Python.';
 }
