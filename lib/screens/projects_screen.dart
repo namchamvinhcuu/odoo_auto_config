@@ -822,30 +822,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
+          Row(
             children: [
               const Icon(Icons.folder_special, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(context.l10n.projectsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(width: AppSpacing.xxxl),
-              FilledButton.icon(
-                onPressed: _quickCreate,
-                icon: const Icon(Icons.rocket_launch),
-                label: Text(context.l10n.create),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: _importProject,
-                icon: const Icon(Icons.download),
-                label: Text(context.l10n.import_),
-              ),
-              IconButton.filled(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                tooltip: context.l10n.refresh,
-              ),
+              const Spacer(),
               IconButton(
                 onPressed: () {
                   setState(() => ProjectsScreen.gridView = !ProjectsScreen.gridView);
@@ -855,6 +838,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 tooltip: ProjectsScreen.gridView
                     ? context.l10n.wsViewList
                     : context.l10n.wsViewGrid,
+              ),
+              FilledButton.icon(
+                onPressed: _quickCreate,
+                icon: const Icon(Icons.rocket_launch),
+                label: Text(context.l10n.create),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              FilledButton.tonalIcon(
+                onPressed: _importProject,
+                icon: const Icon(Icons.download),
+                label: Text(context.l10n.import_),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton.filled(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.refresh,
               ),
             ],
           ),

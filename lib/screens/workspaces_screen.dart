@@ -781,25 +781,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
+          Row(
             children: [
               const Icon(Icons.workspaces, size: AppIconSize.xl),
+              const SizedBox(width: AppSpacing.md),
               Text(context.l10n.wsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(width: AppSpacing.xxxl),
-              FilledButton.icon(
-                onPressed: _importWorkspace,
-                icon: const Icon(Icons.add),
-                label: Text(context.l10n.import_),
-              ),
-              IconButton.filled(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh),
-                tooltip: context.l10n.refresh,
-              ),
+              const Spacer(),
               IconButton(
                 onPressed: () {
                   setState(() => ProjectsScreen.gridView = !ProjectsScreen.gridView);
@@ -807,6 +795,17 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                 },
                 icon: Icon(ProjectsScreen.gridView ? Icons.view_list : Icons.grid_view),
                 tooltip: ProjectsScreen.gridView ? context.l10n.wsViewList : context.l10n.wsViewGrid,
+              ),
+              FilledButton.icon(
+                onPressed: _importWorkspace,
+                icon: const Icon(Icons.add),
+                label: Text(context.l10n.import_),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton.filled(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.refresh,
               ),
             ],
           ),
