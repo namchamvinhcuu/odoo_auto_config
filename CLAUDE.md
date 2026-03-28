@@ -101,6 +101,14 @@ lib/
 - **Nginx status** - Luu `nginxSubdomain` vao model JSON (khong derive tu ten project)
   Khi setup: luu subdomain. Khi remove: xoa subdomain. Check bang `hasNginx` getter.
 
+## Startup Behavior
+- Check Docker installed + daemon running (retry 3 lan, moi lan cach 5s - phong truong hop auto-start after login)
+- Neu Docker khong cai hoac daemon chua chay -> hien MaterialBanner (khong tu tat) voi nut "Go to Settings"
+- Neu Docker running + nginx container stopped -> tu dong `docker start <container>`
+- Banner chi mat khi Docker daemon thuc su running
+- `HomeScreen.navigateToSettings(settingsTab: N)` de chuyen tab tu bat ky screen nao
+  (VD: bam Setup Nginx khi chua config -> tu dong chuyen sang Settings > Nginx tab)
+
 ## Nginx Feature
 - **Init project**: Tao structure (conf.d/, certs/, nginx.conf, docker-compose.yml, .gitignore)
   Dung mkcert de tao SSL cert. App co the cai mkcert tu dong (brew/winget/apt).
@@ -109,6 +117,11 @@ lib/
   Co nut Edit (chuyen sang form) va Delete (confirm + option xoa folder)
 - **Port check**: Tu dong check port 80/443 khi hien info card
   macOS/Linux: `lsof`, Windows: `netstat + tasklist`. Hien process name + PID
+  Phan biet docker vs local: neu docker container running + process la docker runtime -> xanh (OK)
+  Neu process khac (local nginx, apache, ...) -> cam (warning) + nut Kill Process
+  Neu la local nginx -> hien them huong dan disable auto-start (brew services stop / systemctl disable)
+- **Container controls**: Start (khi stopped), Stop (khi running), Restart. Error hien inline card do
+- **Nginx config record**: 3 trang thai: empty (chua config), info card (da config), edit form
 - **Setup per project**: Dialog voi subdomain (fill san, co the sua ngan gon) + port (Other Projects)
   Validation: ky tu hop le (a-z, 0-9, -), trung domain, trung port
 - **Link existing**: Chon tu danh sach conf co san trong conf.d/
@@ -162,15 +175,27 @@ rm -rf "$TMP_DIR"
 
 ## Cross-Platform Notes
 
+### QUAN TRONG: App duoc build va cai dat de chay doc lap (DMG/MSIX/bundle)
+- **MOI thay doi code PHAI tinh den release mode**, khong chi debug
+- macOS GUI app (.app) KHONG co PATH tu shell (~/.zshrc khong duoc load)
+- Tat ca external binary (docker, mkcert, python, code, ...) PHAI resolve absolute path
+- Test tren release build (DMG) truoc khi xac nhan tinh nang hoat dong
+- KHONG dung hardcode `'docker'`, `'mkcert'`, ... ma phai qua PlatformService
+
 ### Tat ca OS
 - Process.run PHAI dung `runInShell: true` (AOT mode)
 - window_manager can **full restart** (khong hot reload) khi them moi
 - App icon can `flutter clean` + rebuild sau khi thay doi
+- External binaries PHAI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
 
 ### macOS
 - App Sandbox PHAI tat trong ca DebugProfile va Release entitlements
-- GUI app khong load ~/.zshrc -> PlatformService tra ve absolute paths
-- Open VSCode: `open -a "Visual Studio Code"` (tranh PATH issue)
+- **GUI app (.app) khong load ~/.zshrc** -> PATH rat toi gian
+  Fix: PlatformService resolve absolute paths cho tat ca binaries:
+  - Python: pyenv shims, pyenv versions, homebrew, /usr/local/bin, /usr/bin
+  - Docker: /usr/local/bin/docker, ~/.orbstack/bin/docker, /opt/homebrew/bin/docker,
+    /Applications/Docker.app/.../docker, /Applications/OrbStack.app/.../docker
+  - VSCode: `open -a "Visual Studio Code"` (tranh PATH issue)
 - Hosts: `osascript` voi `with administrator privileges` (native password dialog)
 - Sau khi copy/rename .app: can `xattr -cr` va `codesign --force --deep --sign -`
 
