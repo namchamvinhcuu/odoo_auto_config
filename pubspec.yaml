@@ -96,11 +96,13 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 flutter_launcher_icons:
-  image_path: "pngegg.png"
+  image_path: "workspaces.png"
   windows:
     generate: true
     icon_size: 256
   macos:
+    generate: true
+  linux:
     generate: true
 
 msix_config:
@@ -109,7 +111,7 @@ msix_config:
   publisher: CN=Nam, O=Nam, C=VN
   identity_name: com.nam.odoo-auto-config
   msix_version: 1.0.0.0
-  logo_path: pngegg.png
+  logo_path: workspaces.png
   certificate_path: certificate.pfx
   certificate_password: odoo123
   capabilities: runFullTrust
