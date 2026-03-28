@@ -404,6 +404,19 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   bool get _hasNginxConfig => _confDirController.text.trim().isNotEmpty;
   bool _editingNginx = false;
+  List<({int port, String? process, int? pid})>? _portConflicts;
+  bool _checkingPorts = false;
+
+  Future<void> _checkPorts() async {
+    setState(() => _checkingPorts = true);
+    final conflicts = await NginxService.checkNginxPorts();
+    if (mounted) {
+      setState(() {
+        _portConflicts = conflicts;
+        _checkingPorts = false;
+      });
+    }
+  }
 
   Future<void> _importNginxFolder() async {
     String? path;
@@ -506,6 +519,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       return _buildNginxEmptyState();
     }
 
+    // Auto-check ports when showing info card
+    if (_portConflicts == null && !_checkingPorts && !_editingNginx) {
+      _checkPorts();
+    }
+
     return SingleChildScrollView(
       padding: AppSpacing.screenPadding,
       child: _editingNginx ? _buildNginxEditForm() : _buildNginxInfoCard(),
@@ -595,6 +613,89 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: AppSpacing.xs),
                 _infoRow(context.l10n.nginxContainerName,
                     _containerNameController.text),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Port status
+        Card(
+          child: Padding(
+            padding: AppSpacing.cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.lan, size: AppIconSize.lg),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(context.l10n.nginxPortCheck,
+                        style: const TextStyle(
+                            fontSize: AppFontSize.lg,
+                            fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: _checkingPorts ? null : _checkPorts,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: context.l10n.rescan,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (_checkingPorts)
+                  const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          child: CircularProgressIndicator()))
+                else if (_portConflicts != null)
+                  ...([80, 443].map((port) {
+                    final conflict = _portConflicts!
+                        .where((c) => c.port == port)
+                        .firstOrNull;
+                    if (conflict != null) {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber,
+                                color: Colors.orange, size: AppIconSize.md),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                context.l10n.nginxPortInUse(
+                                    conflict.port,
+                                    conflict.process ?? 'unknown',
+                                    '${conflict.pid ?? '?'}'),
+                                style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: AppFontSize.sm),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: AppSpacing.xs),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Colors.green, size: AppIconSize.md),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              context.l10n.nginxPortFree(port),
+                              style: const TextStyle(
+                                  color: Colors.green,
+                                  fontSize: AppFontSize.sm),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                  })),
               ],
             ),
           ),

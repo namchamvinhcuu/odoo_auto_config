@@ -864,6 +864,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nginxImport => 'Nhập có sẵn';
 
   @override
+  String get nginxPortCheck => 'Kiểm tra Port';
+
+  @override
+  String nginxPortFree(int port) {
+    return 'Port $port sẵn sàng';
+  }
+
+  @override
+  String nginxPortInUse(int port, String process, String pid) {
+    return 'Port $port đang bị chiếm bởi $process (PID: $pid)';
+  }
+
+  @override
   String get nginxInitCreate => 'Tạo cấu trúc';
 
   @override

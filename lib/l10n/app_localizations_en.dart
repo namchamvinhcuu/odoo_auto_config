@@ -869,6 +869,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nginxImport => 'Import Existing';
 
   @override
+  String get nginxPortCheck => 'Port Check';
+
+  @override
+  String nginxPortFree(int port) {
+    return 'Port $port is available';
+  }
+
+  @override
+  String nginxPortInUse(int port, String process, String pid) {
+    return 'Port $port is in use by $process (PID: $pid)';
+  }
+
+  @override
   String get nginxInitCreate => 'Create Structure';
 
   @override

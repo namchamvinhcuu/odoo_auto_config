@@ -854,6 +854,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxImport => '기존 가져오기';
 
   @override
+  String get nginxPortCheck => '포트 확인';
+
+  @override
+  String nginxPortFree(int port) {
+    return '포트 $port 사용 가능';
+  }
+
+  @override
+  String nginxPortInUse(int port, String process, String pid) {
+    return '포트 $port이(가) $process에 의해 사용 중 (PID: $pid)';
+  }
+
+  @override
   String get nginxInitCreate => '구조 생성';
 
   @override

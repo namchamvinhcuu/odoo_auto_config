@@ -163,6 +163,72 @@ class NginxService {
     return projectDir;
   }
 
+  // ── Port check ──
+
+  /// Check if a port is in use and return info about the process
+  static Future<({bool inUse, String? process, int? pid})> checkPort(
+      int port) async {
+    try {
+      if (Platform.isWindows) {
+        final result = await Process.run(
+            'netstat', ['-ano', '-p', 'TCP'], runInShell: true);
+        if (result.exitCode == 0) {
+          for (final line in result.stdout.toString().split('\n')) {
+            if (line.contains(':$port ') && line.contains('LISTENING')) {
+              final parts = line.trim().split(RegExp(r'\s+'));
+              final pid = int.tryParse(parts.last);
+              String? processName;
+              if (pid != null) {
+                final taskResult = await Process.run(
+                    'tasklist', ['/FI', 'PID eq $pid', '/FO', 'CSV'],
+                    runInShell: true);
+                if (taskResult.exitCode == 0) {
+                  final lines = taskResult.stdout.toString().split('\n');
+                  if (lines.length > 1) {
+                    processName = lines[1].split(',').first.replaceAll('"', '');
+                  }
+                }
+              }
+              return (inUse: true, process: processName, pid: pid);
+            }
+          }
+        }
+      } else {
+        // macOS / Linux
+        final result = await Process.run(
+            'lsof', ['-i', ':$port', '-sTCP:LISTEN', '-t'],
+            runInShell: true);
+        if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
+          final pid =
+              int.tryParse(result.stdout.toString().trim().split('\n').first);
+          String? processName;
+          if (pid != null) {
+            final psResult = await Process.run(
+                'ps', ['-p', '$pid', '-o', 'comm='], runInShell: true);
+            if (psResult.exitCode == 0) {
+              processName = psResult.stdout.toString().trim();
+            }
+          }
+          return (inUse: true, process: processName, pid: pid);
+        }
+      }
+    } catch (_) {}
+    return (inUse: false, process: null, pid: null);
+  }
+
+  /// Check both port 80 and 443, return list of conflicts
+  static Future<List<({int port, String? process, int? pid})>>
+      checkNginxPorts() async {
+    final conflicts = <({int port, String? process, int? pid})>[];
+    for (final port in [80, 443]) {
+      final result = await checkPort(port);
+      if (result.inUse) {
+        conflicts.add((port: port, process: result.process, pid: result.pid));
+      }
+    }
+    return conflicts;
+  }
+
   // ── Settings ──
 
   static Future<Map<String, dynamic>> loadSettings() async {

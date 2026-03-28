@@ -1660,6 +1660,24 @@ abstract class AppLocalizations {
   /// **'Import Existing'**
   String get nginxImport;
 
+  /// No description provided for @nginxPortCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Port Check'**
+  String get nginxPortCheck;
+
+  /// No description provided for @nginxPortFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} is available'**
+  String nginxPortFree(int port);
+
+  /// No description provided for @nginxPortInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} is in use by {process} (PID: {pid})'**
+  String nginxPortInUse(int port, String process, String pid);
+
   /// No description provided for @nginxInitCreate.
   ///
   /// In en, this message translates to:
