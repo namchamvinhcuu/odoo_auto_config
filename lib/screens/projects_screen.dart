@@ -12,6 +12,23 @@ import 'quick_create_screen.dart';
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
 
+  /// Shared grid view state across project screens, persisted in settings
+  static bool gridView = true;
+  static bool _loaded = false;
+
+  static Future<void> loadViewPreference() async {
+    if (_loaded) return;
+    final settings = await StorageService.loadSettings();
+    gridView = settings['gridView'] as bool? ?? true;
+    _loaded = true;
+  }
+
+  static Future<void> saveViewPreference() async {
+    final settings = await StorageService.loadSettings();
+    settings['gridView'] = gridView;
+    await StorageService.saveSettings(settings);
+  }
+
   @override
   State<ProjectsScreen> createState() => _ProjectsScreenState();
 }
@@ -21,7 +38,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<ProjectInfo> _filtered = [];
   final _searchController = TextEditingController();
   bool _loading = true;
-  bool _gridView = false;
 
   @override
   void initState() {
@@ -596,9 +612,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 tooltip: context.l10n.refresh,
               ),
               IconButton(
-                onPressed: () => setState(() => _gridView = !_gridView),
-                icon: Icon(_gridView ? Icons.view_list : Icons.grid_view),
-                tooltip: _gridView
+                onPressed: () {
+                  setState(() => ProjectsScreen.gridView = !ProjectsScreen.gridView);
+                  ProjectsScreen.saveViewPreference();
+                },
+                icon: Icon(ProjectsScreen.gridView ? Icons.view_list : Icons.grid_view),
+                tooltip: ProjectsScreen.gridView
                     ? context.l10n.wsViewList
                     : context.l10n.wsViewGrid,
               ),
@@ -647,7 +666,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             )
           else
             Expanded(
-              child: _gridView ? _buildGridView() : _buildListView(),
+              child: ProjectsScreen.gridView ? _buildGridView() : _buildListView(),
             ),
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
+import 'screens/projects_screen.dart';
 import 'services/locale_service.dart';
 import 'services/theme_service.dart';
 
@@ -34,7 +35,11 @@ void main() async {
 
   final themeService = ThemeService();
   final localeService = LocaleService();
-  await Future.wait([themeService.load(), localeService.load()]);
+  await Future.wait([
+    themeService.load(),
+    localeService.load(),
+    ProjectsScreen.loadViewPreference(),
+  ]);
   runApp(
     MultiProvider(
       providers: [

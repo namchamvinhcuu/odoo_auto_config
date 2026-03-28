@@ -6,6 +6,7 @@ import '../models/workspace_info.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
+import 'projects_screen.dart';
 
 class WorkspacesScreen extends StatefulWidget {
   const WorkspacesScreen({super.key});
@@ -20,7 +21,6 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
   String _filterType = '';
-  bool _gridView = false;
 
   @override
   void initState() {
@@ -552,9 +552,12 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                 tooltip: context.l10n.refresh,
               ),
               IconButton(
-                onPressed: () => setState(() => _gridView = !_gridView),
-                icon: Icon(_gridView ? Icons.view_list : Icons.grid_view),
-                tooltip: _gridView ? context.l10n.wsViewList : context.l10n.wsViewGrid,
+                onPressed: () {
+                  setState(() => ProjectsScreen.gridView = !ProjectsScreen.gridView);
+                  ProjectsScreen.saveViewPreference();
+                },
+                icon: Icon(ProjectsScreen.gridView ? Icons.view_list : Icons.grid_view),
+                tooltip: ProjectsScreen.gridView ? context.l10n.wsViewList : context.l10n.wsViewGrid,
               ),
             ],
           ),
@@ -642,7 +645,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
             )
           else
             Expanded(
-              child: _gridView
+              child: ProjectsScreen.gridView
                   ? _buildGridView()
                   : _buildListView(),
             ),
