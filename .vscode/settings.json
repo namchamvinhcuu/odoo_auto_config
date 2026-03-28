@@ -1,20 +1,13 @@
 {
-  // === Flutter SDK (FVM - relative path) ===
   "dart.flutterSdkPath": ".fvm/versions/3.41.2",
-
-  // === Dart/Flutter Analysis ===
   "dart.previewFlutterUiGuides": true,
   "dart.previewFlutterUiGuidesCustomTracking": true,
   "dart.closingLabels": true,
   "dart.showTodos": true,
-
-  // === File Nesting (gon generated files) ===
   "explorer.fileNesting.patterns": {
     "pubspec.yaml": "pubspec.lock, .flutter-plugins, .flutter-plugins-dependencies, .packages, l10n.yaml, .fvmrc, analysis_options.yaml",
     "*.dart": "${capture}.g.dart, ${capture}.freezed.dart"
   },
-
-  // === Files: Hide Flutter build artifacts ===
   "files.exclude": {
     "**/.dart_tool": true,
     "**/build": true,
@@ -23,8 +16,6 @@
   "files.watcherExclude": {
     "**/.fvm/versions/**": true
   },
-
-  // === Search: Skip generated & platform folders ===
   "search.exclude": {
     "**/lib/l10n/app_localizations*.dart": true,
     "**/*.g.dart": true,
