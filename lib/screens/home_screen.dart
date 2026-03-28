@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/docker_install_service.dart';
 import '../services/nginx_service.dart';
+import '../services/platform_service.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
@@ -90,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Container exists but stopped - try to start it
     try {
-      await Process.run('docker', ['start', container], runInShell: true);
+      final docker = await PlatformService.dockerPath;
+      await Process.run(docker, ['start', container], runInShell: true);
     } catch (_) {}
   }
 

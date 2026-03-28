@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import '../models/command_result.dart';
 import '../templates/nginx_templates.dart';
 import 'command_runner.dart';
+import 'platform_service.dart';
 import 'storage_service.dart';
 
 class NginxService {
@@ -219,8 +220,9 @@ class NginxService {
   /// Check if a docker container is running with host network
   static Future<bool> isDockerContainerRunning(String containerName) async {
     try {
+      final docker = await PlatformService.dockerPath;
       final result = await Process.run(
-          'docker',
+          docker,
           ['inspect', '--format', '{{.State.Running}}', containerName],
           runInShell: true);
       return result.exitCode == 0 &&
@@ -474,8 +476,9 @@ class NginxService {
   }
 
   static Future<CommandResult> _reloadNginx(String containerName) async {
+    final docker = await PlatformService.dockerPath;
     return CommandRunner.run(
-        'docker', ['exec', containerName, 'nginx', '-s', 'reload']);
+        docker, ['exec', containerName, 'nginx', '-s', 'reload']);
   }
 
   static String get _hostsPath {

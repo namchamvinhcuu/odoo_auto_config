@@ -463,7 +463,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     setState(() => _restartingNginx = true);
     try {
       final result = await Process.run(
-          'docker', [command, container], runInShell: true);
+          await PlatformService.dockerPath, [command, container],
+          runInShell: true);
       if (mounted) {
         if (result.exitCode != 0) {
           setState(() => _nginxError = result.stderr.toString().trim());
