@@ -5,8 +5,6 @@ import '../l10n/l10n_extension.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
-import 'venv_screen.dart';
-import 'vscode_config_screen.dart';
 import 'settings_screen.dart';
 
 enum WindowSize {
@@ -33,8 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ProjectsScreen(),
     WorkspacesScreen(),
     ProfileScreen(),
-    VenvScreen(),
-    VscodeConfigScreen(),
     SettingsScreen(),
   ];
 
@@ -134,16 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.person),
                 selectedIcon: const Icon(Icons.person, color: Colors.blue),
                 label: Text(context.l10n.navProfiles),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.terminal),
-                selectedIcon: const Icon(Icons.terminal, color: Colors.blue),
-                label: Text(context.l10n.navVenvManager),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.code),
-                selectedIcon: const Icon(Icons.code, color: Colors.blue),
-                label: Text(context.l10n.navVscodeConfig),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.settings),

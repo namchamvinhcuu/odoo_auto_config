@@ -72,7 +72,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSubtitle => 'Customize theme and appearance.';
 
   @override
-  String get themeMode => 'Theme Mode';
+  String get themeMode => 'Theme';
 
   @override
   String get themeSystem => 'System';

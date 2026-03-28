@@ -72,7 +72,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsSubtitle => 'Tùy chỉnh giao diện và hiển thị.';
 
   @override
-  String get themeMode => 'Chế độ giao diện';
+  String get themeMode => 'Tùy chỉnh giao diện';
 
   @override
   String get themeSystem => 'Hệ thống';

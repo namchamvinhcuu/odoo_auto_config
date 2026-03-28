@@ -229,7 +229,7 @@ abstract class AppLocalizations {
   /// No description provided for @themeMode.
   ///
   /// In en, this message translates to:
-  /// **'Theme Mode'**
+  /// **'Theme'**
   String get themeMode;
 
   /// No description provided for @themeSystem.

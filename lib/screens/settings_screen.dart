@@ -13,6 +13,7 @@ import '../services/python_install_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/log_output.dart';
 import '../widgets/status_card.dart';
+import 'venv_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,12 +22,16 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with TickerProviderStateMixin {
+  late final TabController _tabController;
+
+  // Nginx
   final _confDirController = TextEditingController();
   final _domainSuffixController = TextEditingController();
   final _containerNameController = TextEditingController();
 
-  // Python + Docker state
+  // Python + Docker
   final _pythonChecker = PythonCheckerService();
   List<PythonInfo>? _pythonResults;
   bool _pythonLoading = false;
@@ -38,18 +43,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     _loadNginxSettings();
     _scanEnvironment();
   }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _confDirController.dispose();
+    _domainSuffixController.dispose();
+    _containerNameController.dispose();
+    super.dispose();
+  }
+
+  // ── Nginx ──
+
+  Future<void> _loadNginxSettings() async {
+    final nginx = await NginxService.loadSettings();
+    _confDirController.text = (nginx['confDir'] ?? '').toString();
+    _domainSuffixController.text = (nginx['domainSuffix'] ?? '').toString();
+    _containerNameController.text =
+        (nginx['containerName'] ?? 'nginx').toString();
+  }
+
+  Future<void> _saveNginxSettings() async {
+    await NginxService.saveSettings({
+      'confDir': _confDirController.text.trim(),
+      'domainSuffix': _domainSuffixController.text.trim(),
+      'containerName': _containerNameController.text.trim(),
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.nginxSaved)),
+      );
+    }
+  }
+
+  Future<void> _pickConfDir() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+          dialogTitle: context.l10n.nginxConfDir);
+    } else {
+      path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: context.l10n.nginxConfDir);
+    }
+    if (path != null) _confDirController.text = path;
+  }
+
+  // ── Environment ──
 
   Future<void> _scanEnvironment() async {
     setState(() => _pythonLoading = true);
     try {
       final results = await _pythonChecker.detectAll();
       final dInstalled = await DockerInstallService.isInstalled();
-      final dRunning = dInstalled ? await DockerInstallService.isRunning() : false;
-      final dVersion = dInstalled ? await DockerInstallService.getVersion() : null;
-      final dCompose = dInstalled ? await DockerInstallService.getComposeVersion() : null;
+      final dRunning =
+          dInstalled ? await DockerInstallService.isRunning() : false;
+      final dVersion =
+          dInstalled ? await DockerInstallService.getVersion() : null;
+      final dCompose =
+          dInstalled ? await DockerInstallService.getComposeVersion() : null;
       if (mounted) {
         setState(() {
           _pythonResults = results;
@@ -85,355 +140,209 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showDockerInstallDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => _DockerInstallDialog(
-        onInstalled: () => _scanEnvironment(),
+      builder: (ctx) =>
+          _DockerInstallDialog(onInstalled: () => _scanEnvironment()),
+    );
+  }
+
+  // ── Build ──
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(icon: const Icon(Icons.palette), text: context.l10n.themeMode),
+            Tab(icon: const Icon(Icons.code), text: 'Python'),
+            Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
+            Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildThemeTab(),
+              _buildPythonTab(),
+              _buildNginxTab(),
+              _buildDockerTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Tab: Theme ──
+
+  Widget _buildThemeTab() {
+    final theme = context.watch<ThemeService>();
+    final localeService = context.watch<LocaleService>();
+
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Language
+          Text(context.l10n.language,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          SegmentedButton<Locale?>(
+            segments: LocaleService.supportedLocales.map((locale) {
+              return ButtonSegment(
+                value: locale,
+                label: Text(
+                    LocaleService.localeNames[locale.languageCode] ?? ''),
+              );
+            }).toList(),
+            selected: {
+              localeService.locale ??
+                  LocaleService.supportedLocales.firstWhere(
+                    (l) =>
+                        l.languageCode ==
+                        Localizations.localeOf(context).languageCode,
+                    orElse: () => const Locale('en'),
+                  ),
+            },
+            onSelectionChanged: (v) => localeService.setLocale(v.first),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+
+          // Theme mode
+          Text(context.l10n.themeMode,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          SegmentedButton<ThemeMode>(
+            segments: [
+              ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: const Icon(Icons.brightness_auto),
+                  label: Text(context.l10n.themeSystem)),
+              ButtonSegment(
+                  value: ThemeMode.light,
+                  icon: const Icon(Icons.light_mode),
+                  label: Text(context.l10n.themeLight)),
+              ButtonSegment(
+                  value: ThemeMode.dark,
+                  icon: const Icon(Icons.dark_mode),
+                  label: Text(context.l10n.themeDark)),
+            ],
+            selected: {theme.themeMode},
+            onSelectionChanged: (v) => theme.setThemeMode(v.first),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+
+          // Accent color
+          Text(context.l10n.accentColor,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.md,
+            children: theme.availableColors.entries.map((entry) {
+              final isSelected =
+                  entry.value.toARGB32() == theme.seedColor.toARGB32();
+              return Tooltip(
+                message: entry.key,
+                child: InkWell(
+                  onTap: () => theme.setSeedColor(entry.value),
+                  borderRadius: AppRadius.circularBorderRadius,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: entry.value,
+                      shape: BoxShape.circle,
+                      border: isSelected
+                          ? Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.onSurface,
+                              width: 3)
+                          : null,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+
+          // Preview
+          Text(context.l10n.preview,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              FilledButton(
+                  onPressed: () {}, child: Text(context.l10n.filledButton)),
+              FilledButton.tonal(
+                  onPressed: () {}, child: Text(context.l10n.tonalButton)),
+              OutlinedButton(
+                  onPressed: () {}, child: Text(context.l10n.outlined)),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _loadNginxSettings() async {
-    final nginx = await NginxService.loadSettings();
-    _confDirController.text = (nginx['confDir'] ?? '').toString();
-    _domainSuffixController.text = (nginx['domainSuffix'] ?? '').toString();
-    _containerNameController.text =
-        (nginx['containerName'] ?? 'nginx').toString();
-  }
+  // ── Tab: Python (+ Venv) ──
 
-  Future<void> _saveNginxSettings() async {
-    await NginxService.saveSettings({
-      'confDir': _confDirController.text.trim(),
-      'domainSuffix': _domainSuffixController.text.trim(),
-      'containerName': _containerNameController.text.trim(),
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.nginxSaved)),
-      );
-    }
-  }
-
-  Future<void> _pickConfDir() async {
-    String? path;
-    if (PlatformService.isWindows) {
-      path = await PlatformService.pickDirectory(
-        dialogTitle: context.l10n.nginxConfDir,
-      );
-    } else {
-      path = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: context.l10n.nginxConfDir,
-      );
-    }
-    if (path != null) {
-      _confDirController.text = path;
-    }
-  }
-
-  @override
-  void dispose() {
-    _confDirController.dispose();
-    _domainSuffixController.dispose();
-    _containerNameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = context.watch<ThemeService>();
-    final localeService = context.watch<LocaleService>();
-
-    return Padding(
-      padding: AppSpacing.screenPadding,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.settings, size: AppIconSize.xl),
-                const SizedBox(width: AppSpacing.md),
-                Text(context.l10n.settingsTitle,
-                    style: Theme.of(context).textTheme.headlineSmall),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              context.l10n.settingsSubtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // Language
-            Text(context.l10n.language,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            SegmentedButton<Locale?>(
-              segments: LocaleService.supportedLocales.map((locale) {
-                return ButtonSegment(
-                  value: locale,
-                  label: Text(
-                      LocaleService.localeNames[locale.languageCode] ?? ''),
-                );
-              }).toList(),
-              selected: {
-                localeService.locale ??
-                    LocaleService.supportedLocales.firstWhere(
-                      (l) =>
-                          l.languageCode ==
-                          Localizations.localeOf(context).languageCode,
-                      orElse: () => const Locale('en'),
-                    ),
-              },
-              onSelectionChanged: (v) => localeService.setLocale(v.first),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-
-            // Theme mode
-            Text(context.l10n.themeMode,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            SegmentedButton<ThemeMode>(
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: const Icon(Icons.brightness_auto),
-                  label: Text(context.l10n.themeSystem),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: const Icon(Icons.light_mode),
-                  label: Text(context.l10n.themeLight),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: const Icon(Icons.dark_mode),
-                  label: Text(context.l10n.themeDark),
-                ),
-              ],
-              selected: {theme.themeMode},
-              onSelectionChanged: (v) => theme.setThemeMode(v.first),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-
-            // Accent color
-            Text(context.l10n.accentColor,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              children: theme.availableColors.entries.map((entry) {
-                final isSelected =
-                    entry.value.toARGB32() == theme.seedColor.toARGB32();
-                return Tooltip(
-                  message: entry.key,
-                  child: InkWell(
-                    onTap: () => theme.setSeedColor(entry.value),
-                    borderRadius: AppRadius.circularBorderRadius,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: entry.value,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(
-                                color:
-                                    Theme.of(context).colorScheme.onSurface,
-                                width: 3)
-                            : null,
-                      ),
-                      child: isSelected
-                          ? const Icon(Icons.check, color: Colors.white)
-                          : null,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-
-            // Preview
-            Text(context.l10n.preview,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                FilledButton(
-                    onPressed: () {}, child: Text(context.l10n.filledButton)),
-                FilledButton.tonal(
-                    onPressed: () {}, child: Text(context.l10n.tonalButton)),
-                OutlinedButton(
-                    onPressed: () {}, child: Text(context.l10n.outlined)),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-            const Divider(),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // ── Nginx Reverse Proxy ──
-            Text(context.l10n.nginxSettings,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _confDirController,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.nginxConfDir,
-                      hintText: context.l10n.nginxConfDirHint,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    readOnly: true,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                IconButton.filled(
-                  onPressed: _pickConfDir,
-                  icon: const Icon(Icons.folder_open),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _domainSuffixController,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.nginxDomainSuffix,
-                      hintText: context.l10n.nginxDomainSuffixHint,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  child: TextField(
-                    controller: _containerNameController,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.nginxContainerName,
-                      hintText: context.l10n.nginxContainerNameHint,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.icon(
-              onPressed: _saveNginxSettings,
-              icon: const Icon(Icons.save),
-              label: Text(context.l10n.save),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-            const Divider(),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // ── Environment Check ──
-            Row(
-              children: [
-                Text(context.l10n.pythonCheckTitle,
-                    style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                FilledButton.tonalIcon(
-                  onPressed: _pythonLoading ? null : _showPythonInstallDialog,
-                  icon: const Icon(Icons.download),
-                  label: Text(context.l10n.installPython),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                IconButton.filled(
-                  onPressed: _pythonLoading ? null : _scanEnvironment,
-                  icon: const Icon(Icons.refresh),
-                  tooltip: context.l10n.rescan,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Docker card
-            if (_dockerInstalled != null)
-              Card(
-                margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Padding(
-                  padding: AppSpacing.cardPadding,
-                  child: Row(
-                    children: [
-                      Icon(Icons.sailing,
-                          color: _dockerInstalled == true
-                              ? Colors.blue
-                              : Colors.grey,
-                          size: AppIconSize.xl),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(context.l10n.dockerStatus,
-                                style: const TextStyle(
-                                    fontSize: AppFontSize.lg,
-                                    fontWeight: FontWeight.bold)),
-                            if (_dockerVersion != null)
-                              Text(_dockerVersion!,
-                                  style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: AppFontSize.sm,
-                                      color: Colors.grey.shade600)),
-                            if (_dockerComposeVersion != null)
-                              Text(_dockerComposeVersion!,
-                                  style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: AppFontSize.sm,
-                                      color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      ),
-                      if (_dockerInstalled == true) ...[
-                        _envChip(context.l10n.dockerInstalled, true),
-                        const SizedBox(width: AppSpacing.sm),
-                        _envChip(
-                          _dockerRunning == true
-                              ? context.l10n.dockerRunning
-                              : context.l10n.dockerStopped,
-                          _dockerRunning == true,
-                        ),
-                      ] else ...[
-                        _envChip(context.l10n.dockerNotInstalled, false),
-                        const SizedBox(width: AppSpacing.sm),
-                        FilledButton.tonalIcon(
-                          onPressed: _showDockerInstallDialog,
-                          icon: const Icon(Icons.download),
-                          label: Text(context.l10n.dockerInstall),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+  Widget _buildPythonTab() {
+    return Column(
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
+          child: Row(
+            children: [
+              Text(context.l10n.pythonCheckTitle,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              FilledButton.tonalIcon(
+                onPressed: _pythonLoading ? null : _showPythonInstallDialog,
+                icon: const Icon(Icons.download),
+                label: Text(context.l10n.installPython),
               ),
-
-            // Python list
-            if (_pythonLoading)
-              const Padding(
-                padding: EdgeInsets.all(AppSpacing.xxl),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_pythonResults != null && _pythonResults!.isEmpty)
-              StatusCard(
-                title: context.l10n.noPythonFound,
-                subtitle: context.l10n.noPythonFoundSubtitle,
-                status: StatusType.warning,
-              )
-            else if (_pythonResults != null)
-              ...List.generate(_pythonResults!.length, (i) {
-                final info = _pythonResults![i];
+              const SizedBox(width: AppSpacing.sm),
+              IconButton.filled(
+                onPressed: _pythonLoading ? null : _scanEnvironment,
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.rescan,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Python list
+        if (_pythonLoading)
+          const Padding(
+            padding: EdgeInsets.all(AppSpacing.xxl),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_pythonResults != null && _pythonResults!.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: StatusCard(
+              title: context.l10n.noPythonFound,
+              subtitle: context.l10n.noPythonFoundSubtitle,
+              status: StatusType.warning,
+            ),
+          )
+        else if (_pythonResults != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              children: _pythonResults!.map((info) {
                 return Card(
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                   child: Padding(
@@ -452,18 +361,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     fontSize: AppFontSize.lg,
                                     fontWeight: FontWeight.bold),
                               ),
-                              Text(
-                                info.executablePath,
-                                style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: AppFontSize.sm,
-                                    color: Colors.grey.shade600),
-                              ),
+                              Text(info.executablePath,
+                                  style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: AppFontSize.sm,
+                                      color: Colors.grey.shade600)),
                             ],
                           ),
                         ),
-                        _envChip(
-                            context.l10n.pipVersion(info.pipVersion),
+                        _envChip(context.l10n.pipVersion(info.pipVersion),
                             info.hasPip),
                         const SizedBox(width: AppSpacing.sm),
                         _envChip(context.l10n.venvModule, info.hasVenv),
@@ -471,25 +377,185 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 );
-              }),
+              }).toList(),
+            ),
+          ),
+        const Divider(indent: AppSpacing.xxl, endIndent: AppSpacing.xxl),
+        // Venv Manager embedded
+        const Expanded(child: VenvScreen()),
+      ],
+    );
+  }
 
-            const SizedBox(height: AppSpacing.xxxl),
-          ],
-        ),
+  // ── Tab: Nginx ──
+
+  Widget _buildNginxTab() {
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.nginxSettings,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _confDirController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.nginxConfDir,
+                    hintText: context.l10n.nginxConfDirHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  readOnly: true,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton.filled(
+                onPressed: _pickConfDir,
+                icon: const Icon(Icons.folder_open),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _domainSuffixController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.nginxDomainSuffix,
+                    hintText: context.l10n.nginxDomainSuffixHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: TextField(
+                  controller: _containerNameController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.nginxContainerName,
+                    hintText: context.l10n.nginxContainerNameHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton.icon(
+            onPressed: _saveNginxSettings,
+            icon: const Icon(Icons.save),
+            label: Text(context.l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Tab: Docker ──
+
+  Widget _buildDockerTab() {
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(context.l10n.dockerStatus,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              IconButton.filled(
+                onPressed: _pythonLoading ? null : _scanEnvironment,
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.rescan,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (_dockerInstalled == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else
+            Card(
+              child: Padding(
+                padding: AppSpacing.cardPadding,
+                child: Row(
+                  children: [
+                    Icon(Icons.sailing,
+                        color: _dockerInstalled == true
+                            ? Colors.blue
+                            : Colors.grey,
+                        size: AppIconSize.xxl),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Docker',
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.xl,
+                                  fontWeight: FontWeight.bold)),
+                          if (_dockerVersion != null)
+                            Text(_dockerVersion!,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                    color: Colors.grey.shade600)),
+                          if (_dockerComposeVersion != null)
+                            Text(_dockerComposeVersion!,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                    color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                    if (_dockerInstalled == true) ...[
+                      _envChip(context.l10n.dockerInstalled, true),
+                      const SizedBox(width: AppSpacing.sm),
+                      _envChip(
+                        _dockerRunning == true
+                            ? context.l10n.dockerRunning
+                            : context.l10n.dockerStopped,
+                        _dockerRunning == true,
+                      ),
+                    ] else ...[
+                      _envChip(context.l10n.dockerNotInstalled, false),
+                      const SizedBox(width: AppSpacing.lg),
+                      FilledButton.icon(
+                        onPressed: _showDockerInstallDialog,
+                        icon: const Icon(Icons.download),
+                        label: Text(context.l10n.dockerInstall),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _envChip(String label, bool ok) {
     return Chip(
-      avatar: Icon(
-        ok ? Icons.check_circle : Icons.cancel,
-        size: 18,
-        color: ok ? Colors.green : Colors.red,
-      ),
+      avatar: Icon(ok ? Icons.check_circle : Icons.cancel,
+          size: 18, color: ok ? Colors.green : Colors.red),
       label: Text(label),
-      backgroundColor:
-          ok ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+      backgroundColor: ok
+          ? Colors.green.withValues(alpha: 0.1)
+          : Colors.red.withValues(alpha: 0.1),
     );
   }
 }
@@ -545,7 +611,9 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
   }
 
   String _pmNotFound(BuildContext context) {
-    if (PlatformService.isWindows) return context.l10n.packageManagerNotFoundWindows;
+    if (PlatformService.isWindows) {
+      return context.l10n.packageManagerNotFoundWindows;
+    }
     if (PlatformService.isMacOS) return context.l10n.packageManagerNotFoundMac;
     return context.l10n.packageManagerNotFoundLinux;
   }
@@ -561,23 +629,38 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(context.l10n.installPythonSubtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey)),
             const SizedBox(height: AppSpacing.lg),
             if (_pmAvailable == null)
-              const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: CircularProgressIndicator()))
             else if (_pmAvailable == false)
-              StatusCard(title: context.l10n.packageManagerNotFound, subtitle: _pmNotFound(context), status: StatusType.error)
+              StatusCard(
+                  title: context.l10n.packageManagerNotFound,
+                  subtitle: _pmNotFound(context),
+                  status: StatusType.error)
             else ...[
-              Text(context.l10n.selectVersion, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(context.l10n.selectVersion,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: AppSpacing.sm,
-                children: PythonInstallService.availableVersions.map((v) {
-                  final installed = widget.installedVersions.contains(v.version);
+                children:
+                    PythonInstallService.availableVersions.map((v) {
+                  final installed =
+                      widget.installedVersions.contains(v.version);
                   return ChoiceChip(
                     label: Text(installed ? '${v.label} ✓' : v.label),
                     selected: _selectedVersion == v.version,
-                    onSelected: (_installing || installed) ? null : (s) => setState(() => _selectedVersion = s ? v.version : null),
+                    onSelected: (_installing || installed)
+                        ? null
+                        : (s) => setState(
+                            () => _selectedVersion = s ? v.version : null),
                   );
                 }).toList(),
               ),
@@ -590,14 +673,21 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _installing ? null : () => Navigator.pop(context), child: Text(context.l10n.close)),
+        TextButton(
+            onPressed: _installing ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.close)),
         if (_pmAvailable == true)
           FilledButton.icon(
-            onPressed: (_installing || _selectedVersion == null) ? null : _install,
+            onPressed:
+                (_installing || _selectedVersion == null) ? null : _install,
             icon: _installing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.download),
-            label: Text(_installing ? context.l10n.installing : context.l10n.install),
+            label: Text(
+                _installing ? context.l10n.installing : context.l10n.install),
           ),
       ],
     );
@@ -645,7 +735,9 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   }
 
   String _pmNotFound(BuildContext context) {
-    if (PlatformService.isWindows) return context.l10n.packageManagerNotFoundWindows;
+    if (PlatformService.isWindows) {
+      return context.l10n.packageManagerNotFoundWindows;
+    }
     if (PlatformService.isMacOS) return context.l10n.packageManagerNotFoundMac;
     return context.l10n.packageManagerNotFoundLinux;
   }
@@ -661,15 +753,27 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(context.l10n.dockerInstallSubtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey)),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey)),
             const SizedBox(height: AppSpacing.lg),
             if (_pmAvailable == null)
-              const Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: CircularProgressIndicator()))
             else if (_pmAvailable == false)
-              StatusCard(title: context.l10n.packageManagerNotFound, subtitle: _pmNotFound(context), status: StatusType.error)
+              StatusCard(
+                  title: context.l10n.packageManagerNotFound,
+                  subtitle: _pmNotFound(context),
+                  status: StatusType.error)
             else ...[
               Text(DockerInstallService.installCommand().description,
-                  style: TextStyle(fontFamily: 'monospace', fontSize: AppFontSize.sm, color: Colors.grey.shade600)),
+                  style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.sm,
+                      color: Colors.grey.shade600)),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
                 LogOutput(lines: _logLines, height: 200),
@@ -679,14 +783,21 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: _installing ? null : () => Navigator.pop(context), child: Text(context.l10n.close)),
+        TextButton(
+            onPressed: _installing ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.close)),
         if (_pmAvailable == true)
           FilledButton.icon(
             onPressed: _installing ? null : _install,
             icon: _installing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.download),
-            label: Text(_installing ? context.l10n.installing : context.l10n.dockerInstall),
+            label: Text(_installing
+                ? context.l10n.installing
+                : context.l10n.dockerInstall),
           ),
       ],
     );
