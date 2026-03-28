@@ -813,6 +813,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get nginxInvalidSubdomain =>
+      'Only lowercase letters, numbers and hyphens allowed';
+
+  @override
   String get nginxDomainConflict => 'This subdomain is already in use';
 
   @override

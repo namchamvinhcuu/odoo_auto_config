@@ -799,6 +799,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get nginxInvalidSubdomain => '소문자, 숫자, 하이픈만 허용됩니다';
+
+  @override
   String get nginxDomainConflict => '이 서브도메인은 이미 사용 중입니다';
 
   @override

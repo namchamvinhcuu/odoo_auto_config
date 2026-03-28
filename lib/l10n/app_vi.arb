@@ -270,6 +270,7 @@
   "nginxSubdomain": "Subdomain",
   "nginxPreviewDomain": "Domain: {domain}",
   "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxInvalidSubdomain": "Chỉ cho phép chữ thường, số và dấu gạch ngang",
   "nginxDomainConflict": "Subdomain này đã được sử dụng",
   "nginxLink": "Liên kết Nginx có sẵn",
   "nginxLinkSubdomain": "Subdomain có sẵn",

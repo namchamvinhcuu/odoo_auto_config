@@ -1558,6 +1558,12 @@ abstract class AppLocalizations {
   /// **'Domain: {domain}'**
   String nginxPreviewDomain(String domain);
 
+  /// No description provided for @nginxInvalidSubdomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only lowercase letters, numbers and hyphens allowed'**
+  String get nginxInvalidSubdomain;
+
   /// No description provided for @nginxDomainConflict.
   ///
   /// In en, this message translates to:

@@ -809,6 +809,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get nginxInvalidSubdomain =>
+      'Chỉ cho phép chữ thường, số và dấu gạch ngang';
+
+  @override
   String get nginxDomainConflict => 'Subdomain này đã được sử dụng';
 
   @override

@@ -50,9 +50,14 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
   String get _previewDomain =>
       '${_subdomainController.text}${widget.domainSuffix}';
 
+  static final _validSubdomain = RegExp(r'^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$');
+
   String? get _subdomainError {
     final sub = _subdomainController.text.trim();
     if (sub.isEmpty) return null;
+    if (!_validSubdomain.hasMatch(sub)) {
+      return context.l10n.nginxInvalidSubdomain;
+    }
     final confName = NginxService.getConfFileName(sub);
     final baseName = confName.replaceAll('.conf', '');
     if (widget.existingSubdomains.contains(baseName)) {

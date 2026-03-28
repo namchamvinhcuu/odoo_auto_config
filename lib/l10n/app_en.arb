@@ -291,6 +291,7 @@
   "nginxSubdomain": "Subdomain",
   "nginxPreviewDomain": "Domain: {domain}",
   "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxInvalidSubdomain": "Only lowercase letters, numbers and hyphens allowed",
   "nginxDomainConflict": "This subdomain is already in use",
   "nginxLink": "Link existing Nginx",
   "nginxLinkSubdomain": "Existing subdomain",
