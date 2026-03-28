@@ -34,10 +34,32 @@ class _HomeScreenState extends State<HomeScreen> {
     SettingsScreen(),
   ];
 
+  bool _resizing = false;
+
   Future<void> _setWindowSize(WindowSize ws) async {
-    await windowManager.setSize(ws.size);
-    await windowManager.center();
+    if (_resizing || ws == _windowSize) return;
+    _resizing = true;
+
+    final currentSize = await windowManager.getSize();
+    final targetSize = ws.size;
+    const steps = 12;
+    const duration = Duration(milliseconds: 200);
+    final stepDuration = Duration(
+        microseconds: duration.inMicroseconds ~/ steps);
+
+    for (var i = 1; i <= steps; i++) {
+      final t = i / steps;
+      // Ease-out cubic
+      final ease = 1 - (1 - t) * (1 - t) * (1 - t);
+      final w = currentSize.width + (targetSize.width - currentSize.width) * ease;
+      final h = currentSize.height + (targetSize.height - currentSize.height) * ease;
+      await windowManager.setSize(Size(w, h));
+      await windowManager.center();
+      await Future.delayed(stepDuration);
+    }
+
     setState(() => _windowSize = ws);
+    _resizing = false;
   }
 
   String _windowSizeLabel(WindowSize ws) {
