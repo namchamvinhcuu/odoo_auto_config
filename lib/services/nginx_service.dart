@@ -197,22 +197,36 @@ class NginxService {
         'docker', ['exec', containerName, 'nginx', '-s', 'reload']);
   }
 
+  static String get _hostsPath {
+    if (Platform.isWindows) {
+      return r'C:\Windows\System32\drivers\etc\hosts';
+    }
+    return '/etc/hosts';
+  }
+
   static Future<void> _addHostsEntry(String domain) async {
-    // Check if already exists
-    final hostsFile = File('/etc/hosts');
+    final hostsFile = File(_hostsPath);
     final content = await hostsFile.readAsString();
     if (content.contains(domain)) return;
+
+    final entry = '127.0.0.1\t$domain';
 
     if (Platform.isMacOS) {
       await CommandRunner.run('osascript', [
         '-e',
-        'do shell script "echo \'127.0.0.1\t$domain\' >> /etc/hosts" with administrator privileges',
+        'do shell script "echo \'$entry\' >> /etc/hosts" with administrator privileges',
       ]);
     } else if (Platform.isLinux) {
       await CommandRunner.run('pkexec', [
         'bash',
         '-c',
-        'echo "127.0.0.1\t$domain" >> /etc/hosts',
+        'echo "$entry" >> /etc/hosts',
+      ]);
+    } else if (Platform.isWindows) {
+      final hostsPath = r'C:\Windows\System32\drivers\etc\hosts';
+      await CommandRunner.run('powershell', [
+        '-Command',
+        'Start-Process powershell -Verb RunAs -Wait -ArgumentList \'-Command\', \'Add-Content -Path "$hostsPath" -Value "$entry"\'',
       ]);
     }
   }
@@ -228,6 +242,13 @@ class NginxService {
         'bash',
         '-c',
         'sed -i \'/$domain/d\' /etc/hosts',
+      ]);
+    } else if (Platform.isWindows) {
+      final hostsPath = r'C:\Windows\System32\drivers\etc\hosts';
+      final ps = '(Get-Content \\"$hostsPath\\") | Where-Object { \$_ -notmatch \\"$domain\\" } | Set-Content \\"$hostsPath\\"';
+      await CommandRunner.run('powershell', [
+        '-Command',
+        "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-Command', '$ps'",
       ]);
     }
   }
