@@ -290,5 +290,8 @@
   "nginxSaved": "Nginx settings saved",
   "nginxSubdomain": "Subdomain",
   "nginxPreviewDomain": "Domain: {domain}",
-  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxDomainConflict": "This subdomain is already in use",
+  "nginxPortConflict": "Port {port} is already proxied by \"{name}\"",
+  "@nginxPortConflict": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } }
 }

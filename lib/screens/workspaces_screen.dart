@@ -146,6 +146,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       return;
     }
 
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final existingSubs = await NginxService.getExistingSubdomains(confDir);
+    final usedPorts = await NginxService.getUsedPorts();
+
+    if (!mounted) return;
     final result = await showDialog<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
@@ -153,6 +158,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         domainSuffix: suffix,
         initialPort: ws.port,
         showPort: true,
+        existingSubdomains: existingSubs,
+        usedPorts: usedPorts,
       ),
     );
     if (result == null) return;

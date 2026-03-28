@@ -807,4 +807,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String nginxPreviewDomain(String domain) {
     return 'Domain: $domain';
   }
+
+  @override
+  String get nginxDomainConflict => 'Subdomain này đã được sử dụng';
+
+  @override
+  String nginxPortConflict(int port, String name) {
+    return 'Port $port đã được proxy bởi \"$name\"';
+  }
 }

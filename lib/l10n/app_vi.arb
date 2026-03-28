@@ -269,5 +269,8 @@
   "nginxSaved": "Đã lưu cấu hình Nginx",
   "nginxSubdomain": "Subdomain",
   "nginxPreviewDomain": "Domain: {domain}",
-  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxDomainConflict": "Subdomain này đã được sử dụng",
+  "nginxPortConflict": "Port {port} đã được proxy bởi \"{name}\"",
+  "@nginxPortConflict": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } }
 }

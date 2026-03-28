@@ -269,5 +269,8 @@
   "nginxSaved": "Nginx 설정 저장됨",
   "nginxSubdomain": "서브도메인",
   "nginxPreviewDomain": "도메인: {domain}",
-  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxDomainConflict": "이 서브도메인은 이미 사용 중입니다",
+  "nginxPortConflict": "포트 {port}은(는) 이미 \"{name}\"에서 프록시 중입니다",
+  "@nginxPortConflict": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } }
 }

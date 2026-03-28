@@ -797,4 +797,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String nginxPreviewDomain(String domain) {
     return '도메인: $domain';
   }
+
+  @override
+  String get nginxDomainConflict => '이 서브도메인은 이미 사용 중입니다';
+
+  @override
+  String nginxPortConflict(int port, String name) {
+    return '포트 $port은(는) 이미 \"$name\"에서 프록시 중입니다';
+  }
 }

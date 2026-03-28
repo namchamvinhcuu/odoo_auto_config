@@ -45,6 +45,52 @@ class NginxService {
     return file.exists();
   }
 
+  /// List all existing subdomain conf files in confDir
+  static Future<Set<String>> getExistingSubdomains(String confDir) async {
+    final dir = Directory(confDir);
+    if (!await dir.exists()) return {};
+    final result = <String>{};
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.conf')) {
+        result.add(p.basenameWithoutExtension(entity.path));
+      }
+    }
+    return result;
+  }
+
+  /// Get all ports currently proxied by nginx (from both Odoo + Other projects)
+  static Future<Map<int, String>> getUsedPorts() async {
+    final usedPorts = <int, String>{};
+
+    // Odoo projects: httpPort + longpollingPort for projects with nginx active
+    final nginx = await loadSettings();
+    final confDir = (nginx['confDir'] ?? '').toString();
+    if (confDir.isEmpty) return usedPorts;
+
+    final projects = await StorageService.loadProjects();
+    for (final p in projects) {
+      final name = (p['name'] ?? '').toString();
+      if (await isNginxSetup(confDir, sanitizeSubdomain(name))) {
+        final http = p['httpPort'] as int? ?? 0;
+        final lp = p['longpollingPort'] as int? ?? 0;
+        if (http > 0) usedPorts[http] = name;
+        if (lp > 0) usedPorts[lp] = name;
+      }
+    }
+
+    // Other projects: port for workspaces with nginx active
+    final workspaces = await StorageService.loadWorkspaces();
+    for (final w in workspaces) {
+      final name = (w['name'] ?? '').toString();
+      if (await isNginxSetup(confDir, sanitizeSubdomain(name))) {
+        final port = w['port'] as int? ?? 0;
+        if (port > 0) usedPorts[port] = name;
+      }
+    }
+
+    return usedPorts;
+  }
+
   /// Sanitize project name to a valid subdomain
   static String sanitizeSubdomain(String name) {
     return name

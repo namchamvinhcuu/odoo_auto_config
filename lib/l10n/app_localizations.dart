@@ -1557,6 +1557,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Domain: {domain}'**
   String nginxPreviewDomain(String domain);
+
+  /// No description provided for @nginxDomainConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This subdomain is already in use'**
+  String get nginxDomainConflict;
+
+  /// No description provided for @nginxPortConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} is already proxied by \"{name}\"'**
+  String nginxPortConflict(int port, String name);
 }
 
 class _AppLocalizationsDelegate

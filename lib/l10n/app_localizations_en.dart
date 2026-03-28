@@ -811,4 +811,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String nginxPreviewDomain(String domain) {
     return 'Domain: $domain';
   }
+
+  @override
+  String get nginxDomainConflict => 'This subdomain is already in use';
+
+  @override
+  String nginxPortConflict(int port, String name) {
+    return 'Port $port is already proxied by \"$name\"';
+  }
 }

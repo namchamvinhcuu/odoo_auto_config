@@ -185,11 +185,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       return;
     }
 
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final existingSubs = await NginxService.getExistingSubdomains(confDir);
+    final usedPorts = await NginxService.getUsedPorts();
+
+    if (!mounted) return;
     final result = await showDialog<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
         domainSuffix: suffix,
+        existingSubdomains: existingSubs,
+        usedPorts: usedPorts,
       ),
     );
     if (result == null) return;
