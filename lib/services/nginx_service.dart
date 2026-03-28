@@ -216,17 +216,51 @@ class NginxService {
     return (inUse: false, process: null, pid: null);
   }
 
-  /// Check both port 80 and 443, return list of conflicts
-  static Future<List<({int port, String? process, int? pid})>>
-      checkNginxPorts() async {
-    final conflicts = <({int port, String? process, int? pid})>[];
+  /// Check if a docker container is running with host network
+  static Future<bool> isDockerContainerRunning(String containerName) async {
+    try {
+      final result = await Process.run(
+          'docker',
+          ['inspect', '--format', '{{.State.Running}}', containerName],
+          runInShell: true);
+      return result.exitCode == 0 &&
+          result.stdout.toString().trim() == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Check both port 80 and 443, return list of conflicts with source detection
+  static Future<
+      ({
+        List<({int port, String? process, int? pid, String source})> conflicts,
+        bool dockerNginxRunning,
+      })> checkNginxPorts(String containerName) async {
+    final dockerRunning = await isDockerContainerRunning(containerName);
+
+    final conflicts =
+        <({int port, String? process, int? pid, String source})>[];
     for (final port in [80, 443]) {
       final result = await checkPort(port);
       if (result.inUse) {
-        conflicts.add((port: port, process: result.process, pid: result.pid));
+        // Determine source: if docker nginx is running and process is docker runtime
+        final processName = (result.process ?? '').toLowerCase();
+        final isDocker = dockerRunning &&
+            (processName.contains('docker') ||
+                processName.contains('orbstack') ||
+                processName.contains('com.docker') ||
+                processName.contains('vpnkit') ||
+                processName.contains('containerd'));
+
+        conflicts.add((
+          port: port,
+          process: result.process,
+          pid: result.pid,
+          source: isDocker ? 'docker:$containerName' : 'local',
+        ));
       }
     }
-    return conflicts;
+    return (conflicts: conflicts, dockerNginxRunning: dockerRunning);
   }
 
   // ── Settings ──

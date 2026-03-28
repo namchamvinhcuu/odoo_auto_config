@@ -867,6 +867,17 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String nginxPortDocker(int port, String name) {
+    return '포트 $port — Docker 컨테이너 \"$name\"';
+  }
+
+  @override
+  String get nginxDockerRunning => 'Docker nginx 실행 중';
+
+  @override
+  String get nginxDockerStopped => 'Docker nginx 중지됨';
+
+  @override
   String get nginxInitCreate => '구조 생성';
 
   @override

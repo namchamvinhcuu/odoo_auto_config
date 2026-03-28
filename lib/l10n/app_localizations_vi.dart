@@ -877,6 +877,17 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String nginxPortDocker(int port, String name) {
+    return 'Port $port — Docker container \"$name\"';
+  }
+
+  @override
+  String get nginxDockerRunning => 'Docker nginx đang chạy';
+
+  @override
+  String get nginxDockerStopped => 'Docker nginx chưa chạy';
+
+  @override
   String get nginxInitCreate => 'Tạo cấu trúc';
 
   @override

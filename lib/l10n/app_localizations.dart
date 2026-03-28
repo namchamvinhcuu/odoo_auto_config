@@ -1678,6 +1678,24 @@ abstract class AppLocalizations {
   /// **'Port {port} is in use by {process} (PID: {pid})'**
   String nginxPortInUse(int port, String process, String pid);
 
+  /// No description provided for @nginxPortDocker.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} — Docker container \"{name}\"'**
+  String nginxPortDocker(int port, String name);
+
+  /// No description provided for @nginxDockerRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker nginx is running'**
+  String get nginxDockerRunning;
+
+  /// No description provided for @nginxDockerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker nginx is not running'**
+  String get nginxDockerStopped;
+
   /// No description provided for @nginxInitCreate.
   ///
   /// In en, this message translates to:

@@ -882,6 +882,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String nginxPortDocker(int port, String name) {
+    return 'Port $port — Docker container \"$name\"';
+  }
+
+  @override
+  String get nginxDockerRunning => 'Docker nginx is running';
+
+  @override
+  String get nginxDockerStopped => 'Docker nginx is not running';
+
+  @override
   String get nginxInitCreate => 'Create Structure';
 
   @override

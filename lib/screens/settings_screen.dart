@@ -404,15 +404,50 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   bool get _hasNginxConfig => _confDirController.text.trim().isNotEmpty;
   bool _editingNginx = false;
-  List<({int port, String? process, int? pid})>? _portConflicts;
+  List<({int port, String? process, int? pid, String source})>? _portConflicts;
+  bool? _dockerNginxRunning;
   bool _checkingPorts = false;
+  bool _restartingNginx = false;
+  String? _nginxError;
+
+  Future<void> _dockerCommand(String command) async {
+    final container = _containerNameController.text.trim();
+    if (container.isEmpty) return;
+    setState(() => _restartingNginx = true);
+    try {
+      final result = await Process.run(
+          'docker', [command, container], runInShell: true);
+      if (mounted) {
+        if (result.exitCode != 0) {
+          setState(() => _nginxError = result.stderr.toString().trim());
+        } else {
+          setState(() => _nginxError = null);
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _nginxError = e.toString());
+    }
+    if (mounted) {
+      setState(() => _restartingNginx = false);
+      _checkPorts();
+    }
+  }
+
+  Future<void> _startNginxContainer() => _dockerCommand('start');
+  Future<void> _stopNginxContainer() => _dockerCommand('stop');
+
+  Future<void> _restartNginxContainer() => _dockerCommand('restart');
 
   Future<void> _checkPorts() async {
     setState(() => _checkingPorts = true);
-    final conflicts = await NginxService.checkNginxPorts();
+    final result = await NginxService.checkNginxPorts(
+        _containerNameController.text.trim().isEmpty
+            ? 'nginx'
+            : _containerNameController.text.trim());
     if (mounted) {
       setState(() {
-        _portConflicts = conflicts;
+        _portConflicts = result.conflicts;
+        _dockerNginxRunning = result.dockerNginxRunning;
         _checkingPorts = false;
       });
     }
@@ -591,6 +626,30 @@ class _SettingsScreenState extends State<SettingsScreen>
                             fontSize: AppFontSize.xl,
                             fontWeight: FontWeight.bold)),
                     const Spacer(),
+                    if (_dockerNginxRunning == true)
+                      IconButton(
+                        onPressed: _restartingNginx ? null : _stopNginxContainer,
+                        icon: const Icon(Icons.stop_circle_outlined),
+                        color: Colors.orange,
+                        tooltip: 'Stop',
+                      )
+                    else
+                      IconButton(
+                        onPressed: _restartingNginx ? null : _startNginxContainer,
+                        icon: const Icon(Icons.play_circle_outlined),
+                        color: Colors.green,
+                        tooltip: 'Start',
+                      ),
+                    IconButton(
+                      onPressed: _restartingNginx ? null : _restartNginxContainer,
+                      icon: _restartingNginx
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.restart_alt),
+                      tooltip: 'Restart',
+                    ),
                     IconButton(
                       onPressed: () => setState(() => _editingNginx = true),
                       icon: const Icon(Icons.edit),
@@ -613,93 +672,117 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: AppSpacing.xs),
                 _infoRow(context.l10n.nginxContainerName,
                     _containerNameController.text),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // Port status
-        Card(
-          child: Padding(
-            padding: AppSpacing.cardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.lan, size: AppIconSize.lg),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(context.l10n.nginxPortCheck,
-                        style: const TextStyle(
-                            fontSize: AppFontSize.lg,
-                            fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: _checkingPorts ? null : _checkPorts,
-                      icon: const Icon(Icons.refresh),
-                      tooltip: context.l10n.rescan,
-                    ),
-                  ],
-                ),
                 const SizedBox(height: AppSpacing.sm),
-                if (_checkingPorts)
-                  const Center(
-                      child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.md),
-                          child: CircularProgressIndicator()))
-                else if (_portConflicts != null)
-                  ...([80, 443].map((port) {
-                    final conflict = _portConflicts!
-                        .where((c) => c.port == port)
-                        .firstOrNull;
-                    if (conflict != null) {
-                      return Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: AppSpacing.xs),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.warning_amber,
-                                color: Colors.orange, size: AppIconSize.md),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                context.l10n.nginxPortInUse(
-                                    conflict.port,
-                                    conflict.process ?? 'unknown',
-                                    '${conflict.pid ?? '?'}'),
-                                style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontSize: AppFontSize.sm),
-                              ),
-                            ),
-                          ],
+                if (_dockerNginxRunning != null)
+                  Row(
+                    children: [
+                      Icon(
+                        _dockerNginxRunning!
+                            ? Icons.circle
+                            : Icons.circle_outlined,
+                        size: 12,
+                        color: _dockerNginxRunning!
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        _dockerNginxRunning!
+                            ? context.l10n.nginxDockerRunning
+                            : context.l10n.nginxDockerStopped,
+                        style: TextStyle(
+                          fontSize: AppFontSize.sm,
+                          fontWeight: FontWeight.w600,
+                          color: _dockerNginxRunning!
+                              ? Colors.green
+                              : Colors.red,
                         ),
-                      );
-                    } else {
-                      return Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: AppSpacing.xs),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle,
-                                color: Colors.green, size: AppIconSize.md),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              context.l10n.nginxPortFree(port),
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontSize: AppFontSize.sm),
-                            ),
-                          ],
+                      ),
+                    ],
+                  ),
+                if (_nginxError != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: AppRadius.smallBorderRadius,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: Colors.red, size: AppIconSize.md),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            _nginxError!,
+                            style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: AppFontSize.sm,
+                                fontFamily: 'monospace'),
+                          ),
                         ),
-                      );
-                    }
-                  })),
+                        IconButton(
+                          onPressed: () =>
+                              setState(() => _nginxError = null),
+                          icon: const Icon(Icons.close, size: AppIconSize.sm),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
+        // Port conflict warning - only show when non-docker process occupies 80/443
+        if (_portConflicts != null &&
+            _portConflicts!.any((c) => !c.source.startsWith('docker:')))
+          ..._portConflicts!
+              .where((c) => !c.source.startsWith('docker:'))
+              .map((conflict) => Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: AppRadius.mediumBorderRadius,
+                        border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber,
+                              color: Colors.orange),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.l10n.nginxPortInUse(
+                                      conflict.port,
+                                      conflict.process ?? 'unknown',
+                                      '${conflict.pid ?? '?'}'),
+                                  style: const TextStyle(
+                                      color: Colors.orange,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  'PID: ${conflict.pid ?? '?'}  •  ${conflict.process ?? 'unknown'}',
+                                  style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: AppFontSize.sm,
+                                      color: Colors.orange.shade300),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
       ],
     );
   }
