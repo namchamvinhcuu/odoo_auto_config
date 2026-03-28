@@ -258,5 +258,8 @@
   "wsizeLarge": "Large",
 
   "wsViewList": "List view",
-  "wsViewGrid": "Grid view"
+  "wsViewGrid": "Grid view",
+
+  "favourite": "Add to favourites",
+  "unfavourite": "Remove from favourites"
 }

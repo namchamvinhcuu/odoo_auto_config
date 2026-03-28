@@ -730,4 +730,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wsViewGrid => 'Grid view';
+
+  @override
+  String get favourite => 'Add to favourites';
+
+  @override
+  String get unfavourite => 'Remove from favourites';
 }

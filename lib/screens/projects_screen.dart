@@ -34,7 +34,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final json = await StorageService.loadProjects();
     setState(() {
       _projects = json.map((j) => ProjectInfo.fromJson(j)).toList();
-      _projects.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _projects.sort((a, b) {
+        if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
       _applyFilter();
       _loading = false;
     });
@@ -135,6 +138,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       await StorageService.addProject(result.toJson());
       await _load();
     }
+  }
+
+  Future<void> _toggleFavourite(ProjectInfo proj) async {
+    final updated = proj.copyWith(favourite: !proj.favourite);
+    await StorageService.removeProject(proj.path);
+    await StorageService.addProject(updated.toJson());
+    await _load();
   }
 
   Future<void> _remove(ProjectInfo project) async {
@@ -286,6 +296,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
+                    IconButton(
+                      onPressed: () => _toggleFavourite(proj),
+                      icon: Icon(
+                        proj.favourite ? Icons.star : Icons.star_border,
+                        color: proj.favourite ? Colors.amber : null,
+                      ),
+                      tooltip: proj.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                    ),
                     if (exists) ...[
                       IconButton(
                         onPressed: () => _openInVscode(proj.path),
@@ -362,6 +380,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: GestureDetector(
+                          onTap: () => _toggleFavourite(proj),
+                          child: Icon(
+                            proj.favourite ? Icons.star : Icons.star_border,
+                            size: 20,
+                            color: proj.favourite ? Colors.amber : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
                       const Spacer(),
                       // Odoo badge
                       Container(
@@ -444,6 +473,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       position: RelativeRect.fromLTRB(
           position.dx, position.dy, position.dx, position.dy),
       items: [
+        PopupMenuItem(
+          value: 'favourite',
+          child: Row(
+            children: [
+              Icon(proj.favourite ? Icons.star : Icons.star_border,
+                  size: AppIconSize.md,
+                  color: proj.favourite ? Colors.amber : null),
+              const SizedBox(width: AppSpacing.sm),
+              Text(proj.favourite ? context.l10n.unfavourite : context.l10n.favourite),
+            ],
+          ),
+        ),
         if (exists)
           PopupMenuItem(
             value: 'vscode',
@@ -491,6 +532,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
     if (result == null) return;
     switch (result) {
+      case 'favourite':
+        _toggleFavourite(proj);
       case 'vscode':
         _openInVscode(proj.path);
       case 'folder':

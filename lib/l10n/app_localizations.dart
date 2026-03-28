@@ -1419,6 +1419,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Grid view'**
   String get wsViewGrid;
+
+  /// No description provided for @favourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favourites'**
+  String get favourite;
+
+  /// No description provided for @unfavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favourites'**
+  String get unfavourite;
 }
 
 class _AppLocalizationsDelegate

@@ -716,4 +716,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get wsViewGrid => '격자 보기';
+
+  @override
+  String get favourite => '즐겨찾기 추가';
+
+  @override
+  String get unfavourite => '즐겨찾기 제거';
 }

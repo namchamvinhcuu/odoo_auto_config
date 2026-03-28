@@ -33,7 +33,10 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final json = await StorageService.loadWorkspaces();
     setState(() {
       _workspaces = json.map((j) => WorkspaceInfo.fromJson(j)).toList();
-      _workspaces.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _workspaces.sort((a, b) {
+        if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
       _applyFilter();
       _loading = false;
     });
@@ -113,6 +116,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         );
       }
     }
+  }
+
+  Future<void> _toggleFavourite(WorkspaceInfo ws) async {
+    final updated = ws.copyWith(favourite: !ws.favourite);
+    await StorageService.removeWorkspace(ws.path);
+    await StorageService.addWorkspace(updated.toJson());
+    await _load();
   }
 
   Future<void> _remove(WorkspaceInfo workspace) async {
@@ -227,6 +237,14 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
+                    IconButton(
+                      onPressed: () => _toggleFavourite(ws),
+                      icon: Icon(
+                        ws.favourite ? Icons.star : Icons.star_border,
+                        color: ws.favourite ? Colors.amber : null,
+                      ),
+                      tooltip: ws.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                    ),
                     if (exists) ...[
                       IconButton(
                         onPressed: () => _openInVscode(ws.path),
@@ -301,6 +319,18 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Favourite star top-right
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: GestureDetector(
+                          onTap: () => _toggleFavourite(ws),
+                          child: Icon(
+                            ws.favourite ? Icons.star : Icons.star_border,
+                            size: 20,
+                            color: ws.favourite ? Colors.amber : Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
                       const Spacer(),
                       // Project type as accent badge
                       if (ws.type.isNotEmpty) ...[
@@ -375,6 +405,18 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       position: RelativeRect.fromLTRB(
           position.dx, position.dy, position.dx, position.dy),
       items: [
+        PopupMenuItem(
+          value: 'favourite',
+          child: Row(
+            children: [
+              Icon(ws.favourite ? Icons.star : Icons.star_border,
+                  size: AppIconSize.md,
+                  color: ws.favourite ? Colors.amber : null),
+              const SizedBox(width: AppSpacing.sm),
+              Text(ws.favourite ? context.l10n.unfavourite : context.l10n.favourite),
+            ],
+          ),
+        ),
         if (exists)
           PopupMenuItem(
             value: 'vscode',
@@ -422,6 +464,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     );
     if (result == null) return;
     switch (result) {
+      case 'favourite':
+        _toggleFavourite(ws);
       case 'vscode':
         _openInVscode(ws.path);
       case 'folder':

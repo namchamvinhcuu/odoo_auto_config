@@ -726,4 +726,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get wsViewGrid => 'Dạng lưới';
+
+  @override
+  String get favourite => 'Thêm vào yêu thích';
+
+  @override
+  String get unfavourite => 'Bỏ yêu thích';
 }

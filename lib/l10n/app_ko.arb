@@ -237,5 +237,8 @@
   "wsizeLarge": "크게",
 
   "wsViewList": "목록 보기",
-  "wsViewGrid": "격자 보기"
+  "wsViewGrid": "격자 보기",
+
+  "favourite": "즐겨찾기 추가",
+  "unfavourite": "즐겨찾기 제거"
 }

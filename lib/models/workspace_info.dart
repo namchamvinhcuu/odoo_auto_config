@@ -4,6 +4,7 @@ class WorkspaceInfo {
   final String type;
   final String description;
   final String createdAt;
+  final bool favourite;
 
   const WorkspaceInfo({
     required this.name,
@@ -11,7 +12,17 @@ class WorkspaceInfo {
     required this.type,
     required this.description,
     required this.createdAt,
+    this.favourite = false,
   });
+
+  WorkspaceInfo copyWith({bool? favourite}) => WorkspaceInfo(
+        name: name,
+        path: path,
+        type: type,
+        description: description,
+        createdAt: createdAt,
+        favourite: favourite ?? this.favourite,
+      );
 
   Map<String, dynamic> toJson() => {
         'name': name,
@@ -19,6 +30,7 @@ class WorkspaceInfo {
         'type': type,
         'description': description,
         'createdAt': createdAt,
+        'favourite': favourite,
       };
 
   factory WorkspaceInfo.fromJson(Map<String, dynamic> json) => WorkspaceInfo(
@@ -27,5 +39,6 @@ class WorkspaceInfo {
         type: (json['type'] ?? '').toString(),
         description: (json['description'] ?? '').toString(),
         createdAt: (json['createdAt'] ?? '').toString(),
+        favourite: json['favourite'] as bool? ?? false,
       );
 }

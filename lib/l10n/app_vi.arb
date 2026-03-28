@@ -237,5 +237,8 @@
   "wsizeLarge": "Lớn",
 
   "wsViewList": "Dạng danh sách",
-  "wsViewGrid": "Dạng lưới"
+  "wsViewGrid": "Dạng lưới",
+
+  "favourite": "Thêm vào yêu thích",
+  "unfavourite": "Bỏ yêu thích"
 }
