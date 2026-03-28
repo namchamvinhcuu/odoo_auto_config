@@ -816,6 +816,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nginxDomainConflict => 'This subdomain is already in use';
 
   @override
+  String get nginxLink => 'Link existing Nginx';
+
+  @override
+  String get nginxLinkSubdomain => 'Existing subdomain';
+
+  @override
+  String get nginxLinkHint => 'Select the conf already created';
+
+  @override
+  String nginxLinked(String domain) {
+    return 'Linked to $domain';
+  }
+
+  @override
   String nginxPortConflict(int port, String name) {
     return 'Port $port is already proxied by \"$name\"';
   }

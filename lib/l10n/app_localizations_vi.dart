@@ -812,6 +812,20 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nginxDomainConflict => 'Subdomain này đã được sử dụng';
 
   @override
+  String get nginxLink => 'Liên kết Nginx có sẵn';
+
+  @override
+  String get nginxLinkSubdomain => 'Subdomain có sẵn';
+
+  @override
+  String get nginxLinkHint => 'Chọn conf đã tạo trước đó';
+
+  @override
+  String nginxLinked(String domain) {
+    return 'Đã liên kết: $domain';
+  }
+
+  @override
   String nginxPortConflict(int port, String name) {
     return 'Port $port đã được proxy bởi \"$name\"';
   }

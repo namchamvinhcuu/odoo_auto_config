@@ -271,6 +271,11 @@
   "nginxPreviewDomain": "Domain: {domain}",
   "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
   "nginxDomainConflict": "Subdomain này đã được sử dụng",
+  "nginxLink": "Liên kết Nginx có sẵn",
+  "nginxLinkSubdomain": "Subdomain có sẵn",
+  "nginxLinkHint": "Chọn conf đã tạo trước đó",
+  "nginxLinked": "Đã liên kết: {domain}",
+  "@nginxLinked": { "placeholders": { "domain": { "type": "String" } } },
   "nginxPortConflict": "Port {port} đã được proxy bởi \"{name}\"",
   "@nginxPortConflict": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } }
 }

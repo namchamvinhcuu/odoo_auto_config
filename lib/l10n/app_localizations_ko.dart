@@ -802,6 +802,20 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxDomainConflict => '이 서브도메인은 이미 사용 중입니다';
 
   @override
+  String get nginxLink => '기존 Nginx 연결';
+
+  @override
+  String get nginxLinkSubdomain => '기존 서브도메인';
+
+  @override
+  String get nginxLinkHint => '이전에 생성한 conf 선택';
+
+  @override
+  String nginxLinked(String domain) {
+    return '연결됨: $domain';
+  }
+
+  @override
   String nginxPortConflict(int port, String name) {
     return '포트 $port은(는) 이미 \"$name\"에서 프록시 중입니다';
   }

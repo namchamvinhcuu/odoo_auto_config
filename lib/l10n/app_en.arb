@@ -292,6 +292,11 @@
   "nginxPreviewDomain": "Domain: {domain}",
   "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } },
   "nginxDomainConflict": "This subdomain is already in use",
+  "nginxLink": "Link existing Nginx",
+  "nginxLinkSubdomain": "Existing subdomain",
+  "nginxLinkHint": "Select the conf already created",
+  "nginxLinked": "Linked to {domain}",
+  "@nginxLinked": { "placeholders": { "domain": { "type": "String" } } },
   "nginxPortConflict": "Port {port} is already proxied by \"{name}\"",
   "@nginxPortConflict": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } }
 }

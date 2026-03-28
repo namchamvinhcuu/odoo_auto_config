@@ -23,7 +23,6 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
   String _filterType = '';
-  final Map<String, bool> _nginxStatus = {};
 
   @override
   void initState() {
@@ -40,19 +39,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
 
-    final nginx = await NginxService.loadSettings();
-    final confDir = (nginx['confDir'] ?? '').toString();
-    final status = <String, bool>{};
-    if (confDir.isNotEmpty) {
-      for (final w in workspaces) {
-        status[w.path] = await NginxService.isNginxSetup(confDir, w.name);
-      }
-    }
-
     setState(() {
       _workspaces = workspaces;
-      _nginxStatus.clear();
-      _nginxStatus.addAll(status);
       _applyFilter();
       _loading = false;
     });
@@ -134,6 +122,53 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     }
   }
 
+  Future<void> _linkNginx(WorkspaceInfo ws) async {
+    final nginx = await NginxService.loadSettings();
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    if (confDir.isEmpty || suffix.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
+        );
+      }
+      return;
+    }
+
+    final existingSubs = await NginxService.getExistingSubdomains(confDir);
+    if (existingSubs.isEmpty) return;
+
+    if (!mounted) return;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(context.l10n.nginxLink),
+        children: existingSubs.map((sub) {
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, sub),
+            child: ListTile(
+              leading: const Icon(Icons.dns, color: Colors.green),
+              title: Text(sub),
+              subtitle: Text('$sub$suffix'),
+              dense: true,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+    if (selected == null) return;
+
+    final updated = ws.copyWith(nginxSubdomain: () => selected);
+    await StorageService.removeWorkspace(ws.path);
+    await StorageService.addWorkspace(updated.toJson());
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.nginxLinked('$selected$suffix'))),
+      );
+    }
+    await _load();
+  }
+
   Future<void> _setupNginx(WorkspaceInfo ws) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
@@ -179,6 +214,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         subdomain: result.subdomain,
         port: port,
       );
+      // Save subdomain and port to workspace
+      final updated = ws.copyWith(
+        nginxSubdomain: () => result.subdomain,
+        port: result.port ?? port,
+      );
+      await StorageService.removeWorkspace(ws.path);
+      await StorageService.addWorkspace(updated.toJson());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.nginxSetupSuccess(domain))),
@@ -219,12 +261,17 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     try {
       final nginx = await NginxService.loadSettings();
       final suffix = (nginx['domainSuffix'] ?? '').toString();
-      await NginxService.removeNginx(subdomain);
+      final sub = ws.nginxSubdomain ?? subdomain;
+      await NginxService.removeNginx(sub);
+      // Clear subdomain from workspace
+      final updated = ws.copyWith(nginxSubdomain: () => null);
+      await StorageService.removeWorkspace(ws.path);
+      await StorageService.addWorkspace(updated.toJson());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  context.l10n.nginxRemoveSuccess('$subdomain$suffix'))),
+                  context.l10n.nginxRemoveSuccess('$sub$suffix'))),
         );
       }
       await _load();
@@ -384,20 +431,39 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                       icon: const Icon(Icons.edit),
                       tooltip: context.l10n.edit,
                     ),
-                    IconButton(
-                      onPressed: () => _nginxStatus[ws.path] == true
-                          ? _removeNginx(ws)
-                          : _setupNginx(ws),
-                      icon: Icon(
-                        Icons.dns,
-                        color: _nginxStatus[ws.path] == true
-                            ? Colors.green
-                            : null,
+                    if (ws.hasNginx)
+                      IconButton(
+                        onPressed: () => _removeNginx(ws),
+                        icon: const Icon(Icons.dns, color: Colors.green),
+                        tooltip: context.l10n.nginxRemove,
+                      )
+                    else
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.dns),
+                        tooltip: context.l10n.nginxSetup,
+                        onSelected: (v) {
+                          if (v == 'setup') _setupNginx(ws);
+                          if (v == 'link') _linkNginx(ws);
+                        },
+                        itemBuilder: (ctx) => [
+                          PopupMenuItem(
+                            value: 'setup',
+                            child: Row(children: [
+                              const Icon(Icons.add, size: AppIconSize.md),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(context.l10n.nginxSetup),
+                            ]),
+                          ),
+                          PopupMenuItem(
+                            value: 'link',
+                            child: Row(children: [
+                              const Icon(Icons.link, size: AppIconSize.md),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text(context.l10n.nginxLink),
+                            ]),
+                          ),
+                        ],
                       ),
-                      tooltip: _nginxStatus[ws.path] == true
-                          ? context.l10n.nginxRemove
-                          : context.l10n.nginxSetup,
-                    ),
                     const Spacer(),
                     IconButton(
                       onPressed: () => _remove(ws),
@@ -583,19 +649,39 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
               ],
             ),
           ),
-        PopupMenuItem(
-            value: 'nginx',
+        if (ws.hasNginx)
+          PopupMenuItem(
+            value: 'nginx_remove',
             child: Row(
               children: [
-                Icon(Icons.dns, size: AppIconSize.md,
-                    color: _nginxStatus[ws.path] == true ? Colors.green : null),
+                const Icon(Icons.dns, size: AppIconSize.md, color: Colors.green),
                 const SizedBox(width: AppSpacing.sm),
-                Text(_nginxStatus[ws.path] == true
-                    ? context.l10n.nginxRemove
-                    : context.l10n.nginxSetup),
+                Text(context.l10n.nginxRemove),
+              ],
+            ),
+          )
+        else ...[
+          PopupMenuItem(
+            value: 'nginx_setup',
+            child: Row(
+              children: [
+                const Icon(Icons.dns, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.nginxSetup),
               ],
             ),
           ),
+          PopupMenuItem(
+            value: 'nginx_link',
+            child: Row(
+              children: [
+                const Icon(Icons.link, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.nginxLink),
+              ],
+            ),
+          ),
+        ],
         PopupMenuItem(
           value: 'edit',
           child: Row(
@@ -627,10 +713,12 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         _openInVscode(ws.path);
       case 'folder':
         _openInFileManager(ws.path);
-      case 'nginx':
-        _nginxStatus[ws.path] == true
-            ? _removeNginx(ws)
-            : _setupNginx(ws);
+      case 'nginx_setup':
+        _setupNginx(ws);
+      case 'nginx_link':
+        _linkNginx(ws);
+      case 'nginx_remove':
+        _removeNginx(ws);
       case 'edit':
         _editWorkspace(ws);
       case 'delete':

@@ -6,6 +6,7 @@ class WorkspaceInfo {
   final String createdAt;
   final bool favourite;
   final int? port;
+  final String? nginxSubdomain;
 
   const WorkspaceInfo({
     required this.name,
@@ -15,9 +16,17 @@ class WorkspaceInfo {
     required this.createdAt,
     this.favourite = false,
     this.port,
+    this.nginxSubdomain,
   });
 
-  WorkspaceInfo copyWith({bool? favourite, int? port}) => WorkspaceInfo(
+  bool get hasNginx => nginxSubdomain != null && nginxSubdomain!.isNotEmpty;
+
+  WorkspaceInfo copyWith({
+    bool? favourite,
+    int? port,
+    String? Function()? nginxSubdomain,
+  }) =>
+      WorkspaceInfo(
         name: name,
         path: path,
         type: type,
@@ -25,6 +34,9 @@ class WorkspaceInfo {
         createdAt: createdAt,
         favourite: favourite ?? this.favourite,
         port: port ?? this.port,
+        nginxSubdomain: nginxSubdomain != null
+            ? nginxSubdomain()
+            : this.nginxSubdomain,
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,6 +47,7 @@ class WorkspaceInfo {
         'createdAt': createdAt,
         'favourite': favourite,
         'port': port,
+        'nginxSubdomain': nginxSubdomain,
       };
 
   factory WorkspaceInfo.fromJson(Map<String, dynamic> json) => WorkspaceInfo(
@@ -45,5 +58,6 @@ class WorkspaceInfo {
         createdAt: (json['createdAt'] ?? '').toString(),
         favourite: json['favourite'] as bool? ?? false,
         port: json['port'] as int?,
+        nginxSubdomain: json['nginxSubdomain'] as String?,
       );
 }

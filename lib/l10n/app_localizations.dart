@@ -1564,6 +1564,30 @@ abstract class AppLocalizations {
   /// **'This subdomain is already in use'**
   String get nginxDomainConflict;
 
+  /// No description provided for @nginxLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing Nginx'**
+  String get nginxLink;
+
+  /// No description provided for @nginxLinkSubdomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing subdomain'**
+  String get nginxLinkSubdomain;
+
+  /// No description provided for @nginxLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the conf already created'**
+  String get nginxLinkHint;
+
+  /// No description provided for @nginxLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to {domain}'**
+  String nginxLinked(String domain);
+
   /// No description provided for @nginxPortConflict.
   ///
   /// In en, this message translates to:
