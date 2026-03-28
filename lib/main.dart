@@ -88,7 +88,7 @@ class OdooAutoConfigApp extends StatelessWidget {
         ),
       ),
       themeMode: theme.themeMode,
-      home: const HomeScreen(),
+      home: const SelectionArea(child: HomeScreen()),
     );
   }
 }
