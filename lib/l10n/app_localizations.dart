@@ -1407,6 +1407,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Large'**
   String get wsizeLarge;
+
+  /// No description provided for @wsViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get wsViewList;
+
+  /// No description provided for @wsViewGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid view'**
+  String get wsViewGrid;
 }
 
 class _AppLocalizationsDelegate

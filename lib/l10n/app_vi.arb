@@ -234,5 +234,8 @@
 
   "wsizeSmall": "Nhỏ",
   "wsizeMedium": "Vừa",
-  "wsizeLarge": "Lớn"
+  "wsizeLarge": "Lớn",
+
+  "wsViewList": "Dạng danh sách",
+  "wsViewGrid": "Dạng lưới"
 }

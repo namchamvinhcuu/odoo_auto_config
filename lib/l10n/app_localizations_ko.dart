@@ -709,4 +709,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get wsizeLarge => '크게';
+
+  @override
+  String get wsViewList => '목록 보기';
+
+  @override
+  String get wsViewGrid => '격자 보기';
 }

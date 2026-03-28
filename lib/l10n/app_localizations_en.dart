@@ -724,4 +724,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wsizeLarge => 'Large';
+
+  @override
+  String get wsViewList => 'List view';
+
+  @override
+  String get wsViewGrid => 'Grid view';
 }

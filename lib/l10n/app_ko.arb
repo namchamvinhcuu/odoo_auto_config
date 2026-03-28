@@ -234,5 +234,8 @@
 
   "wsizeSmall": "작게",
   "wsizeMedium": "보통",
-  "wsizeLarge": "크게"
+  "wsizeLarge": "크게",
+
+  "wsViewList": "목록 보기",
+  "wsViewGrid": "격자 보기"
 }

@@ -255,5 +255,8 @@
 
   "wsizeSmall": "Small",
   "wsizeMedium": "Medium",
-  "wsizeLarge": "Large"
+  "wsizeLarge": "Large",
+
+  "wsViewList": "List view",
+  "wsViewGrid": "Grid view"
 }

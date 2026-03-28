@@ -20,6 +20,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
   String _filterType = '';
+  bool _gridView = false;
 
   @override
   void initState() {
@@ -162,6 +163,295 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     }
   }
 
+  Widget _buildListView() {
+    return ListView.builder(
+      itemCount: _filtered.length,
+      itemBuilder: (context, index) {
+        final ws = _filtered[index];
+        final exists = Directory(ws.path).existsSync();
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Padding(
+            padding: AppSpacing.cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      exists ? _iconForType(ws.type) : Icons.folder_off,
+                      color: exists ? _colorForType(ws.type) : Colors.grey,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        ws.name,
+                        style: const TextStyle(
+                          fontSize: AppFontSize.lg,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (ws.type.isNotEmpty)
+                      Chip(
+                        label: Text(ws.type),
+                        avatar: Icon(_iconForType(ws.type),
+                            size: AppIconSize.md,
+                            color: _colorForType(ws.type)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    if (ws.description.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      Flexible(
+                        child: Chip(
+                          label: Text(ws.description,
+                              overflow: TextOverflow.ellipsis),
+                          avatar: const Icon(Icons.description,
+                              size: AppIconSize.md),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  ws.path,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: AppFontSize.sm,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    if (exists) ...[
+                      IconButton(
+                        onPressed: () => _openInVscode(ws.path),
+                        icon: const Icon(Icons.code),
+                        tooltip: context.l10n.openInVscode,
+                      ),
+                      IconButton(
+                        onPressed: () => _openInFileManager(ws.path),
+                        icon: const Icon(Icons.folder_open),
+                        tooltip: context.l10n.openFolder,
+                      ),
+                    ],
+                    IconButton(
+                      onPressed: () => _editWorkspace(ws),
+                      icon: const Icon(Icons.edit),
+                      tooltip: context.l10n.edit,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _remove(ws),
+                      icon: const Icon(Icons.delete),
+                      color: Colors.red,
+                      tooltip: context.l10n.removeFromList,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  int _gridCrossAxisCount(double width) {
+    if (width >= 1100) return 5;
+    if (width >= 800) return 4;
+    return 3;
+  }
+
+  Widget _buildGridView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _gridCrossAxisCount(constraints.maxWidth);
+        final cellWidth = (constraints.maxWidth - (columns - 1) * AppSpacing.sm) / columns;
+        final nameSize = cellWidth >= 200 ? AppFontSize.xl : AppFontSize.lg;
+        final typeSize = cellWidth >= 200 ? AppFontSize.md : AppFontSize.sm;
+        final btnSize = cellWidth * 0.12;
+        final btnBox = cellWidth * 0.18;
+
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 1,
+          ),
+          itemCount: _filtered.length,
+          itemBuilder: (context, index) {
+            final ws = _filtered[index];
+            final exists = Directory(ws.path).existsSync();
+            final color = exists ? _colorForType(ws.type) : Colors.grey;
+
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: exists ? () => _openInVscode(ws.path) : null,
+                onSecondaryTapDown: (details) =>
+                    _showGridContextMenu(details.globalPosition, ws, exists),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+                      // Project type as accent badge
+                      if (ws.type.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.xs),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: AppRadius.mediumBorderRadius,
+                          ),
+                          child: Text(
+                            ws.type,
+                            style: TextStyle(
+                              fontSize: typeSize,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                      // Project name - prominent
+                      Text(
+                        ws.name,
+                        style: TextStyle(
+                          fontSize: nameSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const Spacer(),
+                      // Quick action buttons (VSCode + folder only)
+                      if (exists)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          spacing: AppSpacing.lg,
+                          children: [
+                            _gridBtn(
+                              icon: Icons.code,
+                              tooltip: context.l10n.openInVscode,
+                              onPressed: () => _openInVscode(ws.path),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
+                            _gridBtn(
+                              icon: Icons.folder_open,
+                              tooltip: context.l10n.openFolder,
+                              onPressed: () => _openInFileManager(ws.path),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showGridContextMenu(
+      Offset position, WorkspaceInfo ws, bool exists) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx, position.dy),
+      items: [
+        if (exists)
+          PopupMenuItem(
+            value: 'vscode',
+            child: Row(
+              children: [
+                const Icon(Icons.code, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openInVscode),
+              ],
+            ),
+          ),
+        if (exists)
+          PopupMenuItem(
+            value: 'folder',
+            child: Row(
+              children: [
+                const Icon(Icons.folder_open, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openFolder),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              const Icon(Icons.edit, size: AppIconSize.md),
+              const SizedBox(width: AppSpacing.sm),
+              Text(context.l10n.edit),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete, size: AppIconSize.md, color: Colors.red),
+              const SizedBox(width: AppSpacing.sm),
+              Text(context.l10n.removeFromList,
+                  style: const TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (result == null) return;
+    switch (result) {
+      case 'vscode':
+        _openInVscode(ws.path);
+      case 'folder':
+        _openInFileManager(ws.path);
+      case 'edit':
+        _editWorkspace(ws);
+      case 'delete':
+        _remove(ws);
+    }
+  }
+
+  Widget _gridBtn({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    required double iconSize,
+    required double boxSize,
+    Color? color,
+  }) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, size: iconSize),
+      tooltip: tooltip,
+      color: color,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(minWidth: boxSize, minHeight: boxSize),
+    );
+  }
+
   Color _colorForType(String type) {
     switch (type.toLowerCase()) {
       case 'flutter':
@@ -216,6 +506,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
                 tooltip: context.l10n.refresh,
+              ),
+              IconButton(
+                onPressed: () => setState(() => _gridView = !_gridView),
+                icon: Icon(_gridView ? Icons.view_list : Icons.grid_view),
+                tooltip: _gridView ? context.l10n.wsViewList : context.l10n.wsViewGrid,
               ),
             ],
           ),
@@ -303,107 +598,9 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
             )
           else
             Expanded(
-              child: ListView.builder(
-                itemCount: _filtered.length,
-                itemBuilder: (context, index) {
-                  final ws = _filtered[index];
-                  final exists = Directory(ws.path).existsSync();
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Padding(
-                      padding: AppSpacing.cardPadding,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                exists
-                                    ? _iconForType(ws.type)
-                                    : Icons.folder_off,
-                                color: exists
-                                    ? _colorForType(ws.type)
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  ws.name,
-                                  style: const TextStyle(
-                                    fontSize: AppFontSize.lg,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              if (ws.type.isNotEmpty)
-                                Chip(
-                                  label: Text(ws.type),
-                                  avatar: Icon(_iconForType(ws.type),
-                                      size: AppIconSize.md,
-                                      color: _colorForType(ws.type)),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              if (ws.description.isNotEmpty) ...[
-                                const SizedBox(width: AppSpacing.sm),
-                                Flexible(
-                                  child: Chip(
-                                    label: Text(ws.description,
-                                        overflow: TextOverflow.ellipsis),
-                                    avatar: const Icon(Icons.description,
-                                        size: AppIconSize.md),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            ws.path,
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: AppFontSize.sm,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Wrap(
-                            alignment: WrapAlignment.end,
-                            spacing: AppSpacing.xs,
-                            children: [
-                              if (exists) ...[
-                                IconButton(
-                                  onPressed: () => _openInVscode(ws.path),
-                                  icon: const Icon(Icons.code),
-                                  tooltip: context.l10n.openInVscode,
-                                ),
-                                IconButton(
-                                  onPressed: () =>
-                                      _openInFileManager(ws.path),
-                                  icon: const Icon(Icons.folder_open),
-                                  tooltip: context.l10n.openFolder,
-                                ),
-                              ],
-                              IconButton(
-                                onPressed: () => _editWorkspace(ws),
-                                icon: const Icon(Icons.edit),
-                                tooltip: context.l10n.edit,
-                              ),
-                              IconButton(
-                                onPressed: () => _remove(ws),
-                                icon: const Icon(Icons.delete),
-                                color: Colors.red,
-                                tooltip: context.l10n.removeFromList,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: _gridView
+                  ? _buildGridView()
+                  : _buildListView(),
             ),
         ],
       ),

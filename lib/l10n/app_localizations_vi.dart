@@ -720,4 +720,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get wsizeLarge => 'Lớn';
+
+  @override
+  String get wsViewList => 'Dạng danh sách';
+
+  @override
+  String get wsViewGrid => 'Dạng lưới';
 }
