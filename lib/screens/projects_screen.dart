@@ -9,6 +9,7 @@ import '../services/platform_service.dart';
 import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/nginx_setup_dialog.dart';
+import 'home_screen.dart';
 import 'quick_create_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -211,11 +212,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
-        );
-      }
+      // Navigate to Settings > Nginx tab (index 2)
+      HomeScreen.navigateToSettings(settingsTab: 2);
       return;
     }
 

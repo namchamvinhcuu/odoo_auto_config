@@ -19,6 +19,9 @@ import 'venv_screen.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  /// Set by HomeScreen to switch to a specific tab on navigate
+  static int initialTab = 0;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -44,7 +47,12 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(
+      length: 4,
+      vsync: this,
+      initialIndex: SettingsScreen.initialTab,
+    );
+    SettingsScreen.initialTab = 0; // reset after use
     _loadNginxSettings();
     _scanEnvironment();
   }

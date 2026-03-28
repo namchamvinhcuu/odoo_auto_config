@@ -8,6 +8,7 @@ import '../services/platform_service.dart';
 import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/nginx_setup_dialog.dart';
+import 'home_screen.dart';
 import 'projects_screen.dart';
 
 class WorkspacesScreen extends StatefulWidget {
@@ -127,11 +128,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final confDir = (nginx['confDir'] ?? '').toString();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (confDir.isEmpty || suffix.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
-        );
-      }
+      HomeScreen.navigateToSettings(settingsTab: 2);
       return;
     }
 
@@ -173,11 +170,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
-        );
-      }
+      HomeScreen.navigateToSettings(settingsTab: 2);
       return;
     }
 

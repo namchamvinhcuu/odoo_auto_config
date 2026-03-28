@@ -19,13 +19,36 @@ enum WindowSize {
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  /// Navigate to Settings tab, optionally to a specific sub-tab
+  static void navigateToSettings({int settingsTab = 0}) {
+    SettingsScreen.initialTab = settingsTab;
+    _HomeScreenState._instance?._goToTab(3);
+  }
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static _HomeScreenState? _instance;
   int _selectedIndex = 0;
+
+  void _goToTab(int index) {
+    setState(() => _selectedIndex = index);
+  }
   WindowSize _windowSize = WindowSize.medium;
+
+  @override
+  void initState() {
+    super.initState();
+    _instance = this;
+  }
+
+  @override
+  void dispose() {
+    if (_instance == this) _instance = null;
+    super.dispose();
+  }
 
   static const _screens = <Widget>[
     ProjectsScreen(),
