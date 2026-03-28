@@ -227,6 +227,25 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     return candidates;
   }
 
+  /// Resolve docker binary path (macOS GUI apps don't have PATH from shell)
+  static Future<String> get dockerPath async {
+    if (!isMacOS) return 'docker';
+
+    // Check common docker binary locations on macOS
+    final candidates = [
+      '/usr/local/bin/docker',
+      '/opt/homebrew/bin/docker',
+      '${Platform.environment['HOME']}/.orbstack/bin/docker',
+      '/Applications/Docker.app/Contents/Resources/bin/docker',
+      '/Applications/OrbStack.app/Contents/MacOS/xbin/docker',
+    ];
+
+    for (final path in candidates) {
+      if (await File(path).exists()) return path;
+    }
+    return 'docker'; // fallback
+  }
+
   static String venvActivateScript(String venvPath) {
     if (isWindows) {
       return '$venvPath\\Scripts\\activate.bat';

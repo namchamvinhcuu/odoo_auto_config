@@ -5,8 +5,9 @@ class DockerInstallService {
   /// Check if Docker is installed
   static Future<bool> isInstalled() async {
     try {
+      final docker = await PlatformService.dockerPath;
       final result =
-          await Process.run('docker', ['--version'], runInShell: true);
+          await Process.run(docker, ['--version'], runInShell: true);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -16,8 +17,9 @@ class DockerInstallService {
   /// Check if Docker daemon is running
   static Future<bool> isRunning() async {
     try {
+      final docker = await PlatformService.dockerPath;
       final result =
-          await Process.run('docker', ['info'], runInShell: true);
+          await Process.run(docker, ['info'], runInShell: true);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -27,8 +29,9 @@ class DockerInstallService {
   /// Get Docker version string
   static Future<String?> getVersion() async {
     try {
+      final docker = await PlatformService.dockerPath;
       final result =
-          await Process.run('docker', ['--version'], runInShell: true);
+          await Process.run(docker, ['--version'], runInShell: true);
       if (result.exitCode == 0) {
         return result.stdout.toString().trim();
       }
@@ -39,8 +42,9 @@ class DockerInstallService {
   /// Get Docker Compose version string
   static Future<String?> getComposeVersion() async {
     try {
+      final docker = await PlatformService.dockerPath;
       final result = await Process.run(
-          'docker', ['compose', 'version'], runInShell: true);
+          docker, ['compose', 'version'], runInShell: true);
       if (result.exitCode == 0) {
         return result.stdout.toString().trim();
       }
