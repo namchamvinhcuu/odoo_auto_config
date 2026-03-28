@@ -60,7 +60,7 @@ class OdooAutoConfigApp extends StatelessWidget {
     final localeService = context.watch<LocaleService>();
 
     return MaterialApp(
-      title: 'Odoo Auto Config',
+      title: 'Workspace Configuration',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

@@ -1,6 +1,6 @@
 {
   "@@locale": "ko",
-  "appTitle": "Odoo Auto Config",
+  "appTitle": "Workspace Configuration",
 
   "navOdooProjects": "Odoo 프로젝트",
   "navProfiles": "프로필",

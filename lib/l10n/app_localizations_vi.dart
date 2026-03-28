@@ -9,7 +9,7 @@ class AppLocalizationsVi extends AppLocalizations {
   AppLocalizationsVi([String locale = 'vi']) : super(locale);
 
   @override
-  String get appTitle => 'Odoo Auto Config';
+  String get appTitle => 'Workspace Configuration';
 
   @override
   String get navOdooProjects => 'Dự án Odoo';

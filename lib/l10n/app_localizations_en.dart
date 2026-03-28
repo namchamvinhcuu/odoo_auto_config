@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Odoo Auto Config';
+  String get appTitle => 'Workspace Configuration';
 
   @override
   String get navOdooProjects => 'Odoo Projects';

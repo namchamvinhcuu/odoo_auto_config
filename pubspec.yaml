@@ -104,7 +104,7 @@ flutter_launcher_icons:
     generate: true
 
 msix_config:
-  display_name: Odoo Auto Config
+  display_name: Workspace Configuration
   publisher_display_name: Nam
   publisher: CN=Nam, O=Nam, C=VN
   identity_name: com.nam.odoo-auto-config

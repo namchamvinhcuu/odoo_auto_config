@@ -111,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
+                    textAlign: TextAlign.center,
+                    softWrap: true,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   // Window size selector
