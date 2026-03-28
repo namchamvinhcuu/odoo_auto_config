@@ -387,10 +387,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
             return Card(
               clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: exists ? () => _openInVscode(proj.path) : null,
-                onSecondaryTapDown: (details) =>
-                    _showGridContextMenu(details.globalPosition, proj, exists),
+              child: Tooltip(
+                message: proj.description.isNotEmpty ? proj.description : proj.path,
+                waitDuration: const Duration(milliseconds: 500),
+                child: InkWell(
+                  onTap: exists ? () => _openInVscode(proj.path) : null,
+                  onSecondaryTapDown: (details) =>
+                      _showGridContextMenu(details.globalPosition, proj, exists),
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
@@ -478,6 +481,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
             );
           },

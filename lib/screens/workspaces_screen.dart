@@ -310,10 +310,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
 
             return Card(
               clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: exists ? () => _openInVscode(ws.path) : null,
-                onSecondaryTapDown: (details) =>
-                    _showGridContextMenu(details.globalPosition, ws, exists),
+              child: Tooltip(
+                message: ws.description.isNotEmpty ? ws.description : ws.path,
+                waitDuration: const Duration(milliseconds: 500),
+                child: InkWell(
+                  onTap: exists ? () => _openInVscode(ws.path) : null,
+                  onSecondaryTapDown: (details) =>
+                      _showGridContextMenu(details.globalPosition, ws, exists),
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
@@ -394,6 +397,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
             );
           },
