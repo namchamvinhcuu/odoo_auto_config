@@ -8,17 +8,22 @@ class PlatformService {
     await scriptFile.writeAsString(script);
 
     try {
-      final result = await Process.run(
-        'powershell',
-        ['-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', scriptFile.path],
-        runInShell: true,
-      );
+      final result = await Process.run('powershell', [
+        '-NoProfile',
+        '-STA',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptFile.path,
+      ], runInShell: true);
 
       final path = result.stdout.toString().trim();
       if (path.isNotEmpty && result.exitCode == 0) return path;
       return null;
     } finally {
-      try { await scriptFile.delete(); } catch (_) {}
+      try {
+        await scriptFile.delete();
+      } catch (_) {}
     }
   }
 
@@ -123,7 +128,8 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
   static List<String> get pythonCandidates {
     if (isWindows) {
       final candidates = <String>['python', 'python3', 'py'];
-      final userProfile = Platform.environment['USERPROFILE'] ?? r'C:\Users\Default';
+      final userProfile =
+          Platform.environment['USERPROFILE'] ?? r'C:\Users\Default';
       final wellKnownDirs = <String>[
         '$userProfile\\AppData\\Local\\Programs\\Python',
         r'C:\Python',
@@ -190,10 +196,7 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         } catch (_) {}
       }
     } else if (isLinux) {
-      candidates.addAll([
-        '/usr/local/bin/python3',
-        '/usr/bin/python3',
-      ]);
+      candidates.addAll(['/usr/local/bin/python3', '/usr/bin/python3']);
       // Discover versioned python binaries (e.g. python3.11, python3.12)
       for (final dir in ['/usr/bin', '/usr/local/bin']) {
         try {
