@@ -861,7 +861,23 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nginxInitDomainHint => 'VD: namchamvinhcuu.test';
 
   @override
+  String get nginxImport => 'Nhập có sẵn';
+
+  @override
   String get nginxInitCreate => 'Tạo cấu trúc';
+
+  @override
+  String get nginxDeleteTitle => 'Xóa cấu hình Nginx?';
+
+  @override
+  String get nginxDeleteConfirmText =>
+      'Thao tác này sẽ xóa cấu hình nginx khỏi ứng dụng.';
+
+  @override
+  String get nginxDeleteAlsoFolder => 'Đồng thời xóa thư mục nginx trên ổ đĩa';
+
+  @override
+  String get nginxDeleted => 'Đã xóa cấu hình Nginx';
 
   @override
   String nginxInitSuccess(String path) {

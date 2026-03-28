@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -401,91 +402,303 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   // ── Tab: Nginx ──
 
+  bool get _hasNginxConfig => _confDirController.text.trim().isNotEmpty;
+  bool _editingNginx = false;
+
+  Future<void> _importNginxFolder() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+          dialogTitle: context.l10n.nginxConfDir);
+    } else {
+      path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: context.l10n.nginxConfDir);
+    }
+    if (path == null) return;
+
+    // Auto-detect: if user picked the nginx root folder, use conf.d inside it
+    final confDInside = Directory('$path/conf.d');
+    final confDir = await confDInside.exists() ? '$path/conf.d' : path;
+
+    setState(() {
+      _confDirController.text = confDir;
+    });
+    await _saveNginxSettings();
+  }
+
+  Future<void> _deleteNginxConfig() async {
+    bool deleteFolder = false;
+    final confDir = _confDirController.text.trim();
+    // Derive nginx root (parent of conf.d)
+    final nginxRoot = confDir.endsWith('conf.d')
+        ? confDir.substring(0, confDir.length - 6)
+        : confDir;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(context.l10n.nginxDeleteTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.l10n.nginxDeleteConfirmText),
+              const SizedBox(height: AppSpacing.xs),
+              Text(confDir,
+                  style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.sm,
+                      color: Colors.grey.shade500)),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Checkbox(
+                    value: deleteFolder,
+                    onChanged: (v) =>
+                        setDialogState(() => deleteFolder = v ?? false),
+                  ),
+                  Expanded(
+                    child: Text(context.l10n.nginxDeleteAlsoFolder,
+                        style: const TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.l10n.cancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(context.l10n.delete)),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    if (deleteFolder) {
+      try {
+        final dir = Directory(nginxRoot);
+        if (await dir.exists()) await dir.delete(recursive: true);
+      } catch (_) {}
+    }
+
+    setState(() {
+      _confDirController.clear();
+      _domainSuffixController.clear();
+      _containerNameController.text = 'nginx';
+    });
+    await _saveNginxSettings();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.nginxDeleted)),
+      );
+    }
+  }
+
   Widget _buildNginxTab() {
+    if (!_hasNginxConfig && !_editingNginx) {
+      return _buildNginxEmptyState();
+    }
+
     return SingleChildScrollView(
       padding: AppSpacing.screenPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(context.l10n.nginxSettings,
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _confDirController,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.nginxConfDir,
-                    hintText: context.l10n.nginxConfDirHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  readOnly: true,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton.filled(
-                onPressed: _pickConfDir,
-                icon: const Icon(Icons.folder_open),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _domainSuffixController,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.nginxDomainSuffix,
-                    hintText: context.l10n.nginxDomainSuffixHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: TextField(
-                  controller: _containerNameController,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.nginxContainerName,
-                    hintText: context.l10n.nginxContainerNameHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: _saveNginxSettings,
-            icon: const Icon(Icons.save),
-            label: Text(context.l10n.save),
-          ),
-          const SizedBox(height: AppSpacing.xxxl),
-          const Divider(),
-          const SizedBox(height: AppSpacing.xxl),
+      child: _editingNginx ? _buildNginxEditForm() : _buildNginxInfoCard(),
+    );
+  }
 
-          // ── Init Nginx Project ──
-          Text(context.l10n.nginxInitTitle,
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.sm),
-          Text(context.l10n.nginxInitSubtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey)),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.tonalIcon(
-            onPressed: _showInitNginxDialog,
-            icon: const Icon(Icons.create_new_folder),
-            label: Text(context.l10n.nginxInitCreate),
-          ),
-        ],
+  Widget _buildNginxEmptyState() {
+    return Padding(
+      padding: AppSpacing.screenPadding,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.dns_outlined,
+                size: 64, color: Colors.grey.shade600),
+            const SizedBox(height: AppSpacing.lg),
+            Text(context.l10n.nginxSettings,
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            Text(context.l10n.nginxInitSubtitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey),
+                textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.xxl),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton.icon(
+                  onPressed: _showInitNginxDialog,
+                  icon: const Icon(Icons.create_new_folder),
+                  label: Text(context.l10n.nginxInitCreate),
+                ),
+                const SizedBox(width: AppSpacing.lg),
+                FilledButton.tonalIcon(
+                  onPressed: _importNginxFolder,
+                  icon: const Icon(Icons.download),
+                  label: Text(context.l10n.nginxImport),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildNginxInfoCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: AppSpacing.cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.dns, color: Colors.green, size: AppIconSize.xl),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(context.l10n.nginxSettings,
+                        style: const TextStyle(
+                            fontSize: AppFontSize.xl,
+                            fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => setState(() => _editingNginx = true),
+                      icon: const Icon(Icons.edit),
+                      tooltip: context.l10n.edit,
+                    ),
+                    IconButton(
+                      onPressed: _deleteNginxConfig,
+                      icon: const Icon(Icons.delete),
+                      color: Colors.red,
+                      tooltip: context.l10n.delete,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _infoRow(context.l10n.nginxConfDir,
+                    _confDirController.text),
+                const SizedBox(height: AppSpacing.xs),
+                _infoRow(context.l10n.nginxDomainSuffix,
+                    _domainSuffixController.text),
+                const SizedBox(height: AppSpacing.xs),
+                _infoRow(context.l10n.nginxContainerName,
+                    _containerNameController.text),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 180,
+          child: Text(label,
+              style: TextStyle(
+                  color: Colors.grey.shade500, fontSize: AppFontSize.sm)),
+        ),
+        Expanded(
+          child: Text(value,
+              style: const TextStyle(
+                  fontFamily: 'monospace', fontSize: AppFontSize.sm)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNginxEditForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(context.l10n.nginxSettings,
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _confDirController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.nginxConfDir,
+                  hintText: context.l10n.nginxConfDirHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                readOnly: true,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            IconButton.filled(
+              onPressed: _pickConfDir,
+              icon: const Icon(Icons.folder_open),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _domainSuffixController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.nginxDomainSuffix,
+                  hintText: context.l10n.nginxDomainSuffixHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: TextField(
+                controller: _containerNameController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.nginxContainerName,
+                  hintText: context.l10n.nginxContainerNameHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            FilledButton.icon(
+              onPressed: () async {
+                await _saveNginxSettings();
+                setState(() => _editingNginx = false);
+              },
+              icon: const Icon(Icons.save),
+              label: Text(context.l10n.save),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            TextButton(
+              onPressed: () {
+                _loadNginxSettings();
+                setState(() => _editingNginx = false);
+              },
+              child: Text(context.l10n.cancel),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

@@ -851,7 +851,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxInitDomainHint => '예: namchamvinhcuu.test';
 
   @override
+  String get nginxImport => '기존 가져오기';
+
+  @override
   String get nginxInitCreate => '구조 생성';
+
+  @override
+  String get nginxDeleteTitle => 'Nginx 설정 삭제?';
+
+  @override
+  String get nginxDeleteConfirmText => '앱에서 nginx 설정이 제거됩니다.';
+
+  @override
+  String get nginxDeleteAlsoFolder => '디스크에서 nginx 폴더도 삭제';
+
+  @override
+  String get nginxDeleted => 'Nginx 설정이 제거되었습니다';
 
   @override
   String nginxInitSuccess(String path) {

@@ -866,7 +866,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nginxInitDomainHint => 'e.g. namchamvinhcuu.test';
 
   @override
+  String get nginxImport => 'Import Existing';
+
+  @override
   String get nginxInitCreate => 'Create Structure';
+
+  @override
+  String get nginxDeleteTitle => 'Delete Nginx Configuration?';
+
+  @override
+  String get nginxDeleteConfirmText =>
+      'This will remove nginx settings from the app.';
+
+  @override
+  String get nginxDeleteAlsoFolder => 'Also delete nginx folder from disk';
+
+  @override
+  String get nginxDeleted => 'Nginx configuration removed';
 
   @override
   String nginxInitSuccess(String path) {

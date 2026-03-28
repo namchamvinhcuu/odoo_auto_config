@@ -1654,11 +1654,41 @@ abstract class AppLocalizations {
   /// **'e.g. namchamvinhcuu.test'**
   String get nginxInitDomainHint;
 
+  /// No description provided for @nginxImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Existing'**
+  String get nginxImport;
+
   /// No description provided for @nginxInitCreate.
   ///
   /// In en, this message translates to:
   /// **'Create Structure'**
   String get nginxInitCreate;
+
+  /// No description provided for @nginxDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Nginx Configuration?'**
+  String get nginxDeleteTitle;
+
+  /// No description provided for @nginxDeleteConfirmText.
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove nginx settings from the app.'**
+  String get nginxDeleteConfirmText;
+
+  /// No description provided for @nginxDeleteAlsoFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Also delete nginx folder from disk'**
+  String get nginxDeleteAlsoFolder;
+
+  /// No description provided for @nginxDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx configuration removed'**
+  String get nginxDeleted;
 
   /// No description provided for @nginxInitSuccess.
   ///
