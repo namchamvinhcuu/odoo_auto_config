@@ -1618,6 +1618,72 @@ abstract class AppLocalizations {
   /// **'Please open Docker Desktop to start the daemon.'**
   String get dockerOpenDesktop;
 
+  /// No description provided for @nginxInitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Initialize Nginx Project'**
+  String get nginxInitTitle;
+
+  /// No description provided for @nginxInitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create nginx folder structure with docker-compose, SSL certs, and config.'**
+  String get nginxInitSubtitle;
+
+  /// No description provided for @nginxInitBaseDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Directory'**
+  String get nginxInitBaseDir;
+
+  /// No description provided for @nginxInitFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder Name'**
+  String get nginxInitFolderName;
+
+  /// No description provided for @nginxInitDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain (for SSL cert)'**
+  String get nginxInitDomain;
+
+  /// No description provided for @nginxInitDomainHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. namchamvinhcuu.test'**
+  String get nginxInitDomainHint;
+
+  /// No description provided for @nginxInitCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Structure'**
+  String get nginxInitCreate;
+
+  /// No description provided for @nginxInitSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx project created at {path}'**
+  String nginxInitSuccess(String path);
+
+  /// No description provided for @nginxInitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed: {error}'**
+  String nginxInitFailed(String error);
+
+  /// No description provided for @nginxInitMkcertRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'mkcert is required to generate SSL certificates'**
+  String get nginxInitMkcertRequired;
+
+  /// No description provided for @nginxInitMkcertInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install: brew install mkcert (macOS) or apt install mkcert (Linux)'**
+  String get nginxInitMkcertInstall;
+
   /// No description provided for @nginxInvalidSubdomain.
   ///
   /// In en, this message translates to:

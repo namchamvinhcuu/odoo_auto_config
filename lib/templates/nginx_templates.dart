@@ -87,4 +87,75 @@ server {
 }
 ''';
   }
+
+  // ── Project structure templates ──
+
+  static String nginxConf({
+    required String certFile,
+    required String certKeyFile,
+  }) {
+    return '''user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+
+    # SSL
+    ssl_certificate     $certFile;
+    ssl_certificate_key $certKeyFile;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # Timeout & Buffer
+    keepalive_timeout           86400s;
+    proxy_connect_timeout       86400s;
+    proxy_send_timeout          86400s;
+    proxy_read_timeout          86400s;
+    client_body_timeout         86400s;
+    client_header_timeout       86400s;
+    client_max_body_size        1024M;
+    proxy_request_buffering     off;
+    proxy_buffering             off;
+    proxy_buffers               8 16k;
+    proxy_buffer_size           8k;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+''';
+  }
+
+  static String dockerCompose() {
+    return '''services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx
+    network_mode: "host"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+''';
+  }
 }

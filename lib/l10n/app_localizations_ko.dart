@@ -832,6 +832,45 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dockerOpenDesktop => 'Docker Desktop을 열어 데몬을 시작하세요.';
 
   @override
+  String get nginxInitTitle => 'Nginx 프로젝트 초기화';
+
+  @override
+  String get nginxInitSubtitle =>
+      'docker-compose, SSL 인증서, 설정이 포함된 nginx 폴더 구조를 생성합니다.';
+
+  @override
+  String get nginxInitBaseDir => '기본 디렉토리';
+
+  @override
+  String get nginxInitFolderName => '폴더 이름';
+
+  @override
+  String get nginxInitDomain => '도메인 (SSL 인증서용)';
+
+  @override
+  String get nginxInitDomainHint => '예: namchamvinhcuu.test';
+
+  @override
+  String get nginxInitCreate => '구조 생성';
+
+  @override
+  String nginxInitSuccess(String path) {
+    return '$path에 nginx 프로젝트가 생성되었습니다';
+  }
+
+  @override
+  String nginxInitFailed(String error) {
+    return '실패: $error';
+  }
+
+  @override
+  String get nginxInitMkcertRequired => 'SSL 인증서 생성에 mkcert가 필요합니다';
+
+  @override
+  String get nginxInitMkcertInstall =>
+      '설치: brew install mkcert (macOS) 또는 apt install mkcert (Linux)';
+
+  @override
   String get nginxInvalidSubdomain => '소문자, 숫자, 하이픈만 허용됩니다';
 
   @override

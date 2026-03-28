@@ -137,6 +137,18 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  void _showInitNginxDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _NginxInitDialog(
+        onCreated: (confDir) {
+          _confDirController.text = confDir;
+          _saveNginxSettings();
+        },
+      ),
+    );
+  }
+
   void _showDockerInstallDialog() {
     showDialog(
       context: context,
@@ -452,6 +464,25 @@ class _SettingsScreenState extends State<SettingsScreen>
             onPressed: _saveNginxSettings,
             icon: const Icon(Icons.save),
             label: Text(context.l10n.save),
+          ),
+          const SizedBox(height: AppSpacing.xxxl),
+          const Divider(),
+          const SizedBox(height: AppSpacing.xxl),
+
+          // ── Init Nginx Project ──
+          Text(context.l10n.nginxInitTitle,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Text(context.l10n.nginxInitSubtitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.grey)),
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton.tonalIcon(
+            onPressed: _showInitNginxDialog,
+            icon: const Icon(Icons.create_new_folder),
+            label: Text(context.l10n.nginxInitCreate),
           ),
         ],
       ),
@@ -798,6 +829,253 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
             label: Text(_installing
                 ? context.l10n.installing
                 : context.l10n.dockerInstall),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Nginx Init Dialog ──
+
+class _NginxInitDialog extends StatefulWidget {
+  final void Function(String confDir) onCreated;
+  const _NginxInitDialog({required this.onCreated});
+
+  @override
+  State<_NginxInitDialog> createState() => _NginxInitDialogState();
+}
+
+class _NginxInitDialogState extends State<_NginxInitDialog> {
+  final _folderNameController = TextEditingController(text: 'nginx');
+  final _domainController = TextEditingController();
+  String _baseDir = '';
+  bool _creating = false;
+  bool _installingMkcert = false;
+  bool? _mkcertAvailable;
+  final List<String> _logLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkMkcert();
+  }
+
+  Future<void> _checkMkcert() async {
+    final ok = await NginxService.isMkcertAvailable();
+    if (mounted) setState(() => _mkcertAvailable = ok);
+  }
+
+  Future<void> _installMkcert() async {
+    setState(() {
+      _installingMkcert = true;
+      _logLines.clear();
+    });
+    final exitCode = await NginxService.installMkcert((line) {
+      if (mounted) setState(() => _logLines.add(line));
+    });
+    if (mounted) {
+      setState(() => _installingMkcert = false);
+      if (exitCode == 0) {
+        await _checkMkcert();
+      }
+    }
+  }
+
+  Future<void> _pickBaseDir() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+          dialogTitle: context.l10n.nginxInitBaseDir);
+    } else {
+      path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: context.l10n.nginxInitBaseDir);
+    }
+    if (path != null) setState(() => _baseDir = path!);
+  }
+
+  bool get _isValid =>
+      _baseDir.isNotEmpty &&
+      _folderNameController.text.trim().isNotEmpty &&
+      _domainController.text.trim().isNotEmpty;
+
+  Future<void> _create() async {
+    if (!_isValid) return;
+    setState(() {
+      _creating = true;
+      _logLines.clear();
+    });
+
+    try {
+      final projectDir = await NginxService.initProject(
+        baseDir: _baseDir,
+        folderName: _folderNameController.text.trim(),
+        domain: _domainController.text.trim(),
+        onOutput: (line) {
+          if (mounted) setState(() => _logLines.add(line));
+        },
+      );
+
+      if (mounted) {
+        setState(() => _creating = false);
+        final confDir = '$projectDir/conf.d';
+        widget.onCreated(confDir);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxInitSuccess(projectDir))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _creating = false;
+          _logLines.add('[ERROR] $e');
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _folderNameController.dispose();
+    _domainController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.nginxInitTitle),
+      content: SizedBox(
+        width: AppDialog.widthMd,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.l10n.nginxInitSubtitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey)),
+            const SizedBox(height: AppSpacing.lg),
+            if (_mkcertAvailable == null)
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: CircularProgressIndicator()))
+            else if (_mkcertAvailable == false) ...[
+              StatusCard(
+                title: context.l10n.nginxInitMkcertRequired,
+                subtitle: context.l10n.nginxInitMkcertInstall,
+                status: StatusType.error,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: _installingMkcert ? null : _installMkcert,
+                icon: _installingMkcert
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.download),
+                label: Text(_installingMkcert
+                    ? context.l10n.installing
+                    : 'Install mkcert'),
+              ),
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ]
+            else ...[
+              // mkcert status
+              Card(
+                color: Colors.green.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: AppIconSize.md),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('mkcert',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade300)),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text('ready', style: TextStyle(color: Colors.green.shade300)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: TextEditingController(text: _baseDir),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.nginxInitBaseDir,
+                        hintText: context.l10n.browseToSelect,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      readOnly: true,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  IconButton.filled(
+                    onPressed: _pickBaseDir,
+                    icon: const Icon(Icons.folder_open),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _folderNameController,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.nginxInitFolderName,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: TextField(
+                      controller: _domainController,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.nginxInitDomain,
+                        hintText: context.l10n.nginxInitDomainHint,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            onPressed: _creating ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.close)),
+        if (_mkcertAvailable == true)
+          FilledButton.icon(
+            onPressed: (_creating || !_isValid) ? null : _create,
+            icon: _creating
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.create_new_folder),
+            label: Text(_creating
+                ? context.l10n.creating
+                : context.l10n.nginxInitCreate),
           ),
       ],
     );

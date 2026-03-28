@@ -6,6 +6,163 @@ import 'command_runner.dart';
 import 'storage_service.dart';
 
 class NginxService {
+  // ── Init project structure ──
+
+  static Future<bool> isMkcertAvailable() async {
+    try {
+      final result =
+          await Process.run('mkcert', ['-version'], runInShell: true);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static ({String executable, List<String> args, String description})
+      mkcertInstallCommand() {
+    if (Platform.isWindows) {
+      return (
+        executable: 'winget',
+        args: [
+          'install',
+          'FiloSottile.mkcert',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+        ],
+        description: 'winget install FiloSottile.mkcert',
+      );
+    } else if (Platform.isMacOS) {
+      return (
+        executable: 'brew',
+        args: ['install', 'mkcert'],
+        description: 'brew install mkcert',
+      );
+    } else {
+      return (
+        executable: 'pkexec',
+        args: ['apt', 'install', '-y', 'mkcert'],
+        description: 'pkexec apt install -y mkcert',
+      );
+    }
+  }
+
+  static Future<int> installMkcert(void Function(String line) onOutput) async {
+    final cmd = mkcertInstallCommand();
+    onOutput('[+] Running: ${cmd.description}');
+    onOutput('');
+
+    try {
+      final process = await Process.start(
+        cmd.executable,
+        cmd.args,
+        runInShell: true,
+      );
+
+      final stdoutDone = process.stdout
+          .transform(const SystemEncoding().decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) onOutput(line);
+        }
+      }).asFuture();
+
+      final stderrDone = process.stderr
+          .transform(const SystemEncoding().decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) onOutput('[WARN] $line');
+        }
+      }).asFuture();
+
+      await Future.wait([stdoutDone, stderrDone]);
+      final exitCode = await process.exitCode;
+
+      if (exitCode == 0) {
+        onOutput('');
+        onOutput('[+] mkcert installed successfully!');
+        // Install CA
+        onOutput('[+] Installing local CA...');
+        await CommandRunner.run('mkcert', ['-install']);
+        onOutput('[+] Done!');
+      } else {
+        onOutput('');
+        onOutput('[ERROR] Installation failed with exit code $exitCode');
+      }
+
+      return exitCode;
+    } catch (e) {
+      onOutput('[ERROR] $e');
+      return -1;
+    }
+  }
+
+  static Future<String> initProject({
+    required String baseDir,
+    required String folderName,
+    required String domain,
+    required void Function(String line) onOutput,
+  }) async {
+    final projectDir = p.join(baseDir, folderName);
+    final confDir = p.join(projectDir, 'conf.d');
+    final certsDir = p.join(projectDir, 'certs');
+
+    // Create directories
+    onOutput('[+] Creating directories...');
+    await Directory(confDir).create(recursive: true);
+    await Directory(certsDir).create(recursive: true);
+    onOutput('[+] Created: $confDir');
+    onOutput('[+] Created: $certsDir');
+
+    // Generate SSL certs with mkcert
+    onOutput('');
+    onOutput('[+] Generating SSL certificates with mkcert...');
+    final certName = '$domain+4';
+    final mkcertResult = await CommandRunner.run('mkcert', [
+      '-cert-file',
+      p.join(certsDir, '$certName.pem'),
+      '-key-file',
+      p.join(certsDir, '$certName-key.pem'),
+      domain,
+      '*.$domain',
+      'localhost',
+      '127.0.0.1',
+      '::1',
+    ]);
+    if (mkcertResult.exitCode != 0) {
+      onOutput('[ERROR] mkcert failed: ${mkcertResult.stderr}');
+      throw Exception('mkcert failed: ${mkcertResult.stderr}');
+    }
+    onOutput('[+] SSL certificates generated');
+
+    // Install mkcert CA (if not already)
+    await CommandRunner.run('mkcert', ['-install']);
+
+    // Write nginx.conf
+    onOutput('');
+    onOutput('[+] Writing nginx.conf...');
+    final nginxConf = NginxTemplates.nginxConf(
+      certFile: '/etc/nginx/certs/$certName.pem',
+      certKeyFile: '/etc/nginx/certs/$certName-key.pem',
+    );
+    await File(p.join(projectDir, 'nginx.conf')).writeAsString(nginxConf);
+
+    // Write docker-compose.yml
+    onOutput('[+] Writing docker-compose.yml...');
+    final dockerCompose = NginxTemplates.dockerCompose();
+    await File(p.join(projectDir, 'docker-compose.yml'))
+        .writeAsString(dockerCompose);
+
+    // Write .gitignore
+    await File(p.join(projectDir, '.gitignore'))
+        .writeAsString('certs/\n');
+
+    onOutput('');
+    onOutput('[+] Nginx project created at: $projectDir');
+    onOutput('[+] Next: cd $folderName && docker compose up -d');
+
+    return projectDir;
+  }
+
   // ── Settings ──
 
   static Future<Map<String, dynamic>> loadSettings() async {

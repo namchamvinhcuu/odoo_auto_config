@@ -842,6 +842,45 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dockerOpenDesktop => 'Vui lòng mở Docker Desktop để khởi động.';
 
   @override
+  String get nginxInitTitle => 'Khởi tạo Nginx Project';
+
+  @override
+  String get nginxInitSubtitle =>
+      'Tạo cấu trúc thư mục nginx với docker-compose, SSL certs và config.';
+
+  @override
+  String get nginxInitBaseDir => 'Thư mục gốc';
+
+  @override
+  String get nginxInitFolderName => 'Tên thư mục';
+
+  @override
+  String get nginxInitDomain => 'Domain (cho SSL cert)';
+
+  @override
+  String get nginxInitDomainHint => 'VD: namchamvinhcuu.test';
+
+  @override
+  String get nginxInitCreate => 'Tạo cấu trúc';
+
+  @override
+  String nginxInitSuccess(String path) {
+    return 'Đã tạo nginx project tại $path';
+  }
+
+  @override
+  String nginxInitFailed(String error) {
+    return 'Thất bại: $error';
+  }
+
+  @override
+  String get nginxInitMkcertRequired => 'Cần mkcert để tạo chứng chỉ SSL';
+
+  @override
+  String get nginxInitMkcertInstall =>
+      'Cài đặt: brew install mkcert (macOS) hoặc apt install mkcert (Linux)';
+
+  @override
   String get nginxInvalidSubdomain =>
       'Chỉ cho phép chữ thường, số và dấu gạch ngang';
 

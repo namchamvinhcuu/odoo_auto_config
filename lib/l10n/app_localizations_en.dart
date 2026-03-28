@@ -847,6 +847,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please open Docker Desktop to start the daemon.';
 
   @override
+  String get nginxInitTitle => 'Initialize Nginx Project';
+
+  @override
+  String get nginxInitSubtitle =>
+      'Create nginx folder structure with docker-compose, SSL certs, and config.';
+
+  @override
+  String get nginxInitBaseDir => 'Base Directory';
+
+  @override
+  String get nginxInitFolderName => 'Folder Name';
+
+  @override
+  String get nginxInitDomain => 'Domain (for SSL cert)';
+
+  @override
+  String get nginxInitDomainHint => 'e.g. namchamvinhcuu.test';
+
+  @override
+  String get nginxInitCreate => 'Create Structure';
+
+  @override
+  String nginxInitSuccess(String path) {
+    return 'Nginx project created at $path';
+  }
+
+  @override
+  String nginxInitFailed(String error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String get nginxInitMkcertRequired =>
+      'mkcert is required to generate SSL certificates';
+
+  @override
+  String get nginxInitMkcertInstall =>
+      'Install: brew install mkcert (macOS) or apt install mkcert (Linux)';
+
+  @override
   String get nginxInvalidSubdomain =>
       'Only lowercase letters, numbers and hyphens allowed';
 
