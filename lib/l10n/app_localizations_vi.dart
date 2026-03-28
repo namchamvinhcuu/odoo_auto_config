@@ -651,4 +651,73 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get packageManagerNotFoundLinux =>
       'Cần apt và pkexec (polkit) để cài đặt Python.';
+
+  @override
+  String get navWorkspaces => 'Workspace';
+
+  @override
+  String get wsTitle => 'Workspace';
+
+  @override
+  String get wsSubtitle =>
+      'Quản lý tất cả dự án phát triển. Truy cập nhanh và mở trong VSCode.';
+
+  @override
+  String get wsSearchHint => 'Tìm theo tên, đường dẫn, loại...';
+
+  @override
+  String get wsEmpty => 'Chưa có workspace. Nhập thư mục để bắt đầu.';
+
+  @override
+  String get wsNoMatch => 'Không có workspace phù hợp.';
+
+  @override
+  String get wsFilterByType => 'Lọc theo loại';
+
+  @override
+  String get wsShowAll => 'Hiện tất cả';
+
+  @override
+  String get wsDeleteTitle => 'Xóa workspace?';
+
+  @override
+  String wsDeleteConfirm(String name) {
+    return 'Xóa \"$name\" khỏi danh sách?';
+  }
+
+  @override
+  String get wsImport => 'Nhập Workspace';
+
+  @override
+  String get wsEdit => 'Sửa Workspace';
+
+  @override
+  String get wsDirectory => 'Thư mục';
+
+  @override
+  String get wsSelectDirectory => 'Chọn thư mục workspace';
+
+  @override
+  String get wsName => 'Tên';
+
+  @override
+  String get wsType => 'Loại';
+
+  @override
+  String get wsTypeHint => 'VD: Flutter, React, .NET';
+
+  @override
+  String get wsSelectType => 'Chọn loại';
+
+  @override
+  String get wsDescriptionHint => 'VD: Dự án frontend cho khách hàng X';
+
+  @override
+  String get wsizeSmall => 'Nhỏ';
+
+  @override
+  String get wsizeMedium => 'Vừa';
+
+  @override
+  String get wsizeLarge => 'Lớn';
 }

@@ -641,4 +641,72 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get packageManagerNotFoundLinux =>
       'Python을 설치하려면 apt와 pkexec(polkit)이 필요합니다.';
+
+  @override
+  String get navWorkspaces => '워크스페이스';
+
+  @override
+  String get wsTitle => '워크스페이스';
+
+  @override
+  String get wsSubtitle => '모든 개발 프로젝트를 관리합니다. 빠른 접근 및 VSCode에서 열기.';
+
+  @override
+  String get wsSearchHint => '이름, 경로, 유형으로 검색...';
+
+  @override
+  String get wsEmpty => '워크스페이스가 없습니다. 디렉토리를 가져와 시작하세요.';
+
+  @override
+  String get wsNoMatch => '검색 결과가 없습니다.';
+
+  @override
+  String get wsFilterByType => '유형별 필터';
+
+  @override
+  String get wsShowAll => '모두 표시';
+
+  @override
+  String get wsDeleteTitle => '워크스페이스 제거?';
+
+  @override
+  String wsDeleteConfirm(String name) {
+    return '목록에서 \"$name\"을(를) 제거하시겠습니까?';
+  }
+
+  @override
+  String get wsImport => '워크스페이스 가져오기';
+
+  @override
+  String get wsEdit => '워크스페이스 편집';
+
+  @override
+  String get wsDirectory => '디렉토리';
+
+  @override
+  String get wsSelectDirectory => '워크스페이스 디렉토리 선택';
+
+  @override
+  String get wsName => '이름';
+
+  @override
+  String get wsType => '유형';
+
+  @override
+  String get wsTypeHint => '예: Flutter, React, .NET';
+
+  @override
+  String get wsSelectType => '유형 선택';
+
+  @override
+  String get wsDescriptionHint => '예: 고객 X 프론트엔드 프로젝트';
+
+  @override
+  String get wsizeSmall => '작게';
+
+  @override
+  String get wsizeMedium => '보통';
+
+  @override
+  String get wsizeLarge => '크게';
 }

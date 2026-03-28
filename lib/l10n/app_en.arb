@@ -230,5 +230,30 @@
   "packageManagerNotFound": "Package manager not found",
   "packageManagerNotFoundWindows": "winget is required to install Python. Please install App Installer from Microsoft Store.",
   "packageManagerNotFoundMac": "Homebrew is required. Install it from https://brew.sh",
-  "packageManagerNotFoundLinux": "apt and pkexec (polkit) are required to install Python."
+  "packageManagerNotFoundLinux": "apt and pkexec (polkit) are required to install Python.",
+
+  "navWorkspaces": "Workspaces",
+  "wsTitle": "Workspaces",
+  "wsSubtitle": "Manage all your development projects. Quick access and open in VSCode.",
+  "wsSearchHint": "Search by name, path, type...",
+  "wsEmpty": "No workspaces yet. Import a directory to get started.",
+  "wsNoMatch": "No workspaces match your search.",
+  "wsFilterByType": "Filter by type",
+  "wsShowAll": "Show all",
+  "wsDeleteTitle": "Remove workspace?",
+  "wsDeleteConfirm": "Remove \"{name}\" from the list?",
+  "@wsDeleteConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "wsImport": "Import Workspace",
+  "wsEdit": "Edit Workspace",
+  "wsDirectory": "Directory",
+  "wsSelectDirectory": "Select workspace directory",
+  "wsName": "Name",
+  "wsType": "Type",
+  "wsTypeHint": "e.g. Flutter, React, .NET",
+  "wsSelectType": "Select type",
+  "wsDescriptionHint": "e.g. Client X frontend project",
+
+  "wsizeSmall": "Small",
+  "wsizeMedium": "Medium",
+  "wsizeLarge": "Large"
 }

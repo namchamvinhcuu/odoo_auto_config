@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:window_manager/window_manager.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
+import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
 import 'python_check_screen.dart';
 import 'venv_screen.dart';
 import 'vscode_config_screen.dart';
 import 'settings_screen.dart';
+
+enum WindowSize {
+  small(Size(800, 600)),
+  medium(Size(1100, 750)),
+  large(Size(1400, 900));
+
+  final Size size;
+  const WindowSize(this.size);
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,8 +28,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  WindowSize _windowSize = WindowSize.medium;
 
   static const _screens = <Widget>[
+    WorkspacesScreen(),
     ProjectsScreen(),
     ProfileScreen(),
     PythonCheckScreen(),
@@ -26,6 +39,34 @@ class _HomeScreenState extends State<HomeScreen> {
     VscodeConfigScreen(),
     SettingsScreen(),
   ];
+
+  Future<void> _setWindowSize(WindowSize ws) async {
+    await windowManager.setSize(ws.size);
+    await windowManager.center();
+    setState(() => _windowSize = ws);
+  }
+
+  String _windowSizeLabel(WindowSize ws) {
+    switch (ws) {
+      case WindowSize.small:
+        return 'S';
+      case WindowSize.medium:
+        return 'M';
+      case WindowSize.large:
+        return 'L';
+    }
+  }
+
+  String _windowSizeTooltip(WindowSize ws) {
+    switch (ws) {
+      case WindowSize.small:
+        return '${context.l10n.wsizeSmall} (800×600)';
+      case WindowSize.medium:
+        return '${context.l10n.wsizeMedium} (1100×750)';
+      case WindowSize.large:
+        return '${context.l10n.wsizeLarge} (1400×900)';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,10 +96,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  // Window size selector
+                  SegmentedButton<WindowSize>(
+                    segments: WindowSize.values
+                        .map((ws) => ButtonSegment(
+                              value: ws,
+                              label: Text(_windowSizeLabel(ws),
+                                  style: const TextStyle(
+                                      fontSize: AppFontSize.sm)),
+                              tooltip: _windowSizeTooltip(ws),
+                            ))
+                        .toList(),
+                    selected: {_windowSize},
+                    onSelectionChanged: (s) => _setWindowSize(s.first),
+                    showSelectedIcon: false,
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
                 ],
               ),
             ),
             destinations: [
+              NavigationRailDestination(
+                icon: const Icon(Icons.workspaces),
+                selectedIcon:
+                    const Icon(Icons.workspaces, color: Colors.blue),
+                label: Text(context.l10n.navWorkspaces),
+              ),
               NavigationRailDestination(
                 icon: const Icon(Icons.folder_special),
                 selectedIcon:

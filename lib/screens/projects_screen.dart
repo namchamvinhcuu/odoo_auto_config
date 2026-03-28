@@ -227,25 +227,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               const Icon(Icons.folder_special, size: AppIconSize.xl),
-              const SizedBox(width: AppSpacing.md),
               Text(context.l10n.projectsTitle,
                   style: Theme.of(context).textTheme.headlineSmall),
-              const Spacer(),
+              const SizedBox(width: AppSpacing.xxxl),
               FilledButton.icon(
                 onPressed: _quickCreate,
                 icon: const Icon(Icons.rocket_launch),
                 label: Text(context.l10n.create),
               ),
-              const SizedBox(width: AppSpacing.sm),
               FilledButton.tonalIcon(
                 onPressed: _importProject,
                 icon: const Icon(Icons.download),
                 label: Text(context.l10n.import_),
               ),
-              const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
@@ -351,7 +351,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          Row(
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.xs,
                             children: [
                               Chip(
                                 avatar:
@@ -359,14 +362,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 label: Text(
                                     context.l10n.projectHttpPort(proj.httpPort)),
                               ),
-                              const SizedBox(width: AppSpacing.sm),
                               Chip(
                                 avatar:
                                     const Icon(Icons.sync, size: AppIconSize.sm),
                                 label: Text(
                                     context.l10n.projectLpPort(proj.longpollingPort)),
                               ),
-                              const Spacer(),
                               if (exists) ...[
                                 IconButton(
                                   onPressed: () =>

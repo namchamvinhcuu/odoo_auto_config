@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'services/locale_service.dart';
@@ -21,6 +22,16 @@ void main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Window manager setup
+  await windowManager.ensureInitialized();
+  const minSize = Size(800, 600);
+  const defaultSize = Size(1100, 750);
+  await windowManager.setMinimumSize(minSize);
+  await windowManager.setSize(defaultSize);
+  await windowManager.center();
+  await windowManager.show();
+
   final themeService = ThemeService();
   final localeService = LocaleService();
   await Future.wait([themeService.load(), localeService.load()]);

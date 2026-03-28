@@ -74,21 +74,22 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               const Icon(Icons.search, size: AppIconSize.xl),
-              const SizedBox(width: AppSpacing.md),
               Text(
                 context.l10n.pythonCheckTitle,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
-              const Spacer(),
+              const SizedBox(width: AppSpacing.xxxl),
               FilledButton.tonalIcon(
                 onPressed: _loading ? null : _showInstallDialog,
                 icon: const Icon(Icons.download),
                 label: Text(context.l10n.installPython),
               ),
-              const SizedBox(width: AppSpacing.sm),
               FilledButton.icon(
                 onPressed: _loading ? null : _scan,
                 icon: const Icon(Icons.refresh),

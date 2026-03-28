@@ -10,15 +10,17 @@ Flutter desktop app (macOS/Linux/Windows) giup developer Odoo thiet lap va quan 
 - **path** 1.9.0 - xu ly duong dan cross-platform
 - **msix** 3.16.13 - build MSIX installer cho Windows
 - **flutter_launcher_icons** 0.14.4 - generate app icon da nen tang
+- **window_manager** 0.5.1 - control window size, min size, center
 
 ## Architecture
 ```
 lib/
-├── main.dart                    # Entry point, ThemeService + Provider setup + global error handlers
+├── main.dart                    # Entry point, ThemeService + Provider setup + window_manager init
 ├── constants/app_constants.dart # Design tokens: spacing, font-size, colors
 ├── models/                      # Data classes (immutable, fromJson/toJson)
 │   ├── profile.dart             # Cau hinh Odoo dev profile
-│   ├── project_info.dart        # Metadata project da tao
+│   ├── workspace_info.dart      # General workspace (name, path, type, description)
+│   ├── project_info.dart        # Metadata Odoo project da tao
 │   ├── venv_info.dart           # Thong tin virtual environment
 │   ├── python_info.dart         # Python installation detected
 │   ├── command_result.dart      # Ket qua chay process
@@ -36,7 +38,8 @@ lib/
 │   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
 │   └── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 ├── screens/                     # UI screens (StatefulWidget)
-│   ├── home_screen.dart         # NavigationRail chinh
+│   ├── home_screen.dart         # NavigationRail + window size selector (S/M/L)
+│   ├── workspaces_screen.dart   # General workspaces (any language, import/open/filter)
 │   ├── projects_screen.dart     # CRUD projects, quick create dialog
 │   ├── quick_create_screen.dart # Dialog tao project nhanh tu profile
 │   ├── profile_screen.dart      # CRUD profiles
@@ -61,6 +64,8 @@ lib/
 - **Dialog-based workflows** - Quick Create, Edit profile dung Dialog, return result qua Navigator.pop
 - **Port conflict detection** - kiem tra trung port giua cac project
 - **Cross-platform** - PlatformService abstract paths (bin/python vs Scripts/python.exe)
+- **Responsive layout** - Dung `Wrap` thay `Row` cho header buttons va card actions de tranh overflow o 800px
+- **Window size** - 3 preset: Small (800x600, min), Medium (1100x750), Large (1400x900) qua window_manager
 
 ## Persistent Storage
 Tat ca data luu tai: `~/.config/odoo_auto_config/odoo_auto_config.json`

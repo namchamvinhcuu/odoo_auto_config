@@ -209,5 +209,30 @@
   "packageManagerNotFound": "Không tìm thấy trình quản lý gói",
   "packageManagerNotFoundWindows": "Cần winget để cài Python. Vui lòng cài App Installer từ Microsoft Store.",
   "packageManagerNotFoundMac": "Cần Homebrew. Cài đặt tại https://brew.sh",
-  "packageManagerNotFoundLinux": "Cần apt và pkexec (polkit) để cài đặt Python."
+  "packageManagerNotFoundLinux": "Cần apt và pkexec (polkit) để cài đặt Python.",
+
+  "navWorkspaces": "Workspace",
+  "wsTitle": "Workspace",
+  "wsSubtitle": "Quản lý tất cả dự án phát triển. Truy cập nhanh và mở trong VSCode.",
+  "wsSearchHint": "Tìm theo tên, đường dẫn, loại...",
+  "wsEmpty": "Chưa có workspace. Nhập thư mục để bắt đầu.",
+  "wsNoMatch": "Không có workspace phù hợp.",
+  "wsFilterByType": "Lọc theo loại",
+  "wsShowAll": "Hiện tất cả",
+  "wsDeleteTitle": "Xóa workspace?",
+  "wsDeleteConfirm": "Xóa \"{name}\" khỏi danh sách?",
+  "@wsDeleteConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "wsImport": "Nhập Workspace",
+  "wsEdit": "Sửa Workspace",
+  "wsDirectory": "Thư mục",
+  "wsSelectDirectory": "Chọn thư mục workspace",
+  "wsName": "Tên",
+  "wsType": "Loại",
+  "wsTypeHint": "VD: Flutter, React, .NET",
+  "wsSelectType": "Chọn loại",
+  "wsDescriptionHint": "VD: Dự án frontend cho khách hàng X",
+
+  "wsizeSmall": "Nhỏ",
+  "wsizeMedium": "Vừa",
+  "wsizeLarge": "Lớn"
 }

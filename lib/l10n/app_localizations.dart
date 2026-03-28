@@ -1275,6 +1275,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'apt and pkexec (polkit) are required to install Python.'**
   String get packageManagerNotFoundLinux;
+
+  /// No description provided for @navWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspaces'**
+  String get navWorkspaces;
+
+  /// No description provided for @wsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspaces'**
+  String get wsTitle;
+
+  /// No description provided for @wsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage all your development projects. Quick access and open in VSCode.'**
+  String get wsSubtitle;
+
+  /// No description provided for @wsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, path, type...'**
+  String get wsSearchHint;
+
+  /// No description provided for @wsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No workspaces yet. Import a directory to get started.'**
+  String get wsEmpty;
+
+  /// No description provided for @wsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No workspaces match your search.'**
+  String get wsNoMatch;
+
+  /// No description provided for @wsFilterByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by type'**
+  String get wsFilterByType;
+
+  /// No description provided for @wsShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get wsShowAll;
+
+  /// No description provided for @wsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove workspace?'**
+  String get wsDeleteTitle;
+
+  /// No description provided for @wsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\" from the list?'**
+  String wsDeleteConfirm(String name);
+
+  /// No description provided for @wsImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Workspace'**
+  String get wsImport;
+
+  /// No description provided for @wsEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Workspace'**
+  String get wsEdit;
+
+  /// No description provided for @wsDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Directory'**
+  String get wsDirectory;
+
+  /// No description provided for @wsSelectDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'Select workspace directory'**
+  String get wsSelectDirectory;
+
+  /// No description provided for @wsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get wsName;
+
+  /// No description provided for @wsType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get wsType;
+
+  /// No description provided for @wsTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Flutter, React, .NET'**
+  String get wsTypeHint;
+
+  /// No description provided for @wsSelectType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select type'**
+  String get wsSelectType;
+
+  /// No description provided for @wsDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Client X frontend project'**
+  String get wsDescriptionHint;
+
+  /// No description provided for @wsizeSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get wsizeSmall;
+
+  /// No description provided for @wsizeMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get wsizeMedium;
+
+  /// No description provided for @wsizeLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get wsizeLarge;
 }
 
 class _AppLocalizationsDelegate

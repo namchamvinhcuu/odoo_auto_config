@@ -112,6 +112,34 @@ class StorageService {
     await saveProjects(projects);
   }
 
+  // ── Workspaces ──
+
+  static Future<List<Map<String, dynamic>>> loadWorkspaces() async {
+    final config = await _readConfig();
+    final list = config['workspaces'] as List<dynamic>?;
+    return list?.cast<Map<String, dynamic>>() ?? [];
+  }
+
+  static Future<void> saveWorkspaces(
+      List<Map<String, dynamic>> workspaces) async {
+    final config = await _readConfig();
+    config['workspaces'] = workspaces;
+    await _writeConfig(config);
+  }
+
+  static Future<void> addWorkspace(Map<String, dynamic> workspace) async {
+    final workspaces = await loadWorkspaces();
+    workspaces.removeWhere((w) => w['path'] == workspace['path']);
+    workspaces.add(workspace);
+    await saveWorkspaces(workspaces);
+  }
+
+  static Future<void> removeWorkspace(String path) async {
+    final workspaces = await loadWorkspaces();
+    workspaces.removeWhere((w) => w['path'] == path);
+    await saveWorkspaces(workspaces);
+  }
+
   // ── Settings ──
 
   static Future<Map<String, dynamic>> loadSettings() async {

@@ -655,4 +655,73 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get packageManagerNotFoundLinux =>
       'apt and pkexec (polkit) are required to install Python.';
+
+  @override
+  String get navWorkspaces => 'Workspaces';
+
+  @override
+  String get wsTitle => 'Workspaces';
+
+  @override
+  String get wsSubtitle =>
+      'Manage all your development projects. Quick access and open in VSCode.';
+
+  @override
+  String get wsSearchHint => 'Search by name, path, type...';
+
+  @override
+  String get wsEmpty => 'No workspaces yet. Import a directory to get started.';
+
+  @override
+  String get wsNoMatch => 'No workspaces match your search.';
+
+  @override
+  String get wsFilterByType => 'Filter by type';
+
+  @override
+  String get wsShowAll => 'Show all';
+
+  @override
+  String get wsDeleteTitle => 'Remove workspace?';
+
+  @override
+  String wsDeleteConfirm(String name) {
+    return 'Remove \"$name\" from the list?';
+  }
+
+  @override
+  String get wsImport => 'Import Workspace';
+
+  @override
+  String get wsEdit => 'Edit Workspace';
+
+  @override
+  String get wsDirectory => 'Directory';
+
+  @override
+  String get wsSelectDirectory => 'Select workspace directory';
+
+  @override
+  String get wsName => 'Name';
+
+  @override
+  String get wsType => 'Type';
+
+  @override
+  String get wsTypeHint => 'e.g. Flutter, React, .NET';
+
+  @override
+  String get wsSelectType => 'Select type';
+
+  @override
+  String get wsDescriptionHint => 'e.g. Client X frontend project';
+
+  @override
+  String get wsizeSmall => 'Small';
+
+  @override
+  String get wsizeMedium => 'Medium';
+
+  @override
+  String get wsizeLarge => 'Large';
 }

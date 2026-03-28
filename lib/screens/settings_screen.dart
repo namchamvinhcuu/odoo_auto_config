@@ -130,14 +130,14 @@ class SettingsScreen extends StatelessWidget {
           Text(context.l10n.preview,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               FilledButton(
                   onPressed: () {}, child: Text(context.l10n.filledButton)),
-              const SizedBox(width: AppSpacing.sm),
               FilledButton.tonal(
                   onPressed: () {}, child: Text(context.l10n.tonalButton)),
-              const SizedBox(width: AppSpacing.sm),
               OutlinedButton(
                   onPressed: () {}, child: Text(context.l10n.outlined)),
             ],
