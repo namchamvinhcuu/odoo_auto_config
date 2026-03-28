@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/docker_install_service.dart';
+import '../services/nginx_service.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
@@ -38,10 +41,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   WindowSize _windowSize = WindowSize.medium;
 
+  // Docker status
+  bool? _dockerInstalled;
+  bool? _dockerRunning;
+
   @override
   void initState() {
     super.initState();
     _instance = this;
+    _checkDocker();
+  }
+
+  Future<void> _checkDocker() async {
+    // Retry up to 3 times with delay - docker daemon may not be ready yet after login
+    for (var attempt = 0; attempt < 3; attempt++) {
+      final installed = await DockerInstallService.isInstalled();
+      final running = installed ? await DockerInstallService.isRunning() : false;
+
+      if (mounted) {
+        setState(() {
+          _dockerInstalled = installed;
+          _dockerRunning = running;
+        });
+      }
+
+      if (!installed || running) break;
+
+      // Docker installed but daemon not ready - wait and retry
+      if (attempt < 2) {
+        await Future.delayed(const Duration(seconds: 5));
+        if (!mounted) return;
+      }
+    }
+
+    // Auto-start nginx container if docker is running
+    if (_dockerInstalled == true && _dockerRunning == true) {
+      await _autoStartNginx();
+    }
+  }
+
+  Future<void> _autoStartNginx() async {
+    final nginx = await NginxService.loadSettings();
+    final container = (nginx['containerName'] ?? '').toString();
+    if (container.isEmpty) return;
+
+    final running = await NginxService.isDockerContainerRunning(container);
+    if (running) return;
+
+    // Container exists but stopped - try to start it
+    try {
+      await Process.run('docker', ['start', container], runInShell: true);
+    } catch (_) {}
   }
 
   @override
@@ -109,8 +159,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dockerBanner = _dockerInstalled == false
+        ? context.l10n.dockerNotInstalledBanner
+        : (_dockerInstalled == true && _dockerRunning == false)
+            ? context.l10n.dockerNotRunningBanner
+            : null;
+
     return Scaffold(
-      body: Row(
+      body: Column(
+        children: [
+          if (dockerBanner != null)
+            MaterialBanner(
+              content: Text(dockerBanner),
+              leading: Icon(Icons.sailing,
+                  color: _dockerInstalled == false
+                      ? Colors.red
+                      : Colors.orange),
+              backgroundColor: _dockerInstalled == false
+                  ? Colors.red.withValues(alpha: 0.1)
+                  : Colors.orange.withValues(alpha: 0.1),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Navigate to Settings > Docker tab (index 3)
+                    HomeScreen.navigateToSettings(settingsTab: 3);
+                  },
+                  child: Text(context.l10n.dockerGoToSettings),
+                ),
+              ],
+            ),
+          Expanded(
+            child: Row(
         children: [
           NavigationRail(
             extended: true,
@@ -188,6 +267,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: _screens[_selectedIndex],
+          ),
+        ],
+      ),
           ),
         ],
       ),

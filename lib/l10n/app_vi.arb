@@ -298,6 +298,10 @@
   "@nginxPortDocker": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } },
   "nginxDockerRunning": "Docker nginx đang chạy",
   "nginxDockerStopped": "Docker nginx chưa chạy",
+  "dockerNotInstalledBanner": "Docker chưa được cài đặt. Cài Docker để sử dụng đầy đủ chức năng.",
+  "dockerNotRunningBanner": "Docker daemon chưa chạy. Khởi động Docker Desktop để sử dụng đầy đủ chức năng.",
+  "dockerGoToSettings": "Đi tới Cài đặt",
+
   "nginxKillProcess": "Dừng tiến trình",
   "nginxKillConfirm": "Dừng {process} (PID: {pid}) để giải phóng port {port}?",
   "@nginxKillConfirm": { "placeholders": { "process": { "type": "String" }, "pid": { "type": "String" }, "port": { "type": "int" } } },

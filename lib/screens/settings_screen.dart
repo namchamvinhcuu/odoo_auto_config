@@ -150,8 +150,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     showDialog(
       context: context,
       builder: (ctx) => _NginxInitDialog(
-        onCreated: (confDir) {
+        onCreated: (confDir, domain) {
           _confDirController.text = confDir;
+          _domainSuffixController.text = '.$domain';
           _saveNginxSettings();
         },
       ),
@@ -1334,7 +1335,7 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
 // ── Nginx Init Dialog ──
 
 class _NginxInitDialog extends StatefulWidget {
-  final void Function(String confDir) onCreated;
+  final void Function(String confDir, String domain) onCreated;
   const _NginxInitDialog({required this.onCreated});
 
   @override
@@ -1414,7 +1415,7 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
       if (mounted) {
         setState(() => _creating = false);
         final confDir = '$projectDir/conf.d';
-        widget.onCreated(confDir);
+        widget.onCreated(confDir, _domainController.text.trim());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.nginxInitSuccess(projectDir))),
         );

@@ -183,6 +183,19 @@ rm -rf "$TMP_DIR"
 - Docker/Python install: `winget`
 - mkcert install: `winget install FiloSottile.mkcert`
 
+### Windows - CHUA TEST (can kiem tra khi co dieu kien)
+| Chuc nang | Rui ro | Chi tiet |
+|-----------|--------|----------|
+| Hosts file edit | CAO | PowerShell RunAs + UAC, escape string chua verify thuc te |
+| mkcert install | TRUNG BINH | `winget install FiloSottile.mkcert` - chua verify package name |
+| Docker install | TRUNG BINH | `winget install Docker.DockerDesktop` - can restart sau cai |
+| Port check | TRUNG BINH | `netstat -ano` output format co the khac giua Windows versions |
+| Kill process | TRUNG BINH | `taskkill /F /PID` - can quyen admin cho system processes |
+| Native file picker | THAP | Da test truoc do, dung PowerShell COM |
+| nginx conf write | THAP | File.writeAsString cross-platform |
+- macOS: da test OK
+- Linux: da test OK (2026-03-29)
+
 ### Linux
 - Python install: `pkexec apt install` (graphical sudo, khong can terminal)
 - Hosts: `pkexec` (polkit graphical sudo)

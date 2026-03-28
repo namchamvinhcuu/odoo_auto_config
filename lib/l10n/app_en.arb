@@ -319,6 +319,10 @@
   "@nginxPortDocker": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } },
   "nginxDockerRunning": "Docker nginx is running",
   "nginxDockerStopped": "Docker nginx is not running",
+  "dockerNotInstalledBanner": "Docker is not installed. Install Docker to use all features.",
+  "dockerNotRunningBanner": "Docker daemon is not running. Start Docker Desktop to use all features.",
+  "dockerGoToSettings": "Go to Settings",
+
   "nginxKillProcess": "Kill Process",
   "nginxKillConfirm": "Kill {process} (PID: {pid}) to free port {port}?",
   "@nginxKillConfirm": { "placeholders": { "process": { "type": "String" }, "pid": { "type": "String" }, "port": { "type": "int" } } },
