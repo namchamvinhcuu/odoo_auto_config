@@ -398,13 +398,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     children: [
                       Align(
                         alignment: Alignment.topRight,
-                        child: GestureDetector(
-                          onTap: () => _toggleFavourite(proj),
-                          child: Icon(
+                        child: IconButton(
+                          onPressed: () => _toggleFavourite(proj),
+                          icon: Icon(
                             proj.favourite ? Icons.star : Icons.star_border,
-                            size: 20,
+                            size: AppIconSize.lg,
                             color: proj.favourite ? Colors.amber : Colors.grey.shade600,
                           ),
+                          tooltip: proj.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
                       ),
                       const Spacer(),

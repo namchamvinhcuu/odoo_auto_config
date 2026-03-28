@@ -322,13 +322,17 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                       // Favourite star top-right
                       Align(
                         alignment: Alignment.topRight,
-                        child: GestureDetector(
-                          onTap: () => _toggleFavourite(ws),
-                          child: Icon(
+                        child: IconButton(
+                          onPressed: () => _toggleFavourite(ws),
+                          icon: Icon(
                             ws.favourite ? Icons.star : Icons.star_border,
-                            size: 20,
+                            size: AppIconSize.lg,
                             color: ws.favourite ? Colors.amber : Colors.grey.shade600,
                           ),
+                          tooltip: ws.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
                       ),
                       const Spacer(),
