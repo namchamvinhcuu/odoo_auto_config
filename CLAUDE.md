@@ -5,9 +5,11 @@ Flutter desktop app (macOS/Linux/Windows) giup developer Odoo thiet lap va quan 
 
 ## Tech Stack
 - **Flutter** SDK ^3.9.2 (FVM managed)
-- **Provider** 6.1.0 - state management (chi dung cho ThemeService)
-- **file_picker** 8.0.0 - chon thu muc/file
+- **Provider** 6.1.0 - state management (chi dung cho ThemeService, LocaleService)
+- **file_picker** 8.0.0 - chon thu muc/file (macOS/Linux; Windows dung native PowerShell dialog)
 - **path** 1.9.0 - xu ly duong dan cross-platform
+- **msix** 3.16.13 - build MSIX installer cho Windows
+- **flutter_launcher_icons** 0.14.4 - generate app icon da nen tang
 
 ## Architecture
 ```
@@ -29,8 +31,10 @@ lib/
 │   ├── venv_service.dart        # Tao/scan/inspect venv, pip install
 │   ├── folder_structure_service.dart # Tao cau truc thu muc Odoo project
 │   ├── vscode_config_service.dart   # Sinh .vscode/launch.json (debugpy)
+│   ├── python_install_service.dart  # Cross-platform Python install (winget/brew/apt via pkexec)
 │   ├── theme_service.dart       # Theme mode + accent color (ChangeNotifier)
-│   └── platform_service.dart    # Platform abstraction (paths, executables, python candidates)
+│   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
+│   └── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 ├── screens/                     # UI screens (StatefulWidget)
 │   ├── home_screen.dart         # NavigationRail chinh
 │   ├── projects_screen.dart     # CRUD projects, quick create dialog
@@ -84,12 +88,12 @@ flutter build macos --release
 # Cai dat tu DMG: keo "Odoo Config.app" vao /Applications
 ```
 
-## Build & Deploy (macOS)
+## Build & Deploy
+
+### macOS (DMG)
 ```bash
-# Build release
 flutter build macos --release
 
-# Tao DMG
 APP_PATH="build/macos/Build/Products/Release/odoo_auto_config.app"
 DMG_PATH="build/Odoo Config.dmg"
 TMP_DIR=$(mktemp -d)
@@ -102,6 +106,27 @@ rm -rf "$TMP_DIR"
 cp -R "$APP_PATH" "/Applications/Odoo Config.app"
 xattr -cr "/Applications/Odoo Config.app"
 codesign --force --deep --sign - "/Applications/Odoo Config.app"
+```
+
+### Windows (MSIX)
+```bash
+flutter build windows --release
+# MSIX config trong pubspec.yaml:
+#   display_name: Odoo Auto Config
+#   publisher: CN=Nam, O=Nam, C=VN
+#   identity: com.nam.odoo-auto-config
+#   capabilities: runFullTrust (cho phep Process.run)
+flutter pub run msix:create
+# Output: build/windows/x64/runner/Release/odoo_auto_config.msix
+# Can certificate de cai dat MSIX tren Windows
+```
+
+### Linux
+```bash
+flutter build linux --release
+# Output: build/linux/x64/release/bundle/
+# Dependencies: GTK3 (gtk+-3.0)
+# Python install dung pkexec (graphical sudo) de chay apt
 ```
 
 ## Internationalization (i18n)
@@ -140,3 +165,14 @@ codesign --force --deep --sign - "/Applications/Odoo Config.app"
 - **Open VSCode**: dung `open -a "Visual Studio Code"` tren macOS (tranh PATH issue).
 - **Dedup pyenv shims**: loai bo shim entry khi da co real binary cung version.
 - **Sau khi copy/rename .app**: can `xattr -cr` va `codesign --force --deep --sign -`.
+
+## Windows-Specific Issues (da fix)
+- **MSIX can `runFullTrust` capability** de Process.run hoat dong (tuong tu tat Sandbox tren macOS).
+- **Native file/folder picker** bang PowerShell + COM (IFileOpenDialog) trong PlatformService,
+  tranh dependency vao file_picker package tren Windows.
+- **Certificate signing** can thiet de cai dat MSIX, config trong pubspec.yaml msix_config section.
+
+## Linux-Specific Notes
+- **Python install** qua `pkexec apt install` (graphical sudo prompt, khong can terminal).
+- **PythonInstallService** ho tro chon version Python (3.10-3.13) truoc khi cai.
+- **pythonCandidates** scan versioned binaries (`python3.X`) trong `/usr/bin`, `/usr/local/bin`.
