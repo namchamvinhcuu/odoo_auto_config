@@ -106,11 +106,11 @@ abstract class AppLocalizations {
   /// **'Odoo Auto Config'**
   String get appTitle;
 
-  /// No description provided for @navProjects.
+  /// No description provided for @navOdooProjects.
   ///
   /// In en, this message translates to:
-  /// **'Projects'**
-  String get navProjects;
+  /// **'Odoo Projects'**
+  String get navOdooProjects;
 
   /// No description provided for @navProfiles.
   ///
@@ -289,13 +289,13 @@ abstract class AppLocalizations {
   /// No description provided for @projectsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Projects'**
+  /// **'Odoo Projects'**
   String get projectsTitle;
 
   /// No description provided for @projectsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'All projects with quick access. Import existing or create new ones.'**
+  /// **'All Odoo projects with quick access. Import existing or create new ones.'**
   String get projectsSubtitle;
 
   /// No description provided for @projectsSearchHint.
@@ -1276,16 +1276,16 @@ abstract class AppLocalizations {
   /// **'apt and pkexec (polkit) are required to install Python.'**
   String get packageManagerNotFoundLinux;
 
-  /// No description provided for @navWorkspaces.
+  /// No description provided for @navOtherProjects.
   ///
   /// In en, this message translates to:
-  /// **'Workspaces'**
-  String get navWorkspaces;
+  /// **'Other Projects'**
+  String get navOtherProjects;
 
   /// No description provided for @wsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Workspaces'**
+  /// **'Other Projects'**
   String get wsTitle;
 
   /// No description provided for @wsSubtitle.
@@ -1407,6 +1407,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Large'**
   String get wsizeLarge;
+
+  /// No description provided for @wsViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get wsViewList;
+
+  /// No description provided for @wsViewGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid view'**
+  String get wsViewGrid;
+
+  /// No description provided for @favourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favourites'**
+  String get favourite;
+
+  /// No description provided for @unfavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favourites'**
+  String get unfavourite;
+
+  /// No description provided for @wsPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port (optional)'**
+  String get wsPort;
+
+  /// No description provided for @wsPortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 3000, 8080'**
+  String get wsPortHint;
+
+  /// No description provided for @nginxSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx Reverse Proxy'**
+  String get nginxSettings;
+
+  /// No description provided for @nginxConfDir.
+  ///
+  /// In en, this message translates to:
+  /// **'conf.d Directory'**
+  String get nginxConfDir;
+
+  /// No description provided for @nginxConfDirHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. /path/to/conf.d'**
+  String get nginxConfDirHint;
+
+  /// No description provided for @nginxDomainSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain Suffix'**
+  String get nginxDomainSuffix;
+
+  /// No description provided for @nginxDomainSuffixHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. .namchamvinhcuu.test'**
+  String get nginxDomainSuffixHint;
+
+  /// No description provided for @nginxContainerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker Container Name'**
+  String get nginxContainerName;
+
+  /// No description provided for @nginxContainerNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. nginx'**
+  String get nginxContainerNameHint;
+
+  /// No description provided for @nginxSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup Nginx'**
+  String get nginxSetup;
+
+  /// No description provided for @nginxRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Nginx'**
+  String get nginxRemove;
+
+  /// No description provided for @nginxDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'{domain}'**
+  String nginxDomain(String domain);
+
+  /// No description provided for @nginxSetupSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx configured: {domain}'**
+  String nginxSetupSuccess(String domain);
+
+  /// No description provided for @nginxRemoveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx removed: {domain}'**
+  String nginxRemoveSuccess(String domain);
+
+  /// No description provided for @nginxFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx error: {error}'**
+  String nginxFailed(String error);
+
+  /// No description provided for @nginxNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Nginx in Settings first'**
+  String get nginxNotConfigured;
+
+  /// No description provided for @nginxConfirmRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove nginx config for \"{name}\"?'**
+  String nginxConfirmRemove(String name);
+
+  /// No description provided for @nginxNoPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a port first to setup Nginx'**
+  String get nginxNoPort;
+
+  /// No description provided for @nginxSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx settings saved'**
+  String get nginxSaved;
+
+  /// No description provided for @nginxSubdomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Subdomain'**
+  String get nginxSubdomain;
+
+  /// No description provided for @nginxPreviewDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain: {domain}'**
+  String nginxPreviewDomain(String domain);
+
+  /// No description provided for @nginxInvalidSubdomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Only lowercase letters, numbers and hyphens allowed'**
+  String get nginxInvalidSubdomain;
+
+  /// No description provided for @nginxDomainConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This subdomain is already in use'**
+  String get nginxDomainConflict;
+
+  /// No description provided for @nginxLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link existing Nginx'**
+  String get nginxLink;
+
+  /// No description provided for @nginxLinkSubdomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing subdomain'**
+  String get nginxLinkSubdomain;
+
+  /// No description provided for @nginxLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the conf already created'**
+  String get nginxLinkHint;
+
+  /// No description provided for @nginxLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to {domain}'**
+  String nginxLinked(String domain);
+
+  /// No description provided for @nginxPortConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Port {port} is already proxied by \"{name}\"'**
+  String nginxPortConflict(int port, String name);
 }
 
 class _AppLocalizationsDelegate

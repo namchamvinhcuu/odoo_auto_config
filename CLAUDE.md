@@ -1,26 +1,26 @@
 # Odoo Auto Config - Project Context
 
 ## Overview
-Flutter desktop app (macOS/Linux/Windows) giup developer Odoo thiet lap va quan ly moi truong phat trien. Cung cap GUI de tao project, quan ly Python/venv, sinh cau hinh VSCode debug, va luu profile tai su dung.
+Flutter desktop app (macOS/Linux/Windows) giup developer thiet lap va quan ly moi truong phat trien. Ho tro ca Odoo projects lan cac du an ngon ngu khac (Flutter, React, .NET, Rust, Go, Java...). Cung cap GUI de tao project, quan ly Python/venv, sinh cau hinh VSCode debug, va luu profile tai su dung.
 
 ## Tech Stack
 - **Flutter** SDK ^3.9.2 (FVM managed)
 - **Provider** 6.1.0 - state management (chi dung cho ThemeService, LocaleService)
 - **file_picker** 8.0.0 - chon thu muc/file (macOS/Linux; Windows dung native PowerShell dialog)
 - **path** 1.9.0 - xu ly duong dan cross-platform
+- **window_manager** 0.5.1 - control window size, min size, center
 - **msix** 3.16.13 - build MSIX installer cho Windows
 - **flutter_launcher_icons** 0.14.4 - generate app icon da nen tang
-- **window_manager** 0.5.1 - control window size, min size, center
 
 ## Architecture
 ```
 lib/
-├── main.dart                    # Entry point, ThemeService + Provider setup + window_manager init
-├── constants/app_constants.dart # Design tokens: spacing, font-size, colors
-├── models/                      # Data classes (immutable, fromJson/toJson)
+├── main.dart                    # Entry point, Provider setup, window_manager init, load view pref
+├── constants/app_constants.dart # Design tokens: spacing, font-size, colors, radius, dialog sizes
+├── models/                      # Data classes (immutable, fromJson/toJson, copyWith)
 │   ├── profile.dart             # Cau hinh Odoo dev profile
-│   ├── workspace_info.dart      # General workspace (name, path, type, description)
-│   ├── project_info.dart        # Metadata Odoo project da tao
+│   ├── workspace_info.dart      # General workspace (name, path, type, description, favourite)
+│   ├── project_info.dart        # Odoo project (name, path, ports, description, favourite)
 │   ├── venv_info.dart           # Thong tin virtual environment
 │   ├── python_info.dart         # Python installation detected
 │   ├── command_result.dart      # Ket qua chay process
@@ -39,15 +39,15 @@ lib/
 │   └── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 ├── screens/                     # UI screens (StatefulWidget)
 │   ├── home_screen.dart         # NavigationRail + window size selector (S/M/L)
-│   ├── workspaces_screen.dart   # General workspaces (any language, import/open/filter)
-│   ├── projects_screen.dart     # CRUD projects, quick create dialog
-│   ├── quick_create_screen.dart # Dialog tao project nhanh tu profile
+│   ├── projects_screen.dart     # Odoo Projects: list/grid view, favourite, CRUD, quick create
+│   ├── workspaces_screen.dart   # Other Projects: list/grid view, favourite, auto-detect type
+│   ├── quick_create_screen.dart # Dialog tao Odoo project nhanh tu profile
 │   ├── profile_screen.dart      # CRUD profiles
 │   ├── python_check_screen.dart # Hien thi Python installations
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv
 │   ├── vscode_config_screen.dart # Sinh debug config
 │   ├── folder_structure_screen.dart # Tao folder structure doc lap
-│   └── settings_screen.dart     # Theme mode + accent color
+│   └── settings_screen.dart     # Theme mode + accent color + language
 ├── widgets/                     # Reusable components
 │   ├── status_card.dart         # Card hien thi trang thai
 │   ├── directory_picker_field.dart # Text field + browse button
@@ -56,41 +56,58 @@ lib/
     └── odoo_templates.dart      # Sinh odoo.conf va README.md
 ```
 
+## Navigation (NavigationRail)
+1. **Odoo Projects** - projects_screen.dart (icon: folder_special)
+2. **Other Projects** - workspaces_screen.dart (icon: workspaces)
+3. **Profiles** - profile_screen.dart
+4. **Python Check** - python_check_screen.dart
+5. **Venv Manager** - venv_screen.dart
+6. **VSCode Config** - vscode_config_screen.dart
+7. **Settings** - settings_screen.dart
+
 ## Key Patterns
-- **Immutable models** voi `fromJson()`/`toJson()` serialization
+- **Immutable models** voi `fromJson()`/`toJson()` + `copyWith()` serialization
 - **Stateless services** - khong giu state, tra ve data classes
-- **Provider** chi cho ThemeService (ChangeNotifier)
+- **Provider** chi cho ThemeService, LocaleService (ChangeNotifier)
 - **Real-time logging** - LogOutput widget auto-scroll, color-coded `[+]` `[-]` `[ERROR]` `[WARN]`
 - **Dialog-based workflows** - Quick Create, Edit profile dung Dialog, return result qua Navigator.pop
-- **Port conflict detection** - kiem tra trung port giua cac project
+- **Port conflict detection** - kiem tra trung port giua cac Odoo project
 - **Cross-platform** - PlatformService abstract paths (bin/python vs Scripts/python.exe)
-- **Responsive layout** - Dung `Wrap` thay `Row` cho header buttons va card actions de tranh overflow o 800px
-- **Window size** - 3 preset: Small (800x600, min), Medium (1100x750), Large (1400x900) qua window_manager
+- **Responsive layout** - Dung `Wrap` thay `Row` cho header buttons de tranh overflow o 800px
+- **Window size** - 3 preset: Small (800x600 min), Medium (1100x750 default), Large (1400x900)
+- **List/Grid view** - Toggle giua list va grid, shared state `ProjectsScreen.gridView` (static),
+  persisted vao settings JSON. Grid default, responsive columns: S=3, M=4, L=5
+- **Favourite** - Star icon, sort favourite len dau roi by name A-Z. Luu trong model JSON (`favourite: bool`)
+- **Grid context menu** - Right-click hien menu (favourite, open VSCode, open folder, edit, delete)
+- **Auto-detect project type** - Workspace import tu dong nhan dien loai du an tu marker files
+  (pubspec.yaml -> Flutter, package.json -> React/NextJS, .csproj/.sln -> .NET, etc.)
 
 ## Persistent Storage
 Tat ca data luu tai: `~/.config/odoo_auto_config/odoo_auto_config.json`
-Gom: profiles, projects, registered venvs, settings (theme)
+Gom: profiles, projects, workspaces, registered venvs, settings (theme, locale, gridView)
 
 ## Typical Workflow
 1. Detect Python (Python Check)
 2. Tao venv (Venv Manager -> Create)
 3. Luu profile (Profiles -> New)
-4. Quick Create project (Projects -> Create) - tao folder, odoo.conf, launch.json, README
+4. Quick Create project (Odoo Projects -> Create) - tao folder, odoo.conf, launch.json, README
 5. Sinh VSCode debug config (VSCode Config)
 6. Mo project trong VSCode
+7. Import du an khac (Other Projects -> Import) - auto-detect type, open in VSCode
 
 ## Commands
 ```bash
 # Run debug
-flutter run -d macos   # hoac linux, windows
+fvm flutter run -d macos   # hoac linux, windows
 
 # Build release
-flutter build macos --release
+fvm flutter build macos --release
 
-# Tao DMG installer (macOS)
-# Xem script ben duoi
+# Gen l10n sau khi sua ARB files
+fvm flutter gen-l10n
 
-# Cai dat tu DMG: keo "Odoo Config.app" vao /Applications
+# Analyze
+fvm flutter analyze
 ```
 
 ## Build & Deploy
@@ -144,7 +161,7 @@ flutter build linux --release
 - **LocaleService**: `lib/services/locale_service.dart` - luu locale vao StorageService, dung Provider
 - **Language selector**: trong Settings screen (SegmentedButton)
 - **Log messages**: giu nguyen tieng Anh (technical output)
-- Khi them string moi: them vao ca 3 file ARB, chay `flutter gen-l10n`
+- Khi them string moi: them vao ca 3 file ARB, chay `fvm flutter gen-l10n`
 
 ## Notes
 - Venv detection bang marker file `pyvenv.cfg`
@@ -154,6 +171,7 @@ flutter build linux --release
 - Odoo versions supported: 14-18
 - App name hien thi: "OdooAutoConfig" (CFBundleName trong Info.plist)
 - App icon: pngegg.png (Odoo logo, 512x512)
+- `window_manager` can full restart (khong hot reload) khi them moi
 
 ## macOS-Specific Issues (da fix)
 - **App Sandbox PHAI tat** (`com.apple.security.app-sandbox = false`) trong ca

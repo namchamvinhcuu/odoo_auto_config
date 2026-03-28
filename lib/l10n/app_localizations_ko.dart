@@ -12,7 +12,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appTitle => 'Odoo Auto Config';
 
   @override
-  String get navProjects => '프로젝트';
+  String get navOdooProjects => 'Odoo 프로젝트';
 
   @override
   String get navProfiles => '프로필';
@@ -102,10 +102,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get language => '언어';
 
   @override
-  String get projectsTitle => '프로젝트';
+  String get projectsTitle => 'Odoo 프로젝트';
 
   @override
-  String get projectsSubtitle => '빠른 접근이 가능한 모든 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.';
+  String get projectsSubtitle =>
+      '빠른 접근이 가능한 모든 Odoo 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.';
 
   @override
   String get projectsSearchHint => '이름, 경로, 라벨, 포트로 검색...';
@@ -643,10 +644,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Python을 설치하려면 apt와 pkexec(polkit)이 필요합니다.';
 
   @override
-  String get navWorkspaces => '워크스페이스';
+  String get navOtherProjects => '기타 프로젝트';
 
   @override
-  String get wsTitle => '워크스페이스';
+  String get wsTitle => '기타 프로젝트';
 
   @override
   String get wsSubtitle => '모든 개발 프로젝트를 관리합니다. 빠른 접근 및 VSCode에서 열기.';
@@ -709,4 +710,116 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get wsizeLarge => '크게';
+
+  @override
+  String get wsViewList => '목록 보기';
+
+  @override
+  String get wsViewGrid => '격자 보기';
+
+  @override
+  String get favourite => '즐겨찾기 추가';
+
+  @override
+  String get unfavourite => '즐겨찾기 제거';
+
+  @override
+  String get wsPort => '포트 (선택사항)';
+
+  @override
+  String get wsPortHint => '예: 3000, 8080';
+
+  @override
+  String get nginxSettings => 'Nginx 리버스 프록시';
+
+  @override
+  String get nginxConfDir => 'conf.d 디렉토리';
+
+  @override
+  String get nginxConfDirHint => '예: /path/to/conf.d';
+
+  @override
+  String get nginxDomainSuffix => '도메인 접미사';
+
+  @override
+  String get nginxDomainSuffixHint => '예: .namchamvinhcuu.test';
+
+  @override
+  String get nginxContainerName => 'Docker 컨테이너 이름';
+
+  @override
+  String get nginxContainerNameHint => '예: nginx';
+
+  @override
+  String get nginxSetup => 'Nginx 설정';
+
+  @override
+  String get nginxRemove => 'Nginx 제거';
+
+  @override
+  String nginxDomain(String domain) {
+    return '$domain';
+  }
+
+  @override
+  String nginxSetupSuccess(String domain) {
+    return 'Nginx 설정 완료: $domain';
+  }
+
+  @override
+  String nginxRemoveSuccess(String domain) {
+    return 'Nginx 제거 완료: $domain';
+  }
+
+  @override
+  String nginxFailed(String error) {
+    return 'Nginx 오류: $error';
+  }
+
+  @override
+  String get nginxNotConfigured => '설정에서 Nginx를 먼저 구성하세요';
+
+  @override
+  String nginxConfirmRemove(String name) {
+    return '\"$name\"의 nginx 설정을 제거하시겠습니까?';
+  }
+
+  @override
+  String get nginxNoPort => 'Nginx를 설정하려면 먼저 포트를 설정하세요';
+
+  @override
+  String get nginxSaved => 'Nginx 설정 저장됨';
+
+  @override
+  String get nginxSubdomain => '서브도메인';
+
+  @override
+  String nginxPreviewDomain(String domain) {
+    return '도메인: $domain';
+  }
+
+  @override
+  String get nginxInvalidSubdomain => '소문자, 숫자, 하이픈만 허용됩니다';
+
+  @override
+  String get nginxDomainConflict => '이 서브도메인은 이미 사용 중입니다';
+
+  @override
+  String get nginxLink => '기존 Nginx 연결';
+
+  @override
+  String get nginxLinkSubdomain => '기존 서브도메인';
+
+  @override
+  String get nginxLinkHint => '이전에 생성한 conf 선택';
+
+  @override
+  String nginxLinked(String domain) {
+    return '연결됨: $domain';
+  }
+
+  @override
+  String nginxPortConflict(int port, String name) {
+    return '포트 $port은(는) 이미 \"$name\"에서 프록시 중입니다';
+  }
 }

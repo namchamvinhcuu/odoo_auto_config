@@ -31,8 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
   WindowSize _windowSize = WindowSize.medium;
 
   static const _screens = <Widget>[
-    WorkspacesScreen(),
     ProjectsScreen(),
+    WorkspacesScreen(),
     ProfileScreen(),
     PythonCheckScreen(),
     VenvScreen(),
@@ -121,16 +121,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             destinations: [
               NavigationRailDestination(
-                icon: const Icon(Icons.workspaces),
-                selectedIcon:
-                    const Icon(Icons.workspaces, color: Colors.blue),
-                label: Text(context.l10n.navWorkspaces),
-              ),
-              NavigationRailDestination(
                 icon: const Icon(Icons.folder_special),
                 selectedIcon:
                     const Icon(Icons.folder_special, color: Colors.blue),
-                label: Text(context.l10n.navProjects),
+                label: Text(context.l10n.navOdooProjects),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.workspaces),
+                selectedIcon:
+                    const Icon(Icons.workspaces, color: Colors.blue),
+                label: Text(context.l10n.navOtherProjects),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.person),

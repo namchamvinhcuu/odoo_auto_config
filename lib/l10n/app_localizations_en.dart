@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Odoo Auto Config';
 
   @override
-  String get navProjects => 'Projects';
+  String get navOdooProjects => 'Odoo Projects';
 
   @override
   String get navProfiles => 'Profiles';
@@ -102,11 +102,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
-  String get projectsTitle => 'Projects';
+  String get projectsTitle => 'Odoo Projects';
 
   @override
   String get projectsSubtitle =>
-      'All projects with quick access. Import existing or create new ones.';
+      'All Odoo projects with quick access. Import existing or create new ones.';
 
   @override
   String get projectsSearchHint => 'Search by name, path, label, port...';
@@ -657,10 +657,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'apt and pkexec (polkit) are required to install Python.';
 
   @override
-  String get navWorkspaces => 'Workspaces';
+  String get navOtherProjects => 'Other Projects';
 
   @override
-  String get wsTitle => 'Workspaces';
+  String get wsTitle => 'Other Projects';
 
   @override
   String get wsSubtitle =>
@@ -724,4 +724,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wsizeLarge => 'Large';
+
+  @override
+  String get wsViewList => 'List view';
+
+  @override
+  String get wsViewGrid => 'Grid view';
+
+  @override
+  String get favourite => 'Add to favourites';
+
+  @override
+  String get unfavourite => 'Remove from favourites';
+
+  @override
+  String get wsPort => 'Port (optional)';
+
+  @override
+  String get wsPortHint => 'e.g. 3000, 8080';
+
+  @override
+  String get nginxSettings => 'Nginx Reverse Proxy';
+
+  @override
+  String get nginxConfDir => 'conf.d Directory';
+
+  @override
+  String get nginxConfDirHint => 'e.g. /path/to/conf.d';
+
+  @override
+  String get nginxDomainSuffix => 'Domain Suffix';
+
+  @override
+  String get nginxDomainSuffixHint => 'e.g. .namchamvinhcuu.test';
+
+  @override
+  String get nginxContainerName => 'Docker Container Name';
+
+  @override
+  String get nginxContainerNameHint => 'e.g. nginx';
+
+  @override
+  String get nginxSetup => 'Setup Nginx';
+
+  @override
+  String get nginxRemove => 'Remove Nginx';
+
+  @override
+  String nginxDomain(String domain) {
+    return '$domain';
+  }
+
+  @override
+  String nginxSetupSuccess(String domain) {
+    return 'Nginx configured: $domain';
+  }
+
+  @override
+  String nginxRemoveSuccess(String domain) {
+    return 'Nginx removed: $domain';
+  }
+
+  @override
+  String nginxFailed(String error) {
+    return 'Nginx error: $error';
+  }
+
+  @override
+  String get nginxNotConfigured => 'Configure Nginx in Settings first';
+
+  @override
+  String nginxConfirmRemove(String name) {
+    return 'Remove nginx config for \"$name\"?';
+  }
+
+  @override
+  String get nginxNoPort => 'Set a port first to setup Nginx';
+
+  @override
+  String get nginxSaved => 'Nginx settings saved';
+
+  @override
+  String get nginxSubdomain => 'Subdomain';
+
+  @override
+  String nginxPreviewDomain(String domain) {
+    return 'Domain: $domain';
+  }
+
+  @override
+  String get nginxInvalidSubdomain =>
+      'Only lowercase letters, numbers and hyphens allowed';
+
+  @override
+  String get nginxDomainConflict => 'This subdomain is already in use';
+
+  @override
+  String get nginxLink => 'Link existing Nginx';
+
+  @override
+  String get nginxLinkSubdomain => 'Existing subdomain';
+
+  @override
+  String get nginxLinkHint => 'Select the conf already created';
+
+  @override
+  String nginxLinked(String domain) {
+    return 'Linked to $domain';
+  }
+
+  @override
+  String nginxPortConflict(int port, String name) {
+    return 'Port $port is already proxied by \"$name\"';
+  }
 }

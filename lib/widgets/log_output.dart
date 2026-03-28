@@ -58,21 +58,23 @@ class _LogOutputState extends State<LogOutput> {
                 style: const TextStyle(color: Colors.grey, fontFamily: 'monospace'),
               ),
             )
-          : ListView.builder(
-              controller: _scrollController,
-              padding: EdgeInsets.all(AppSpacing.md),
-              itemCount: widget.lines.length,
-              itemBuilder: (context, index) {
-                final line = widget.lines[index];
-                return Text(
-                  line,
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: AppFontSize.md,
-                    color: _getLineColor(line),
-                  ),
-                );
-              },
+          : SelectionArea(
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.all(AppSpacing.md),
+                itemCount: widget.lines.length,
+                itemBuilder: (context, index) {
+                  final line = widget.lines[index];
+                  return Text(
+                    line,
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.md,
+                      color: _getLineColor(line),
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
