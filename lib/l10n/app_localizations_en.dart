@@ -893,6 +893,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx is not running';
 
   @override
+  String get nginxKillProcess => 'Kill Process';
+
+  @override
+  String nginxKillConfirm(String process, String pid, int port) {
+    return 'Kill $process (PID: $pid) to free port $port?';
+  }
+
+  @override
+  String nginxKillSuccess(int port) {
+    return 'Process killed. Port $port is now free.';
+  }
+
+  @override
+  String nginxKillFailed(String error) {
+    return 'Failed to kill process: $error';
+  }
+
+  @override
+  String get nginxLocalDetected => 'Local nginx detected';
+
+  @override
+  String get nginxLocalDisableHint =>
+      'To disable local nginx from auto-starting:';
+
+  @override
+  String get nginxLocalDisableMac =>
+      'sudo brew services stop nginx\nsudo launchctl disable system/org.nginx.nginx';
+
+  @override
+  String get nginxLocalDisableLinux =>
+      'sudo systemctl stop nginx\nsudo systemctl disable nginx';
+
+  @override
+  String get nginxLocalDisableWindows =>
+      'net stop nginx\nsc config nginx start= disabled';
+
+  @override
   String get nginxInitCreate => 'Create Structure';
 
   @override

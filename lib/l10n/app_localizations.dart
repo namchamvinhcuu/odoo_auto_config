@@ -1696,6 +1696,60 @@ abstract class AppLocalizations {
   /// **'Docker nginx is not running'**
   String get nginxDockerStopped;
 
+  /// No description provided for @nginxKillProcess.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill Process'**
+  String get nginxKillProcess;
+
+  /// No description provided for @nginxKillConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill {process} (PID: {pid}) to free port {port}?'**
+  String nginxKillConfirm(String process, String pid, int port);
+
+  /// No description provided for @nginxKillSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Process killed. Port {port} is now free.'**
+  String nginxKillSuccess(int port);
+
+  /// No description provided for @nginxKillFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to kill process: {error}'**
+  String nginxKillFailed(String error);
+
+  /// No description provided for @nginxLocalDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Local nginx detected'**
+  String get nginxLocalDetected;
+
+  /// No description provided for @nginxLocalDisableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'To disable local nginx from auto-starting:'**
+  String get nginxLocalDisableHint;
+
+  /// No description provided for @nginxLocalDisableMac.
+  ///
+  /// In en, this message translates to:
+  /// **'sudo brew services stop nginx\nsudo launchctl disable system/org.nginx.nginx'**
+  String get nginxLocalDisableMac;
+
+  /// No description provided for @nginxLocalDisableLinux.
+  ///
+  /// In en, this message translates to:
+  /// **'sudo systemctl stop nginx\nsudo systemctl disable nginx'**
+  String get nginxLocalDisableLinux;
+
+  /// No description provided for @nginxLocalDisableWindows.
+  ///
+  /// In en, this message translates to:
+  /// **'net stop nginx\nsc config nginx start= disabled'**
+  String get nginxLocalDisableWindows;
+
   /// No description provided for @nginxInitCreate.
   ///
   /// In en, this message translates to:

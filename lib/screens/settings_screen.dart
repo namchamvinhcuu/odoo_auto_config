@@ -410,6 +410,44 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _restartingNginx = false;
   String? _nginxError;
 
+  Future<void> _killProcess(
+      ({int port, String? process, int? pid, String source}) conflict) async {
+    if (conflict.pid == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.nginxKillProcess),
+        content: Text(context.l10n.nginxKillConfirm(
+            conflict.process ?? 'unknown',
+            '${conflict.pid}',
+            conflict.port)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.l10n.nginxKillProcess)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final result = await NginxService.killProcess(conflict.pid!);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.exitCode == 0
+              ? context.l10n.nginxKillSuccess(conflict.port)
+              : context.l10n.nginxKillFailed(result.stderr)),
+          backgroundColor: result.exitCode == 0 ? null : Colors.red,
+        ),
+      );
+      _checkPorts();
+    }
+  }
+
   Future<void> _dockerCommand(String command) async {
     final container = _containerNameController.text.trim();
     if (container.isEmpty) return;
@@ -741,48 +779,101 @@ class _SettingsScreenState extends State<SettingsScreen>
             _portConflicts!.any((c) => !c.source.startsWith('docker:')))
           ..._portConflicts!
               .where((c) => !c.source.startsWith('docker:'))
-              .map((conflict) => Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: AppRadius.mediumBorderRadius,
-                        border: Border.all(
-                            color: Colors.orange.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber,
-                              color: Colors.orange),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.l10n.nginxPortInUse(
-                                      conflict.port,
-                                      conflict.process ?? 'unknown',
-                                      '${conflict.pid ?? '?'}'),
-                                  style: const TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.w600),
-                                ),
-                                Text(
-                                  'PID: ${conflict.pid ?? '?'}  •  ${conflict.process ?? 'unknown'}',
-                                  style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: AppFontSize.sm,
-                                      color: Colors.orange.shade300),
-                                ),
-                              ],
-                            ),
+              .map((conflict) {
+            final isNginxLocal =
+                NginxService.isLocalNginx(conflict.process);
+            return Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: AppRadius.mediumBorderRadius,
+                  border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.warning_amber,
+                            color: Colors.orange),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isNginxLocal
+                                    ? context.l10n.nginxLocalDetected
+                                    : context.l10n.nginxPortInUse(
+                                        conflict.port,
+                                        conflict.process ?? 'unknown',
+                                        '${conflict.pid ?? '?'}'),
+                                style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                'Port ${conflict.port}  •  ${conflict.process ?? 'unknown'}  •  PID: ${conflict.pid ?? '?'}',
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                    color: Colors.orange.shade300),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  )),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (isNginxLocal) ...[
+                      Text(context.l10n.nginxLocalDisableHint,
+                          style: TextStyle(
+                              fontSize: AppFontSize.sm,
+                              color: Colors.orange.shade300)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius: AppRadius.smallBorderRadius,
+                        ),
+                        child: Text(
+                          Platform.isMacOS
+                              ? context.l10n.nginxLocalDisableMac
+                              : Platform.isWindows
+                                  ? context.l10n.nginxLocalDisableWindows
+                                  : context.l10n.nginxLocalDisableLinux,
+                          style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: AppFontSize.sm),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      FilledButton.tonalIcon(
+                        onPressed: conflict.pid != null
+                            ? () => _killProcess(conflict)
+                            : null,
+                        icon: const Icon(Icons.stop_circle),
+                        label: Text(context.l10n.nginxKillProcess),
+                      ),
+                    ] else
+                      FilledButton.tonalIcon(
+                        onPressed: conflict.pid != null
+                            ? () => _killProcess(conflict)
+                            : null,
+                        icon: const Icon(Icons.dangerous),
+                        label: Text(context.l10n.nginxKillProcess),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
       ],
     );
   }

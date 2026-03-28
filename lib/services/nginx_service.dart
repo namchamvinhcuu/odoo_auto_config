@@ -263,6 +263,30 @@ class NginxService {
     return (conflicts: conflicts, dockerNginxRunning: dockerRunning);
   }
 
+  /// Kill a process by PID (elevated on macOS/Linux)
+  static Future<CommandResult> killProcess(int pid) async {
+    if (Platform.isWindows) {
+      return CommandRunner.run('taskkill', ['/F', '/PID', '$pid']);
+    } else if (Platform.isMacOS) {
+      return CommandRunner.run('osascript', [
+        '-e',
+        'do shell script "kill -9 $pid" with administrator privileges',
+      ]);
+    } else {
+      return CommandRunner.run('pkexec', ['kill', '-9', '$pid']);
+    }
+  }
+
+  /// Check if a process name looks like local nginx
+  static bool isLocalNginx(String? processName) {
+    if (processName == null) return false;
+    final lower = processName.toLowerCase();
+    return lower.contains('nginx') &&
+        !lower.contains('docker') &&
+        !lower.contains('orbstack') &&
+        !lower.contains('containerd');
+  }
+
   // ── Settings ──
 
   static Future<Map<String, dynamic>> loadSettings() async {

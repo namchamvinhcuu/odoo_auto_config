@@ -878,6 +878,42 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx 중지됨';
 
   @override
+  String get nginxKillProcess => '프로세스 종료';
+
+  @override
+  String nginxKillConfirm(String process, String pid, int port) {
+    return '포트 $port을(를) 해제하기 위해 $process (PID: $pid)을(를) 종료하시겠습니까?';
+  }
+
+  @override
+  String nginxKillSuccess(int port) {
+    return '프로세스가 종료되었습니다. 포트 $port이(가) 사용 가능합니다.';
+  }
+
+  @override
+  String nginxKillFailed(String error) {
+    return '프로세스 종료 실패: $error';
+  }
+
+  @override
+  String get nginxLocalDetected => '로컬 nginx 감지됨';
+
+  @override
+  String get nginxLocalDisableHint => '로컬 nginx 자동 시작을 비활성화하려면:';
+
+  @override
+  String get nginxLocalDisableMac =>
+      'sudo brew services stop nginx\nsudo launchctl disable system/org.nginx.nginx';
+
+  @override
+  String get nginxLocalDisableLinux =>
+      'sudo systemctl stop nginx\nsudo systemctl disable nginx';
+
+  @override
+  String get nginxLocalDisableWindows =>
+      'net stop nginx\nsc config nginx start= disabled';
+
+  @override
   String get nginxInitCreate => '구조 생성';
 
   @override

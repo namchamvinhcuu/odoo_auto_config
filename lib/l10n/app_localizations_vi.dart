@@ -888,6 +888,43 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx chưa chạy';
 
   @override
+  String get nginxKillProcess => 'Dừng tiến trình';
+
+  @override
+  String nginxKillConfirm(String process, String pid, int port) {
+    return 'Dừng $process (PID: $pid) để giải phóng port $port?';
+  }
+
+  @override
+  String nginxKillSuccess(int port) {
+    return 'Đã dừng tiến trình. Port $port đã sẵn sàng.';
+  }
+
+  @override
+  String nginxKillFailed(String error) {
+    return 'Không thể dừng tiến trình: $error';
+  }
+
+  @override
+  String get nginxLocalDetected => 'Phát hiện nginx cài trực tiếp';
+
+  @override
+  String get nginxLocalDisableHint =>
+      'Để tắt nginx local không tự khởi động lại:';
+
+  @override
+  String get nginxLocalDisableMac =>
+      'sudo brew services stop nginx\nsudo launchctl disable system/org.nginx.nginx';
+
+  @override
+  String get nginxLocalDisableLinux =>
+      'sudo systemctl stop nginx\nsudo systemctl disable nginx';
+
+  @override
+  String get nginxLocalDisableWindows =>
+      'net stop nginx\nsc config nginx start= disabled';
+
+  @override
   String get nginxInitCreate => 'Tạo cấu trúc';
 
   @override
