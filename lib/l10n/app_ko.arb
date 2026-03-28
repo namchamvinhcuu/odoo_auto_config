@@ -240,5 +240,34 @@
   "wsViewGrid": "격자 보기",
 
   "favourite": "즐겨찾기 추가",
-  "unfavourite": "즐겨찾기 제거"
+  "unfavourite": "즐겨찾기 제거",
+
+  "wsPort": "포트 (선택사항)",
+  "wsPortHint": "예: 3000, 8080",
+
+  "nginxSettings": "Nginx 리버스 프록시",
+  "nginxConfDir": "conf.d 디렉토리",
+  "nginxConfDirHint": "예: /path/to/conf.d",
+  "nginxDomainSuffix": "도메인 접미사",
+  "nginxDomainSuffixHint": "예: .namchamvinhcuu.test",
+  "nginxContainerName": "Docker 컨테이너 이름",
+  "nginxContainerNameHint": "예: nginx",
+  "nginxSetup": "Nginx 설정",
+  "nginxRemove": "Nginx 제거",
+  "nginxDomain": "{domain}",
+  "@nginxDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxSetupSuccess": "Nginx 설정 완료: {domain}",
+  "@nginxSetupSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxRemoveSuccess": "Nginx 제거 완료: {domain}",
+  "@nginxRemoveSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxFailed": "Nginx 오류: {error}",
+  "@nginxFailed": { "placeholders": { "error": { "type": "String" } } },
+  "nginxNotConfigured": "설정에서 Nginx를 먼저 구성하세요",
+  "nginxConfirmRemove": "\"{name}\"의 nginx 설정을 제거하시겠습니까?",
+  "@nginxConfirmRemove": { "placeholders": { "name": { "type": "String" } } },
+  "nginxNoPort": "Nginx를 설정하려면 먼저 포트를 설정하세요",
+  "nginxSaved": "Nginx 설정 저장됨",
+  "nginxSubdomain": "서브도메인",
+  "nginxPreviewDomain": "도메인: {domain}",
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
 }

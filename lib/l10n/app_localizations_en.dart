@@ -736,4 +736,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unfavourite => 'Remove from favourites';
+
+  @override
+  String get wsPort => 'Port (optional)';
+
+  @override
+  String get wsPortHint => 'e.g. 3000, 8080';
+
+  @override
+  String get nginxSettings => 'Nginx Reverse Proxy';
+
+  @override
+  String get nginxConfDir => 'conf.d Directory';
+
+  @override
+  String get nginxConfDirHint => 'e.g. /path/to/conf.d';
+
+  @override
+  String get nginxDomainSuffix => 'Domain Suffix';
+
+  @override
+  String get nginxDomainSuffixHint => 'e.g. .namchamvinhcuu.test';
+
+  @override
+  String get nginxContainerName => 'Docker Container Name';
+
+  @override
+  String get nginxContainerNameHint => 'e.g. nginx';
+
+  @override
+  String get nginxSetup => 'Setup Nginx';
+
+  @override
+  String get nginxRemove => 'Remove Nginx';
+
+  @override
+  String nginxDomain(String domain) {
+    return '$domain';
+  }
+
+  @override
+  String nginxSetupSuccess(String domain) {
+    return 'Nginx configured: $domain';
+  }
+
+  @override
+  String nginxRemoveSuccess(String domain) {
+    return 'Nginx removed: $domain';
+  }
+
+  @override
+  String nginxFailed(String error) {
+    return 'Nginx error: $error';
+  }
+
+  @override
+  String get nginxNotConfigured => 'Configure Nginx in Settings first';
+
+  @override
+  String nginxConfirmRemove(String name) {
+    return 'Remove nginx config for \"$name\"?';
+  }
+
+  @override
+  String get nginxNoPort => 'Set a port first to setup Nginx';
+
+  @override
+  String get nginxSaved => 'Nginx settings saved';
+
+  @override
+  String get nginxSubdomain => 'Subdomain';
+
+  @override
+  String nginxPreviewDomain(String domain) {
+    return 'Domain: $domain';
+  }
 }

@@ -261,5 +261,34 @@
   "wsViewGrid": "Grid view",
 
   "favourite": "Add to favourites",
-  "unfavourite": "Remove from favourites"
+  "unfavourite": "Remove from favourites",
+
+  "wsPort": "Port (optional)",
+  "wsPortHint": "e.g. 3000, 8080",
+
+  "nginxSettings": "Nginx Reverse Proxy",
+  "nginxConfDir": "conf.d Directory",
+  "nginxConfDirHint": "e.g. /path/to/conf.d",
+  "nginxDomainSuffix": "Domain Suffix",
+  "nginxDomainSuffixHint": "e.g. .namchamvinhcuu.test",
+  "nginxContainerName": "Docker Container Name",
+  "nginxContainerNameHint": "e.g. nginx",
+  "nginxSetup": "Setup Nginx",
+  "nginxRemove": "Remove Nginx",
+  "nginxDomain": "{domain}",
+  "@nginxDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxSetupSuccess": "Nginx configured: {domain}",
+  "@nginxSetupSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxRemoveSuccess": "Nginx removed: {domain}",
+  "@nginxRemoveSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxFailed": "Nginx error: {error}",
+  "@nginxFailed": { "placeholders": { "error": { "type": "String" } } },
+  "nginxNotConfigured": "Configure Nginx in Settings first",
+  "nginxConfirmRemove": "Remove nginx config for \"{name}\"?",
+  "@nginxConfirmRemove": { "placeholders": { "name": { "type": "String" } } },
+  "nginxNoPort": "Set a port first to setup Nginx",
+  "nginxSaved": "Nginx settings saved",
+  "nginxSubdomain": "Subdomain",
+  "nginxPreviewDomain": "Domain: {domain}",
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
 }

@@ -732,4 +732,79 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get unfavourite => 'Bỏ yêu thích';
+
+  @override
+  String get wsPort => 'Port (tùy chọn)';
+
+  @override
+  String get wsPortHint => 'VD: 3000, 8080';
+
+  @override
+  String get nginxSettings => 'Nginx Reverse Proxy';
+
+  @override
+  String get nginxConfDir => 'Thư mục conf.d';
+
+  @override
+  String get nginxConfDirHint => 'VD: /đường/dẫn/tới/conf.d';
+
+  @override
+  String get nginxDomainSuffix => 'Hậu tố domain';
+
+  @override
+  String get nginxDomainSuffixHint => 'VD: .namchamvinhcuu.test';
+
+  @override
+  String get nginxContainerName => 'Tên Docker Container';
+
+  @override
+  String get nginxContainerNameHint => 'VD: nginx';
+
+  @override
+  String get nginxSetup => 'Cấu hình Nginx';
+
+  @override
+  String get nginxRemove => 'Gỡ Nginx';
+
+  @override
+  String nginxDomain(String domain) {
+    return '$domain';
+  }
+
+  @override
+  String nginxSetupSuccess(String domain) {
+    return 'Đã cấu hình Nginx: $domain';
+  }
+
+  @override
+  String nginxRemoveSuccess(String domain) {
+    return 'Đã gỡ Nginx: $domain';
+  }
+
+  @override
+  String nginxFailed(String error) {
+    return 'Lỗi Nginx: $error';
+  }
+
+  @override
+  String get nginxNotConfigured => 'Cấu hình Nginx trong Cài đặt trước';
+
+  @override
+  String nginxConfirmRemove(String name) {
+    return 'Gỡ cấu hình nginx cho \"$name\"?';
+  }
+
+  @override
+  String get nginxNoPort => 'Cần thiết lập port trước khi cấu hình Nginx';
+
+  @override
+  String get nginxSaved => 'Đã lưu cấu hình Nginx';
+
+  @override
+  String get nginxSubdomain => 'Subdomain';
+
+  @override
+  String nginxPreviewDomain(String domain) {
+    return 'Domain: $domain';
+  }
 }

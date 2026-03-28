@@ -5,7 +5,9 @@ import '../constants/app_constants.dart';
 import '../models/workspace_info.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/platform_service.dart';
+import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/nginx_setup_dialog.dart';
 import 'projects_screen.dart';
 
 class WorkspacesScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
   String _filterType = '';
+  final Map<String, bool> _nginxStatus = {};
 
   @override
   void initState() {
@@ -31,12 +34,25 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final json = await StorageService.loadWorkspaces();
+    final workspaces = json.map((j) => WorkspaceInfo.fromJson(j)).toList();
+    workspaces.sort((a, b) {
+      if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    final nginx = await NginxService.loadSettings();
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final status = <String, bool>{};
+    if (confDir.isNotEmpty) {
+      for (final w in workspaces) {
+        status[w.path] = await NginxService.isNginxSetup(confDir, w.name);
+      }
+    }
+
     setState(() {
-      _workspaces = json.map((j) => WorkspaceInfo.fromJson(j)).toList();
-      _workspaces.sort((a, b) {
-        if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
+      _workspaces = workspaces;
+      _nginxStatus.clear();
+      _nginxStatus.addAll(status);
       _applyFilter();
       _loading = false;
     });
@@ -113,6 +129,105 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.couldNotOpenVscode)),
+        );
+      }
+    }
+  }
+
+  Future<void> _setupNginx(WorkspaceInfo ws) async {
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
+        );
+      }
+      return;
+    }
+
+    final result = await showDialog<({String subdomain, int? port})>(
+      context: context,
+      builder: (ctx) => NginxSetupDialog(
+        initialSubdomain: NginxService.sanitizeSubdomain(ws.name),
+        domainSuffix: suffix,
+        initialPort: ws.port,
+        showPort: true,
+      ),
+    );
+    if (result == null) return;
+
+    final port = result.port ?? ws.port;
+    if (port == null || port <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxNoPort)),
+        );
+      }
+      return;
+    }
+
+    try {
+      final domain = await NginxService.setupGeneric(
+        subdomain: result.subdomain,
+        port: port,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxSetupSuccess(domain))),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.nginxFailed(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeNginx(WorkspaceInfo ws) async {
+    final subdomain = NginxService.sanitizeSubdomain(ws.name);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.nginxRemove),
+        content: Text(context.l10n.nginxConfirmRemove(ws.name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.l10n.nginxRemove)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final nginx = await NginxService.loadSettings();
+      final suffix = (nginx['domainSuffix'] ?? '').toString();
+      await NginxService.removeNginx(subdomain);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  context.l10n.nginxRemoveSuccess('$subdomain$suffix'))),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.nginxFailed(e.toString())),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -261,6 +376,20 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                       onPressed: () => _editWorkspace(ws),
                       icon: const Icon(Icons.edit),
                       tooltip: context.l10n.edit,
+                    ),
+                    IconButton(
+                      onPressed: () => _nginxStatus[ws.path] == true
+                          ? _removeNginx(ws)
+                          : _setupNginx(ws),
+                      icon: Icon(
+                        Icons.dns,
+                        color: _nginxStatus[ws.path] == true
+                            ? Colors.green
+                            : null,
+                      ),
+                      tooltip: _nginxStatus[ws.path] == true
+                          ? context.l10n.nginxRemove
+                          : context.l10n.nginxSetup,
                     ),
                     const Spacer(),
                     IconButton(
@@ -448,6 +577,19 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
             ),
           ),
         PopupMenuItem(
+            value: 'nginx',
+            child: Row(
+              children: [
+                Icon(Icons.dns, size: AppIconSize.md,
+                    color: _nginxStatus[ws.path] == true ? Colors.green : null),
+                const SizedBox(width: AppSpacing.sm),
+                Text(_nginxStatus[ws.path] == true
+                    ? context.l10n.nginxRemove
+                    : context.l10n.nginxSetup),
+              ],
+            ),
+          ),
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
@@ -478,6 +620,10 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         _openInVscode(ws.path);
       case 'folder':
         _openInFileManager(ws.path);
+      case 'nginx':
+        _nginxStatus[ws.path] == true
+            ? _removeNginx(ws)
+            : _setupNginx(ws);
       case 'edit':
         _editWorkspace(ws);
       case 'delete':
@@ -689,6 +835,7 @@ class _ImportWorkspaceDialog extends StatefulWidget {
 class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _typeController;
+  late final TextEditingController _portController;
   late String _workspacePath;
   late String _description;
 
@@ -698,6 +845,8 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
     final e = widget.existing;
     _nameController = TextEditingController(text: e?.name ?? '');
     _typeController = TextEditingController(text: e?.type ?? '');
+    _portController = TextEditingController(
+        text: e?.port != null ? '${e!.port}' : '');
     _workspacePath = e?.path ?? '';
     _description = e?.description ?? '';
   }
@@ -787,12 +936,14 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
   void _save() {
     if (_workspacePath.isEmpty || _nameController.text.isEmpty) return;
 
+    final portText = _portController.text.trim();
     final workspace = WorkspaceInfo(
       name: _nameController.text.trim(),
       path: _workspacePath,
       type: _typeController.text.trim(),
       description: _description,
       createdAt: widget.existing?.createdAt ?? DateTime.now().toIso8601String(),
+      port: portText.isNotEmpty ? int.tryParse(portText) : null,
     );
 
     Navigator.pop(context, workspace);
@@ -802,6 +953,7 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
   void dispose() {
     _nameController.dispose();
     _typeController.dispose();
+    _portController.dispose();
     super.dispose();
   }
 
@@ -891,6 +1043,19 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // Port (optional, for nginx)
+              TextField(
+                controller: _portController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.wsPort,
+                  hintText: context.l10n.wsPortHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
               ),
             ],
           ),

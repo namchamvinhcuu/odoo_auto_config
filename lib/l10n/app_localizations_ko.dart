@@ -722,4 +722,79 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get unfavourite => '즐겨찾기 제거';
+
+  @override
+  String get wsPort => '포트 (선택사항)';
+
+  @override
+  String get wsPortHint => '예: 3000, 8080';
+
+  @override
+  String get nginxSettings => 'Nginx 리버스 프록시';
+
+  @override
+  String get nginxConfDir => 'conf.d 디렉토리';
+
+  @override
+  String get nginxConfDirHint => '예: /path/to/conf.d';
+
+  @override
+  String get nginxDomainSuffix => '도메인 접미사';
+
+  @override
+  String get nginxDomainSuffixHint => '예: .namchamvinhcuu.test';
+
+  @override
+  String get nginxContainerName => 'Docker 컨테이너 이름';
+
+  @override
+  String get nginxContainerNameHint => '예: nginx';
+
+  @override
+  String get nginxSetup => 'Nginx 설정';
+
+  @override
+  String get nginxRemove => 'Nginx 제거';
+
+  @override
+  String nginxDomain(String domain) {
+    return '$domain';
+  }
+
+  @override
+  String nginxSetupSuccess(String domain) {
+    return 'Nginx 설정 완료: $domain';
+  }
+
+  @override
+  String nginxRemoveSuccess(String domain) {
+    return 'Nginx 제거 완료: $domain';
+  }
+
+  @override
+  String nginxFailed(String error) {
+    return 'Nginx 오류: $error';
+  }
+
+  @override
+  String get nginxNotConfigured => '설정에서 Nginx를 먼저 구성하세요';
+
+  @override
+  String nginxConfirmRemove(String name) {
+    return '\"$name\"의 nginx 설정을 제거하시겠습니까?';
+  }
+
+  @override
+  String get nginxNoPort => 'Nginx를 설정하려면 먼저 포트를 설정하세요';
+
+  @override
+  String get nginxSaved => 'Nginx 설정 저장됨';
+
+  @override
+  String get nginxSubdomain => '서브도메인';
+
+  @override
+  String nginxPreviewDomain(String domain) {
+    return '도메인: $domain';
+  }
 }

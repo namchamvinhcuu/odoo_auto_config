@@ -6,7 +6,9 @@ import '../constants/app_constants.dart';
 import '../models/project_info.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/platform_service.dart';
+import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/nginx_setup_dialog.dart';
 import 'quick_create_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -38,6 +40,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<ProjectInfo> _filtered = [];
   final _searchController = TextEditingController();
   bool _loading = true;
+  final Map<String, bool> _nginxStatus = {};
 
   @override
   void initState() {
@@ -48,12 +51,26 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     final json = await StorageService.loadProjects();
+    final projects = json.map((j) => ProjectInfo.fromJson(j)).toList();
+    projects.sort((a, b) {
+      if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    // Check nginx status for all projects
+    final nginx = await NginxService.loadSettings();
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final status = <String, bool>{};
+    if (confDir.isNotEmpty) {
+      for (final p in projects) {
+        status[p.path] = await NginxService.isNginxSetup(confDir, p.name);
+      }
+    }
+
     setState(() {
-      _projects = json.map((j) => ProjectInfo.fromJson(j)).toList();
-      _projects.sort((a, b) {
-        if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
+      _projects = projects;
+      _nginxStatus.clear();
+      _nginxStatus.addAll(status);
       _applyFilter();
       _loading = false;
     });
@@ -153,6 +170,94 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       await StorageService.removeProject(project.path);
       await StorageService.addProject(result.toJson());
       await _load();
+    }
+  }
+
+  Future<void> _setupNginx(ProjectInfo proj) async {
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
+        );
+      }
+      return;
+    }
+
+    final result = await showDialog<({String subdomain, int? port})>(
+      context: context,
+      builder: (ctx) => NginxSetupDialog(
+        initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
+        domainSuffix: suffix,
+      ),
+    );
+    if (result == null) return;
+
+    try {
+      final domain = await NginxService.setupOdoo(
+        subdomain: result.subdomain,
+        httpPort: proj.httpPort,
+        longpollingPort: proj.longpollingPort,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxSetupSuccess(domain))),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.nginxFailed(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeNginx(ProjectInfo proj) async {
+    final subdomain = NginxService.sanitizeSubdomain(proj.name);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.nginxRemove),
+        content: Text(context.l10n.nginxConfirmRemove(proj.name)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.l10n.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(context.l10n.nginxRemove)),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final nginx = await NginxService.loadSettings();
+      final suffix = (nginx['domainSuffix'] ?? '').toString();
+      await NginxService.removeNginx(subdomain);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  context.l10n.nginxRemoveSuccess('$subdomain$suffix'))),
+        );
+      }
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.nginxFailed(e.toString())),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -336,6 +441,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       onPressed: () => _editProject(proj),
                       icon: const Icon(Icons.edit),
                       tooltip: context.l10n.edit,
+                    ),
+                    IconButton(
+                      onPressed: () => _nginxStatus[proj.path] == true
+                          ? _removeNginx(proj)
+                          : _setupNginx(proj),
+                      icon: Icon(
+                        Icons.dns,
+                        color: _nginxStatus[proj.path] == true
+                            ? Colors.green
+                            : null,
+                      ),
+                      tooltip: _nginxStatus[proj.path] == true
+                          ? context.l10n.nginxRemove
+                          : context.l10n.nginxSetup,
                     ),
                     const Spacer(),
                     IconButton(
@@ -532,6 +651,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
           ),
         PopupMenuItem(
+          value: 'nginx',
+          child: Row(
+            children: [
+              Icon(Icons.dns, size: AppIconSize.md,
+                  color: _nginxStatus[proj.path] == true ? Colors.green : null),
+              const SizedBox(width: AppSpacing.sm),
+              Text(_nginxStatus[proj.path] == true
+                  ? context.l10n.nginxRemove
+                  : context.l10n.nginxSetup),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
@@ -562,6 +694,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         _openInVscode(proj.path);
       case 'folder':
         _openInFileManager(proj.path);
+      case 'nginx':
+        _nginxStatus[proj.path] == true
+            ? _removeNginx(proj)
+            : _setupNginx(proj);
       case 'edit':
         _editProject(proj);
       case 'delete':

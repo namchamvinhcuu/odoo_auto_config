@@ -240,5 +240,34 @@
   "wsViewGrid": "Dạng lưới",
 
   "favourite": "Thêm vào yêu thích",
-  "unfavourite": "Bỏ yêu thích"
+  "unfavourite": "Bỏ yêu thích",
+
+  "wsPort": "Port (tùy chọn)",
+  "wsPortHint": "VD: 3000, 8080",
+
+  "nginxSettings": "Nginx Reverse Proxy",
+  "nginxConfDir": "Thư mục conf.d",
+  "nginxConfDirHint": "VD: /đường/dẫn/tới/conf.d",
+  "nginxDomainSuffix": "Hậu tố domain",
+  "nginxDomainSuffixHint": "VD: .namchamvinhcuu.test",
+  "nginxContainerName": "Tên Docker Container",
+  "nginxContainerNameHint": "VD: nginx",
+  "nginxSetup": "Cấu hình Nginx",
+  "nginxRemove": "Gỡ Nginx",
+  "nginxDomain": "{domain}",
+  "@nginxDomain": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxSetupSuccess": "Đã cấu hình Nginx: {domain}",
+  "@nginxSetupSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxRemoveSuccess": "Đã gỡ Nginx: {domain}",
+  "@nginxRemoveSuccess": { "placeholders": { "domain": { "type": "String" } } },
+  "nginxFailed": "Lỗi Nginx: {error}",
+  "@nginxFailed": { "placeholders": { "error": { "type": "String" } } },
+  "nginxNotConfigured": "Cấu hình Nginx trong Cài đặt trước",
+  "nginxConfirmRemove": "Gỡ cấu hình nginx cho \"{name}\"?",
+  "@nginxConfirmRemove": { "placeholders": { "name": { "type": "String" } } },
+  "nginxNoPort": "Cần thiết lập port trước khi cấu hình Nginx",
+  "nginxSaved": "Đã lưu cấu hình Nginx",
+  "nginxSubdomain": "Subdomain",
+  "nginxPreviewDomain": "Domain: {domain}",
+  "@nginxPreviewDomain": { "placeholders": { "domain": { "type": "String" } } }
 }
