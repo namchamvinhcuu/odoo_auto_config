@@ -1696,6 +1696,24 @@ abstract class AppLocalizations {
   /// **'Docker nginx is not running'**
   String get nginxDockerStopped;
 
+  /// No description provided for @dockerNotInstalledBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker is not installed. Install Docker to use all features.'**
+  String get dockerNotInstalledBanner;
+
+  /// No description provided for @dockerNotRunningBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker daemon is not running. Start Docker Desktop to use all features.'**
+  String get dockerNotRunningBanner;
+
+  /// No description provided for @dockerGoToSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings'**
+  String get dockerGoToSettings;
+
   /// No description provided for @nginxKillProcess.
   ///
   /// In en, this message translates to:

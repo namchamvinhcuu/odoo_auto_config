@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/docker_install_service.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
@@ -38,10 +39,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   WindowSize _windowSize = WindowSize.medium;
 
+  // Docker status
+  bool? _dockerInstalled;
+  bool? _dockerRunning;
+
   @override
   void initState() {
     super.initState();
     _instance = this;
+    _checkDocker();
+  }
+
+  Future<void> _checkDocker() async {
+    final installed = await DockerInstallService.isInstalled();
+    final running = installed ? await DockerInstallService.isRunning() : false;
+    if (mounted) {
+      setState(() {
+        _dockerInstalled = installed;
+        _dockerRunning = running;
+      });
+    }
   }
 
   @override
@@ -109,8 +126,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dockerBanner = _dockerInstalled == false
+        ? context.l10n.dockerNotInstalledBanner
+        : (_dockerInstalled == true && _dockerRunning == false)
+            ? context.l10n.dockerNotRunningBanner
+            : null;
+
     return Scaffold(
-      body: Row(
+      body: Column(
+        children: [
+          if (dockerBanner != null)
+            MaterialBanner(
+              content: Text(dockerBanner),
+              leading: Icon(Icons.sailing,
+                  color: _dockerInstalled == false
+                      ? Colors.red
+                      : Colors.orange),
+              backgroundColor: _dockerInstalled == false
+                  ? Colors.red.withValues(alpha: 0.1)
+                  : Colors.orange.withValues(alpha: 0.1),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    // Navigate to Settings > Docker tab (index 3)
+                    HomeScreen.navigateToSettings(settingsTab: 3);
+                  },
+                  child: Text(context.l10n.dockerGoToSettings),
+                ),
+              ],
+            ),
+          Expanded(
+            child: Row(
         children: [
           NavigationRail(
             extended: true,
@@ -188,6 +234,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: _screens[_selectedIndex],
+          ),
+        ],
+      ),
           ),
         ],
       ),

@@ -893,6 +893,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx is not running';
 
   @override
+  String get dockerNotInstalledBanner =>
+      'Docker is not installed. Install Docker to use all features.';
+
+  @override
+  String get dockerNotRunningBanner =>
+      'Docker daemon is not running. Start Docker Desktop to use all features.';
+
+  @override
+  String get dockerGoToSettings => 'Go to Settings';
+
+  @override
   String get nginxKillProcess => 'Kill Process';
 
   @override

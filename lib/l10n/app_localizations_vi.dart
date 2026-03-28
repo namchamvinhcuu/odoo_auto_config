@@ -888,6 +888,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx chưa chạy';
 
   @override
+  String get dockerNotInstalledBanner =>
+      'Docker chưa được cài đặt. Cài Docker để sử dụng đầy đủ chức năng.';
+
+  @override
+  String get dockerNotRunningBanner =>
+      'Docker daemon chưa chạy. Khởi động Docker Desktop để sử dụng đầy đủ chức năng.';
+
+  @override
+  String get dockerGoToSettings => 'Đi tới Cài đặt';
+
+  @override
   String get nginxKillProcess => 'Dừng tiến trình';
 
   @override

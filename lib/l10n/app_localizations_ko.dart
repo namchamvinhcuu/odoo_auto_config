@@ -878,6 +878,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxDockerStopped => 'Docker nginx 중지됨';
 
   @override
+  String get dockerNotInstalledBanner =>
+      'Docker가 설치되지 않았습니다. 모든 기능을 사용하려면 Docker를 설치하세요.';
+
+  @override
+  String get dockerNotRunningBanner =>
+      'Docker 데몬이 실행되지 않았습니다. 모든 기능을 사용하려면 Docker Desktop을 시작하세요.';
+
+  @override
+  String get dockerGoToSettings => '설정으로 이동';
+
+  @override
   String get nginxKillProcess => '프로세스 종료';
 
   @override

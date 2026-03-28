@@ -298,6 +298,10 @@
   "@nginxPortDocker": { "placeholders": { "port": { "type": "int" }, "name": { "type": "String" } } },
   "nginxDockerRunning": "Docker nginx 실행 중",
   "nginxDockerStopped": "Docker nginx 중지됨",
+  "dockerNotInstalledBanner": "Docker가 설치되지 않았습니다. 모든 기능을 사용하려면 Docker를 설치하세요.",
+  "dockerNotRunningBanner": "Docker 데몬이 실행되지 않았습니다. 모든 기능을 사용하려면 Docker Desktop을 시작하세요.",
+  "dockerGoToSettings": "설정으로 이동",
+
   "nginxKillProcess": "프로세스 종료",
   "nginxKillConfirm": "포트 {port}을(를) 해제하기 위해 {process} (PID: {pid})을(를) 종료하시겠습니까?",
   "@nginxKillConfirm": { "placeholders": { "process": { "type": "String" }, "pid": { "type": "String" }, "port": { "type": "int" } } },
