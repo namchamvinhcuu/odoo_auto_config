@@ -12,7 +12,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get appTitle => 'Odoo Auto Config';
 
   @override
-  String get navProjects => 'Dự án';
+  String get navOdooProjects => 'Dự án Odoo';
 
   @override
   String get navProfiles => 'Hồ sơ';
@@ -102,11 +102,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get language => 'Ngôn ngữ';
 
   @override
-  String get projectsTitle => 'Dự án';
+  String get projectsTitle => 'Dự án Odoo';
 
   @override
   String get projectsSubtitle =>
-      'Tất cả dự án với truy cập nhanh. Nhập dự án có sẵn hoặc tạo mới.';
+      'Tất cả dự án Odoo với truy cập nhanh. Nhập dự án có sẵn hoặc tạo mới.';
 
   @override
   String get projectsSearchHint => 'Tìm theo tên, đường dẫn, nhãn, port...';
@@ -653,10 +653,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cần apt và pkexec (polkit) để cài đặt Python.';
 
   @override
-  String get navWorkspaces => 'Workspace';
+  String get navOtherProjects => 'Dự án khác';
 
   @override
-  String get wsTitle => 'Workspace';
+  String get wsTitle => 'Dự án khác';
 
   @override
   String get wsSubtitle =>

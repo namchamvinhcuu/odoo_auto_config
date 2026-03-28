@@ -2,7 +2,7 @@
   "@@locale": "ko",
   "appTitle": "Odoo Auto Config",
 
-  "navProjects": "프로젝트",
+  "navOdooProjects": "Odoo 프로젝트",
   "navProfiles": "프로필",
   "navPythonCheck": "Python 확인",
   "navVenvManager": "Venv 관리",
@@ -35,8 +35,8 @@
   "outlined": "윤곽선",
   "language": "언어",
 
-  "projectsTitle": "프로젝트",
-  "projectsSubtitle": "빠른 접근이 가능한 모든 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.",
+  "projectsTitle": "Odoo 프로젝트",
+  "projectsSubtitle": "빠른 접근이 가능한 모든 Odoo 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.",
   "projectsSearchHint": "이름, 경로, 라벨, 포트로 검색...",
   "projectsEmpty": "프로젝트가 없습니다. 빠른 생성 또는 가져오기를 사용하세요.",
   "projectsNoMatch": "검색 결과가 없습니다.",
@@ -211,8 +211,8 @@
   "packageManagerNotFoundMac": "Homebrew가 필요합니다. https://brew.sh에서 설치하세요.",
   "packageManagerNotFoundLinux": "Python을 설치하려면 apt와 pkexec(polkit)이 필요합니다.",
 
-  "navWorkspaces": "워크스페이스",
-  "wsTitle": "워크스페이스",
+  "navOtherProjects": "기타 프로젝트",
+  "wsTitle": "기타 프로젝트",
   "wsSubtitle": "모든 개발 프로젝트를 관리합니다. 빠른 접근 및 VSCode에서 열기.",
   "wsSearchHint": "이름, 경로, 유형으로 검색...",
   "wsEmpty": "워크스페이스가 없습니다. 디렉토리를 가져와 시작하세요.",

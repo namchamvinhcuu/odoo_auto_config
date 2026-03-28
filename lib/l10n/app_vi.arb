@@ -2,7 +2,7 @@
   "@@locale": "vi",
   "appTitle": "Odoo Auto Config",
 
-  "navProjects": "Dự án",
+  "navOdooProjects": "Dự án Odoo",
   "navProfiles": "Hồ sơ",
   "navPythonCheck": "Kiểm tra Python",
   "navVenvManager": "Quản lý Venv",
@@ -35,8 +35,8 @@
   "outlined": "Viền",
   "language": "Ngôn ngữ",
 
-  "projectsTitle": "Dự án",
-  "projectsSubtitle": "Tất cả dự án với truy cập nhanh. Nhập dự án có sẵn hoặc tạo mới.",
+  "projectsTitle": "Dự án Odoo",
+  "projectsSubtitle": "Tất cả dự án Odoo với truy cập nhanh. Nhập dự án có sẵn hoặc tạo mới.",
   "projectsSearchHint": "Tìm theo tên, đường dẫn, nhãn, port...",
   "projectsEmpty": "Chưa có dự án. Dùng Tạo nhanh hoặc Nhập để thêm.",
   "projectsNoMatch": "Không có dự án phù hợp.",
@@ -211,8 +211,8 @@
   "packageManagerNotFoundMac": "Cần Homebrew. Cài đặt tại https://brew.sh",
   "packageManagerNotFoundLinux": "Cần apt và pkexec (polkit) để cài đặt Python.",
 
-  "navWorkspaces": "Workspace",
-  "wsTitle": "Workspace",
+  "navOtherProjects": "Dự án khác",
+  "wsTitle": "Dự án khác",
   "wsSubtitle": "Quản lý tất cả dự án phát triển. Truy cập nhanh và mở trong VSCode.",
   "wsSearchHint": "Tìm theo tên, đường dẫn, loại...",
   "wsEmpty": "Chưa có workspace. Nhập thư mục để bắt đầu.",

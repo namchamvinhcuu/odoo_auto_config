@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Odoo Auto Config';
 
   @override
-  String get navProjects => 'Projects';
+  String get navOdooProjects => 'Odoo Projects';
 
   @override
   String get navProfiles => 'Profiles';
@@ -102,11 +102,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
-  String get projectsTitle => 'Projects';
+  String get projectsTitle => 'Odoo Projects';
 
   @override
   String get projectsSubtitle =>
-      'All projects with quick access. Import existing or create new ones.';
+      'All Odoo projects with quick access. Import existing or create new ones.';
 
   @override
   String get projectsSearchHint => 'Search by name, path, label, port...';
@@ -657,10 +657,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'apt and pkexec (polkit) are required to install Python.';
 
   @override
-  String get navWorkspaces => 'Workspaces';
+  String get navOtherProjects => 'Other Projects';
 
   @override
-  String get wsTitle => 'Workspaces';
+  String get wsTitle => 'Other Projects';
 
   @override
   String get wsSubtitle =>

@@ -2,7 +2,7 @@
   "@@locale": "en",
   "appTitle": "Odoo Auto Config",
 
-  "navProjects": "Projects",
+  "navOdooProjects": "Odoo Projects",
   "navProfiles": "Profiles",
   "navPythonCheck": "Python Check",
   "navVenvManager": "Venv Manager",
@@ -35,8 +35,8 @@
   "outlined": "Outlined",
   "language": "Language",
 
-  "projectsTitle": "Projects",
-  "projectsSubtitle": "All projects with quick access. Import existing or create new ones.",
+  "projectsTitle": "Odoo Projects",
+  "projectsSubtitle": "All Odoo projects with quick access. Import existing or create new ones.",
   "projectsSearchHint": "Search by name, path, label, port...",
   "projectsEmpty": "No projects yet. Use Quick Create or Import to add.",
   "projectsNoMatch": "No projects match your search.",
@@ -232,8 +232,8 @@
   "packageManagerNotFoundMac": "Homebrew is required. Install it from https://brew.sh",
   "packageManagerNotFoundLinux": "apt and pkexec (polkit) are required to install Python.",
 
-  "navWorkspaces": "Workspaces",
-  "wsTitle": "Workspaces",
+  "navOtherProjects": "Other Projects",
+  "wsTitle": "Other Projects",
   "wsSubtitle": "Manage all your development projects. Quick access and open in VSCode.",
   "wsSearchHint": "Search by name, path, type...",
   "wsEmpty": "No workspaces yet. Import a directory to get started.",

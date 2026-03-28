@@ -12,7 +12,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appTitle => 'Odoo Auto Config';
 
   @override
-  String get navProjects => '프로젝트';
+  String get navOdooProjects => 'Odoo 프로젝트';
 
   @override
   String get navProfiles => '프로필';
@@ -102,10 +102,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get language => '언어';
 
   @override
-  String get projectsTitle => '프로젝트';
+  String get projectsTitle => 'Odoo 프로젝트';
 
   @override
-  String get projectsSubtitle => '빠른 접근이 가능한 모든 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.';
+  String get projectsSubtitle =>
+      '빠른 접근이 가능한 모든 Odoo 프로젝트. 기존 프로젝트를 가져오거나 새로 만드세요.';
 
   @override
   String get projectsSearchHint => '이름, 경로, 라벨, 포트로 검색...';
@@ -643,10 +644,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Python을 설치하려면 apt와 pkexec(polkit)이 필요합니다.';
 
   @override
-  String get navWorkspaces => '워크스페이스';
+  String get navOtherProjects => '기타 프로젝트';
 
   @override
-  String get wsTitle => '워크스페이스';
+  String get wsTitle => '기타 프로젝트';
 
   @override
   String get wsSubtitle => '모든 개발 프로젝트를 관리합니다. 빠른 접근 및 VSCode에서 열기.';

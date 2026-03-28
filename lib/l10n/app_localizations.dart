@@ -106,11 +106,11 @@ abstract class AppLocalizations {
   /// **'Odoo Auto Config'**
   String get appTitle;
 
-  /// No description provided for @navProjects.
+  /// No description provided for @navOdooProjects.
   ///
   /// In en, this message translates to:
-  /// **'Projects'**
-  String get navProjects;
+  /// **'Odoo Projects'**
+  String get navOdooProjects;
 
   /// No description provided for @navProfiles.
   ///
@@ -289,13 +289,13 @@ abstract class AppLocalizations {
   /// No description provided for @projectsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Projects'**
+  /// **'Odoo Projects'**
   String get projectsTitle;
 
   /// No description provided for @projectsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'All projects with quick access. Import existing or create new ones.'**
+  /// **'All Odoo projects with quick access. Import existing or create new ones.'**
   String get projectsSubtitle;
 
   /// No description provided for @projectsSearchHint.
@@ -1276,16 +1276,16 @@ abstract class AppLocalizations {
   /// **'apt and pkexec (polkit) are required to install Python.'**
   String get packageManagerNotFoundLinux;
 
-  /// No description provided for @navWorkspaces.
+  /// No description provided for @navOtherProjects.
   ///
   /// In en, this message translates to:
-  /// **'Workspaces'**
-  String get navWorkspaces;
+  /// **'Other Projects'**
+  String get navOtherProjects;
 
   /// No description provided for @wsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Workspaces'**
+  /// **'Other Projects'**
   String get wsTitle;
 
   /// No description provided for @wsSubtitle.

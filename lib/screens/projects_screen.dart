@@ -21,6 +21,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<ProjectInfo> _filtered = [];
   final _searchController = TextEditingController();
   bool _loading = true;
+  bool _gridView = false;
 
   @override
   void initState() {
@@ -67,15 +68,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       builder: (ctx) => const _ImportProjectDialog(),
     );
     if (result != null) {
-      // Check port conflict
       final conflict = await StorageService.checkPortConflict(
           result.httpPort, result.longpollingPort, result.path);
       if (conflict != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(conflict),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(conflict), backgroundColor: Colors.red),
         );
         return;
       }
@@ -107,7 +104,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       if (Platform.isMacOS) {
         await Process.run('open', ['-a', 'Visual Studio Code', path]);
       } else if (Platform.isWindows) {
-        // Use cmd /c to find 'code' via PATH even in MSIX sandbox
         await Process.run('cmd', ['/c', 'code', path], runInShell: true);
       } else {
         await Process.run('code', [path]);
@@ -135,7 +131,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         );
         return;
       }
-      // Remove old entry (path might have changed) then add new
       await StorageService.removeProject(project.path);
       await StorageService.addProject(result.toJson());
       await _load();
@@ -220,6 +215,312 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
+  // ── List View ──
+
+  Widget _buildListView() {
+    return ListView.builder(
+      itemCount: _filtered.length,
+      itemBuilder: (context, index) {
+        final proj = _filtered[index];
+        final exists = Directory(proj.path).existsSync();
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Padding(
+            padding: AppSpacing.cardPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      exists ? Icons.folder_special : Icons.folder_off,
+                      color: exists ? Colors.deepPurple : Colors.grey,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        proj.name,
+                        style: const TextStyle(
+                          fontSize: AppFontSize.lg,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Chip(
+                      avatar: const Icon(Icons.lan, size: AppIconSize.sm),
+                      label: Text(
+                          context.l10n.projectHttpPort(proj.httpPort)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Chip(
+                      avatar: const Icon(Icons.sync, size: AppIconSize.sm),
+                      label: Text(
+                          context.l10n.projectLpPort(proj.longpollingPort)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    if (proj.description.isNotEmpty) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      Flexible(
+                        child: Chip(
+                          label: Text(proj.description,
+                              overflow: TextOverflow.ellipsis),
+                          avatar: const Icon(Icons.description,
+                              size: AppIconSize.md),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  proj.path,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: AppFontSize.sm,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    if (exists) ...[
+                      IconButton(
+                        onPressed: () => _openInVscode(proj.path),
+                        icon: const Icon(Icons.code),
+                        tooltip: context.l10n.openInVscode,
+                      ),
+                      IconButton(
+                        onPressed: () => _openInFileManager(proj.path),
+                        icon: const Icon(Icons.folder_open),
+                        tooltip: context.l10n.openFolder,
+                      ),
+                    ],
+                    IconButton(
+                      onPressed: () => _editProject(proj),
+                      icon: const Icon(Icons.edit),
+                      tooltip: context.l10n.edit,
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _remove(proj),
+                      icon: const Icon(Icons.delete),
+                      color: Colors.red,
+                      tooltip: context.l10n.removeFromList,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Grid View ──
+
+  int _gridCrossAxisCount(double width) {
+    if (width >= 1100) return 5;
+    if (width >= 800) return 4;
+    return 3;
+  }
+
+  Widget _buildGridView() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _gridCrossAxisCount(constraints.maxWidth);
+        final cellWidth =
+            (constraints.maxWidth - (columns - 1) * AppSpacing.sm) / columns;
+        final nameSize = cellWidth >= 200 ? AppFontSize.xl : AppFontSize.lg;
+        final portSize = cellWidth >= 200 ? AppFontSize.sm : AppFontSize.xs;
+        final btnSize = cellWidth * 0.12;
+        final btnBox = cellWidth * 0.18;
+
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: AppSpacing.sm,
+            mainAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 1,
+          ),
+          itemCount: _filtered.length,
+          itemBuilder: (context, index) {
+            final proj = _filtered[index];
+            final exists = Directory(proj.path).existsSync();
+
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: exists ? () => _openInVscode(proj.path) : null,
+                onSecondaryTapDown: (details) =>
+                    _showGridContextMenu(details.globalPosition, proj, exists),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(),
+                      // Odoo badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                            vertical: AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withValues(alpha: 0.15),
+                          borderRadius: AppRadius.mediumBorderRadius,
+                        ),
+                        child: Text(
+                          'Odoo',
+                          style: TextStyle(
+                            fontSize: portSize,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      // Project name
+                      Text(
+                        proj.name,
+                        style: TextStyle(
+                          fontSize: nameSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      // Ports info
+                      Text(
+                        '${proj.httpPort} / ${proj.longpollingPort}',
+                        style: TextStyle(
+                          fontSize: portSize,
+                          color: Colors.grey,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const Spacer(),
+                      // Quick actions
+                      if (exists)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          spacing: AppSpacing.lg,
+                          children: [
+                            _gridBtn(
+                              icon: Icons.code,
+                              tooltip: context.l10n.openInVscode,
+                              onPressed: () => _openInVscode(proj.path),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
+                            _gridBtn(
+                              icon: Icons.folder_open,
+                              tooltip: context.l10n.openFolder,
+                              onPressed: () => _openInFileManager(proj.path),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showGridContextMenu(
+      Offset position, ProjectInfo proj, bool exists) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx, position.dy),
+      items: [
+        if (exists)
+          PopupMenuItem(
+            value: 'vscode',
+            child: Row(
+              children: [
+                const Icon(Icons.code, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openInVscode),
+              ],
+            ),
+          ),
+        if (exists)
+          PopupMenuItem(
+            value: 'folder',
+            child: Row(
+              children: [
+                const Icon(Icons.folder_open, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openFolder),
+              ],
+            ),
+          ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              const Icon(Icons.edit, size: AppIconSize.md),
+              const SizedBox(width: AppSpacing.sm),
+              Text(context.l10n.edit),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              const Icon(Icons.delete, size: AppIconSize.md, color: Colors.red),
+              const SizedBox(width: AppSpacing.sm),
+              Text(context.l10n.removeFromList,
+                  style: const TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (result == null) return;
+    switch (result) {
+      case 'vscode':
+        _openInVscode(proj.path);
+      case 'folder':
+        _openInFileManager(proj.path);
+      case 'edit':
+        _editProject(proj);
+      case 'delete':
+        _remove(proj);
+    }
+  }
+
+  Widget _gridBtn({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+    required double iconSize,
+    required double boxSize,
+  }) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, size: iconSize),
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(minWidth: boxSize, minHeight: boxSize),
+    );
+  }
+
+  // ── Build ──
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -250,6 +551,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 onPressed: _load,
                 icon: const Icon(Icons.refresh),
                 tooltip: context.l10n.refresh,
+              ),
+              IconButton(
+                onPressed: () => setState(() => _gridView = !_gridView),
+                icon: Icon(_gridView ? Icons.view_list : Icons.grid_view),
+                tooltip: _gridView
+                    ? context.l10n.wsViewList
+                    : context.l10n.wsViewGrid,
               ),
             ],
           ),
@@ -288,9 +596,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 child: Center(child: CircularProgressIndicator()))
           else if (_projects.isEmpty)
             Expanded(
-              child: Center(
-                child: Text(context.l10n.projectsEmpty),
-              ),
+              child: Center(child: Text(context.l10n.projectsEmpty)),
             )
           else if (_filtered.isEmpty)
             Expanded(
@@ -298,109 +604,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             )
           else
             Expanded(
-              child: ListView.builder(
-                itemCount: _filtered.length,
-                itemBuilder: (context, index) {
-                  final proj = _filtered[index];
-                  final exists = Directory(proj.path).existsSync();
-
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Padding(
-                      padding: AppSpacing.cardPadding,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                exists
-                                    ? Icons.folder_special
-                                    : Icons.folder_off,
-                                color:
-                                    exists ? Colors.blue : Colors.grey,
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  proj.name,
-                                  style: const TextStyle(
-                                    fontSize: AppFontSize.lg,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              if (proj.description.isNotEmpty)
-                                Flexible(
-                                  child: Chip(
-                                    label: Text(proj.description,
-                                        overflow: TextOverflow.ellipsis),
-                                    avatar: const Icon(Icons.description,
-                                        size: AppIconSize.md),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            proj.path,
-                            style: TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: AppFontSize.sm,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: AppSpacing.sm,
-                            runSpacing: AppSpacing.xs,
-                            children: [
-                              Chip(
-                                avatar:
-                                    const Icon(Icons.lan, size: AppIconSize.sm),
-                                label: Text(
-                                    context.l10n.projectHttpPort(proj.httpPort)),
-                              ),
-                              Chip(
-                                avatar:
-                                    const Icon(Icons.sync, size: AppIconSize.sm),
-                                label: Text(
-                                    context.l10n.projectLpPort(proj.longpollingPort)),
-                              ),
-                              if (exists) ...[
-                                IconButton(
-                                  onPressed: () =>
-                                      _openInVscode(proj.path),
-                                  icon: const Icon(Icons.code),
-                                  tooltip: context.l10n.openInVscode,
-                                ),
-                                IconButton(
-                                  onPressed: () =>
-                                      _openInFileManager(proj.path),
-                                  icon: const Icon(Icons.folder_open),
-                                  tooltip: context.l10n.openFolder,
-                                ),
-                              ],
-                              IconButton(
-                                onPressed: () => _editProject(proj),
-                                icon: const Icon(Icons.edit),
-                                tooltip: context.l10n.edit,
-                              ),
-                              IconButton(
-                                onPressed: () => _remove(proj),
-                                icon: const Icon(Icons.delete),
-                                color: Colors.red,
-                                tooltip: context.l10n.removeFromList,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+              child: _gridView ? _buildGridView() : _buildListView(),
             ),
         ],
       ),
@@ -517,7 +721,9 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing != null ? context.l10n.editProject : context.l10n.importExistingProject),
+      title: Text(widget.existing != null
+          ? context.l10n.editProject
+          : context.l10n.importExistingProject),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: SingleChildScrollView(
@@ -632,7 +838,9 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   _nameController.text.isNotEmpty)
               ? _save
               : null,
-          child: Text(widget.existing != null ? context.l10n.save : context.l10n.import_),
+          child: Text(widget.existing != null
+              ? context.l10n.save
+              : context.l10n.import_),
         ),
       ],
     );
