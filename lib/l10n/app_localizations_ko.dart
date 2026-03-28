@@ -799,6 +799,39 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get dockerStatus => 'Docker';
+
+  @override
+  String get dockerInstalled => '설치됨';
+
+  @override
+  String get dockerNotInstalled => '설치되지 않음';
+
+  @override
+  String get dockerRunning => '실행 중';
+
+  @override
+  String get dockerStopped => '중지됨';
+
+  @override
+  String get dockerInstall => 'Docker 설치';
+
+  @override
+  String get dockerInstallTitle => 'Docker 설치';
+
+  @override
+  String get dockerInstallSubtitle =>
+      '시스템 패키지 관리자를 사용하여 Docker Desktop을 설치합니다.';
+
+  @override
+  String dockerVersion(String version) {
+    return '$version';
+  }
+
+  @override
+  String get dockerOpenDesktop => 'Docker Desktop을 열어 데몬을 시작하세요.';
+
+  @override
   String get nginxInvalidSubdomain => '소문자, 숫자, 하이픈만 허용됩니다';
 
   @override

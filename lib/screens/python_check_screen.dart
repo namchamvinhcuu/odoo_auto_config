@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/python_info.dart';
+import '../services/docker_install_service.dart';
 import '../services/python_checker_service.dart';
 import '../services/python_install_service.dart';
 import '../services/platform_service.dart';
@@ -21,6 +22,12 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   bool _loading = false;
   String? _error;
 
+  // Docker state
+  bool? _dockerInstalled;
+  bool? _dockerRunning;
+  String? _dockerVersion;
+  String? _dockerComposeVersion;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +41,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
     });
     try {
       final results = await _checker.detectAll();
+      await _checkDocker();
       if (mounted) {
         setState(() {
           _results = results;
@@ -48,6 +56,29 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
         });
       }
     }
+  }
+
+  Future<void> _checkDocker() async {
+    final installed = await DockerInstallService.isInstalled();
+    final running = installed ? await DockerInstallService.isRunning() : false;
+    final version = installed ? await DockerInstallService.getVersion() : null;
+    final compose =
+        installed ? await DockerInstallService.getComposeVersion() : null;
+    if (mounted) {
+      setState(() {
+        _dockerInstalled = installed;
+        _dockerRunning = running;
+        _dockerVersion = version;
+        _dockerComposeVersion = compose;
+      });
+    }
+  }
+
+  void _showDockerInstallDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _DockerInstallDialog(onInstalled: () => _scan()),
+    );
   }
 
   void _showInstallDialog() {
@@ -105,6 +136,79 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
                 ),
           ),
           const SizedBox(height: AppSpacing.xxl),
+
+          // ── Docker Status ──
+          if (_dockerInstalled != null)
+            Card(
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: Padding(
+                padding: AppSpacing.cardPadding,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.sailing,
+                      color: _dockerInstalled == true ? Colors.blue : Colors.grey,
+                      size: AppIconSize.xl,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.l10n.dockerStatus,
+                            style: const TextStyle(
+                              fontSize: AppFontSize.lg,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_dockerVersion != null)
+                            Text(
+                              _dockerVersion!,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: AppFontSize.sm,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          if (_dockerComposeVersion != null)
+                            Text(
+                              _dockerComposeVersion!,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: AppFontSize.sm,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (_dockerInstalled == true) ...[
+                      _buildChip(
+                        context.l10n.dockerInstalled,
+                        true,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      _buildChip(
+                        _dockerRunning == true
+                            ? context.l10n.dockerRunning
+                            : context.l10n.dockerStopped,
+                        _dockerRunning == true,
+                      ),
+                    ] else ...[
+                      _buildChip(context.l10n.dockerNotInstalled, false),
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.tonalIcon(
+                        onPressed: _showDockerInstallDialog,
+                        icon: const Icon(Icons.download),
+                        label: Text(context.l10n.dockerInstall),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
           if (_loading)
             Expanded(
               child: Center(
@@ -355,6 +459,132 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
                 : const Icon(Icons.download),
             label: Text(
               _installing ? context.l10n.installing : context.l10n.install,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Docker Install Dialog ──
+
+class _DockerInstallDialog extends StatefulWidget {
+  final VoidCallback onInstalled;
+
+  const _DockerInstallDialog({required this.onInstalled});
+
+  @override
+  State<_DockerInstallDialog> createState() => _DockerInstallDialogState();
+}
+
+class _DockerInstallDialogState extends State<_DockerInstallDialog> {
+  bool _installing = false;
+  bool? _pmAvailable;
+  final List<String> _logLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPackageManager();
+  }
+
+  Future<void> _checkPackageManager() async {
+    final available = await PythonInstallService.isPackageManagerAvailable();
+    if (mounted) setState(() => _pmAvailable = available);
+  }
+
+  Future<void> _install() async {
+    setState(() {
+      _installing = true;
+      _logLines.clear();
+    });
+
+    final exitCode = await DockerInstallService.install((line) {
+      if (mounted) setState(() => _logLines.add(line));
+    });
+
+    if (mounted) {
+      setState(() => _installing = false);
+      if (exitCode == 0) {
+        widget.onInstalled();
+      }
+    }
+  }
+
+  String _pmNotFoundMessage(BuildContext context) {
+    if (PlatformService.isWindows) {
+      return context.l10n.packageManagerNotFoundWindows;
+    } else if (PlatformService.isMacOS) {
+      return context.l10n.packageManagerNotFoundMac;
+    }
+    return context.l10n.packageManagerNotFoundLinux;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.dockerInstallTitle),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.dockerInstallSubtitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.grey),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            if (_pmAvailable == null)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_pmAvailable == false)
+              StatusCard(
+                title: context.l10n.packageManagerNotFound,
+                subtitle: _pmNotFoundMessage(context),
+                status: StatusType.error,
+              )
+            else ...[
+              Text(
+                DockerInstallService.installCommand().description,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: AppFontSize.sm,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _installing ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+        if (_pmAvailable == true)
+          FilledButton.icon(
+            onPressed: _installing ? null : _install,
+            icon: _installing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download),
+            label: Text(
+              _installing ? context.l10n.installing : context.l10n.dockerInstall,
             ),
           ),
       ],

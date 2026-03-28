@@ -1558,6 +1558,66 @@ abstract class AppLocalizations {
   /// **'Domain: {domain}'**
   String nginxPreviewDomain(String domain);
 
+  /// No description provided for @dockerStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker'**
+  String get dockerStatus;
+
+  /// No description provided for @dockerInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get dockerInstalled;
+
+  /// No description provided for @dockerNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get dockerNotInstalled;
+
+  /// No description provided for @dockerRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get dockerRunning;
+
+  /// No description provided for @dockerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get dockerStopped;
+
+  /// No description provided for @dockerInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Docker'**
+  String get dockerInstall;
+
+  /// No description provided for @dockerInstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Docker'**
+  String get dockerInstallTitle;
+
+  /// No description provided for @dockerInstallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Docker Desktop using your system package manager.'**
+  String get dockerInstallSubtitle;
+
+  /// No description provided for @dockerVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'{version}'**
+  String dockerVersion(String version);
+
+  /// No description provided for @dockerOpenDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Please open Docker Desktop to start the daemon.'**
+  String get dockerOpenDesktop;
+
   /// No description provided for @nginxInvalidSubdomain.
   ///
   /// In en, this message translates to:

@@ -813,6 +813,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dockerStatus => 'Docker';
+
+  @override
+  String get dockerInstalled => 'Installed';
+
+  @override
+  String get dockerNotInstalled => 'Not installed';
+
+  @override
+  String get dockerRunning => 'Running';
+
+  @override
+  String get dockerStopped => 'Stopped';
+
+  @override
+  String get dockerInstall => 'Install Docker';
+
+  @override
+  String get dockerInstallTitle => 'Install Docker';
+
+  @override
+  String get dockerInstallSubtitle =>
+      'Install Docker Desktop using your system package manager.';
+
+  @override
+  String dockerVersion(String version) {
+    return '$version';
+  }
+
+  @override
+  String get dockerOpenDesktop =>
+      'Please open Docker Desktop to start the daemon.';
+
+  @override
   String get nginxInvalidSubdomain =>
       'Only lowercase letters, numbers and hyphens allowed';
 

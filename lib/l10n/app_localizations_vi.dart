@@ -809,6 +809,39 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get dockerStatus => 'Docker';
+
+  @override
+  String get dockerInstalled => 'Đã cài đặt';
+
+  @override
+  String get dockerNotInstalled => 'Chưa cài đặt';
+
+  @override
+  String get dockerRunning => 'Đang chạy';
+
+  @override
+  String get dockerStopped => 'Đã dừng';
+
+  @override
+  String get dockerInstall => 'Cài đặt Docker';
+
+  @override
+  String get dockerInstallTitle => 'Cài đặt Docker';
+
+  @override
+  String get dockerInstallSubtitle =>
+      'Cài đặt Docker Desktop bằng trình quản lý gói hệ thống.';
+
+  @override
+  String dockerVersion(String version) {
+    return '$version';
+  }
+
+  @override
+  String get dockerOpenDesktop => 'Vui lòng mở Docker Desktop để khởi động.';
+
+  @override
   String get nginxInvalidSubdomain =>
       'Chỉ cho phép chữ thường, số và dấu gạch ngang';
 

@@ -5,7 +5,6 @@ import '../l10n/l10n_extension.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
-import 'python_check_screen.dart';
 import 'venv_screen.dart';
 import 'vscode_config_screen.dart';
 import 'settings_screen.dart';
@@ -34,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ProjectsScreen(),
     WorkspacesScreen(),
     ProfileScreen(),
-    PythonCheckScreen(),
     VenvScreen(),
     VscodeConfigScreen(),
     SettingsScreen(),
@@ -136,11 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.person),
                 selectedIcon: const Icon(Icons.person, color: Colors.blue),
                 label: Text(context.l10n.navProfiles),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.search),
-                selectedIcon: const Icon(Icons.search, color: Colors.blue),
-                label: Text(context.l10n.navPythonCheck),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.terminal),
