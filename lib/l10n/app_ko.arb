@@ -10,6 +10,13 @@
   "navSettings": "설정",
 
   "cancel": "취소",
+  "general": "일반",
+  "cloneOdooSource": "Odoo 클론",
+  "cloneOdooTitle": "Odoo 소스 클론",
+  "cloneOdooSubtitle": "개발을 위해 GitHub에서 Odoo 소스 코드를 클론합니다.",
+  "cloneOdooFolder": "폴더 이름",
+  "shallowClone": "얕은 클론 (--depth 1, 빠른 다운로드)",
+  "cloning": "클론 중...",
   "delete": "삭제",
   "save": "저장",
   "create": "생성",

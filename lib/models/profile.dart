@@ -1,6 +1,9 @@
+enum ProfileCategory { odoo, general }
+
 class Profile {
   final String id;
   final String name;
+  final ProfileCategory category;
   final String venvPath;
   final String odooBinPath;
   final String odooSourcePath;
@@ -18,6 +21,7 @@ class Profile {
   const Profile({
     required this.id,
     required this.name,
+    this.category = ProfileCategory.odoo,
     required this.venvPath,
     required this.odooBinPath,
     this.odooSourcePath = '',
@@ -35,6 +39,7 @@ class Profile {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        'category': category.name,
         'venvPath': venvPath,
         'odooBinPath': odooBinPath,
         'odooSourcePath': odooSourcePath,
@@ -52,6 +57,10 @@ class Profile {
   factory Profile.fromJson(Map<String, dynamic> json) => Profile(
         id: json['id'] as String? ?? '',
         name: json['name'] as String? ?? '',
+        category: ProfileCategory.values.firstWhere(
+          (e) => e.name == (json['category'] as String? ?? 'odoo'),
+          orElse: () => ProfileCategory.odoo,
+        ),
         venvPath: json['venvPath'] as String? ?? '',
         odooBinPath: json['odooBinPath'] as String? ?? '',
         odooSourcePath: (json['odooSourcePath'] ?? '').toString(),

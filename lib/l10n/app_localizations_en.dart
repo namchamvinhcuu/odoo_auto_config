@@ -33,6 +33,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancel => 'Cancel';
 
   @override
+  String get general => 'General';
+
+  @override
+  String get cloneOdooSource => 'Clone Odoo';
+
+  @override
+  String get cloneOdooTitle => 'Clone Odoo Source';
+
+  @override
+  String get cloneOdooSubtitle =>
+      'Clone Odoo source code from GitHub for development.';
+
+  @override
+  String get cloneOdooFolder => 'Folder Name';
+
+  @override
+  String get shallowClone => 'Shallow clone (--depth 1, faster download)';
+
+  @override
+  String get cloning => 'Cloning...';
+
+  @override
   String get delete => 'Delete';
 
   @override

@@ -148,6 +148,48 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @general.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get general;
+
+  /// No description provided for @cloneOdooSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone Odoo'**
+  String get cloneOdooSource;
+
+  /// No description provided for @cloneOdooTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone Odoo Source'**
+  String get cloneOdooTitle;
+
+  /// No description provided for @cloneOdooSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone Odoo source code from GitHub for development.'**
+  String get cloneOdooSubtitle;
+
+  /// No description provided for @cloneOdooFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder Name'**
+  String get cloneOdooFolder;
+
+  /// No description provided for @shallowClone.
+  ///
+  /// In en, this message translates to:
+  /// **'Shallow clone (--depth 1, faster download)'**
+  String get shallowClone;
+
+  /// No description provided for @cloning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloning...'**
+  String get cloning;
+
   /// No description provided for @delete.
   ///
   /// In en, this message translates to:

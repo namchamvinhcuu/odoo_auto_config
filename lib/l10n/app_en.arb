@@ -10,6 +10,13 @@
   "navSettings": "Settings",
 
   "cancel": "Cancel",
+  "general": "General",
+  "cloneOdooSource": "Clone Odoo",
+  "cloneOdooTitle": "Clone Odoo Source",
+  "cloneOdooSubtitle": "Clone Odoo source code from GitHub for development.",
+  "cloneOdooFolder": "Folder Name",
+  "shallowClone": "Shallow clone (--depth 1, faster download)",
+  "cloning": "Cloning...",
   "delete": "Delete",
   "save": "Save",
   "create": "Create",

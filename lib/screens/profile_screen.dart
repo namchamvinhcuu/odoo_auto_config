@@ -1,11 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/profile.dart';
 import '../models/venv_info.dart';
+import '../services/command_runner.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/log_output.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -190,6 +195,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   late final TextEditingController _dbUserController;
   late final TextEditingController _dbPasswordController;
   late final TextEditingController _dbSslmodeController;
+  ProfileCategory _category = ProfileCategory.odoo;
   String _venvPath = '';
   String _odooBinPath = '';
   String _odooSourcePath = '';
@@ -210,6 +216,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     _dbUserController = TextEditingController(text: p?.dbUser ?? 'odoo');
     _dbPasswordController = TextEditingController(text: p?.dbPassword ?? '');
     _dbSslmodeController = TextEditingController(text: p?.dbSslmode ?? 'prefer');
+    _category = p?.category ?? ProfileCategory.odoo;
     _venvPath = p?.venvPath ?? '';
     _odooBinPath = p?.odooBinPath ?? '';
     _odooSourcePath = p?.odooSourcePath ?? '';
@@ -257,10 +264,30 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     }
   }
 
+  void _showCloneOdooDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _CloneOdooDialog(
+        version: _odooVersion,
+        onCloned: (sourcePath) {
+          setState(() {
+            _odooSourcePath = sourcePath;
+            // Auto-detect odoo-bin
+            final odooBin = p.join(sourcePath, 'odoo-bin');
+            if (File(odooBin).existsSync()) {
+              _odooBinPath = odooBin;
+            }
+          });
+        },
+      ),
+    );
+  }
+
   void _save() {
-    if (_nameController.text.isEmpty ||
-        _venvPath.isEmpty ||
-        _odooBinPath.isEmpty) {
+    if (_nameController.text.isEmpty) return;
+    // Odoo profiles require venv + odoo-bin
+    if (_category == ProfileCategory.odoo &&
+        (_venvPath.isEmpty || _odooBinPath.isEmpty)) {
       return;
     }
 
@@ -268,6 +295,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
       id: widget.profile?.id ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text,
+      category: _category,
       venvPath: _venvPath,
       odooBinPath: _odooBinPath,
       odooSourcePath: _odooSourcePath,
@@ -308,6 +336,26 @@ class _ProfileDialogState extends State<_ProfileDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Category selector
+              SegmentedButton<ProfileCategory>(
+                segments: [
+                  ButtonSegment(
+                    value: ProfileCategory.odoo,
+                    label: Text('Odoo'),
+                    icon: const Icon(Icons.folder_special),
+                  ),
+                  ButtonSegment(
+                    value: ProfileCategory.general,
+                    label: Text(context.l10n.general),
+                    icon: const Icon(Icons.workspaces),
+                  ),
+                ],
+                selected: {_category},
+                onSelectionChanged: (v) =>
+                    setState(() => _category = v.first),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -317,6 +365,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
                   isDense: true,
                 ),
                 autofocus: true,
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: AppSpacing.lg),
 
@@ -348,157 +397,166 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // odoo-bin
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller:
-                          TextEditingController(text: _odooBinPath),
-                      decoration: InputDecoration(
-                        labelText: context.l10n.odooBinPath,
-                        hintText: context.l10n.odooBinPathHint,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+              // ── Odoo-specific fields ──
+              if (_category == ProfileCategory.odoo) ...[
+                // odoo-bin
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller:
+                            TextEditingController(text: _odooBinPath),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.odooBinPath,
+                          hintText: context.l10n.odooBinPathHint,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        readOnly: true,
                       ),
-                      readOnly: true,
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  IconButton.filled(
-                    onPressed: _pickOdooBin,
-                    icon: const Icon(Icons.file_open),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Odoo source directory (for symlink)
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller:
-                          TextEditingController(text: _odooSourcePath),
-                      decoration: InputDecoration(
-                        labelText: context.l10n.odooSourceDirectory,
-                        hintText: context.l10n.odooSourceHint,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      readOnly: true,
+                    const SizedBox(width: AppSpacing.sm),
+                    IconButton.filled(
+                      onPressed: _pickOdooBin,
+                      icon: const Icon(Icons.file_open),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  IconButton.filled(
-                    onPressed: _pickOdooSource,
-                    icon: const Icon(Icons.folder_open),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Odoo version
-              DropdownButtonFormField<int>(
-                initialValue: _odooVersion,
-                decoration: InputDecoration(
-                  labelText: context.l10n.odooVersion,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
+                  ],
                 ),
-                items: _odooVersions
-                    .map((v) => DropdownMenuItem(
-                        value: v, child: Text(context.l10n.odooVersionLabel(v.toString()))))
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) setState(() => _odooVersion = v);
-                },
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.lg),
 
-              // Folder options
-              Wrap(
-                spacing: AppSpacing.sm,
-                children: [
-                  _chip(context.l10n.addons, _addons,
-                      (v) => setState(() => _addons = v)),
-                  _chip(context.l10n.thirdPartyAddons, _thirdPartyAddons,
-                      (v) => setState(() => _thirdPartyAddons = v)),
-                  _chip(context.l10n.config, _configDir,
-                      (v) => setState(() => _configDir = v)),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // DB Connection
-              Text(context.l10n.databaseConnection,
-                  style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: TextField(
-                      controller: _dbHostController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.host,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
+                // Odoo source directory (for symlink)
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller:
+                            TextEditingController(text: _odooSourcePath),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.odooSourceDirectory,
+                          hintText: context.l10n.odooSourceHint,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        readOnly: true,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: TextField(
-                      controller: _dbPortController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.port,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      keyboardType: TextInputType.number,
+                    const SizedBox(width: AppSpacing.sm),
+                    IconButton.filled(
+                      onPressed: _pickOdooSource,
+                      icon: const Icon(Icons.folder_open),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _dbUserController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.user,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton.tonalIcon(
+                      onPressed: _showCloneOdooDialog,
+                      icon: const Icon(Icons.download),
+                      label: Text(context.l10n.cloneOdooSource),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: TextField(
-                      controller: _dbPasswordController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.password,
-                        hintText: context.l10n.passwordHint,
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                      obscureText: true,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _dbSslmodeController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.sslMode,
-                  hintText: context.l10n.sslModeHint,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
+                  ],
                 ),
-              ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Odoo version
+                DropdownButtonFormField<int>(
+                  initialValue: _odooVersion,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.odooVersion,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: _odooVersions
+                      .map((v) => DropdownMenuItem(
+                          value: v, child: Text(context.l10n.odooVersionLabel(v.toString()))))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _odooVersion = v);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Folder options
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    _chip(context.l10n.addons, _addons,
+                        (v) => setState(() => _addons = v)),
+                    _chip(context.l10n.thirdPartyAddons, _thirdPartyAddons,
+                        (v) => setState(() => _thirdPartyAddons = v)),
+                    _chip(context.l10n.config, _configDir,
+                        (v) => setState(() => _configDir = v)),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // DB Connection
+                Text(context.l10n.databaseConnection,
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: _dbHostController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.host,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: TextField(
+                        controller: _dbPortController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.port,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _dbUserController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.user,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: TextField(
+                        controller: _dbPasswordController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.password,
+                          hintText: context.l10n.passwordHint,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        obscureText: true,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _dbSslmodeController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.sslMode,
+                    hintText: context.l10n.sslModeHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -509,7 +567,9 @@ class _ProfileDialogState extends State<_ProfileDialog> {
             child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed:
-              (_nameController.text.isNotEmpty && _odooBinPath.isNotEmpty)
+              (_nameController.text.isNotEmpty &&
+                      (_category == ProfileCategory.general ||
+                          _odooBinPath.isNotEmpty))
                   ? _save
                   : null,
           child: Text(isEdit ? context.l10n.save : context.l10n.create),
@@ -523,6 +583,265 @@ class _ProfileDialogState extends State<_ProfileDialog> {
       label: Text(label),
       selected: value,
       onSelected: onChanged,
+    );
+  }
+}
+
+// ── Clone Odoo Dialog ──
+
+class _CloneOdooDialog extends StatefulWidget {
+  final int version;
+  final void Function(String sourcePath) onCloned;
+
+  const _CloneOdooDialog({
+    required this.version,
+    required this.onCloned,
+  });
+
+  @override
+  State<_CloneOdooDialog> createState() => _CloneOdooDialogState();
+}
+
+class _CloneOdooDialogState extends State<_CloneOdooDialog> {
+  late int _version;
+  late final TextEditingController _folderController;
+  String _baseDir = '';
+  bool _shallowClone = true;
+  bool _cloning = false;
+  bool _cloned = false;
+  final List<String> _logLines = [];
+
+  final _versions = [14, 15, 16, 17, 18];
+
+  @override
+  void initState() {
+    super.initState();
+    _version = widget.version;
+    _folderController = TextEditingController(text: 'odoo$_version');
+  }
+
+  @override
+  void dispose() {
+    _folderController.dispose();
+    super.dispose();
+  }
+
+  void _onVersionChanged(int? v) {
+    if (v == null) return;
+    setState(() {
+      _version = v;
+      _folderController.text = 'odoo$v';
+    });
+  }
+
+  Future<void> _pickBaseDir() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+          dialogTitle: context.l10n.baseDirectory);
+    } else {
+      path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: context.l10n.baseDirectory);
+    }
+    if (path != null) setState(() => _baseDir = path!);
+  }
+
+  bool get _canClone =>
+      !_cloning && _baseDir.isNotEmpty && _folderController.text.trim().isNotEmpty;
+
+  Future<void> _clone() async {
+    final folder = _folderController.text.trim();
+    final targetDir = p.join(_baseDir, folder);
+
+    if (await Directory(targetDir).exists()) {
+      setState(() => _logLines.add('[ERROR] Directory already exists: $targetDir'));
+      return;
+    }
+
+    setState(() {
+      _cloning = true;
+      _logLines.clear();
+      _logLines.add('[+] Cloning Odoo $_version.0 into $targetDir...');
+    });
+
+    try {
+      final args = [
+        'clone',
+        '--branch', '$_version.0',
+        '--single-branch',
+        if (_shallowClone) '--depth', if (_shallowClone) '1',
+        '--progress',
+        'https://github.com/odoo/odoo.git',
+        targetDir,
+      ];
+
+      final process = await Process.start('git', args, runInShell: true);
+
+      // git clone progress goes to stderr
+      final stderrDone = process.stderr
+          .transform(utf8.decoder)
+          .listen((data) {
+        if (!mounted) return;
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned != null) {
+            setState(() => _logLines.add(cleaned));
+          }
+        }
+      }).asFuture();
+
+      final stdoutDone = process.stdout
+          .transform(utf8.decoder)
+          .listen((data) {
+        if (!mounted) return;
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned != null) {
+            setState(() => _logLines.add(cleaned));
+          }
+        }
+      }).asFuture();
+
+      await Future.wait([stdoutDone, stderrDone]);
+      final exitCode = await process.exitCode;
+
+      if (!mounted) return;
+
+      if (exitCode == 0) {
+        setState(() {
+          _logLines.add('');
+          _logLines.add('[+] Odoo $_version.0 cloned successfully!');
+          _logLines.add('[+] Path: $targetDir');
+          _cloning = false;
+          _cloned = true;
+        });
+        widget.onCloned(targetDir);
+      } else {
+        setState(() {
+          _logLines.add('[ERROR] Clone failed with exit code $exitCode');
+          _cloning = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _logLines.add('[ERROR] $e');
+          _cloning = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.cloneOdooTitle),
+      content: SizedBox(
+        width: 560,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.l10n.cloneOdooSubtitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey)),
+            const SizedBox(height: AppSpacing.lg),
+            // Version selector
+            DropdownButtonFormField<int>(
+              initialValue: _version,
+              decoration: InputDecoration(
+                labelText: context.l10n.odooVersion,
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: _versions
+                  .map((v) => DropdownMenuItem(
+                      value: v,
+                      child: Text('Odoo $v.0')))
+                  .toList(),
+              onChanged: _cloning ? null : _onVersionChanged,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // Base directory
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: TextEditingController(text: _baseDir),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.baseDirectory,
+                      hintText: context.l10n.browseToSelect,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    readOnly: true,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                IconButton.filled(
+                  onPressed: _cloning ? null : _pickBaseDir,
+                  icon: const Icon(Icons.folder_open),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // Folder name
+            TextField(
+              controller: _folderController,
+              decoration: InputDecoration(
+                labelText: context.l10n.cloneOdooFolder,
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (_) => setState(() {}),
+              enabled: !_cloning,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            // Shallow clone option
+            CheckboxListTile(
+              value: _shallowClone,
+              onChanged: _cloning ? null : (v) => setState(() => _shallowClone = v ?? true),
+              title: Text(context.l10n.shallowClone,
+                  style: const TextStyle(fontSize: AppFontSize.md)),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            if (_logLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              LogOutput(lines: _logLines, height: 200),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        if (!_cloned)
+          TextButton(
+            onPressed: _cloning ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+        if (_cloned)
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.check),
+            label: Text(context.l10n.close),
+          )
+        else
+          FilledButton.icon(
+            onPressed: _canClone ? _clone : null,
+            icon: _cloning
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download),
+            label: Text(_cloning
+                ? context.l10n.cloning
+                : context.l10n.cloneOdooSource),
+          ),
+      ],
     );
   }
 }

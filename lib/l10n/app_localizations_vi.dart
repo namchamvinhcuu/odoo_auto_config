@@ -33,6 +33,28 @@ class AppLocalizationsVi extends AppLocalizations {
   String get cancel => 'Hủy';
 
   @override
+  String get general => 'Chung';
+
+  @override
+  String get cloneOdooSource => 'Clone Odoo';
+
+  @override
+  String get cloneOdooTitle => 'Clone mã nguồn Odoo';
+
+  @override
+  String get cloneOdooSubtitle =>
+      'Clone mã nguồn Odoo từ GitHub để phát triển.';
+
+  @override
+  String get cloneOdooFolder => 'Tên thư mục';
+
+  @override
+  String get shallowClone => 'Shallow clone (--depth 1, tải nhanh hơn)';
+
+  @override
+  String get cloning => 'Đang clone...';
+
+  @override
   String get delete => 'Xóa';
 
   @override

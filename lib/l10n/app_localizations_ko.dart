@@ -33,6 +33,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cancel => '취소';
 
   @override
+  String get general => '일반';
+
+  @override
+  String get cloneOdooSource => 'Odoo 클론';
+
+  @override
+  String get cloneOdooTitle => 'Odoo 소스 클론';
+
+  @override
+  String get cloneOdooSubtitle => '개발을 위해 GitHub에서 Odoo 소스 코드를 클론합니다.';
+
+  @override
+  String get cloneOdooFolder => '폴더 이름';
+
+  @override
+  String get shallowClone => '얕은 클론 (--depth 1, 빠른 다운로드)';
+
+  @override
+  String get cloning => '클론 중...';
+
+  @override
   String get delete => '삭제';
 
   @override

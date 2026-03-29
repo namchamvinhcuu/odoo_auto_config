@@ -10,6 +10,13 @@
   "navSettings": "Cài đặt",
 
   "cancel": "Hủy",
+  "general": "Chung",
+  "cloneOdooSource": "Clone Odoo",
+  "cloneOdooTitle": "Clone mã nguồn Odoo",
+  "cloneOdooSubtitle": "Clone mã nguồn Odoo từ GitHub để phát triển.",
+  "cloneOdooFolder": "Tên thư mục",
+  "shallowClone": "Shallow clone (--depth 1, tải nhanh hơn)",
+  "cloning": "Đang clone...",
   "delete": "Xóa",
   "save": "Lưu",
   "create": "Tạo",
