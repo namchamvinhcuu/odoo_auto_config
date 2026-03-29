@@ -56,7 +56,7 @@ Nếu đã cài phiên bản cũ, chỉ cần double-click file `.msix` mới đ
 Bạn cần 2 file:
 
 - `certificate.pfx` — file chứng chỉ (chỉ cần cài 1 lần)
-- `odoo_auto_config.msix` — file cài đặt ứng dụng
+- `WorkspaceConfiguration.msix` — file cài đặt ứng dụng
 
 ---
 
@@ -75,6 +75,15 @@ Bạn cần 2 file:
 7. Chọn **Trusted People** > bấm **OK** > bấm **Next** > bấm **Finish**
 8. Hiện thông báo "The import was successful" > bấm **OK**
 
+> **LƯU Ý QUAN TRỌNG — Sai bước 2 hoặc bước 7 sẽ không cài được ứng dụng:**
+> - Bước 2: **Phải chọn Local Machine**, không chọn Current User
+> - Bước 7: **Phải chọn Trusted People**, không chọn Personal hay Trusted Root Certification Authorities
+>
+> Nếu đã cài sai, cần xóa certificate cũ rồi cài lại đúng cách:
+> 1. Bấm **Win + R** > gõ `certmgr.msc` > Enter
+> 2. Tìm certificate "Nam" trong các thư mục > click chuột phải > **Delete**
+> 3. Cài lại theo hướng dẫn trên
+
 **Cách B: Dùng PowerShell (nhanh hơn)**
 
 1. Bấm chuột phải vào nút **Start** (icon Windows góc dưới trái) > chọn **Terminal (Admin)** hoặc **PowerShell (Admin)**
@@ -92,7 +101,7 @@ Import-PfxCertificate -FilePath "C:\duong-dan-toi\certificate.pfx" -CertStoreLoc
 
 #### Bước 2: Cài đặt ứng dụng
 
-1. Double-click file `odoo_auto_config.msix`
+1. Double-click file `WorkspaceConfiguration.msix`
 2. Cửa sổ cài đặt hiện lên > bấm **Install**
 3. Chờ vài giây, ứng dụng sẽ tự mở sau khi cài xong
 
