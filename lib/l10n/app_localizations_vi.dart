@@ -638,6 +638,17 @@ class AppLocalizationsVi extends AppLocalizations {
       'Cài đặt thất bại. Kiểm tra log để biết chi tiết.';
 
   @override
+  String get uninstallPython => 'Gỡ cài đặt Python';
+
+  @override
+  String uninstallPythonConfirm(String version) {
+    return 'Bạn có chắc muốn gỡ cài đặt Python $version?';
+  }
+
+  @override
+  String get uninstalling => 'Đang gỡ cài đặt...';
+
+  @override
   String get packageManagerNotFound => 'Không tìm thấy trình quản lý gói';
 
   @override

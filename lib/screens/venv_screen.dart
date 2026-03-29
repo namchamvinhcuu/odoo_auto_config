@@ -55,8 +55,10 @@ class _VenvScreenState extends State<VenvScreen>
   }
 
   Future<void> _loadPythons() async {
+    if (!mounted) return;
     setState(() => _loading = true);
     final results = await _checker.detectAll();
+    if (!mounted) return;
     setState(() {
       _pythons = results.where((p) => p.hasVenv).toList();
       if (_pythons.isNotEmpty) _selectedPython = _pythons.first;
@@ -65,6 +67,7 @@ class _VenvScreenState extends State<VenvScreen>
   }
 
   Future<void> _loadRegisteredVenvs() async {
+    if (!mounted) return;
     setState(() => _loadingRegistered = true);
     final saved = await StorageService.loadRegisteredVenvs();
     final List<VenvInfo> venvs = [];
@@ -90,6 +93,7 @@ class _VenvScreenState extends State<VenvScreen>
         ));
       }
     }
+    if (!mounted) return;
     setState(() {
       _registeredVenvs = venvs;
       _loadingRegistered = false;

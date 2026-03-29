@@ -131,4 +131,98 @@ class PythonInstallService {
       return -1;
     }
   }
+
+  /// Returns the uninstall command for the current platform.
+  /// [version] should be major.minor (e.g. "3.11").
+  static ({String executable, List<String> args, String description})?
+      uninstallCommand(String version) {
+    if (PlatformService.isWindows) {
+      return (
+        executable: 'winget',
+        args: [
+          'uninstall',
+          'Python.Python.$version',
+          '--accept-source-agreements',
+        ],
+        description: 'winget uninstall Python.Python.$version',
+      );
+    } else if (PlatformService.isMacOS) {
+      return (
+        executable: 'brew',
+        args: ['uninstall', 'python@$version'],
+        description: 'brew uninstall python@$version',
+      );
+    } else {
+      return (
+        executable: 'pkexec',
+        args: ['apt', 'remove', '-y', 'python$version'],
+        description: 'pkexec apt remove -y python$version',
+      );
+    }
+  }
+
+  /// Uninstall Python with real-time output via callback.
+  static Future<int> uninstall(
+    String version,
+    void Function(String line) onOutput,
+  ) async {
+    final cmd = uninstallCommand(version);
+    if (cmd == null) {
+      onOutput('[ERROR] Uninstall not supported on this platform');
+      return -1;
+    }
+    onOutput('[+] Running: ${cmd.description}');
+    onOutput('');
+
+    try {
+      final process = await Process.start(
+        cmd.executable,
+        cmd.args,
+        runInShell: true,
+      );
+
+      String lastLine = '';
+      final stdoutDone = process.stdout
+          .transform(utf8.decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) { continue; }
+          if (cleaned == CommandRunner.spinnerPlaceholder &&
+              lastLine == cleaned) { continue; }
+          lastLine = cleaned;
+          onOutput(cleaned);
+        }
+      }).asFuture();
+
+      final stderrDone = process.stderr
+          .transform(utf8.decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) { continue; }
+          if (cleaned == CommandRunner.spinnerPlaceholder &&
+              lastLine == cleaned) { continue; }
+          lastLine = cleaned;
+          onOutput('[WARN] $cleaned');
+        }
+      }).asFuture();
+
+      await Future.wait([stdoutDone, stderrDone]);
+      final exitCode = await process.exitCode;
+
+      if (exitCode == 0) {
+        onOutput('');
+        onOutput('[+] Python $version uninstalled successfully!');
+      } else {
+        onOutput('');
+        onOutput('[ERROR] Uninstall failed with exit code $exitCode');
+      }
+
+      return exitCode;
+    } catch (e) {
+      onOutput('[ERROR] $e');
+      return -1;
+    }
+  }
 }

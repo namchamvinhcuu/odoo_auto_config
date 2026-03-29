@@ -1252,6 +1252,24 @@ abstract class AppLocalizations {
   /// **'Installation failed. Check log for details.'**
   String get installFailed;
 
+  /// No description provided for @uninstallPython.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstall Python'**
+  String get uninstallPython;
+
+  /// No description provided for @uninstallPythonConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to uninstall Python {version}?'**
+  String uninstallPythonConfirm(String version);
+
+  /// No description provided for @uninstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Uninstalling...'**
+  String get uninstalling;
+
   /// No description provided for @packageManagerNotFound.
   ///
   /// In en, this message translates to:

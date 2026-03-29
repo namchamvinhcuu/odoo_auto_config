@@ -629,6 +629,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get installFailed => '설치 실패. 로그를 확인하세요.';
 
   @override
+  String get uninstallPython => 'Python 제거';
+
+  @override
+  String uninstallPythonConfirm(String version) {
+    return 'Python $version을(를) 제거하시겠습니까?';
+  }
+
+  @override
+  String get uninstalling => '제거 중...';
+
+  @override
   String get packageManagerNotFound => '패키지 관리자를 찾을 수 없음';
 
   @override

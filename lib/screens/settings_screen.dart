@@ -31,6 +31,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
+  late final TabController _pythonSubTabController;
 
   // Nginx
   final _confDirController = TextEditingController();
@@ -51,11 +52,12 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: 4,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
     SettingsScreen.initialTab = 0; // reset after use
+    _pythonSubTabController = TabController(length: 2, vsync: this);
     _loadNginxSettings();
     _scanEnvironment();
   }
@@ -63,6 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _pythonSubTabController.dispose();
     _confDirController.dispose();
     _domainSuffixController.dispose();
     _containerNameController.dispose();
@@ -210,7 +213,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           tabs: [
             Tab(icon: const Icon(Icons.palette), text: context.l10n.themeMode),
             Tab(icon: const Icon(Icons.code), text: 'Python'),
-            Tab(icon: const Icon(Icons.terminal), text: 'Venv'),
             Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
             Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
           ],
@@ -221,7 +223,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             children: [
               _buildThemeTab(),
               _buildPythonTab(),
-              _buildVenvTab(),
               _buildNginxTab(),
               _buildDockerTab(),
             ],
@@ -353,12 +354,34 @@ class _SettingsScreenState extends State<SettingsScreen>
   // ── Tab: Python (+ Venv) ──
 
   Widget _buildPythonTab() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _pythonSubTabController,
+          tabs: [
+            Tab(icon: const Icon(Icons.code), text: context.l10n.pythonCheckTitle),
+            Tab(icon: const Icon(Icons.terminal), text: 'Venv'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _pythonSubTabController,
+            children: [
+              _buildPythonCheckSubTab(),
+              const VenvScreen(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPythonCheckSubTab() {
     return SingleChildScrollView(
       padding: AppSpacing.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             children: [
               Text(context.l10n.pythonCheckTitle,
@@ -378,7 +401,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Python list
           if (_pythonLoading)
             const Center(
               child: Padding(
@@ -425,6 +447,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                           info.hasPip),
                       const SizedBox(width: AppSpacing.sm),
                       _envChip(context.l10n.venvModule, info.hasVenv),
+                      const SizedBox(width: AppSpacing.sm),
+                      IconButton(
+                        onPressed: () => _showPythonUninstallDialog(info),
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: context.l10n.uninstallPython,
+                        color: Colors.red.shade300,
+                        iconSize: AppIconSize.md,
+                      ),
                     ],
                   ),
                 ),
@@ -435,8 +465,21 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildVenvTab() {
-    return const VenvScreen();
+
+  void _showPythonUninstallDialog(PythonInfo info) {
+    // Extract major.minor from version string (e.g. "3.11.9" -> "3.11")
+    final parts = info.version.split('.');
+    final majorMinor = parts.length >= 2 ? '${parts[0]}.${parts[1]}' : info.version;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => _PythonUninstallDialog(
+        version: majorMinor,
+        fullVersion: info.version,
+        executablePath: info.executablePath,
+        onUninstalled: () => _scanEnvironment(),
+      ),
+    );
   }
 
   // ── Tab: Nginx ──
@@ -1306,6 +1349,119 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
                 : const Icon(Icons.download),
             label: Text(
                 _installing ? context.l10n.installing : context.l10n.install),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Python Uninstall Dialog ──
+
+class _PythonUninstallDialog extends StatefulWidget {
+  final String version;
+  final String fullVersion;
+  final String executablePath;
+  final VoidCallback onUninstalled;
+
+  const _PythonUninstallDialog({
+    required this.version,
+    required this.fullVersion,
+    required this.executablePath,
+    required this.onUninstalled,
+  });
+
+  @override
+  State<_PythonUninstallDialog> createState() =>
+      _PythonUninstallDialogState();
+}
+
+class _PythonUninstallDialogState extends State<_PythonUninstallDialog> {
+  bool _uninstalling = false;
+  bool _uninstalled = false;
+  final List<String> _logLines = [];
+
+  Future<void> _uninstall() async {
+    setState(() {
+      _uninstalling = true;
+      _logLines.clear();
+    });
+    final exitCode = await PythonInstallService.uninstall(
+      widget.version,
+      (line) {
+        if (mounted) setState(() => _logLines.add(line));
+      },
+    );
+    if (mounted) {
+      setState(() {
+        _uninstalling = false;
+        _uninstalled = exitCode == 0;
+      });
+      if (exitCode == 0) widget.onUninstalled();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.uninstallPython),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!_uninstalling && !_uninstalled) ...[
+              Text(
+                context.l10n.uninstallPythonConfirm(widget.fullVersion),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                widget.executablePath,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: AppFontSize.sm,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+            if (_logLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              LogOutput(lines: _logLines, height: 200),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        if (!_uninstalled)
+          TextButton(
+            onPressed: _uninstalling ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.cancel),
+          ),
+        if (_uninstalled)
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.check),
+            label: Text(context.l10n.close),
+          )
+        else
+          FilledButton.icon(
+            onPressed: _uninstalling ? null : _uninstall,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            icon: _uninstalling
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.delete),
+            label: Text(
+              _uninstalling
+                  ? context.l10n.uninstalling
+                  : context.l10n.uninstallPython,
+            ),
           ),
       ],
     );

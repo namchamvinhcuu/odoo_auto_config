@@ -642,6 +642,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get installFailed => 'Installation failed. Check log for details.';
 
   @override
+  String get uninstallPython => 'Uninstall Python';
+
+  @override
+  String uninstallPythonConfirm(String version) {
+    return 'Are you sure you want to uninstall Python $version?';
+  }
+
+  @override
+  String get uninstalling => 'Uninstalling...';
+
+  @override
   String get packageManagerNotFound => 'Package manager not found';
 
   @override

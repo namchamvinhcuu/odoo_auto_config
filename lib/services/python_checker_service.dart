@@ -47,6 +47,17 @@ class PythonCheckerService {
           realEntries.contains(r.version));
     }
 
+    // Windows: remove py.exe launcher entries if real python.exe exists
+    if (PlatformService.isWindows) {
+      final realVersions = results
+          .where((r) => !r.executablePath.toLowerCase().endsWith('\\py.exe'))
+          .map((r) => r.version)
+          .toSet();
+      results.removeWhere((r) =>
+          r.executablePath.toLowerCase().endsWith('\\py.exe') &&
+          realVersions.contains(r.version));
+    }
+
     return results;
   }
 
