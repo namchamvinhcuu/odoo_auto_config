@@ -110,7 +110,7 @@ msix_config:
   publisher_display_name: Nam
   publisher: CN=Nam, O=Nam, C=VN
   identity_name: com.nam.odoo-auto-config
-  msix_version: 1.1.0.0
+  msix_version: 1.1.0.1
   logo_path: workspaces.png
   certificate_path: certificate.pfx
   certificate_password: odoo123
