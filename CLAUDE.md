@@ -75,11 +75,10 @@ lib/
 2. **Other Projects** - workspaces_screen.dart (icon: workspaces)
 3. **Profiles** - profile_screen.dart (icon: person)
 4. **Settings** - settings_screen.dart (icon: settings)
-   - Tab **Theme**: language, theme mode, accent color, preview
-   - Tab **Python**: Python installations + install + Venv Manager (nhung VenvScreen)
-   - Tab **Nginx**: config record (init/import/edit/delete) + port check (80/443)
-   - Tab **Docker**: status + install
-   - Tab **PostgreSQL**: 2 sections:
+   - Tab 0 **Theme**: language, theme mode, accent color, preview
+   - Tab 1 **Docker**: status + install
+   - Tab 2 **Python**: Python installations + install + Venv Manager (nhung VenvScreen)
+   - Tab 3 **PostgreSQL**: 2 sections:
      1. Client Tools: detect 6 tools (psql, pg_dump, pg_restore, createdb, dropdb, pg_isready),
         hien path tung tool, install tu dong (brew install libpq / apt install postgresql-client / winget)
      2. Server Status: detect Docker containers (running+stopped, filter internal port 5432) + local service
@@ -87,6 +86,7 @@ lib/
         Controls: Start/Stop/Restart cho Docker containers, Start cho local service
         Setup: Dialog tao PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
         Neu chua co server nao -> hien nut "Setup PostgreSQL Docker"
+   - Tab 4 **Nginx**: config record (init/import/edit/delete) + port check (80/443)
 
 > Python Check va VSCode Config **an khoi menu** nhung code giu nguyen.
 

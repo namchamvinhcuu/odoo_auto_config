@@ -212,8 +212,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
-      // Navigate to Settings > Nginx tab (index 2)
-      HomeScreen.navigateToSettings(settingsTab: 2);
+      // Navigate to Settings > Nginx tab (index 4)
+      HomeScreen.navigateToSettings(settingsTab: 4);
       return;
     }
 

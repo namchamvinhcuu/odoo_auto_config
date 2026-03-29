@@ -238,10 +238,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           controller: _tabController,
           tabs: [
             Tab(icon: const Icon(Icons.palette), text: context.l10n.themeMode),
-            Tab(icon: const Icon(Icons.code), text: 'Python'),
-            Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
             Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
+            Tab(icon: const Icon(Icons.code), text: 'Python'),
             Tab(icon: const Icon(Icons.storage), text: 'PostgreSQL'),
+            Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
           ],
         ),
         Expanded(
@@ -249,10 +249,10 @@ class _SettingsScreenState extends State<SettingsScreen>
             controller: _tabController,
             children: [
               _buildThemeTab(),
-              _buildPythonTab(),
-              _buildNginxTab(),
               _buildDockerTab(),
+              _buildPythonTab(),
               _buildPostgresTab(),
+              _buildNginxTab(),
             ],
           ),
         ),
