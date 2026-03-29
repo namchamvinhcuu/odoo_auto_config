@@ -50,22 +50,71 @@ Copy toàn bộ folder `build\windows\x64\runner\Release\` và chạy `odoo_auto
 
 **Cách 2: Cài đặt bằng MSIX**
 
-MSIX được ký bằng self-signed certificate. Trước khi cài `.msix`, bạn cần cài certificate trước.
+MSIX được ký bằng self-signed certificate. Lần đầu cài trên máy mới cần cài certificate trước.
+Nếu đã cài phiên bản cũ, chỉ cần double-click file `.msix` mới để **upgrade** (không cần gỡ bản cũ).
 
-**Bước 1: Cài đặt Certificate**
+Bạn cần 2 file:
+- `certificate.pfx` — file chứng chỉ (chỉ cần cài 1 lần)
+- `odoo_auto_config.msix` — file cài đặt ứng dụng
 
-Dùng PowerShell (Admin):
+---
+
+#### Bước 1: Cài đặt Certificate (chỉ cần làm 1 lần)
+
+> **Tại sao cần bước này?** Ứng dụng được ký bằng chứng chỉ tự tạo (self-signed). Windows yêu cầu bạn tin tưởng chứng chỉ này trước khi cho phép cài đặt.
+
+**Cách A: Dùng chuột (đơn giản nhất)**
+
+1. Click chuột phải vào file `certificate.pfx` > chọn **Install PFX**
+2. Chọn **Local Machine** > bấm **Next**
+3. Nếu hiện hộp thoại "User Account Control" > bấm **Yes**
+4. Mục "File name" đã được điền sẵn > bấm **Next**
+5. Ô "Password" nhập: `odoo123` > bấm **Next**
+6. Chọn **Place all certificates in the following store** > bấm **Browse...**
+7. Chọn **Trusted People** > bấm **OK** > bấm **Next** > bấm **Finish**
+8. Hiện thông báo "The import was successful" > bấm **OK**
+
+**Cách B: Dùng PowerShell (nhanh hơn)**
+
+1. Bấm chuột phải vào nút **Start** (icon Windows góc dưới trái) > chọn **Terminal (Admin)** hoặc **PowerShell (Admin)**
+2. Nếu hiện hộp thoại "User Account Control" > bấm **Yes**
+3. Copy và paste lệnh sau (thay đường dẫn cho đúng):
 
 ```powershell
 $pwd = ConvertTo-SecureString -String "odoo123" -Force -AsPlainText
-Import-PfxCertificate -FilePath "C:\path\to\certificate.pfx" -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" -Password $pwd
+Import-PfxCertificate -FilePath "C:\duong-dan-toi\certificate.pfx" -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" -Password $pwd
 ```
 
-Hoặc cài thủ công: Double-click `certificate.pfx` > Local Machine > Password: `odoo123` > Place in: **Trusted People**.
+> Ví dụ nếu file nằm trên Desktop: `"C:\Users\TenBan\Desktop\certificate.pfx"`
 
-**Bước 2:** Double-click `odoo_auto_config.msix` > Install.
+---
 
-**Gỡ cài đặt:** Settings > Apps > tìm "Odoo Auto Config" > Uninstall.
+#### Bước 2: Cài đặt ứng dụng
+
+1. Double-click file `odoo_auto_config.msix`
+2. Cửa sổ cài đặt hiện lên > bấm **Install**
+3. Chờ vài giây, ứng dụng sẽ tự mở sau khi cài xong
+
+> **Cập nhật phiên bản mới:** Chỉ cần double-click file `.msix` mới > bấm **Update**. Không cần gỡ bản cũ, không cần cài lại certificate.
+
+---
+
+#### Gỡ cài đặt
+
+1. Mở **Settings** (bấm phím Windows + I)
+2. Vào **Apps** > **Installed apps**
+3. Tìm "**Workspace Configuration**"
+4. Bấm dấu **...** bên phải > chọn **Uninstall**
+
+---
+
+#### Xử lý lỗi thường gặp khi cài MSIX
+
+| Lỗi | Nguyên nhân | Cách sửa |
+|-----|-------------|----------|
+| "Install failed" hoặc "Publisher certificate not trusted" | Chưa cài certificate | Làm lại Bước 1 |
+| "Another version is already installed" | Phiên bản cũ bị lỗi | Gỡ bản cũ trước (xem mục Gỡ cài đặt), rồi cài lại |
+| Không thấy "Install PFX" khi click chuột phải | Windows cũ | Dùng Cách B (PowerShell) |
 
 ### Linux
 
