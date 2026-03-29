@@ -6,6 +6,7 @@ import '../l10n/l10n_extension.dart';
 import '../services/docker_install_service.dart';
 import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
+import '../services/storage_service.dart';
 import 'workspaces_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _goToTab(int index) {
     setState(() => _selectedIndex = index);
   }
-  WindowSize _windowSize = WindowSize.medium;
+  WindowSize _windowSize = WindowSize.large;
 
   // Docker status
   bool? _dockerInstalled;
@@ -55,7 +56,26 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _instance = this;
+    _loadWindowSize();
     _checkDocker();
+  }
+
+  Future<void> _loadWindowSize() async {
+    final settings = await StorageService.loadSettings();
+    final saved = settings['windowSize'] as String?;
+    if (saved != null && mounted) {
+      final ws = WindowSize.values.firstWhere(
+        (w) => w.name == saved,
+        orElse: () => WindowSize.large,
+      );
+      setState(() => _windowSize = ws);
+    }
+  }
+
+  Future<void> _saveWindowSize(WindowSize ws) async {
+    final settings = await StorageService.loadSettings();
+    settings['windowSize'] = ws.name;
+    await StorageService.saveSettings(settings);
   }
 
   Future<void> _checkDocker() async {
@@ -140,6 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _windowSize = ws);
     _resizing = false;
+    _saveWindowSize(ws);
   }
 
   String _windowSizeLabel(WindowSize ws) {

@@ -90,7 +90,8 @@ lib/
 - **Port conflict detection** - kiem tra trung port giua cac Odoo project
 - **Cross-platform** - PlatformService abstract paths; moi service co branch cho 3 OS
 - **Responsive layout** - Row cho header (Spacer day nut sang phai), Wrap cho card actions
-- **Window size** - 3 preset: Small (800x600 min), Medium (1100x750 default), Large (1400x900)
+- **Window size** - 3 preset: Small (800x600 min), Medium (1100x750), Large (1400x900 default)
+  Persisted vao settings JSON (`windowSize`). Lan dau = Large, lan sau = size da chon truoc do.
   Animation ease-out cubic 200ms khi chuyen size, guard chong spam click
 - **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vao settings JSON
   Grid default, responsive columns: S=3, M=4, L=5. Scale icon/button theo cell width

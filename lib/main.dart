@@ -7,6 +7,7 @@ import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/projects_screen.dart';
 import 'services/locale_service.dart';
+import 'services/storage_service.dart';
 import 'services/theme_service.dart';
 
 void main() async {
@@ -27,9 +28,16 @@ void main() async {
   // Window manager setup
   await windowManager.ensureInitialized();
   const minSize = Size(800, 600);
-  const defaultSize = Size(1100, 750);
+
+  // Load saved window size (default: large for first launch)
+  final settings = await StorageService.loadSettings();
+  final savedSize = settings['windowSize'] as String?;
+  final windowSize = WindowSize.values.firstWhere(
+    (ws) => ws.name == savedSize,
+    orElse: () => WindowSize.large,
+  );
   await windowManager.setMinimumSize(minSize);
-  await windowManager.setSize(defaultSize);
+  await windowManager.setSize(windowSize.size);
   await windowManager.center();
   await windowManager.show();
 
