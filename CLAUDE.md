@@ -156,7 +156,7 @@ fvm dart run flutter_launcher_icons
 
 # Build DMG
 APP_PATH="build/macos/Build/Products/Release/odoo_auto_config.app"
-DMG_PATH="build/OdooAutoConfig.dmg"
+DMG_PATH="build/Workspace Configuration.dmg"
 TMP_DIR=$(mktemp -d)
 cp -R "$APP_PATH" "$TMP_DIR/Workspace Configuration.app"
 ln -s /Applications "$TMP_DIR/Applications"
