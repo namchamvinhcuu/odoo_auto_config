@@ -56,6 +56,57 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
         _logs.add('[+] Project path: ${config.projectPath}');
         _generating = false;
       });
+    } on SymlinkPermissionException catch (e) {
+      if (mounted) {
+        setState(() {
+          _logs.add('[ERROR] $e');
+          _generating = false;
+        });
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.warning_amber, color: Colors.orange, size: AppIconSize.lg),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.symlinkErrorTitle),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(context.l10n.symlinkErrorDesc),
+                const SizedBox(height: AppSpacing.lg),
+                Card(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.l10n.symlinkErrorSteps,
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(context.l10n.symlinkErrorStep1),
+                        Text(context.l10n.symlinkErrorStep2),
+                        Text(context.l10n.symlinkErrorStep3),
+                        Text(context.l10n.symlinkErrorStep4),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(context.l10n.close),
+              ),
+            ],
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _logs.add('[ERROR] $e');

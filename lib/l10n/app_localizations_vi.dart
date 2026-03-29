@@ -649,6 +649,32 @@ class AppLocalizationsVi extends AppLocalizations {
   String get uninstalling => 'Đang gỡ cài đặt...';
 
   @override
+  String get symlinkErrorTitle => 'Không thể tạo symlink';
+
+  @override
+  String get symlinkErrorDesc =>
+      'Windows yêu cầu bật Developer Mode để tạo symbolic link. Project chưa được tạo.';
+
+  @override
+  String get symlinkErrorSteps => 'Cách bật Developer Mode:';
+
+  @override
+  String get symlinkErrorStep1 => '1. Mở Windows Settings (Win + I)';
+
+  @override
+  String get symlinkErrorStep2 => '2. Vào System > For developers';
+
+  @override
+  String get symlinkErrorStep3 => '3. Bật Developer Mode';
+
+  @override
+  String get symlinkErrorStep4 => '4. Quay lại và thử tạo project';
+
+  @override
+  String get symlinkErrorRetry =>
+      'Sau khi bật Developer Mode, hãy thử tạo lại project.';
+
+  @override
   String get packageManagerNotFound => 'Không tìm thấy trình quản lý gói';
 
   @override

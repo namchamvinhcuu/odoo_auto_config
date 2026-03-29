@@ -1270,6 +1270,54 @@ abstract class AppLocalizations {
   /// **'Uninstalling...'**
   String get uninstalling;
 
+  /// No description provided for @symlinkErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot create symlink'**
+  String get symlinkErrorTitle;
+
+  /// No description provided for @symlinkErrorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows requires Developer Mode to create symbolic links. The project was not created.'**
+  String get symlinkErrorDesc;
+
+  /// No description provided for @symlinkErrorSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'How to enable Developer Mode:'**
+  String get symlinkErrorSteps;
+
+  /// No description provided for @symlinkErrorStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Open Windows Settings (Win + I)'**
+  String get symlinkErrorStep1;
+
+  /// No description provided for @symlinkErrorStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Go to System > For developers'**
+  String get symlinkErrorStep2;
+
+  /// No description provided for @symlinkErrorStep3.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Turn on Developer Mode'**
+  String get symlinkErrorStep3;
+
+  /// No description provided for @symlinkErrorStep4.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Come back and try again'**
+  String get symlinkErrorStep4;
+
+  /// No description provided for @symlinkErrorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'After enabling Developer Mode, try creating the project again.'**
+  String get symlinkErrorRetry;
+
   /// No description provided for @packageManagerNotFound.
   ///
   /// In en, this message translates to:

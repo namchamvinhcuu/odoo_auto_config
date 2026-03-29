@@ -640,6 +640,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get uninstalling => '제거 중...';
 
   @override
+  String get symlinkErrorTitle => '심볼릭 링크를 만들 수 없습니다';
+
+  @override
+  String get symlinkErrorDesc =>
+      'Windows에서 심볼릭 링크를 만들려면 개발자 모드를 활성화해야 합니다. 프로젝트가 생성되지 않았습니다.';
+
+  @override
+  String get symlinkErrorSteps => '개발자 모드 활성화 방법:';
+
+  @override
+  String get symlinkErrorStep1 => '1. Windows 설정 열기 (Win + I)';
+
+  @override
+  String get symlinkErrorStep2 => '2. 시스템 > 개발자용으로 이동';
+
+  @override
+  String get symlinkErrorStep3 => '3. 개발자 모드 켜기';
+
+  @override
+  String get symlinkErrorStep4 => '4. 돌아와서 다시 시도';
+
+  @override
+  String get symlinkErrorRetry => '개발자 모드를 활성화한 후 프로젝트를 다시 만들어 보세요.';
+
+  @override
   String get packageManagerNotFound => '패키지 관리자를 찾을 수 없음';
 
   @override

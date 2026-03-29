@@ -653,6 +653,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uninstalling => 'Uninstalling...';
 
   @override
+  String get symlinkErrorTitle => 'Cannot create symlink';
+
+  @override
+  String get symlinkErrorDesc =>
+      'Windows requires Developer Mode to create symbolic links. The project was not created.';
+
+  @override
+  String get symlinkErrorSteps => 'How to enable Developer Mode:';
+
+  @override
+  String get symlinkErrorStep1 => '1. Open Windows Settings (Win + I)';
+
+  @override
+  String get symlinkErrorStep2 => '2. Go to System > For developers';
+
+  @override
+  String get symlinkErrorStep3 => '3. Turn on Developer Mode';
+
+  @override
+  String get symlinkErrorStep4 => '4. Come back and try again';
+
+  @override
+  String get symlinkErrorRetry =>
+      'After enabling Developer Mode, try creating the project again.';
+
+  @override
   String get packageManagerNotFound => 'Package manager not found';
 
   @override

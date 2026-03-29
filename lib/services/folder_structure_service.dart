@@ -2,6 +2,14 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../models/folder_structure_config.dart';
 
+/// Exception thrown when symlink creation fails due to permissions.
+class SymlinkPermissionException implements Exception {
+  final String message;
+  const SymlinkPermissionException(this.message);
+  @override
+  String toString() => message;
+}
+
 class FolderStructureService {
   Future<List<String>> generate(FolderStructureConfig config) async {
     final logs = <String>[];
@@ -12,8 +20,14 @@ class FolderStructureService {
 
     // Create odoo symlink to source code
     if (config.odooSourcePath.isNotEmpty) {
-      await _createSymlink(
-          config.odooSourcePath, p.join(basePath, 'odoo'), logs);
+      try {
+        await _createSymlink(
+            config.odooSourcePath, p.join(basePath, 'odoo'), logs);
+      } on SymlinkPermissionException {
+        // Rollback: delete the created project directory
+        await _rollback(basePath, logs);
+        rethrow;
+      }
     }
 
     if (config.createAddons) {
@@ -44,8 +58,26 @@ class FolderStructureService {
       logs.add('[WARN] Directory already exists at $linkPath, skipping symlink');
       return;
     }
-    await link.create(target);
-    logs.add('[+] Symlink: $linkPath -> $target');
+    try {
+      await link.create(target);
+      logs.add('[+] Symlink: $linkPath -> $target');
+    } on FileSystemException {
+      throw const SymlinkPermissionException(
+        'Cannot create symlink. On Windows, enable Developer Mode:\n'
+        'Settings > System > For developers > Developer Mode → ON\n\n'
+        'Or run the app as Administrator.',
+      );
+    }
+  }
+
+  Future<void> _rollback(String basePath, List<String> logs) async {
+    try {
+      final dir = Directory(basePath);
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+        logs.add('[=] Rolled back: deleted $basePath');
+      }
+    } catch (_) {}
   }
 
   Future<void> _createDir(String path, List<String> logs) async {

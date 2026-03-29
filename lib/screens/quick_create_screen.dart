@@ -198,11 +198,73 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
         _logs.add('[+] HTTP: $httpPort | Longpolling: $lpPort');
         _done = true;
       });
+    } on SymlinkPermissionException catch (e) {
+      if (mounted) {
+        setState(() {
+          _logs.add('[ERROR] $e');
+          _creating = false;
+        });
+        _showSymlinkErrorDialog(e.message);
+      }
+      return;
     } catch (e) {
       setState(() => _logs.add('[ERROR] $e'));
     } finally {
-      setState(() => _creating = false);
+      if (mounted) setState(() => _creating = false);
     }
+  }
+
+  void _showSymlinkErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange, size: AppIconSize.lg),
+            const SizedBox(width: AppSpacing.sm),
+            Text(context.l10n.symlinkErrorTitle),
+          ],
+        ),
+        content: SizedBox(
+          width: 500,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.l10n.symlinkErrorDesc),
+              const SizedBox(height: AppSpacing.lg),
+              Card(
+                color: Colors.orange.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(context.l10n.symlinkErrorSteps,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(context.l10n.symlinkErrorStep1),
+                      Text(context.l10n.symlinkErrorStep2),
+                      Text(context.l10n.symlinkErrorStep3),
+                      Text(context.l10n.symlinkErrorStep4),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(context.l10n.symlinkErrorRetry,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: AppFontSize.sm)),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.l10n.close),
+          ),
+        ],
+      ),
+    );
   }
 
   bool get _canCreate =>
