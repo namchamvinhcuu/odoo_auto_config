@@ -1042,4 +1042,114 @@ class AppLocalizationsKo extends AppLocalizations {
   String nginxPortConflict(int port, String name) {
     return '포트 $port은(는) 이미 \"$name\"에서 프록시 중입니다';
   }
+
+  @override
+  String get postgresStatus => 'PostgreSQL Client Tools';
+
+  @override
+  String get postgresInstalled => '설치됨';
+
+  @override
+  String get postgresNotInstalled => '설치되지 않음';
+
+  @override
+  String get postgresRunning => '서버 실행 중';
+
+  @override
+  String get postgresStopped => '서버 중지됨';
+
+  @override
+  String get postgresInstall => '설치';
+
+  @override
+  String get postgresInstallTitle => 'PostgreSQL 클라이언트 도구 설치';
+
+  @override
+  String get postgresInstallSubtitle =>
+      'PostgreSQL 데이터베이스를 관리하기 위한 클라이언트 도구(psql, pg_dump, pg_restore, createdb, dropdb)를 설치합니다.';
+
+  @override
+  String get postgresClientTools => '클라이언트 도구';
+
+  @override
+  String get postgresClientNote =>
+      '클라이언트 도구는 PostgreSQL 서버(로컬 또는 Docker)에 연결하는 데 사용됩니다. Docker를 사용하면 서버 설치가 필요 없습니다.';
+
+  @override
+  String get postgresToolAvailable => '사용 가능';
+
+  @override
+  String get postgresToolMissing => '없음';
+
+  @override
+  String get postgresServerStatus => '서버 상태';
+
+  @override
+  String get postgresNoServer => 'PostgreSQL 서버가 감지되지 않았습니다 (로컬 또는 Docker)';
+
+  @override
+  String get postgresContainer => '컨테이너';
+
+  @override
+  String get postgresImage => '이미지';
+
+  @override
+  String get postgresService => '서비스';
+
+  @override
+  String get postgresPort => '포트';
+
+  @override
+  String get postgresReady => '연결 수락 중';
+
+  @override
+  String get postgresNotReady => '응답 없음';
+
+  @override
+  String get postgresContainerRunning => '실행 중';
+
+  @override
+  String get postgresContainerStopped => '중지됨';
+
+  @override
+  String get postgresSetupDocker => 'PostgreSQL Docker 설정';
+
+  @override
+  String get postgresSetupTitle => 'PostgreSQL Docker 설정';
+
+  @override
+  String get postgresSetupSubtitle =>
+      'docker-compose로 PostgreSQL Docker 프로젝트를 생성합니다.';
+
+  @override
+  String get postgresSetupBaseDir => '기본 디렉토리';
+
+  @override
+  String get postgresSetupFolderName => '폴더 이름';
+
+  @override
+  String get postgresSetupContainerName => '컨테이너 이름';
+
+  @override
+  String get postgresSetupImage => 'Docker 이미지';
+
+  @override
+  String get postgresSetupUser => 'DB 사용자';
+
+  @override
+  String get postgresSetupPassword => 'DB 비밀번호';
+
+  @override
+  String get postgresSetupDbName => '기본 데이터베이스';
+
+  @override
+  String get postgresSetupPort => '호스트 포트';
+
+  @override
+  String get postgresSetupNetwork => 'Docker 네트워크';
+
+  @override
+  String postgresSetupSuccess(String path) {
+    return '$path에 PostgreSQL Docker 프로젝트가 생성되었습니다';
+  }
 }

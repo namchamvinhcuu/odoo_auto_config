@@ -1058,4 +1058,115 @@ class AppLocalizationsVi extends AppLocalizations {
   String nginxPortConflict(int port, String name) {
     return 'Port $port đã được proxy bởi \"$name\"';
   }
+
+  @override
+  String get postgresStatus => 'PostgreSQL Client Tools';
+
+  @override
+  String get postgresInstalled => 'Đã cài đặt';
+
+  @override
+  String get postgresNotInstalled => 'Chưa cài đặt';
+
+  @override
+  String get postgresRunning => 'Server đang chạy';
+
+  @override
+  String get postgresStopped => 'Server không chạy';
+
+  @override
+  String get postgresInstall => 'Cài đặt';
+
+  @override
+  String get postgresInstallTitle => 'Cài đặt PostgreSQL Client Tools';
+
+  @override
+  String get postgresInstallSubtitle =>
+      'Cài đặt công cụ client (psql, pg_dump, pg_restore, createdb, dropdb) để quản lý cơ sở dữ liệu PostgreSQL.';
+
+  @override
+  String get postgresClientTools => 'Công cụ Client';
+
+  @override
+  String get postgresClientNote =>
+      'Công cụ client dùng để kết nối PostgreSQL server (local hoặc Docker). Không cần cài server nếu bạn dùng Docker.';
+
+  @override
+  String get postgresToolAvailable => 'Có sẵn';
+
+  @override
+  String get postgresToolMissing => 'Thiếu';
+
+  @override
+  String get postgresServerStatus => 'Trạng thái Server';
+
+  @override
+  String get postgresNoServer =>
+      'Không phát hiện PostgreSQL server nào (local hoặc Docker)';
+
+  @override
+  String get postgresContainer => 'Container';
+
+  @override
+  String get postgresImage => 'Image';
+
+  @override
+  String get postgresService => 'Service';
+
+  @override
+  String get postgresPort => 'Port';
+
+  @override
+  String get postgresReady => 'Đang nhận kết nối';
+
+  @override
+  String get postgresNotReady => 'Không phản hồi';
+
+  @override
+  String get postgresContainerRunning => 'Đang chạy';
+
+  @override
+  String get postgresContainerStopped => 'Đã dừng';
+
+  @override
+  String get postgresSetupDocker => 'Thiết lập PostgreSQL Docker';
+
+  @override
+  String get postgresSetupTitle => 'Thiết lập PostgreSQL Docker';
+
+  @override
+  String get postgresSetupSubtitle =>
+      'Tạo dự án PostgreSQL Docker với docker-compose.';
+
+  @override
+  String get postgresSetupBaseDir => 'Thư mục gốc';
+
+  @override
+  String get postgresSetupFolderName => 'Tên thư mục';
+
+  @override
+  String get postgresSetupContainerName => 'Tên container';
+
+  @override
+  String get postgresSetupImage => 'Docker image';
+
+  @override
+  String get postgresSetupUser => 'Tên người dùng DB';
+
+  @override
+  String get postgresSetupPassword => 'Mật khẩu DB';
+
+  @override
+  String get postgresSetupDbName => 'Database mặc định';
+
+  @override
+  String get postgresSetupPort => 'Port máy chủ';
+
+  @override
+  String get postgresSetupNetwork => 'Docker network';
+
+  @override
+  String postgresSetupSuccess(String path) {
+    return 'Đã tạo PostgreSQL Docker project tại $path';
+  }
 }

@@ -11,6 +11,7 @@ import '../services/docker_install_service.dart';
 import '../services/locale_service.dart';
 import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
+import '../services/postgres_service.dart';
 import '../services/python_checker_service.dart';
 import '../services/python_install_service.dart';
 import '../services/theme_service.dart';
@@ -48,11 +49,17 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _dockerVersion;
   String? _dockerComposeVersion;
 
+  // PostgreSQL
+  bool? _pgInstalled;
+  String? _pgVersion;
+  Map<String, String?>? _pgTools;
+  List<PgServerInfo>? _pgServers;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 5,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
@@ -120,6 +127,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           dInstalled ? await DockerInstallService.getVersion() : null;
       final dCompose =
           dInstalled ? await DockerInstallService.getComposeVersion() : null;
+      final pgInstalled = await PostgresService.isInstalled();
+      final pgVersion =
+          pgInstalled ? await PostgresService.getVersion() : null;
+      final pgTools = await PostgresService.detectClientTools();
       if (mounted) {
         setState(() {
           _pythonResults = results;
@@ -127,13 +138,28 @@ class _SettingsScreenState extends State<SettingsScreen>
           _dockerRunning = dRunning;
           _dockerVersion = dVersion;
           _dockerComposeVersion = dCompose;
+          _pgInstalled = pgInstalled;
+          _pgVersion = pgVersion;
+          _pgTools = pgTools;
           _pythonLoading = false;
         });
         // Update banner in HomeScreen
         HomeScreen.recheckDocker();
       }
+      // Server detection runs separately - don't block main scan
+      _scanPgServers();
     } catch (_) {
       if (mounted) setState(() => _pythonLoading = false);
+    }
+  }
+
+  Future<void> _scanPgServers() async {
+    if (mounted) setState(() => _pgServers = null); // show loading
+    try {
+      final servers = await PostgresService.detectServers();
+      if (mounted) setState(() => _pgServers = servers);
+    } catch (_) {
+      if (mounted) setState(() => _pgServers = []);
     }
   }
 
@@ -215,6 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             Tab(icon: const Icon(Icons.code), text: 'Python'),
             Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
             Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
+            Tab(icon: const Icon(Icons.storage), text: 'PostgreSQL'),
           ],
         ),
         Expanded(
@@ -225,6 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               _buildPythonTab(),
               _buildNginxTab(),
               _buildDockerTab(),
+              _buildPostgresTab(),
             ],
           ),
         ),
@@ -1209,6 +1237,374 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  // ── Tab: PostgreSQL ──
+
+  void _showPostgresInstallDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _PostgresInstallDialog(
+        onInstalled: () => _scanEnvironment(),
+      ),
+    );
+  }
+
+  void _showPgSetupDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _PgSetupDialog(
+        onCreated: () {
+          _scanEnvironment();
+        },
+      ),
+    );
+  }
+
+  bool _pgActionLoading = false;
+
+  Future<void> _pgContainerAction(
+      String container, Future<bool> Function(String) action) async {
+    if (_pgActionLoading) return;
+    setState(() => _pgActionLoading = true);
+    await action(container);
+    await _scanPgServers();
+    if (mounted) setState(() => _pgActionLoading = false);
+  }
+
+  Future<void> _pgLocalStartAction() async {
+    if (_pgActionLoading) return;
+    setState(() => _pgActionLoading = true);
+    await PostgresService.startLocalService();
+    await _scanPgServers();
+    if (mounted) setState(() => _pgActionLoading = false);
+  }
+
+  Widget _buildServerCard(PgServerInfo server) {
+    final isDocker = server.source == PgServerSource.docker;
+    final isRunning =
+        isDocker ? (server.containerRunning == true) : server.isReady;
+
+    return Card(
+      child: Padding(
+        padding: AppSpacing.cardPadding,
+        child: Row(
+          children: [
+            Icon(
+              isDocker ? Icons.sailing : Icons.computer,
+              color: isRunning ? Colors.blue : Colors.grey,
+              size: AppIconSize.lg,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isDocker ? 'Docker' : 'Local',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (server.containerName != null)
+                    Text(
+                      '${context.l10n.postgresContainer}: ${server.containerName}',
+                      style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: AppFontSize.sm,
+                          color: Colors.grey.shade600),
+                    ),
+                  if (server.imageName != null)
+                    Text(
+                      '${context.l10n.postgresImage}: ${server.imageName}',
+                      style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: AppFontSize.sm,
+                          color: Colors.grey.shade600),
+                    ),
+                  if (server.serviceName != null)
+                    Text(
+                      '${context.l10n.postgresService}: ${server.serviceName}',
+                      style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: AppFontSize.sm,
+                          color: Colors.grey.shade600),
+                    ),
+                  Text(
+                    '${context.l10n.postgresPort}: ${server.port}',
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: AppFontSize.sm,
+                        color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            // Status chips
+            if (isDocker) ...[
+              _envChip(
+                isRunning
+                    ? context.l10n.postgresContainerRunning
+                    : context.l10n.postgresContainerStopped,
+                isRunning,
+              ),
+              if (server.isReady)
+                Padding(
+                  padding: const EdgeInsets.only(left: AppSpacing.sm),
+                  child: _envChip(context.l10n.postgresReady, true),
+                ),
+            ] else ...[
+              _envChip(
+                server.isReady
+                    ? context.l10n.postgresReady
+                    : context.l10n.postgresNotReady,
+                server.isReady,
+              ),
+            ],
+            // Action buttons
+            const SizedBox(width: AppSpacing.md),
+            if (isDocker && server.containerName != null) ...[
+              if (isRunning) ...[
+                IconButton(
+                  onPressed: _pgActionLoading
+                      ? null
+                      : () => _pgContainerAction(
+                            server.containerName!,
+                            PostgresService.stopContainer,
+                          ),
+                  icon: const Icon(Icons.stop),
+                  tooltip: 'Stop',
+                  color: Colors.red,
+                ),
+                IconButton(
+                  onPressed: _pgActionLoading
+                      ? null
+                      : () => _pgContainerAction(
+                            server.containerName!,
+                            PostgresService.restartContainer,
+                          ),
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Restart',
+                ),
+              ] else
+                IconButton(
+                  onPressed: _pgActionLoading
+                      ? null
+                      : () => _pgContainerAction(
+                            server.containerName!,
+                            PostgresService.startContainer,
+                          ),
+                  icon: const Icon(Icons.play_arrow),
+                  tooltip: 'Start',
+                  color: Colors.green,
+                ),
+            ] else if (!isDocker && !server.isReady)
+              IconButton(
+                onPressed: _pgActionLoading ? null : _pgLocalStartAction,
+                icon: const Icon(Icons.play_arrow),
+                tooltip: 'Start',
+                color: Colors.green,
+              ),
+            if (_pgActionLoading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPostgresTab() {
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(context.l10n.postgresStatus,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              IconButton.filled(
+                onPressed: _pythonLoading ? null : _scanEnvironment,
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.rescan,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(context.l10n.postgresClientNote,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey)),
+          const SizedBox(height: AppSpacing.lg),
+          if (_pgInstalled == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else ...[
+            // Status card
+            Card(
+              child: Padding(
+                padding: AppSpacing.cardPadding,
+                child: Row(
+                  children: [
+                    Icon(Icons.storage,
+                        color: _pgInstalled == true
+                            ? Colors.blue
+                            : Colors.grey,
+                        size: AppIconSize.xxl),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('PostgreSQL Client',
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.xl,
+                                  fontWeight: FontWeight.bold)),
+                          if (_pgVersion != null)
+                            Text(_pgVersion!,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                    color: Colors.grey.shade600)),
+                        ],
+                      ),
+                    ),
+                    if (_pgInstalled == true) ...[
+                      _envChip(context.l10n.postgresInstalled, true),
+                    ] else ...[
+                      _envChip(context.l10n.postgresNotInstalled, false),
+                      const SizedBox(width: AppSpacing.lg),
+                      FilledButton.icon(
+                        onPressed: _showPostgresInstallDialog,
+                        icon: const Icon(Icons.download),
+                        label: Text(context.l10n.postgresInstall),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            // Client tools detail
+            if (_pgTools != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text(context.l10n.postgresClientTools,
+                  style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: AppSpacing.sm),
+              Card(
+                child: Padding(
+                  padding: AppSpacing.cardPadding,
+                  child: Column(
+                    children: PostgresService.clientTools.map((tool) {
+                      final (name, desc) = tool;
+                      final path = _pgTools![name];
+                      final available = path != null;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs),
+                        child: Row(
+                          children: [
+                            Icon(
+                              available
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              size: 18,
+                              color: available
+                                  ? Colors.green
+                                  : Colors.red,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            SizedBox(
+                              width: 100,
+                              child: Text(name,
+                                  style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: AppFontSize.sm)),
+                            ),
+                            Expanded(
+                              child: Text(desc,
+                                  style: TextStyle(
+                                      fontSize: AppFontSize.sm,
+                                      color: Colors.grey.shade600)),
+                            ),
+                            if (available)
+                              Flexible(
+                                child: Text(path,
+                                    style: TextStyle(
+                                        fontFamily: 'monospace',
+                                        fontSize: AppFontSize.xs,
+                                        color: Colors.grey.shade500),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              if (_pgInstalled != true) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Center(
+                  child: FilledButton.icon(
+                    onPressed: _showPostgresInstallDialog,
+                    icon: const Icon(Icons.download),
+                    label: Text(context.l10n.postgresInstall),
+                  ),
+                ),
+              ],
+            ],
+            // Server Status
+            const SizedBox(height: AppSpacing.xl),
+            Text(context.l10n.postgresServerStatus,
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: AppSpacing.sm),
+            if (_pgServers == null)
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_pgServers!.isEmpty)
+              Card(
+                child: Padding(
+                  padding: AppSpacing.cardPadding,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline,
+                          color: Colors.orange, size: AppIconSize.lg),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(context.l10n.postgresNoServer,
+                            style: TextStyle(color: Colors.grey.shade600)),
+                      ),
+                      const SizedBox(width: AppSpacing.lg),
+                      FilledButton.icon(
+                        onPressed: () => _showPgSetupDialog(),
+                        icon: const Icon(Icons.add),
+                        label: Text(context.l10n.postgresSetupDocker),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...(_pgServers!.map((server) => Padding(
+                    padding:
+                        const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _buildServerCard(server),
+                  ))),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _envChip(String label, bool ok) {
     return Chip(
       avatar: Icon(ok ? Icons.check_circle : Icons.cancel,
@@ -1463,6 +1859,349 @@ class _PythonUninstallDialogState extends State<_PythonUninstallDialog> {
                   : context.l10n.uninstallPython,
             ),
           ),
+      ],
+    );
+  }
+}
+
+// ── PostgreSQL Setup Dialog ──
+
+class _PgSetupDialog extends StatefulWidget {
+  final VoidCallback onCreated;
+  const _PgSetupDialog({required this.onCreated});
+
+  @override
+  State<_PgSetupDialog> createState() => _PgSetupDialogState();
+}
+
+class _PgSetupDialogState extends State<_PgSetupDialog> {
+  final _userController =
+      TextEditingController(text: PostgresService.defaultUser);
+  final _passwordController = TextEditingController();
+  final _portController =
+      TextEditingController(text: PostgresService.defaultPort.toString());
+
+  String _baseDir = '';
+  bool _creating = false;
+  bool _created = false;
+  final List<String> _logLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.text = PostgresService.defaultPassword;
+  }
+
+  @override
+  void dispose() {
+    _userController.dispose();
+    _passwordController.dispose();
+    _portController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickBaseDir() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickDirectory(
+          dialogTitle: context.l10n.postgresSetupBaseDir);
+    } else {
+      path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: context.l10n.postgresSetupBaseDir);
+    }
+    if (path != null) setState(() => _baseDir = path!);
+  }
+
+  bool get _isValid =>
+      _baseDir.isNotEmpty &&
+      _userController.text.trim().isNotEmpty &&
+      _passwordController.text.trim().isNotEmpty &&
+      _portController.text.trim().isNotEmpty;
+
+  Future<void> _create() async {
+    if (!_isValid) return;
+    setState(() {
+      _creating = true;
+      _logLines.clear();
+    });
+
+    try {
+      final projectDir = await PostgresService.initProject(
+        baseDir: _baseDir,
+        dbUser: _userController.text.trim(),
+        dbPassword: _passwordController.text.trim(),
+        hostPort: int.tryParse(_portController.text.trim()) ??
+            PostgresService.defaultPort,
+        onOutput: (line) {
+          if (mounted) setState(() => _logLines.add(line));
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _creating = false;
+          _created = true;
+        });
+        widget.onCreated();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(context.l10n.postgresSetupSuccess(projectDir))),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _creating = false;
+          _logLines.add('[ERROR] $e');
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.postgresSetupTitle),
+      content: SizedBox(
+        width: AppDialog.widthMd,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.l10n.postgresSetupSubtitle,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: Colors.grey)),
+              const SizedBox(height: AppSpacing.lg),
+              // Base directory
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: TextEditingController(text: _baseDir),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.postgresSetupBaseDir,
+                        hintText: context.l10n.browseToSelect,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      readOnly: true,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  IconButton.filled(
+                    onPressed: _pickBaseDir,
+                    icon: const Icon(Icons.folder_open),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // User + Password
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _userController,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.postgresSetupUser,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(
+                    child: TextField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.postgresSetupPassword,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Port
+              SizedBox(
+                width: 120,
+                child: TextField(
+                  controller: _portController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.postgresSetupPort,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        if (!_created)
+          TextButton(
+              onPressed: _creating ? null : () => Navigator.pop(context),
+              child: Text(context.l10n.close)),
+        if (!_created)
+          FilledButton.icon(
+            onPressed: (_creating || !_isValid) ? null : _create,
+            icon: _creating
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.rocket_launch),
+            label: Text(_creating
+                ? context.l10n.creating
+                : context.l10n.postgresSetupDocker),
+          ),
+        if (_created)
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.check),
+            label: Text(context.l10n.close),
+          ),
+      ],
+    );
+  }
+}
+
+// ── PostgreSQL Install Dialog ──
+
+class _PostgresInstallDialog extends StatefulWidget {
+  final VoidCallback onInstalled;
+  const _PostgresInstallDialog({required this.onInstalled});
+
+  @override
+  State<_PostgresInstallDialog> createState() => _PostgresInstallDialogState();
+}
+
+class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
+  bool _installing = false;
+  bool _installed = false;
+  bool? _pmAvailable;
+  String? _installDescription;
+  final List<String> _logLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final ok = await PythonInstallService.isPackageManagerAvailable();
+    final cmd = await PostgresService.installCommand();
+    if (mounted) {
+      setState(() {
+        _pmAvailable = ok;
+        _installDescription = cmd.description;
+      });
+    }
+  }
+
+  Future<void> _install() async {
+    setState(() {
+      _installing = true;
+      _logLines.clear();
+    });
+    final exitCode = await PostgresService.install((line) {
+      if (mounted) setState(() => _logLines.add(line));
+    });
+    if (mounted) {
+      setState(() {
+        _installing = false;
+        _installed = exitCode == 0;
+      });
+      if (exitCode == 0) widget.onInstalled();
+    }
+  }
+
+  String _pmNotFound(BuildContext context) {
+    if (PlatformService.isWindows) {
+      return context.l10n.packageManagerNotFoundWindows;
+    }
+    if (PlatformService.isMacOS) return context.l10n.packageManagerNotFoundMac;
+    return context.l10n.packageManagerNotFoundLinux;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.postgresInstallTitle),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.l10n.postgresInstallSubtitle,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: Colors.grey)),
+            const SizedBox(height: AppSpacing.lg),
+            if (_pmAvailable == null)
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: CircularProgressIndicator()))
+            else if (_pmAvailable == false)
+              StatusCard(
+                  title: context.l10n.packageManagerNotFound,
+                  subtitle: _pmNotFound(context),
+                  status: StatusType.error)
+            else ...[
+              if (_installDescription != null)
+                Text(_installDescription!,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: AppFontSize.sm,
+                        color: Colors.grey.shade600)),
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        if (!_installed)
+          TextButton(
+              onPressed: _installing ? null : () => Navigator.pop(context),
+              child: Text(context.l10n.close)),
+        if (_pmAvailable == true)
+          _installed
+              ? FilledButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.check),
+                  label: Text(context.l10n.close),
+                )
+              : FilledButton.icon(
+                  onPressed: _installing ? null : _install,
+                  icon: _installing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.download),
+                  label: Text(_installing
+                      ? context.l10n.installing
+                      : context.l10n.postgresInstall),
+                ),
       ],
     );
   }

@@ -1064,4 +1064,115 @@ class AppLocalizationsEn extends AppLocalizations {
   String nginxPortConflict(int port, String name) {
     return 'Port $port is already proxied by \"$name\"';
   }
+
+  @override
+  String get postgresStatus => 'PostgreSQL Client Tools';
+
+  @override
+  String get postgresInstalled => 'Installed';
+
+  @override
+  String get postgresNotInstalled => 'Not installed';
+
+  @override
+  String get postgresRunning => 'Server running';
+
+  @override
+  String get postgresStopped => 'Server stopped';
+
+  @override
+  String get postgresInstall => 'Install';
+
+  @override
+  String get postgresInstallTitle => 'Install PostgreSQL Client Tools';
+
+  @override
+  String get postgresInstallSubtitle =>
+      'Install client tools (psql, pg_dump, pg_restore, createdb, dropdb) to manage PostgreSQL databases.';
+
+  @override
+  String get postgresClientTools => 'Client Tools';
+
+  @override
+  String get postgresClientNote =>
+      'Client tools are used to connect to PostgreSQL server (local or Docker). No server installation needed if you use Docker.';
+
+  @override
+  String get postgresToolAvailable => 'Available';
+
+  @override
+  String get postgresToolMissing => 'Missing';
+
+  @override
+  String get postgresServerStatus => 'Server Status';
+
+  @override
+  String get postgresNoServer =>
+      'No PostgreSQL server detected (local or Docker)';
+
+  @override
+  String get postgresContainer => 'Container';
+
+  @override
+  String get postgresImage => 'Image';
+
+  @override
+  String get postgresService => 'Service';
+
+  @override
+  String get postgresPort => 'Port';
+
+  @override
+  String get postgresReady => 'Accepting connections';
+
+  @override
+  String get postgresNotReady => 'Not responding';
+
+  @override
+  String get postgresContainerRunning => 'Running';
+
+  @override
+  String get postgresContainerStopped => 'Stopped';
+
+  @override
+  String get postgresSetupDocker => 'Setup PostgreSQL Docker';
+
+  @override
+  String get postgresSetupTitle => 'Setup PostgreSQL Docker';
+
+  @override
+  String get postgresSetupSubtitle =>
+      'Create a PostgreSQL Docker project with docker-compose.';
+
+  @override
+  String get postgresSetupBaseDir => 'Base directory';
+
+  @override
+  String get postgresSetupFolderName => 'Folder name';
+
+  @override
+  String get postgresSetupContainerName => 'Container name';
+
+  @override
+  String get postgresSetupImage => 'Docker image';
+
+  @override
+  String get postgresSetupUser => 'Database user';
+
+  @override
+  String get postgresSetupPassword => 'Database password';
+
+  @override
+  String get postgresSetupDbName => 'Default database';
+
+  @override
+  String get postgresSetupPort => 'Host port';
+
+  @override
+  String get postgresSetupNetwork => 'Docker network';
+
+  @override
+  String postgresSetupSuccess(String path) {
+    return 'PostgreSQL Docker project created at $path';
+  }
 }

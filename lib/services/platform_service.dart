@@ -227,6 +227,19 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     return candidates;
   }
 
+  /// Resolve brew binary path (macOS GUI apps don't have PATH from shell)
+  static Future<String> get brewPath async {
+    if (!isMacOS) return 'brew';
+    final candidates = [
+      '/opt/homebrew/bin/brew',
+      '/usr/local/bin/brew',
+    ];
+    for (final path in candidates) {
+      if (await File(path).exists()) return path;
+    }
+    return 'brew';
+  }
+
   /// Resolve docker binary path (macOS GUI apps don't have PATH from shell)
   static Future<String> get dockerPath async {
     if (!isMacOS) return 'docker';

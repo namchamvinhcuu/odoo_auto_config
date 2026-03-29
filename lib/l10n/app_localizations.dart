@@ -1983,6 +1983,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Port {port} is already proxied by \"{name}\"'**
   String nginxPortConflict(int port, String name);
+
+  /// No description provided for @postgresStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'PostgreSQL Client Tools'**
+  String get postgresStatus;
+
+  /// No description provided for @postgresInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get postgresInstalled;
+
+  /// No description provided for @postgresNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get postgresNotInstalled;
+
+  /// No description provided for @postgresRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Server running'**
+  String get postgresRunning;
+
+  /// No description provided for @postgresStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Server stopped'**
+  String get postgresStopped;
+
+  /// No description provided for @postgresInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get postgresInstall;
+
+  /// No description provided for @postgresInstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install PostgreSQL Client Tools'**
+  String get postgresInstallTitle;
+
+  /// No description provided for @postgresInstallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install client tools (psql, pg_dump, pg_restore, createdb, dropdb) to manage PostgreSQL databases.'**
+  String get postgresInstallSubtitle;
+
+  /// No description provided for @postgresClientTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Tools'**
+  String get postgresClientTools;
+
+  /// No description provided for @postgresClientNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Client tools are used to connect to PostgreSQL server (local or Docker). No server installation needed if you use Docker.'**
+  String get postgresClientNote;
+
+  /// No description provided for @postgresToolAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get postgresToolAvailable;
+
+  /// No description provided for @postgresToolMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get postgresToolMissing;
+
+  /// No description provided for @postgresServerStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Status'**
+  String get postgresServerStatus;
+
+  /// No description provided for @postgresNoServer.
+  ///
+  /// In en, this message translates to:
+  /// **'No PostgreSQL server detected (local or Docker)'**
+  String get postgresNoServer;
+
+  /// No description provided for @postgresContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Container'**
+  String get postgresContainer;
+
+  /// No description provided for @postgresImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get postgresImage;
+
+  /// No description provided for @postgresService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get postgresService;
+
+  /// No description provided for @postgresPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get postgresPort;
+
+  /// No description provided for @postgresReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting connections'**
+  String get postgresReady;
+
+  /// No description provided for @postgresNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Not responding'**
+  String get postgresNotReady;
+
+  /// No description provided for @postgresContainerRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get postgresContainerRunning;
+
+  /// No description provided for @postgresContainerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get postgresContainerStopped;
+
+  /// No description provided for @postgresSetupDocker.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup PostgreSQL Docker'**
+  String get postgresSetupDocker;
+
+  /// No description provided for @postgresSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup PostgreSQL Docker'**
+  String get postgresSetupTitle;
+
+  /// No description provided for @postgresSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a PostgreSQL Docker project with docker-compose.'**
+  String get postgresSetupSubtitle;
+
+  /// No description provided for @postgresSetupBaseDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Base directory'**
+  String get postgresSetupBaseDir;
+
+  /// No description provided for @postgresSetupFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get postgresSetupFolderName;
+
+  /// No description provided for @postgresSetupContainerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Container name'**
+  String get postgresSetupContainerName;
+
+  /// No description provided for @postgresSetupImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker image'**
+  String get postgresSetupImage;
+
+  /// No description provided for @postgresSetupUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Database user'**
+  String get postgresSetupUser;
+
+  /// No description provided for @postgresSetupPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Database password'**
+  String get postgresSetupPassword;
+
+  /// No description provided for @postgresSetupDbName.
+  ///
+  /// In en, this message translates to:
+  /// **'Default database'**
+  String get postgresSetupDbName;
+
+  /// No description provided for @postgresSetupPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Host port'**
+  String get postgresSetupPort;
+
+  /// No description provided for @postgresSetupNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker network'**
+  String get postgresSetupNetwork;
+
+  /// No description provided for @postgresSetupSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'PostgreSQL Docker project created at {path}'**
+  String postgresSetupSuccess(String path);
 }
 
 class _AppLocalizationsDelegate

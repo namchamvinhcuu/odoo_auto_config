@@ -40,6 +40,7 @@ lib/
 │   ├── python_checker_service.dart # Detect Python installations (absolute paths + dedup shims)
 │   ├── python_install_service.dart # Cross-platform Python install (winget/brew/apt)
 │   ├── docker_install_service.dart # Docker install + status check (winget/brew/apt)
+│   ├── postgres_service.dart    # PostgreSQL: client detect, server detect (Docker+local), init Docker project, start/stop/restart
 │   ├── nginx_service.dart       # Nginx: init project, setup/remove proxy, port check, hosts, mkcert
 │   ├── venv_service.dart        # Tao/scan/inspect venv, pip install
 │   ├── folder_structure_service.dart # Tao cau truc thu muc Odoo project
@@ -65,7 +66,8 @@ lib/
 │   └── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
 └── templates/
     ├── odoo_templates.dart      # Sinh odoo.conf va README.md
-    └── nginx_templates.dart     # Sinh nginx conf (odoo/generic), nginx.conf, docker-compose.yml
+    ├── nginx_templates.dart     # Sinh nginx conf (odoo/generic), nginx.conf, docker-compose.yml
+    └── postgres_templates.dart  # Sinh docker-compose.yml, .env, postgresql.conf cho PostgreSQL Docker
 ```
 
 ## Navigation (4 tabs)
@@ -77,6 +79,14 @@ lib/
    - Tab **Python**: Python installations + install + Venv Manager (nhung VenvScreen)
    - Tab **Nginx**: config record (init/import/edit/delete) + port check (80/443)
    - Tab **Docker**: status + install
+   - Tab **PostgreSQL**: 2 sections:
+     1. Client Tools: detect 6 tools (psql, pg_dump, pg_restore, createdb, dropdb, pg_isready),
+        hien path tung tool, install tu dong (brew install libpq / apt install postgresql-client / winget)
+     2. Server Status: detect Docker containers (running+stopped, filter internal port 5432) + local service
+        (brew services/systemctl/sc query/Postgres.app), verify bang pg_isready -t 1, chay song song
+        Controls: Start/Stop/Restart cho Docker containers, Start cho local service
+        Setup: Dialog tao PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
+        Neu chua co server nao -> hien nut "Setup PostgreSQL Docker"
 
 > Python Check va VSCode Config **an khoi menu** nhung code giu nguyen.
 
