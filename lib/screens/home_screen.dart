@@ -29,6 +29,11 @@ class HomeScreen extends StatefulWidget {
     _HomeScreenState._instance?._goToTab(3);
   }
 
+  /// Re-check Docker status and update banner
+  static void recheckDocker() {
+    _HomeScreenState._instance?._checkDocker();
+  }
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -183,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    // Navigate to Settings > Docker tab (index 3)
-                    HomeScreen.navigateToSettings(settingsTab: 3);
+                    // Navigate to Settings > Docker tab (index 4)
+                    HomeScreen.navigateToSettings(settingsTab: 4);
                   },
                   child: Text(context.l10n.dockerGoToSettings),
                 ),

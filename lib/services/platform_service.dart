@@ -246,6 +246,30 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     return 'docker'; // fallback
   }
 
+  static Future<String> get mkcertPath async {
+    if (isWindows) {
+      final localAppData = Platform.environment['LOCALAPPDATA'] ?? '';
+      final candidates = [
+        '$localAppData\\Microsoft\\WinGet\\Links\\mkcert.exe',
+        '$localAppData\\Microsoft\\WinGet\\Packages\\FiloSottile.mkcert_Microsoft.Winget.Source_8wekyb3d8bbwe\\mkcert.exe',
+        'C:\\Program Files\\mkcert\\mkcert.exe',
+        'C:\\ProgramData\\chocolatey\\bin\\mkcert.exe',
+      ];
+      for (final path in candidates) {
+        if (await File(path).exists()) return path;
+      }
+    } else if (isMacOS) {
+      final candidates = [
+        '/opt/homebrew/bin/mkcert',
+        '/usr/local/bin/mkcert',
+      ];
+      for (final path in candidates) {
+        if (await File(path).exists()) return path;
+      }
+    }
+    return 'mkcert'; // fallback: rely on PATH
+  }
+
   static String venvActivateScript(String venvPath) {
     if (isWindows) {
       return '$venvPath\\Scripts\\activate.bat';

@@ -824,6 +824,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dockerStopped => 'Đã dừng';
 
   @override
+  String get startDockerDesktop => 'Khởi động Docker Desktop';
+
+  @override
+  String get starting => 'Đang khởi động...';
+
+  @override
   String get dockerInstall => 'Cài đặt Docker';
 
   @override
@@ -966,7 +972,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get nginxInitMkcertInstall =>
-      'Cài đặt: brew install mkcert (macOS) hoặc apt install mkcert (Linux)';
+      'Bấm nút bên dưới để cài đặt mkcert tự động.';
 
   @override
   String get nginxInvalidSubdomain =>

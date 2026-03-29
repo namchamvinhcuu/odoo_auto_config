@@ -1588,6 +1588,18 @@ abstract class AppLocalizations {
   /// **'Stopped'**
   String get dockerStopped;
 
+  /// No description provided for @startDockerDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Docker Desktop'**
+  String get startDockerDesktop;
+
+  /// No description provided for @starting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting...'**
+  String get starting;
+
   /// No description provided for @dockerInstall.
   ///
   /// In en, this message translates to:
@@ -1819,7 +1831,7 @@ abstract class AppLocalizations {
   /// No description provided for @nginxInitMkcertInstall.
   ///
   /// In en, this message translates to:
-  /// **'Install: brew install mkcert (macOS) or apt install mkcert (Linux)'**
+  /// **'Click the button below to install mkcert automatically.'**
   String get nginxInitMkcertInstall;
 
   /// No description provided for @nginxInvalidSubdomain.

@@ -187,6 +187,13 @@ rm -rf "$TMP_DIR"
 - window_manager can **full restart** (khong hot reload) khi them moi
 - App icon can `flutter clean` + rebuild sau khi thay doi
 - External binaries PHAI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
+- **KHONG BAO GIO hardcode separator `/` hoac `\` khi noi duong dan local file system**
+  Luon dung `p.join()` tu `package:path/path.dart` (import as `p`)
+  VD: `p.join(baseDir, 'conf.d')` thay vi `'$baseDir/conf.d'`
+  `p.dirname(path)` thay vi `path.substring(0, path.length - N)`
+  CHI NGOAI LE: paths ben trong Docker container (nginx conf, docker-compose volumes) luon dung `/` vi container la Linux
+- **Process output (winget/brew/apt)**: dung `utf8.decoder` thay vi `SystemEncoding().decoder`
+  Dung `CommandRunner.cleanLine()` de strip ANSI codes, spinner chars, va progress bars
 
 ### macOS
 - App Sandbox PHAI tat trong ca DebugProfile va Release entitlements

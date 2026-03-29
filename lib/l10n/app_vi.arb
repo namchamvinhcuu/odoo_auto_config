@@ -275,6 +275,8 @@
   "dockerNotInstalled": "Chưa cài đặt",
   "dockerRunning": "Đang chạy",
   "dockerStopped": "Đã dừng",
+  "startDockerDesktop": "Khởi động Docker Desktop",
+  "starting": "Đang khởi động...",
   "dockerInstall": "Cài đặt Docker",
   "dockerInstallTitle": "Cài đặt Docker",
   "dockerInstallSubtitle": "Cài đặt Docker Desktop bằng trình quản lý gói hệ thống.",
@@ -324,7 +326,7 @@
   "nginxInitFailed": "Thất bại: {error}",
   "@nginxInitFailed": { "placeholders": { "error": { "type": "String" } } },
   "nginxInitMkcertRequired": "Cần mkcert để tạo chứng chỉ SSL",
-  "nginxInitMkcertInstall": "Cài đặt: brew install mkcert (macOS) hoặc apt install mkcert (Linux)",
+  "nginxInitMkcertInstall": "Bấm nút bên dưới để cài đặt mkcert tự động.",
 
   "nginxInvalidSubdomain": "Chỉ cho phép chữ thường, số và dấu gạch ngang",
   "nginxDomainConflict": "Subdomain này đã được sử dụng",

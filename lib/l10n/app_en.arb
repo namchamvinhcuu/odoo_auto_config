@@ -296,6 +296,8 @@
   "dockerNotInstalled": "Not installed",
   "dockerRunning": "Running",
   "dockerStopped": "Stopped",
+  "startDockerDesktop": "Start Docker Desktop",
+  "starting": "Starting...",
   "dockerInstall": "Install Docker",
   "dockerInstallTitle": "Install Docker",
   "dockerInstallSubtitle": "Install Docker Desktop using your system package manager.",
@@ -345,7 +347,7 @@
   "nginxInitFailed": "Failed: {error}",
   "@nginxInitFailed": { "placeholders": { "error": { "type": "String" } } },
   "nginxInitMkcertRequired": "mkcert is required to generate SSL certificates",
-  "nginxInitMkcertInstall": "Install: brew install mkcert (macOS) or apt install mkcert (Linux)",
+  "nginxInitMkcertInstall": "Click the button below to install mkcert automatically.",
 
   "nginxInvalidSubdomain": "Only lowercase letters, numbers and hyphens allowed",
   "nginxDomainConflict": "This subdomain is already in use",

@@ -21,9 +21,14 @@ class PythonCheckerService {
 
     if (PlatformService.isWindows) {
       try {
+        // Collect versions already found via absolute paths
+        final seenVersions = results.map((r) => r.version).toSet();
         final pyLauncherResults = await _checkPyLauncher();
         for (final info in pyLauncherResults) {
-          if (!seen.contains(info.executablePath)) {
+          // Skip py launcher entries if we already have the same version
+          // from an absolute path (py -3.11 is a duplicate of python.exe)
+          if (!seen.contains(info.executablePath) &&
+              !seenVersions.contains(info.version)) {
             seen.add(info.executablePath);
             results.add(info);
           }

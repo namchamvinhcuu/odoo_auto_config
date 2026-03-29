@@ -814,6 +814,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dockerStopped => '중지됨';
 
   @override
+  String get startDockerDesktop => 'Docker Desktop 시작';
+
+  @override
+  String get starting => '시작 중...';
+
+  @override
   String get dockerInstall => 'Docker 설치';
 
   @override
@@ -953,8 +959,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nginxInitMkcertRequired => 'SSL 인증서 생성에 mkcert가 필요합니다';
 
   @override
-  String get nginxInitMkcertInstall =>
-      '설치: brew install mkcert (macOS) 또는 apt install mkcert (Linux)';
+  String get nginxInitMkcertInstall => '아래 버튼을 클릭하여 mkcert를 자동으로 설치하세요.';
 
   @override
   String get nginxInvalidSubdomain => '소문자, 숫자, 하이픈만 허용됩니다';

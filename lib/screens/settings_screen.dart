@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_constants.dart';
+import 'home_screen.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/python_info.dart';
 import '../services/docker_install_service.dart';
@@ -41,6 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   bool _pythonLoading = false;
   bool? _dockerInstalled;
   bool? _dockerRunning;
+  bool _startingDocker = false;
   String? _dockerVersion;
   String? _dockerComposeVersion;
 
@@ -48,7 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4,
+      length: 5,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
@@ -123,6 +126,8 @@ class _SettingsScreenState extends State<SettingsScreen>
           _dockerComposeVersion = dCompose;
           _pythonLoading = false;
         });
+        // Update banner in HomeScreen
+        HomeScreen.recheckDocker();
       }
     } catch (_) {
       if (mounted) setState(() => _pythonLoading = false);
@@ -159,6 +164,33 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  Future<void> _startDockerDesktop() async {
+    setState(() => _startingDocker = true);
+    try {
+      if (PlatformService.isWindows) {
+        await Process.run(
+          'powershell',
+          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
+          runInShell: true,
+        );
+      } else if (PlatformService.isMacOS) {
+        await Process.run('open', ['-a', 'Docker'], runInShell: true);
+      } else {
+        await Process.run('systemctl', ['--user', 'start', 'docker-desktop'],
+            runInShell: true);
+      }
+      // Wait for daemon to become ready (retry up to 30s)
+      for (var i = 0; i < 15; i++) {
+        await Future.delayed(const Duration(seconds: 2));
+        if (await DockerInstallService.isRunning()) break;
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _startingDocker = false);
+      _scanEnvironment();
+    }
+  }
+
   void _showDockerInstallDialog() {
     showDialog(
       context: context,
@@ -178,6 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           tabs: [
             Tab(icon: const Icon(Icons.palette), text: context.l10n.themeMode),
             Tab(icon: const Icon(Icons.code), text: 'Python'),
+            Tab(icon: const Icon(Icons.terminal), text: 'Venv'),
             Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
             Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
           ],
@@ -188,6 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             children: [
               _buildThemeTab(),
               _buildPythonTab(),
+              _buildVenvTab(),
               _buildNginxTab(),
               _buildDockerTab(),
             ],
@@ -319,13 +353,13 @@ class _SettingsScreenState extends State<SettingsScreen>
   // ── Tab: Python (+ Venv) ──
 
   Widget _buildPythonTab() {
-    return Column(
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
-          child: Row(
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
             children: [
               Text(context.l10n.pythonCheckTitle,
                   style: Theme.of(context).textTheme.titleMedium),
@@ -343,70 +377,66 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
             ],
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        // Python list
-        if (_pythonLoading)
-          const Padding(
-            padding: EdgeInsets.all(AppSpacing.xxl),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (_pythonResults != null && _pythonResults!.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: StatusCard(
+          const SizedBox(height: AppSpacing.lg),
+          // Python list
+          if (_pythonLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_pythonResults != null && _pythonResults!.isEmpty)
+            StatusCard(
               title: context.l10n.noPythonFound,
               subtitle: context.l10n.noPythonFoundSubtitle,
               status: StatusType.warning,
-            ),
-          )
-        else if (_pythonResults != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-            child: Column(
-              children: _pythonResults!.map((info) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: Padding(
-                    padding: AppSpacing.cardPadding,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.code, color: Colors.blue),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.l10n.pythonVersion(info.version),
-                                style: const TextStyle(
-                                    fontSize: AppFontSize.lg,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Text(info.executablePath,
-                                  style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: AppFontSize.sm,
-                                      color: Colors.grey.shade600)),
-                            ],
-                          ),
+            )
+          else if (_pythonResults != null)
+            ...(_pythonResults!.map((info) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Padding(
+                  padding: AppSpacing.cardPadding,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.code, color: Colors.blue),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.l10n.pythonVersion(info.version),
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.lg,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            Text(info.executablePath,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                    color: Colors.grey.shade600)),
+                          ],
                         ),
-                        _envChip(context.l10n.pipVersion(info.pipVersion),
-                            info.hasPip),
-                        const SizedBox(width: AppSpacing.sm),
-                        _envChip(context.l10n.venvModule, info.hasVenv),
-                      ],
-                    ),
+                      ),
+                      _envChip(
+                          context.l10n.pipVersion(info.pipVersion),
+                          info.hasPip),
+                      const SizedBox(width: AppSpacing.sm),
+                      _envChip(context.l10n.venvModule, info.hasVenv),
+                    ],
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-        const Divider(indent: AppSpacing.xxl, endIndent: AppSpacing.xxl),
-        // Venv Manager embedded
-        const Expanded(child: VenvScreen()),
-      ],
+                ),
+              );
+            })),
+        ],
+      ),
     );
+  }
+
+  Widget _buildVenvTab() {
+    return const VenvScreen();
   }
 
   // ── Tab: Nginx ──
@@ -481,7 +511,51 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
-  Future<void> _startNginxContainer() => _dockerCommand('start');
+  Future<void> _startNginxContainer() async {
+    final container = _containerNameController.text.trim();
+    if (container.isEmpty) return;
+    setState(() => _restartingNginx = true);
+    try {
+      final docker = await PlatformService.dockerPath;
+      // Try docker start first (existing container)
+      final result = await Process.run(docker, ['start', container],
+          runInShell: true);
+      if (result.exitCode != 0) {
+        // Container doesn't exist — try docker compose up from nginx project dir
+        final confDir = _confDirController.text.trim();
+        final nginxRoot = confDir.endsWith('conf.d')
+            ? p.dirname(confDir)
+            : confDir;
+        final composeFile = File(p.join(nginxRoot, 'docker-compose.yml'));
+        if (await composeFile.exists()) {
+          final composeResult = await Process.run(
+            docker,
+            ['compose', 'up', '-d'],
+            workingDirectory: nginxRoot,
+            runInShell: true,
+          );
+          if (mounted) {
+            if (composeResult.exitCode != 0) {
+              setState(() => _nginxError = composeResult.stderr.toString().trim());
+            } else {
+              setState(() => _nginxError = null);
+            }
+          }
+        } else {
+          if (mounted) setState(() => _nginxError = result.stderr.toString().trim());
+        }
+      } else {
+        if (mounted) setState(() => _nginxError = null);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _nginxError = e.toString());
+    }
+    if (mounted) {
+      setState(() => _restartingNginx = false);
+      _checkPorts();
+    }
+  }
+
   Future<void> _stopNginxContainer() => _dockerCommand('stop');
 
   Future<void> _restartNginxContainer() => _dockerCommand('restart');
@@ -513,8 +587,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (path == null) return;
 
     // Auto-detect: if user picked the nginx root folder, use conf.d inside it
-    final confDInside = Directory('$path/conf.d');
-    final confDir = await confDInside.exists() ? '$path/conf.d' : path;
+    final confDInside = Directory(p.join(path, 'conf.d'));
+    final confDir = await confDInside.exists() ? p.join(path, 'conf.d') : path;
 
     setState(() {
       _confDirController.text = confDir;
@@ -527,7 +601,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final confDir = _confDirController.text.trim();
     // Derive nginx root (parent of conf.d)
     final nginxRoot = confDir.endsWith('conf.d')
-        ? confDir.substring(0, confDir.length - 6)
+        ? p.dirname(confDir)
         : confDir;
 
     final confirmed = await showDialog<bool>(
@@ -1059,6 +1133,21 @@ class _SettingsScreenState extends State<SettingsScreen>
                             : context.l10n.dockerStopped,
                         _dockerRunning == true,
                       ),
+                      if (_dockerRunning != true) ...[
+                        const SizedBox(width: AppSpacing.lg),
+                        FilledButton.icon(
+                          onPressed: _startingDocker ? null : _startDockerDesktop,
+                          icon: _startingDocker
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.play_arrow),
+                          label: Text(_startingDocker
+                              ? context.l10n.starting
+                              : context.l10n.startDockerDesktop),
+                        ),
+                      ],
                     ] else ...[
                       _envChip(context.l10n.dockerNotInstalled, false),
                       const SizedBox(width: AppSpacing.lg),
@@ -1235,6 +1324,7 @@ class _DockerInstallDialog extends StatefulWidget {
 
 class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   bool _installing = false;
+  bool _installed = false;
   bool? _pmAvailable;
   final List<String> _logLines = [];
 
@@ -1258,7 +1348,10 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
       if (mounted) setState(() => _logLines.add(line));
     });
     if (mounted) {
-      setState(() => _installing = false);
+      setState(() {
+        _installing = false;
+        _installed = exitCode == 0;
+      });
       if (exitCode == 0) widget.onInstalled();
     }
   }
@@ -1312,22 +1405,29 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: _installing ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
+        if (!_installed)
+          TextButton(
+              onPressed: _installing ? null : () => Navigator.pop(context),
+              child: Text(context.l10n.close)),
         if (_pmAvailable == true)
-          FilledButton.icon(
-            onPressed: _installing ? null : _install,
-            icon: _installing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download),
-            label: Text(_installing
-                ? context.l10n.installing
-                : context.l10n.dockerInstall),
-          ),
+          _installed
+              ? FilledButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.check),
+                  label: Text(context.l10n.close),
+                )
+              : FilledButton.icon(
+                  onPressed: _installing ? null : _install,
+                  icon: _installing
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.download),
+                  label: Text(_installing
+                      ? context.l10n.installing
+                      : context.l10n.dockerInstall),
+                ),
       ],
     );
   }
@@ -1348,6 +1448,7 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
   final _domainController = TextEditingController();
   String _baseDir = '';
   bool _creating = false;
+  bool _created = false;
   bool _installingMkcert = false;
   bool? _mkcertAvailable;
   final List<String> _logLines = [];
@@ -1414,8 +1515,11 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
       );
 
       if (mounted) {
-        setState(() => _creating = false);
-        final confDir = '$projectDir/conf.d';
+        setState(() {
+          _creating = false;
+          _created = true;
+        });
+        final confDir = p.join(projectDir, 'conf.d');
         widget.onCreated(confDir, _domainController.text.trim());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.nginxInitSuccess(projectDir))),
@@ -1534,6 +1638,7 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.lg),
@@ -1546,6 +1651,7 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ],
@@ -1559,10 +1665,11 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: _creating ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
-        if (_mkcertAvailable == true)
+        if (!_created)
+          TextButton(
+              onPressed: _creating ? null : () => Navigator.pop(context),
+              child: Text(context.l10n.close)),
+        if (_mkcertAvailable == true && !_created)
           FilledButton.icon(
             onPressed: (_creating || !_isValid) ? null : _create,
             icon: _creating
@@ -1574,6 +1681,12 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
             label: Text(_creating
                 ? context.l10n.creating
                 : context.l10n.nginxInitCreate),
+          ),
+        if (_created)
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.check),
+            label: Text(context.l10n.close),
           ),
       ],
     );

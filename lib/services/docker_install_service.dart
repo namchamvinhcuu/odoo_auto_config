@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'command_runner.dart';
 import 'platform_service.dart';
 
 class DockerInstallService {
@@ -99,19 +101,28 @@ class DockerInstallService {
         runInShell: true,
       );
 
+      String lastLine = '';
       final stdoutDone = process.stdout
-          .transform(const SystemEncoding().decoder)
+          .transform(utf8.decoder)
           .listen((data) {
         for (final line in data.split('\n')) {
-          if (line.trim().isNotEmpty) onOutput(line);
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          if (cleaned == CommandRunner.spinnerPlaceholder && lastLine == cleaned) continue;
+          lastLine = cleaned;
+          onOutput(cleaned);
         }
       }).asFuture();
 
       final stderrDone = process.stderr
-          .transform(const SystemEncoding().decoder)
+          .transform(utf8.decoder)
           .listen((data) {
         for (final line in data.split('\n')) {
-          if (line.trim().isNotEmpty) onOutput('[WARN] $line');
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          if (cleaned == CommandRunner.spinnerPlaceholder && lastLine == cleaned) continue;
+          lastLine = cleaned;
+          onOutput('[WARN] $cleaned');
         }
       }).asFuture();
 

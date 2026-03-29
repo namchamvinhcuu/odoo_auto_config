@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import '../models/command_result.dart';
@@ -11,8 +12,9 @@ class NginxService {
 
   static Future<bool> isMkcertAvailable() async {
     try {
+      final mkcert = await PlatformService.mkcertPath;
       final result =
-          await Process.run('mkcert', ['-version'], runInShell: true);
+          await Process.run(mkcert, ['-version'], runInShell: true);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -59,19 +61,28 @@ class NginxService {
         runInShell: true,
       );
 
+      String lastLine = '';
       final stdoutDone = process.stdout
-          .transform(const SystemEncoding().decoder)
+          .transform(utf8.decoder)
           .listen((data) {
         for (final line in data.split('\n')) {
-          if (line.trim().isNotEmpty) onOutput(line);
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          if (cleaned == CommandRunner.spinnerPlaceholder && lastLine == cleaned) continue;
+          lastLine = cleaned;
+          onOutput(cleaned);
         }
       }).asFuture();
 
       final stderrDone = process.stderr
-          .transform(const SystemEncoding().decoder)
+          .transform(utf8.decoder)
           .listen((data) {
         for (final line in data.split('\n')) {
-          if (line.trim().isNotEmpty) onOutput('[WARN] $line');
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          if (cleaned == CommandRunner.spinnerPlaceholder && lastLine == cleaned) continue;
+          lastLine = cleaned;
+          onOutput('[WARN] $cleaned');
         }
       }).asFuture();
 
@@ -83,7 +94,8 @@ class NginxService {
         onOutput('[+] mkcert installed successfully!');
         // Install CA
         onOutput('[+] Installing local CA...');
-        await CommandRunner.run('mkcert', ['-install']);
+        final mkcert = await PlatformService.mkcertPath;
+        await CommandRunner.run(mkcert, ['-install']);
         onOutput('[+] Done!');
       } else {
         onOutput('');
@@ -114,17 +126,31 @@ class NginxService {
     onOutput('[+] Created: $confDir');
     onOutput('[+] Created: $certsDir');
 
+    // Strip leading dot from domain if present
+    final cleanDomain = domain.startsWith('.') ? domain.substring(1) : domain;
+
+    // Install mkcert CA first (required before generating certs)
+    final mkcert = await PlatformService.mkcertPath;
+    onOutput('');
+    onOutput('[+] Installing mkcert local CA...');
+    final caResult = await CommandRunner.run(mkcert, ['-install']);
+    if (caResult.exitCode != 0) {
+      onOutput('[WARN] mkcert CA install: ${caResult.stderr}');
+    } else {
+      onOutput('[+] Local CA installed');
+    }
+
     // Generate SSL certs with mkcert
     onOutput('');
     onOutput('[+] Generating SSL certificates with mkcert...');
-    final certName = '$domain+4';
-    final mkcertResult = await CommandRunner.run('mkcert', [
+    final certName = '$cleanDomain+4';
+    final mkcertResult = await CommandRunner.run(mkcert, [
       '-cert-file',
       p.join(certsDir, '$certName.pem'),
       '-key-file',
       p.join(certsDir, '$certName-key.pem'),
-      domain,
-      '*.$domain',
+      cleanDomain,
+      '*.$cleanDomain',
       'localhost',
       '127.0.0.1',
       '::1',
@@ -134,9 +160,6 @@ class NginxService {
       throw Exception('mkcert failed: ${mkcertResult.stderr}');
     }
     onOutput('[+] SSL certificates generated');
-
-    // Install mkcert CA (if not already)
-    await CommandRunner.run('mkcert', ['-install']);
 
     // Write nginx.conf
     onOutput('');

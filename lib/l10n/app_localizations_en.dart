@@ -828,6 +828,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dockerStopped => 'Stopped';
 
   @override
+  String get startDockerDesktop => 'Start Docker Desktop';
+
+  @override
+  String get starting => 'Starting...';
+
+  @override
   String get dockerInstall => 'Install Docker';
 
   @override
@@ -972,7 +978,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nginxInitMkcertInstall =>
-      'Install: brew install mkcert (macOS) or apt install mkcert (Linux)';
+      'Click the button below to install mkcert automatically.';
 
   @override
   String get nginxInvalidSubdomain =>
