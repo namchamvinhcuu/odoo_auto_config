@@ -88,8 +88,82 @@ class DockerInstallService {
     }
   }
 
+  /// Check if WSL is installed (Windows only)
+  static Future<bool> isWslInstalled() async {
+    if (!PlatformService.isWindows) return true;
+    try {
+      final result =
+          await Process.run('wsl', ['--status'], runInShell: true);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Install WSL on Windows
+  static Future<int> _installWsl(void Function(String line) onOutput) async {
+    onOutput('[+] WSL not found. Installing WSL...');
+    onOutput('[+] Running: wsl --install --no-distribution');
+    onOutput('');
+
+    try {
+      final process = await Process.start(
+        'wsl',
+        ['--install', '--no-distribution'],
+        runInShell: true,
+      );
+
+      final stdoutDone = process.stdout
+          .transform(utf8.decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          onOutput(cleaned);
+        }
+      }).asFuture();
+
+      final stderrDone = process.stderr
+          .transform(utf8.decoder)
+          .listen((data) {
+        for (final line in data.split('\n')) {
+          final cleaned = CommandRunner.cleanLine(line);
+          if (cleaned == null) continue;
+          onOutput('[WARN] $cleaned');
+        }
+      }).asFuture();
+
+      await Future.wait([stdoutDone, stderrDone]);
+      final exitCode = await process.exitCode;
+
+      if (exitCode == 0) {
+        onOutput('');
+        onOutput('[+] WSL installed successfully!');
+        onOutput('');
+        onOutput('[WARN] Please RESTART your computer, then come back to install Docker.');
+      } else {
+        onOutput('');
+        onOutput('[ERROR] WSL installation failed with exit code $exitCode');
+      }
+      return exitCode;
+    } catch (e) {
+      onOutput('[ERROR] $e');
+      return -1;
+    }
+  }
+
   /// Install Docker with real-time output
   static Future<int> install(void Function(String line) onOutput) async {
+    // Windows: install WSL first if needed
+    if (PlatformService.isWindows) {
+      final wslOk = await isWslInstalled();
+      if (!wslOk) {
+        final wslExit = await _installWsl(onOutput);
+        // WSL needs restart before Docker can be installed
+        return wslExit;
+      }
+    }
+
     final cmd = installCommand();
     onOutput('[+] Running: ${cmd.description}');
     onOutput('');
