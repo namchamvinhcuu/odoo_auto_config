@@ -1203,4 +1203,84 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get installVscodeSubtitle =>
       'Visual Studio Code is not installed. Install it to open projects directly from the app.';
+
+  @override
+  String get envSetupTitle => 'Environment';
+
+  @override
+  String get envSetupSubtitle =>
+      'Check and install prerequisites for Odoo development.';
+
+  @override
+  String get envGit => 'Git';
+
+  @override
+  String get envGitDesc =>
+      'Version control — required to clone Odoo source code.';
+
+  @override
+  String get envDocker => 'Docker';
+
+  @override
+  String get envDockerDesc =>
+      'Container runtime for nginx reverse proxy and PostgreSQL.';
+
+  @override
+  String get envPython => 'Python';
+
+  @override
+  String get envPythonDesc =>
+      'Required runtime for Odoo. Python 3.10+ recommended.';
+
+  @override
+  String envPythonVersions(int count) {
+    return '$count version(s) found';
+  }
+
+  @override
+  String get envNginx => 'Nginx';
+
+  @override
+  String get envNginxDesc =>
+      'Reverse proxy for HTTPS local development domains.';
+
+  @override
+  String get envNginxConfigured => 'Configured';
+
+  @override
+  String get envNginxNotConfigured => 'Not configured';
+
+  @override
+  String get envVscode => 'VSCode';
+
+  @override
+  String get envVscodeDesc => 'Recommended editor with Odoo debug support.';
+
+  @override
+  String get envCheckAll => 'Check All';
+
+  @override
+  String get envAllGood => 'All prerequisites are ready!';
+
+  @override
+  String envSomeIssues(int count) {
+    return '$count item(s) need attention';
+  }
+
+  @override
+  String get installed => 'Installed';
+
+  @override
+  String get notInstalled => 'Not installed';
+
+  @override
+  String get gitInstallTitle => 'Install Git';
+
+  @override
+  String get gitInstallSubtitle =>
+      'Git is required for cloning Odoo source code.';
+
+  @override
+  String get gitInstallMacNote =>
+      'On macOS, this will trigger the Xcode Command Line Tools installer.';
 }

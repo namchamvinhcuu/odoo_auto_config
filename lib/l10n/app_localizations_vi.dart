@@ -1197,4 +1197,84 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get installVscodeSubtitle =>
       'Visual Studio Code chưa được cài đặt. Cài đặt để mở dự án trực tiếp từ ứng dụng.';
+
+  @override
+  String get envSetupTitle => 'Môi trường';
+
+  @override
+  String get envSetupSubtitle =>
+      'Kiểm tra và cài đặt các yêu cầu để phát triển Odoo.';
+
+  @override
+  String get envGit => 'Git';
+
+  @override
+  String get envGitDesc =>
+      'Quản lý phiên bản — cần thiết để clone mã nguồn Odoo.';
+
+  @override
+  String get envDocker => 'Docker';
+
+  @override
+  String get envDockerDesc =>
+      'Nền tảng container cho nginx reverse proxy và PostgreSQL.';
+
+  @override
+  String get envPython => 'Python';
+
+  @override
+  String get envPythonDesc =>
+      'Runtime cần thiết cho Odoo. Khuyến nghị Python 3.10+.';
+
+  @override
+  String envPythonVersions(int count) {
+    return 'Tìm thấy $count phiên bản';
+  }
+
+  @override
+  String get envNginx => 'Nginx';
+
+  @override
+  String get envNginxDesc =>
+      'Reverse proxy cho domain HTTPS phát triển cục bộ.';
+
+  @override
+  String get envNginxConfigured => 'Đã cấu hình';
+
+  @override
+  String get envNginxNotConfigured => 'Chưa cấu hình';
+
+  @override
+  String get envVscode => 'VSCode';
+
+  @override
+  String get envVscodeDesc =>
+      'Trình soạn thảo khuyến nghị với hỗ trợ debug Odoo.';
+
+  @override
+  String get envCheckAll => 'Kiểm tra tất cả';
+
+  @override
+  String get envAllGood => 'Tất cả yêu cầu đã sẵn sàng!';
+
+  @override
+  String envSomeIssues(int count) {
+    return '$count mục cần chú ý';
+  }
+
+  @override
+  String get installed => 'Đã cài đặt';
+
+  @override
+  String get notInstalled => 'Chưa cài đặt';
+
+  @override
+  String get gitInstallTitle => 'Cài đặt Git';
+
+  @override
+  String get gitInstallSubtitle => 'Git cần thiết để clone mã nguồn Odoo.';
+
+  @override
+  String get gitInstallMacNote =>
+      'Trên macOS, thao tác này sẽ mở trình cài đặt Xcode Command Line Tools.';
 }

@@ -425,5 +425,31 @@
   "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } },
 
   "installVscode": "Install VSCode",
-  "installVscodeSubtitle": "Visual Studio Code is not installed. Install it to open projects directly from the app."
+  "installVscodeSubtitle": "Visual Studio Code is not installed. Install it to open projects directly from the app.",
+
+  "envSetupTitle": "Environment",
+  "envSetupSubtitle": "Check and install prerequisites for Odoo development.",
+  "envGit": "Git",
+  "envGitDesc": "Version control — required to clone Odoo source code.",
+  "envDocker": "Docker",
+  "envDockerDesc": "Container runtime for nginx reverse proxy and PostgreSQL.",
+  "envPython": "Python",
+  "envPythonDesc": "Required runtime for Odoo. Python 3.10+ recommended.",
+  "envPythonVersions": "{count} version(s) found",
+  "@envPythonVersions": { "placeholders": { "count": { "type": "int" } } },
+  "envNginx": "Nginx",
+  "envNginxDesc": "Reverse proxy for HTTPS local development domains.",
+  "envNginxConfigured": "Configured",
+  "envNginxNotConfigured": "Not configured",
+  "envVscode": "VSCode",
+  "envVscodeDesc": "Recommended editor with Odoo debug support.",
+  "envCheckAll": "Check All",
+  "envAllGood": "All prerequisites are ready!",
+  "envSomeIssues": "{count} item(s) need attention",
+  "@envSomeIssues": { "placeholders": { "count": { "type": "int" } } },
+  "installed": "Installed",
+  "notInstalled": "Not installed",
+  "gitInstallTitle": "Install Git",
+  "gitInstallSubtitle": "Git is required for cloning Odoo source code.",
+  "gitInstallMacNote": "On macOS, this will trigger the Xcode Command Line Tools installer."
 }

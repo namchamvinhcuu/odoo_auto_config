@@ -404,5 +404,31 @@
   "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } },
 
   "installVscode": "Cài đặt VSCode",
-  "installVscodeSubtitle": "Visual Studio Code chưa được cài đặt. Cài đặt để mở dự án trực tiếp từ ứng dụng."
+  "installVscodeSubtitle": "Visual Studio Code chưa được cài đặt. Cài đặt để mở dự án trực tiếp từ ứng dụng.",
+
+  "envSetupTitle": "Môi trường",
+  "envSetupSubtitle": "Kiểm tra và cài đặt các yêu cầu để phát triển Odoo.",
+  "envGit": "Git",
+  "envGitDesc": "Quản lý phiên bản — cần thiết để clone mã nguồn Odoo.",
+  "envDocker": "Docker",
+  "envDockerDesc": "Nền tảng container cho nginx reverse proxy và PostgreSQL.",
+  "envPython": "Python",
+  "envPythonDesc": "Runtime cần thiết cho Odoo. Khuyến nghị Python 3.10+.",
+  "envPythonVersions": "Tìm thấy {count} phiên bản",
+  "@envPythonVersions": { "placeholders": { "count": { "type": "int" } } },
+  "envNginx": "Nginx",
+  "envNginxDesc": "Reverse proxy cho domain HTTPS phát triển cục bộ.",
+  "envNginxConfigured": "Đã cấu hình",
+  "envNginxNotConfigured": "Chưa cấu hình",
+  "envVscode": "VSCode",
+  "envVscodeDesc": "Trình soạn thảo khuyến nghị với hỗ trợ debug Odoo.",
+  "envCheckAll": "Kiểm tra tất cả",
+  "envAllGood": "Tất cả yêu cầu đã sẵn sàng!",
+  "envSomeIssues": "{count} mục cần chú ý",
+  "@envSomeIssues": { "placeholders": { "count": { "type": "int" } } },
+  "installed": "Đã cài đặt",
+  "notInstalled": "Chưa cài đặt",
+  "gitInstallTitle": "Cài đặt Git",
+  "gitInstallSubtitle": "Git cần thiết để clone mã nguồn Odoo.",
+  "gitInstallMacNote": "Trên macOS, thao tác này sẽ mở trình cài đặt Xcode Command Line Tools."
 }

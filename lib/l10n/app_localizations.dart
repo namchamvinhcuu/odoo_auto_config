@@ -2241,6 +2241,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Visual Studio Code is not installed. Install it to open projects directly from the app.'**
   String get installVscodeSubtitle;
+
+  /// No description provided for @envSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get envSetupTitle;
+
+  /// No description provided for @envSetupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check and install prerequisites for Odoo development.'**
+  String get envSetupSubtitle;
+
+  /// No description provided for @envGit.
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get envGit;
+
+  /// No description provided for @envGitDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Version control — required to clone Odoo source code.'**
+  String get envGitDesc;
+
+  /// No description provided for @envDocker.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker'**
+  String get envDocker;
+
+  /// No description provided for @envDockerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Container runtime for nginx reverse proxy and PostgreSQL.'**
+  String get envDockerDesc;
+
+  /// No description provided for @envPython.
+  ///
+  /// In en, this message translates to:
+  /// **'Python'**
+  String get envPython;
+
+  /// No description provided for @envPythonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Required runtime for Odoo. Python 3.10+ recommended.'**
+  String get envPythonDesc;
+
+  /// No description provided for @envPythonVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} version(s) found'**
+  String envPythonVersions(int count);
+
+  /// No description provided for @envNginx.
+  ///
+  /// In en, this message translates to:
+  /// **'Nginx'**
+  String get envNginx;
+
+  /// No description provided for @envNginxDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse proxy for HTTPS local development domains.'**
+  String get envNginxDesc;
+
+  /// No description provided for @envNginxConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get envNginxConfigured;
+
+  /// No description provided for @envNginxNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get envNginxNotConfigured;
+
+  /// No description provided for @envVscode.
+  ///
+  /// In en, this message translates to:
+  /// **'VSCode'**
+  String get envVscode;
+
+  /// No description provided for @envVscodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended editor with Odoo debug support.'**
+  String get envVscodeDesc;
+
+  /// No description provided for @envCheckAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Check All'**
+  String get envCheckAll;
+
+  /// No description provided for @envAllGood.
+  ///
+  /// In en, this message translates to:
+  /// **'All prerequisites are ready!'**
+  String get envAllGood;
+
+  /// No description provided for @envSomeIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} item(s) need attention'**
+  String envSomeIssues(int count);
+
+  /// No description provided for @installed.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get installed;
+
+  /// No description provided for @notInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get notInstalled;
+
+  /// No description provided for @gitInstallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install Git'**
+  String get gitInstallTitle;
+
+  /// No description provided for @gitInstallSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Git is required for cloning Odoo source code.'**
+  String get gitInstallSubtitle;
+
+  /// No description provided for @gitInstallMacNote.
+  ///
+  /// In en, this message translates to:
+  /// **'On macOS, this will trigger the Xcode Command Line Tools installer.'**
+  String get gitInstallMacNote;
 }
 
 class _AppLocalizationsDelegate

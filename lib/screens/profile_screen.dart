@@ -8,6 +8,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/profile.dart';
 import '../models/venv_info.dart';
 import '../services/command_runner.dart';
+import '../services/git_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/log_output.dart';
@@ -650,44 +651,13 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
       !_cloning && _baseDir.isNotEmpty && _folderController.text.trim().isNotEmpty;
 
   Future<bool> _ensureGit() async {
-    try {
-      final result = await Process.run('git', ['--version'], runInShell: true);
-      if (result.exitCode == 0) return true;
-    } catch (_) {}
+    if (await GitService.isInstalled()) return true;
 
-    // Git not found — install it
     setState(() => _logLines.add('[+] Git not found. Installing...'));
-
-    if (Platform.isWindows) {
-      final process = await Process.start(
-        'winget',
-        ['install', '--id', 'Git.Git', '-e', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'],
-        runInShell: true,
-      );
-      await process.stdout.drain();
-      await process.stderr.drain();
-      final exitCode = await process.exitCode;
-      if (exitCode == 0) {
-        setState(() => _logLines.add('[+] Git installed successfully!'));
-        return true;
-      }
-    } else if (Platform.isMacOS) {
-      // macOS: xcode-select triggers git install dialog
-      final result = await Process.run('xcode-select', ['--install'], runInShell: true);
-      if (result.exitCode == 0) {
-        setState(() => _logLines.add('[+] Git install triggered. Please complete the dialog and try again.'));
-        return false;
-      }
-    } else {
-      final result = await Process.run('pkexec', ['apt', 'install', '-y', 'git'], runInShell: true);
-      if (result.exitCode == 0) {
-        setState(() => _logLines.add('[+] Git installed successfully!'));
-        return true;
-      }
-    }
-
-    setState(() => _logLines.add('[ERROR] Failed to install Git'));
-    return false;
+    final exitCode = await GitService.install((line) {
+      if (mounted) setState(() => _logLines.add(line));
+    });
+    return exitCode == 0;
   }
 
   Future<void> _clone() async {

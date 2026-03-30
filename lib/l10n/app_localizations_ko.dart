@@ -1179,4 +1179,78 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get installVscodeSubtitle =>
       'Visual Studio Code가 설치되지 않았습니다. 앱에서 프로젝트를 직접 열려면 설치하세요.';
+
+  @override
+  String get envSetupTitle => '환경';
+
+  @override
+  String get envSetupSubtitle => 'Odoo 개발을 위한 필수 사항을 확인하고 설치합니다.';
+
+  @override
+  String get envGit => 'Git';
+
+  @override
+  String get envGitDesc => '버전 관리 — Odoo 소스 코드 클론에 필요합니다.';
+
+  @override
+  String get envDocker => 'Docker';
+
+  @override
+  String get envDockerDesc => 'nginx 리버스 프록시 및 PostgreSQL용 컨테이너 런타임.';
+
+  @override
+  String get envPython => 'Python';
+
+  @override
+  String get envPythonDesc => 'Odoo에 필요한 런타임. Python 3.10+ 권장.';
+
+  @override
+  String envPythonVersions(int count) {
+    return '$count개 버전 발견';
+  }
+
+  @override
+  String get envNginx => 'Nginx';
+
+  @override
+  String get envNginxDesc => '로컬 개발 HTTPS 도메인용 리버스 프록시.';
+
+  @override
+  String get envNginxConfigured => '구성됨';
+
+  @override
+  String get envNginxNotConfigured => '구성되지 않음';
+
+  @override
+  String get envVscode => 'VSCode';
+
+  @override
+  String get envVscodeDesc => 'Odoo 디버그를 지원하는 권장 편집기.';
+
+  @override
+  String get envCheckAll => '모두 확인';
+
+  @override
+  String get envAllGood => '모든 필수 사항이 준비되었습니다!';
+
+  @override
+  String envSomeIssues(int count) {
+    return '$count개 항목에 주의가 필요합니다';
+  }
+
+  @override
+  String get installed => '설치됨';
+
+  @override
+  String get notInstalled => '설치되지 않음';
+
+  @override
+  String get gitInstallTitle => 'Git 설치';
+
+  @override
+  String get gitInstallSubtitle => 'Odoo 소스 코드를 클론하려면 Git이 필요합니다.';
+
+  @override
+  String get gitInstallMacNote =>
+      'macOS에서는 Xcode Command Line Tools 설치 프로그램이 열립니다.';
 }

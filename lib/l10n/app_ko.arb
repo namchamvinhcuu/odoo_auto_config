@@ -404,5 +404,31 @@
   "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } },
 
   "installVscode": "VSCode 설치",
-  "installVscodeSubtitle": "Visual Studio Code가 설치되지 않았습니다. 앱에서 프로젝트를 직접 열려면 설치하세요."
+  "installVscodeSubtitle": "Visual Studio Code가 설치되지 않았습니다. 앱에서 프로젝트를 직접 열려면 설치하세요.",
+
+  "envSetupTitle": "환경",
+  "envSetupSubtitle": "Odoo 개발을 위한 필수 사항을 확인하고 설치합니다.",
+  "envGit": "Git",
+  "envGitDesc": "버전 관리 — Odoo 소스 코드 클론에 필요합니다.",
+  "envDocker": "Docker",
+  "envDockerDesc": "nginx 리버스 프록시 및 PostgreSQL용 컨테이너 런타임.",
+  "envPython": "Python",
+  "envPythonDesc": "Odoo에 필요한 런타임. Python 3.10+ 권장.",
+  "envPythonVersions": "{count}개 버전 발견",
+  "@envPythonVersions": { "placeholders": { "count": { "type": "int" } } },
+  "envNginx": "Nginx",
+  "envNginxDesc": "로컬 개발 HTTPS 도메인용 리버스 프록시.",
+  "envNginxConfigured": "구성됨",
+  "envNginxNotConfigured": "구성되지 않음",
+  "envVscode": "VSCode",
+  "envVscodeDesc": "Odoo 디버그를 지원하는 권장 편집기.",
+  "envCheckAll": "모두 확인",
+  "envAllGood": "모든 필수 사항이 준비되었습니다!",
+  "envSomeIssues": "{count}개 항목에 주의가 필요합니다",
+  "@envSomeIssues": { "placeholders": { "count": { "type": "int" } } },
+  "installed": "설치됨",
+  "notInstalled": "설치되지 않음",
+  "gitInstallTitle": "Git 설치",
+  "gitInstallSubtitle": "Odoo 소스 코드를 클론하려면 Git이 필요합니다.",
+  "gitInstallMacNote": "macOS에서는 Xcode Command Line Tools 설치 프로그램이 열립니다."
 }

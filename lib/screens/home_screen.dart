@@ -209,8 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    // Navigate to Settings > Docker tab (index 3)
-                    HomeScreen.navigateToSettings(settingsTab: 1);
+                    // Navigate to Settings > Environment tab
+                    HomeScreen.navigateToSettings(settingsTab: 0);
                   },
                   child: Text(context.l10n.dockerGoToSettings),
                 ),
