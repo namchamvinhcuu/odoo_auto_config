@@ -163,6 +163,53 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
   }
 
+  Future<void> _importPython() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickFile(
+        dialogTitle: context.l10n.importPythonTitle,
+        filter: 'Executable (*.exe)|*.exe',
+      );
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: context.l10n.importPythonTitle,
+        type: FileType.any,
+      );
+      path = result?.files.single.path;
+    }
+    if (path == null || !mounted) return;
+
+    final info = await _pythonChecker.checkPython(path);
+    if (!mounted) return;
+
+    if (info == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.importPythonInvalid)),
+      );
+      return;
+    }
+
+    final isDuplicate = _pythonResults?.any(
+          (r) =>
+              r.executablePath == info.executablePath ||
+              r.version == info.version,
+        ) ??
+        false;
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.importPythonDuplicate)),
+      );
+      return;
+    }
+
+    setState(() {
+      _pythonResults = [...?_pythonResults, info];
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.importPythonSuccess(info.version))),
+    );
+  }
+
   String _majorMinor(String version) {
     final parts = version.split('.');
     if (parts.length >= 2) return '${parts[0]}.${parts[1]}';
@@ -415,6 +462,12 @@ class _SettingsScreenState extends State<SettingsScreen>
               Text(context.l10n.pythonCheckTitle,
                   style: Theme.of(context).textTheme.titleMedium),
               const Spacer(),
+              FilledButton.tonalIcon(
+                onPressed: _pythonLoading ? null : _importPython,
+                icon: const Icon(Icons.folder_open),
+                label: Text(context.l10n.importPython),
+              ),
+              const SizedBox(width: AppSpacing.sm),
               FilledButton.tonalIcon(
                 onPressed: _pythonLoading ? null : _showPythonInstallDialog,
                 icon: const Icon(Icons.download),

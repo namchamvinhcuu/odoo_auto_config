@@ -36,7 +36,9 @@ class PythonCheckerService {
       } catch (_) {}
     }
 
-    // Remove shim entries that resolve to the same version as a real binary.
+    // Deduplicate on macOS/Linux:
+    // - Remove shim entries when a real binary with same version exists
+    // - Remove unversioned (python3) when versioned (python3.12) with same version exists
     if (PlatformService.isMacOS || PlatformService.isLinux) {
       final realEntries = results
           .where((r) => !r.executablePath.contains('/shims/'))
@@ -45,6 +47,15 @@ class PythonCheckerService {
       results.removeWhere((r) =>
           r.executablePath.contains('/shims/') &&
           realEntries.contains(r.version));
+
+      // Keep versioned binary (python3.12), remove unversioned (python3) duplicate
+      final versionedBinVersions = results
+          .where((r) => RegExp(r'/python3\.\d+$').hasMatch(r.executablePath))
+          .map((r) => r.version)
+          .toSet();
+      results.removeWhere((r) =>
+          r.executablePath.endsWith('/python3') &&
+          versionedBinVersions.contains(r.version));
     }
 
     // Windows: remove py.exe launcher entries if real python.exe exists
