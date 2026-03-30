@@ -100,16 +100,20 @@ class DockerInstallService {
     }
   }
 
-  /// Install WSL on Windows
+  /// Install WSL on Windows (requires elevation via UAC)
   static Future<int> _installWsl(void Function(String line) onOutput) async {
     onOutput('[+] WSL not found. Installing WSL...');
-    onOutput('[+] Running: wsl --install --no-distribution');
+    onOutput('[+] Running: wsl --install --no-distribution (Administrator)');
     onOutput('');
 
     try {
+      // Use PowerShell Start-Process -Verb RunAs to elevate
       final process = await Process.start(
-        'wsl',
-        ['--install', '--no-distribution'],
+        'powershell',
+        [
+          '-Command',
+          'Start-Process wsl -ArgumentList "--install","--no-distribution" -Verb RunAs -Wait',
+        ],
         runInShell: true,
       );
 
