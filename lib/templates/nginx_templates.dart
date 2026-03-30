@@ -1,9 +1,16 @@
 class NginxTemplates {
+  /// On Linux: 127.0.0.1 (host network mode).
+  /// On Windows/macOS: host.docker.internal (Docker Desktop VM).
+  static String _proxyHost(bool useHostNetwork) =>
+      useHostNetwork ? '127.0.0.1' : 'host.docker.internal';
+
   static String odooConf({
     required String domain,
     required int httpPort,
     required int longpollingPort,
+    bool useHostNetwork = true,
   }) {
+    final host = _proxyHost(useHostNetwork);
     return '''# Redirect HTTP -> HTTPS
 server {
     listen 80;
@@ -26,7 +33,7 @@ server {
 
     # WebSocket (Odoo 17+)
     location /websocket {
-        proxy_pass http://127.0.0.1:$httpPort;
+        proxy_pass http://$host:$httpPort;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -38,13 +45,13 @@ server {
 
     # Odoo Web
     location / {
-        proxy_pass http://127.0.0.1:$httpPort;
+        proxy_pass http://$host:$httpPort;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
     }
 
     # Odoo Longpolling
     location /longpolling/ {
-        proxy_pass http://127.0.0.1:$longpollingPort;
+        proxy_pass http://$host:$longpollingPort;
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
         proxy_redirect off;
         proxy_http_version 1.1;
@@ -59,7 +66,9 @@ server {
   static String genericConf({
     required String domain,
     required int port,
+    bool useHostNetwork = true,
   }) {
+    final host = _proxyHost(useHostNetwork);
     return '''# Redirect HTTP -> HTTPS
 server {
     listen 80;
@@ -81,7 +90,7 @@ server {
     proxy_set_header X-Forwarded-Proto https;
 
     location / {
-        proxy_pass http://127.0.0.1:$port;
+        proxy_pass http://$host:$port;
         add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
     }
 }
@@ -145,12 +154,15 @@ http {
 ''';
   }
 
-  static String dockerCompose() {
+  static String dockerCompose({bool useHostNetwork = true}) {
+    final networkConfig = useHostNetwork
+        ? '    network_mode: "host"'
+        : '    ports:\n      - "80:80"\n      - "443:443"';
     return '''services:
   nginx:
     image: nginx:stable-alpine
     container_name: nginx
-    network_mode: "host"
+$networkConfig
     volumes:
       - ./certs:/etc/nginx/certs:ro
       - ./conf.d:/etc/nginx/conf.d:ro

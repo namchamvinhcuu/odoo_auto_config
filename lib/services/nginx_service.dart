@@ -161,6 +161,9 @@ class NginxService {
     }
     onOutput('[+] SSL certificates generated');
 
+    // Linux uses host network; Windows/macOS use port mapping + host.docker.internal
+    final useHostNetwork = Platform.isLinux;
+
     // Write nginx.conf
     onOutput('');
     onOutput('[+] Writing nginx.conf...');
@@ -172,7 +175,8 @@ class NginxService {
 
     // Write docker-compose.yml
     onOutput('[+] Writing docker-compose.yml...');
-    final dockerCompose = NginxTemplates.dockerCompose();
+    final dockerCompose =
+        NginxTemplates.dockerCompose(useHostNetwork: useHostNetwork);
     await File(p.join(projectDir, 'docker-compose.yml'))
         .writeAsString(dockerCompose);
 
@@ -425,6 +429,7 @@ class NginxService {
       domain: domain,
       httpPort: httpPort,
       longpollingPort: longpollingPort,
+      useHostNetwork: Platform.isLinux,
     );
 
     await _writeConf(confDir, getConfFileName(subdomain), content);
@@ -449,6 +454,7 @@ class NginxService {
     final content = NginxTemplates.genericConf(
       domain: domain,
       port: port,
+      useHostNetwork: Platform.isLinux,
     );
 
     await _writeConf(confDir, getConfFileName(subdomain), content);
@@ -530,11 +536,19 @@ class NginxService {
         'echo "$entry" >> /etc/hosts',
       ]);
     } else if (Platform.isWindows) {
-      final hostsPath = r'C:\Windows\System32\drivers\etc\hosts';
-      await CommandRunner.run('powershell', [
-        '-Command',
-        'Start-Process powershell -Verb RunAs -Wait -ArgumentList \'-Command\', \'Add-Content -Path "$hostsPath" -Value "$entry"\'',
-      ]);
+      final tempDir = Platform.environment['TEMP'] ?? r'C:\Windows\Temp';
+      final script = File(p.join(tempDir, 'odoo_hosts_add.ps1'));
+      await script.writeAsString(
+        'Add-Content -Path "C:\\Windows\\System32\\drivers\\etc\\hosts" -Value "$entry" -Encoding UTF8',
+      );
+      try {
+        await CommandRunner.run('powershell', [
+          '-Command',
+          'Start-Process powershell -Verb RunAs -Wait -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${script.path}"',
+        ]);
+      } finally {
+        try { await script.delete(); } catch (_) {}
+      }
     }
   }
 
@@ -551,12 +565,20 @@ class NginxService {
         'sed -i \'/$domain/d\' /etc/hosts',
       ]);
     } else if (Platform.isWindows) {
-      final hostsPath = r'C:\Windows\System32\drivers\etc\hosts';
-      final ps = '(Get-Content \\"$hostsPath\\") | Where-Object { \$_ -notmatch \\"$domain\\" } | Set-Content \\"$hostsPath\\"';
-      await CommandRunner.run('powershell', [
-        '-Command',
-        "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-Command', '$ps'",
-      ]);
+      final tempDir = Platform.environment['TEMP'] ?? r'C:\Windows\Temp';
+      final script = File(p.join(tempDir, 'odoo_hosts_remove.ps1'));
+      const hp = r'C:\Windows\System32\drivers\etc\hosts';
+      await script.writeAsString(
+        '(Get-Content "$hp") | Where-Object { \$_ -notmatch "$domain" } | Set-Content "$hp" -Encoding UTF8',
+      );
+      try {
+        await CommandRunner.run('powershell', [
+          '-Command',
+          'Start-Process powershell -Verb RunAs -Wait -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${script.path}"',
+        ]);
+      } finally {
+        try { await script.delete(); } catch (_) {}
+      }
     }
   }
 }
