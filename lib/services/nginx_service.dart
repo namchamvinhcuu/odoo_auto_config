@@ -161,8 +161,8 @@ class NginxService {
     }
     onOutput('[+] SSL certificates generated');
 
-    // Linux uses host network; Windows/macOS use port mapping + host.docker.internal
-    final useHostNetwork = Platform.isLinux;
+    // Linux/macOS use host network; Windows uses port mapping + host.docker.internal
+    final useHostNetwork = !Platform.isWindows;
 
     // Write nginx.conf
     onOutput('');
@@ -429,7 +429,7 @@ class NginxService {
       domain: domain,
       httpPort: httpPort,
       longpollingPort: longpollingPort,
-      useHostNetwork: Platform.isLinux,
+      useHostNetwork: !Platform.isWindows,
     );
 
     await _writeConf(confDir, getConfFileName(subdomain), content);
@@ -454,7 +454,7 @@ class NginxService {
     final content = NginxTemplates.genericConf(
       domain: domain,
       port: port,
-      useHostNetwork: Platform.isLinux,
+      useHostNetwork: !Platform.isWindows,
     );
 
     await _writeConf(confDir, getConfFileName(subdomain), content);
