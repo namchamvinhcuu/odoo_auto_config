@@ -456,6 +456,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           context.l10n.projectLpPort(proj.longpollingPort)),
                       visualDensity: VisualDensity.compact,
                     ),
+                    if (proj.hasDb) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      Chip(
+                        label: Text(proj.dbName!),
+                        avatar: const Icon(Icons.storage,
+                            size: AppIconSize.md),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
                     if (proj.description.isNotEmpty) ...[
                       const SizedBox(width: AppSpacing.xs),
                       Flexible(
@@ -489,6 +498,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         color: proj.favourite ? Colors.amber : null,
                       ),
                       tooltip: proj.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                    ),
+                    IconButton(
+                      onPressed: () => _showProjectInfo(proj),
+                      icon: const Icon(Icons.info_outline),
+                      tooltip: context.l10n.projectInfo,
                     ),
                     if (exists) ...[
                       IconButton(
@@ -660,11 +674,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       ),
                       const Spacer(),
                       // Quick actions
-                      if (exists)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          spacing: AppSpacing.lg,
-                          children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: AppSpacing.lg,
+                        children: [
+                          _gridBtn(
+                            icon: Icons.info_outline,
+                            tooltip: context.l10n.projectInfo,
+                            onPressed: () => _showProjectInfo(proj),
+                            iconSize: btnSize,
+                            boxSize: btnBox,
+                          ),
+                          if (exists) ...[
                             _gridBtn(
                               icon: Icons.code,
                               tooltip: context.l10n.openInVscode,
@@ -680,7 +701,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               boxSize: btnBox,
                             ),
                           ],
-                        ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -826,12 +848,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void _showProjectInfo(ProjectInfo proj) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
-    final domain = proj.hasNginx ? '${proj.nginxSubdomain}$suffix' : null;
+    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+    final domain = proj.hasNginx ? '${proj.nginxSubdomain}$dotSuffix' : null;
 
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (ctx) => _ProjectInfoDialog(project: proj, domain: domain),
+      builder: (ctx) => _ProjectInfoDialog(
+        project: proj,
+        domain: domain,
+        onDbChanged: (dbName) async {
+          final updated = proj.copyWith(dbName: () => dbName);
+          await StorageService.addProject(updated.toJson());
+          _load();
+        },
+      ),
     );
   }
 
@@ -1188,8 +1219,13 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
 class _ProjectInfoDialog extends StatefulWidget {
   final ProjectInfo project;
   final String? domain;
+  final void Function(String dbName) onDbChanged;
 
-  const _ProjectInfoDialog({required this.project, this.domain});
+  const _ProjectInfoDialog({
+    required this.project,
+    this.domain,
+    required this.onDbChanged,
+  });
 
   @override
   State<_ProjectInfoDialog> createState() => _ProjectInfoDialogState();
@@ -1197,14 +1233,11 @@ class _ProjectInfoDialog extends StatefulWidget {
 
 class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
   final _dbNameController = TextEditingController();
-  final _adminPasswordController = TextEditingController(text: 'admin');
-  bool _demoData = false;
-  String _language = 'en_US';
-  bool _creating = false;
-  final List<String> _logLines = [];
+  List<String>? _databases;
   String? _pythonPath;
   String? _odooBinPath;
   String? _confPath;
+  String _dbUser = 'odoo';
 
   @override
   void initState() {
@@ -1213,25 +1246,31 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9_]'), '_');
     _detectPaths();
+    _loadDatabases();
   }
 
   @override
   void dispose() {
     _dbNameController.dispose();
-    _adminPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _detectPaths() async {
     final projPath = widget.project.path;
 
-    // Try to find odoo.conf
+    // Try to find odoo.conf and parse DB settings
     for (final candidate in [
       p.join(projPath, 'odoo.conf'),
       p.join(projPath, 'config', 'odoo.conf'),
     ]) {
       if (await File(candidate).exists()) {
         _confPath = candidate;
+        // Parse db_user, db_host, db_port from conf
+        try {
+          final content = await File(candidate).readAsString();
+          final userMatch = RegExp(r'^db_user\s*=\s*(.+)$', multiLine: true).firstMatch(content);
+          if (userMatch != null) _dbUser = userMatch.group(1)!.trim();
+        } catch (_) {}
         break;
       }
     }
@@ -1269,6 +1308,38 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _loadDatabases() async {
+    try {
+      final servers = await PostgresService.detectServers();
+      final dockerServer = servers
+          .where((s) =>
+              s.source == PgServerSource.docker &&
+              s.containerRunning == true &&
+              s.containerName != null)
+          .toList();
+      if (dockerServer.isEmpty) return;
+
+      final container = dockerServer.first.containerName!;
+      final docker = await PlatformService.dockerPath;
+      final result = await Process.run(
+        docker,
+        ['exec', container, 'psql', '-U', _dbUser, '-d', 'postgres', '-t', '-A', '-c',
+         "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres') ORDER BY datname;"],
+        runInShell: true,
+      );
+      if (result.exitCode == 0 && mounted) {
+        setState(() {
+          _databases = result.stdout
+              .toString()
+              .split('\n')
+              .map((l) => l.trim())
+              .where((l) => l.isNotEmpty)
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<String?> _findFile(List<String> candidates) async {
     for (final path in candidates) {
       if (await File(path).exists()) return path;
@@ -1276,13 +1347,237 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     return null;
   }
 
-  bool get _canCreate =>
-      !_creating &&
-      _dbNameController.text.trim().isNotEmpty &&
-      _adminPasswordController.text.trim().isNotEmpty;
 
-  Future<void> _createDatabase() async {
-    final dbName = _dbNameController.text.trim();
+  void _showCreateDbDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _CreateDbDialog(
+        defaultName: _dbNameController.text,
+        pythonPath: _pythonPath,
+        odooBinPath: _odooBinPath,
+        confPath: _confPath,
+        dbUser: _dbUser,
+        projectPath: widget.project.path,
+        onCreated: (dbName) {
+          setState(() => _dbNameController.text = dbName);
+          widget.onDbChanged(dbName);
+        },
+      ),
+    );
+  }
+
+  Future<void> _selectDatabase() async {
+    // Load databases if not yet loaded
+    if (_databases == null || _databases!.isEmpty) {
+      await _loadDatabases();
+    }
+    if (_databases == null || _databases!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.noPostgresContainer)),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select Database'),
+        children: _databases!.map((db) => SimpleDialogOption(
+          onPressed: () => Navigator.pop(ctx, db),
+          child: Row(
+            children: [
+              const Icon(Icons.storage, size: 20),
+              const SizedBox(width: AppSpacing.sm),
+              Text(db, style: const TextStyle(fontFamily: 'monospace')),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+    if (selected == null || !mounted) return;
+
+    setState(() => _dbNameController.text = selected);
+    await _updateDbFilter(selected);
+    widget.onDbChanged(selected);
+  }
+
+  Future<void> _updateDbFilter(String dbName) async {
+    if (_confPath == null) return;
+    try {
+      final file = File(_confPath!);
+      var content = await file.readAsString();
+      final regex = RegExp(r'^dbfilter\s*=.*$', multiLine: true);
+      if (regex.hasMatch(content)) {
+        content = content.replaceFirst(regex, 'dbfilter = ^$dbName.*\$');
+      }
+      final dbNameRegex = RegExp(r'^db_name\s*=.*$', multiLine: true);
+      if (dbNameRegex.hasMatch(content)) {
+        content = content.replaceFirst(dbNameRegex, 'db_name = $dbName');
+      }
+      await file.writeAsString(content);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final proj = widget.project;
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.info_outline),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(proj.name)),
+        ],
+      ),
+      content: SizedBox(
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Info section
+              _infoRow(Icons.folder, context.l10n.projectDirectory, proj.path),
+              const SizedBox(height: AppSpacing.md),
+              _infoRow(Icons.lan, 'HTTP Port', '${proj.httpPort}'),
+              const SizedBox(height: AppSpacing.sm),
+              _infoRow(Icons.lan, 'Longpolling Port', '${proj.longpollingPort}'),
+              const SizedBox(height: AppSpacing.md),
+              _infoRow(
+                Icons.dns,
+                context.l10n.projectInfoDomain,
+                widget.domain != null
+                    ? 'https://${widget.domain}'
+                    : context.l10n.projectInfoNginxNotSetup,
+                valueColor: widget.domain != null ? Colors.green : Colors.orange,
+              ),
+              _infoRow(
+                Icons.storage,
+                'Database',
+                proj.hasDb ? proj.dbName! : '—',
+                valueColor: proj.hasDb ? null : Colors.grey,
+              ),
+              if (proj.description.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                _infoRow(Icons.description, context.l10n.descriptionOptional,
+                    proj.description),
+              ],
+
+              // Database actions
+              const SizedBox(height: AppSpacing.xxl),
+              const Divider(),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _showCreateDbDialog(),
+                      icon: const Icon(Icons.add),
+                      label: Text(context.l10n.createDatabase),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: _selectDatabase,
+                      icon: const Icon(Icons.list),
+                      label: Text(context.l10n.import_),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey),
+          const SizedBox(width: AppSpacing.sm),
+          SizedBox(
+            width: 140,
+            child: Text(label,
+                style: TextStyle(
+                    color: Colors.grey.shade600, fontSize: AppFontSize.md)),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: AppFontSize.md,
+                color: valueColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Create Database Dialog ──
+
+class _CreateDbDialog extends StatefulWidget {
+  final String defaultName;
+  final String? pythonPath;
+  final String? odooBinPath;
+  final String? confPath;
+  final String dbUser;
+  final String projectPath;
+  final void Function(String dbName) onCreated;
+
+  const _CreateDbDialog({
+    required this.defaultName,
+    this.pythonPath,
+    this.odooBinPath,
+    this.confPath,
+    required this.dbUser,
+    required this.projectPath,
+    required this.onCreated,
+  });
+
+  @override
+  State<_CreateDbDialog> createState() => _CreateDbDialogState();
+}
+
+class _CreateDbDialogState extends State<_CreateDbDialog> {
+  late final TextEditingController _nameController;
+  String _language = 'en_US';
+  bool _demoData = false;
+  bool _creating = false;
+  final List<String> _logLines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.defaultName);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _create() async {
+    final dbName = _nameController.text.trim();
     if (dbName.isEmpty) return;
 
     setState(() {
@@ -1317,13 +1612,12 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
 
       final createResult = await Process.run(
         docker,
-        ['exec', container, 'createdb', '-U', 'odoo', dbName],
+        ['exec', container, 'createdb', '-U', widget.dbUser, '--maintenance-db=postgres', dbName],
         runInShell: true,
       );
 
       if (createResult.exitCode != 0) {
         final err = createResult.stderr.toString().trim();
-        // If database already exists, continue with init
         if (!err.contains('already exists')) {
           log('[ERROR] $err');
           setState(() => _creating = false);
@@ -1334,38 +1628,35 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
         log('[+] Database "$dbName" created');
       }
 
-      // Step 2: Initialize Odoo database
-      if (_pythonPath == null || _odooBinPath == null || _confPath == null) {
+      // Step 2: Initialize Odoo
+      if (widget.pythonPath == null || widget.odooBinPath == null || widget.confPath == null) {
         log('[+] Database created. Start Odoo to initialize modules.');
-        log('[WARN] Could not auto-detect python/odoo-bin paths.');
-        if (_pythonPath == null) log('[WARN] Python not found in project');
-        if (_odooBinPath == null) log('[WARN] odoo-bin not found in project');
-        if (_confPath == null) log('[WARN] odoo.conf not found in project');
+        if (widget.pythonPath == null) log('[WARN] Python not found');
+        if (widget.odooBinPath == null) log('[WARN] odoo-bin not found');
+        if (widget.confPath == null) log('[WARN] odoo.conf not found');
+        widget.onCreated(dbName);
         setState(() => _creating = false);
         return;
       }
 
       log('');
       log('[+] Initializing Odoo database (this may take a few minutes)...');
-      log('[+] Python: $_pythonPath');
-      log('[+] odoo-bin: $_odooBinPath');
 
       final args = [
-        _odooBinPath!,
-        '-c', _confPath!,
+        widget.odooBinPath!,
+        '-c', widget.confPath!,
         '-d', dbName,
         '-i', 'base',
         '--stop-after-init',
-        '-l', _language,
-        '--admin-password', _adminPasswordController.text.trim(),
+        '--load-language=$_language',
         if (!_demoData) '--without-demo=all',
       ];
 
       final process = await Process.start(
-        _pythonPath!,
+        widget.pythonPath!,
         args,
         runInShell: true,
-        workingDirectory: widget.project.path,
+        workingDirectory: widget.projectPath,
       );
 
       process.stdout.transform(const SystemEncoding().decoder).listen((data) {
@@ -1383,10 +1674,26 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
 
       if (mounted) {
         if (exitCode == 0) {
-          // Update dbfilter in odoo.conf
-          await _updateDbFilter(dbName, log);
+          // Update odoo.conf
+          if (widget.confPath != null) {
+            try {
+              final file = File(widget.confPath!);
+              var content = await file.readAsString();
+              final dbFilterRegex = RegExp(r'^dbfilter\s*=.*$', multiLine: true);
+              if (dbFilterRegex.hasMatch(content)) {
+                content = content.replaceFirst(dbFilterRegex, 'dbfilter = ^$dbName.*\$');
+              }
+              final dbNameRegex = RegExp(r'^db_name\s*=.*$', multiLine: true);
+              if (dbNameRegex.hasMatch(content)) {
+                content = content.replaceFirst(dbNameRegex, 'db_name = $dbName');
+              }
+              await file.writeAsString(content);
+              log('[+] Updated odoo.conf');
+            } catch (_) {}
+          }
           log('');
           if (mounted) log('[+] ${context.l10n.dbCreated(dbName)}');
+          widget.onCreated(dbName);
         } else {
           log('');
           log('[ERROR] Odoo init failed with exit code $exitCode');
@@ -1399,93 +1706,22 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     }
   }
 
-  Future<void> _updateDbFilter(String dbName, void Function(String) log) async {
-    if (_confPath == null) return;
-    try {
-      final file = File(_confPath!);
-      var content = await file.readAsString();
-      // Replace dbfilter line: ^%d$ or any existing value
-      final regex = RegExp(r'^dbfilter\s*=.*$', multiLine: true);
-      if (regex.hasMatch(content)) {
-        content = content.replaceFirst(regex, 'dbfilter = ^$dbName.*\$');
-      }
-      // Also set db_name
-      final dbNameRegex = RegExp(r'^db_name\s*=.*$', multiLine: true);
-      if (dbNameRegex.hasMatch(content)) {
-        content = content.replaceFirst(dbNameRegex, 'db_name = $dbName');
-      }
-      await file.writeAsString(content);
-      log('[+] Updated odoo.conf: dbfilter = ^$dbName.*\$, db_name = $dbName');
-    } catch (e) {
-      log('[WARN] Could not update odoo.conf: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final proj = widget.project;
-    final theme = Theme.of(context);
-
     return AlertDialog(
-      title: Row(
-        children: [
-          const Icon(Icons.info_outline),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(proj.name)),
-        ],
-      ),
+      title: Text(context.l10n.createDatabase),
       content: SizedBox(
-        width: 560,
+        width: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Info section
-              _infoRow(Icons.folder, context.l10n.projectDirectory, proj.path),
-              const SizedBox(height: AppSpacing.md),
-              _infoRow(Icons.lan, 'HTTP Port', '${proj.httpPort}'),
-              const SizedBox(height: AppSpacing.sm),
-              _infoRow(Icons.lan, 'Longpolling Port', '${proj.longpollingPort}'),
-              const SizedBox(height: AppSpacing.md),
-              _infoRow(
-                Icons.dns,
-                context.l10n.projectInfoDomain,
-                widget.domain != null
-                    ? 'https://${widget.domain}'
-                    : context.l10n.projectInfoNginxNotSetup,
-                valueColor: widget.domain != null ? Colors.green : Colors.orange,
-              ),
-              if (proj.description.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                _infoRow(Icons.description, context.l10n.descriptionOptional,
-                    proj.description),
-              ],
-
-              // Create Database section
-              const SizedBox(height: AppSpacing.xxl),
-              const Divider(),
-              const SizedBox(height: AppSpacing.md),
-              Text(context.l10n.createDatabase,
-                  style: theme.textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.md),
-
               TextField(
-                controller: _dbNameController,
+                controller: _nameController,
                 decoration: InputDecoration(
                   labelText: context.l10n.projectInfoDbName,
                   hintText: context.l10n.projectInfoDbNameHint,
-                  border: const OutlineInputBorder(),
-                  isDense: true,
-                ),
-                enabled: !_creating,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _adminPasswordController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.password,
-                  hintText: 'admin',
                   border: const OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -1522,61 +1758,25 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _canCreate ? _createDatabase : null,
-                  icon: _creating
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.add),
-                  label: Text(_creating
-                      ? context.l10n.creatingDatabase
-                      : context.l10n.createDatabase),
-                ),
-              ),
-
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: 250),
               ],
             ],
           ),
         ),
       ),
       actions: [
-        FilledButton(
+        TextButton(
           onPressed: _creating ? null : () => Navigator.pop(context),
           child: Text(context.l10n.close),
         ),
-      ],
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: Colors.grey),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 130,
-          child: Text(label,
-              style: TextStyle(
-                  color: Colors.grey.shade600, fontSize: AppFontSize.sm)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: AppFontSize.sm,
-              color: valueColor,
-            ),
-          ),
+        FilledButton.icon(
+          onPressed: _creating || _nameController.text.trim().isEmpty ? null : _create,
+          icon: _creating
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.add),
+          label: Text(_creating ? context.l10n.creatingDatabase : context.l10n.createDatabase),
         ),
       ],
     );

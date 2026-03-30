@@ -329,6 +329,10 @@ class NginxService {
     await StorageService.saveSettings(settings);
   }
 
+  /// Ensure domain suffix starts with a dot
+  static String _ensureDot(String suffix) =>
+      suffix.startsWith('.') ? suffix : '.$suffix';
+
   // ── Domain & file helpers ──
 
   static String getDomain(String projectName, String domainSuffix) {
@@ -423,7 +427,7 @@ class NginxService {
     final confDir = nginx['confDir'] as String;
     final suffix = nginx['domainSuffix'] as String;
     final container = nginx['containerName'] as String;
-    final domain = '$subdomain$suffix';
+    final domain = '$subdomain${_ensureDot(suffix)}';
 
     final content = NginxTemplates.odooConf(
       domain: domain,
@@ -449,7 +453,7 @@ class NginxService {
     final confDir = nginx['confDir'] as String;
     final suffix = nginx['domainSuffix'] as String;
     final container = nginx['containerName'] as String;
-    final domain = '$subdomain$suffix';
+    final domain = '$subdomain${_ensureDot(suffix)}';
 
     final content = NginxTemplates.genericConf(
       domain: domain,
@@ -473,7 +477,7 @@ class NginxService {
     final confDir = nginx['confDir'] as String;
     final suffix = nginx['domainSuffix'] as String;
     final container = nginx['containerName'] as String;
-    final domain = '$subdomain$suffix';
+    final domain = '$subdomain${_ensureDot(suffix)}';
 
     await _removeConf(confDir, getConfFileName(subdomain));
     await _removeHostsEntry(domain);

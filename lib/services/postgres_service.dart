@@ -243,19 +243,17 @@ class PostgresService {
           // For running containers: check port mapping
           // For stopped containers: check image name contains postgres
           int? hostPort = _extractHostPort(ports, 5432);
-          if (hostPort == null && !isRunning) {
-            // Stopped container: check image name
-            final image = (json['Image'] ?? '').toString().toLowerCase();
+          final image = (json['Image'] ?? '').toString().toLowerCase();
+          if (hostPort == null) {
+            // No port mapping found: check if image is postgres
             if (!image.contains('postgres')) continue;
-            // Try to get port from container config (inspect)
+            // Try to get port from container inspect
             hostPort = await _getContainerPort(
                 docker, (json['Names'] ?? '').toString());
             hostPort ??= 5432; // default
           }
-          if (hostPort == null) continue;
 
           final containerName = (json['Names'] ?? '').toString();
-          final image = (json['Image'] ?? '').toString();
 
           final isReady =
               isRunning ? await _checkPgReady(hostPort) : false;
@@ -265,7 +263,7 @@ class PostgresService {
             port: hostPort,
             isReady: isReady,
             containerName: containerName,
-            imageName: image,
+            imageName: (json['Image'] ?? '').toString(),
             containerRunning: isRunning,
           ));
         } catch (_) {

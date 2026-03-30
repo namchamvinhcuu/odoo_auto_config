@@ -7,6 +7,7 @@ class ProjectInfo {
   final String createdAt;
   final bool favourite;
   final String? nginxSubdomain;
+  final String? dbName;
 
   const ProjectInfo({
     required this.name,
@@ -17,13 +18,16 @@ class ProjectInfo {
     required this.createdAt,
     this.favourite = false,
     this.nginxSubdomain,
+    this.dbName,
   });
 
   bool get hasNginx => nginxSubdomain != null && nginxSubdomain!.isNotEmpty;
+  bool get hasDb => dbName != null && dbName!.isNotEmpty;
 
   ProjectInfo copyWith({
     bool? favourite,
     String? Function()? nginxSubdomain,
+    String? Function()? dbName,
   }) =>
       ProjectInfo(
         name: name,
@@ -36,6 +40,7 @@ class ProjectInfo {
         nginxSubdomain: nginxSubdomain != null
             ? nginxSubdomain()
             : this.nginxSubdomain,
+        dbName: dbName != null ? dbName() : this.dbName,
       );
 
   Map<String, dynamic> toJson() => {
@@ -47,6 +52,7 @@ class ProjectInfo {
         'createdAt': createdAt,
         'favourite': favourite,
         'nginxSubdomain': nginxSubdomain,
+        'dbName': dbName,
       };
 
   factory ProjectInfo.fromJson(Map<String, dynamic> json) => ProjectInfo(
@@ -58,5 +64,6 @@ class ProjectInfo {
         createdAt: (json['createdAt'] ?? '').toString(),
         favourite: json['favourite'] as bool? ?? false,
         nginxSubdomain: json['nginxSubdomain'] as String?,
+        dbName: json['dbName'] as String?,
       );
 }
