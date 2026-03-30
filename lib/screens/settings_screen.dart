@@ -8,7 +8,6 @@ import 'home_screen.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/python_info.dart';
 import '../services/docker_install_service.dart';
-import '../services/git_service.dart';
 import '../services/locale_service.dart';
 import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
@@ -18,7 +17,6 @@ import '../services/python_install_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/log_output.dart';
 import '../widgets/status_card.dart';
-import '../widgets/vscode_install_dialog.dart';
 import 'venv_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -51,11 +49,6 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _dockerVersion;
   String? _dockerComposeVersion;
 
-  // Environment check
-  bool? _gitInstalled;
-  String? _gitVersion;
-  bool? _vscodeInstalled;
-
   // PostgreSQL
   bool? _pgInstalled;
   String? _pgVersion;
@@ -66,7 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 6,
+      length: 5,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
@@ -138,9 +131,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       final pgVersion =
           pgInstalled ? await PostgresService.getVersion() : null;
       final pgTools = await PostgresService.detectClientTools();
-      final gInstalled = await GitService.isInstalled();
-      final gVersion = gInstalled ? await GitService.getVersion() : null;
-      final vsInstalled = await PlatformService.isVscodeInstalled();
       if (mounted) {
         setState(() {
           _pythonResults = results;
@@ -151,9 +141,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           _pgInstalled = pgInstalled;
           _pgVersion = pgVersion;
           _pgTools = pgTools;
-          _gitInstalled = gInstalled;
-          _gitVersion = gVersion;
-          _vscodeInstalled = vsInstalled;
           _pythonLoading = false;
         });
         // Update banner in HomeScreen
@@ -301,7 +288,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         TabBar(
           controller: _tabController,
           tabs: [
-            Tab(icon: const Icon(Icons.checklist), text: context.l10n.envSetupTitle),
             Tab(icon: const Icon(Icons.palette), text: context.l10n.themeMode),
             Tab(icon: const Icon(Icons.sailing), text: 'Docker'),
             Tab(icon: const Icon(Icons.code), text: 'Python'),
@@ -313,7 +299,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildEnvironmentTab(),
               _buildThemeTab(),
               _buildDockerTab(),
               _buildPythonTab(),
@@ -323,237 +308,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         ),
       ],
-    );
-  }
-
-  // ── Tab: Environment ──
-
-  Widget _buildEnvironmentTab() {
-    final items = <_EnvItem>[
-      _EnvItem(
-        icon: Icons.merge_type,
-        name: context.l10n.envGit,
-        description: context.l10n.envGitDesc,
-        installed: _gitInstalled,
-        detail: _gitVersion,
-        required_: true,
-        onInstall: () => _showInstallDialog(
-          title: context.l10n.gitInstallTitle,
-          subtitle: context.l10n.gitInstallSubtitle,
-          install: GitService.install,
-        ),
-      ),
-      _EnvItem(
-        icon: Icons.sailing,
-        name: context.l10n.envDocker,
-        description: context.l10n.envDockerDesc,
-        installed: _dockerInstalled,
-        detail: _dockerVersion,
-        extraChip: _dockerInstalled == true
-            ? (
-                label: _dockerRunning == true
-                    ? context.l10n.dockerRunning
-                    : context.l10n.dockerStopped,
-                ok: _dockerRunning == true
-              )
-            : null,
-        required_: true,
-        onInstall: () => _showDockerInstallDialog(),
-      ),
-      _EnvItem(
-        icon: Icons.code,
-        name: context.l10n.envPython,
-        description: context.l10n.envPythonDesc,
-        installed: _pythonResults?.isNotEmpty,
-        detail: _pythonResults != null && _pythonResults!.isNotEmpty
-            ? context.l10n.envPythonVersions(_pythonResults!.length)
-            : null,
-        required_: true,
-        onInstall: () => _showPythonInstallDialog(),
-      ),
-      _EnvItem(
-        icon: Icons.dns,
-        name: context.l10n.envNginx,
-        description: context.l10n.envNginxDesc,
-        installed: _hasNginxConfig ? true : false,
-        customLabel: _hasNginxConfig
-            ? context.l10n.envNginxConfigured
-            : context.l10n.envNginxNotConfigured,
-        required_: false,
-        onInstall: () => _tabController.animateTo(5), // Nginx tab
-      ),
-      _EnvItem(
-        icon: Icons.terminal,
-        name: context.l10n.envVscode,
-        description: context.l10n.envVscodeDesc,
-        installed: _vscodeInstalled,
-        required_: false,
-        onInstall: () => showDialog(
-          context: context,
-          builder: (_) => const VscodeInstallDialog(),
-        ),
-      ),
-    ];
-
-    final checkedCount =
-        items.where((i) => i.installed != null).length;
-    final issueCount = items.where((i) => i.installed == false && i.required_).length;
-
-    return SingleChildScrollView(
-      padding: AppSpacing.screenPadding,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(context.l10n.envSetupTitle,
-                  style: Theme.of(context).textTheme.titleMedium),
-              const Spacer(),
-              IconButton.filled(
-                onPressed: _pythonLoading ? null : _scanEnvironment,
-                icon: const Icon(Icons.refresh),
-                tooltip: context.l10n.envCheckAll,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(context.l10n.envSetupSubtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.grey)),
-          const SizedBox(height: AppSpacing.lg),
-
-          if (_pythonLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xxl),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else ...[
-            ...items.map((item) => _buildEnvCard(item)),
-            const SizedBox(height: AppSpacing.lg),
-            if (checkedCount == items.length)
-              Card(
-                color: issueCount == 0
-                    ? Colors.green.withValues(alpha: 0.1)
-                    : Colors.orange.withValues(alpha: 0.1),
-                child: Padding(
-                  padding: AppSpacing.cardPadding,
-                  child: Row(
-                    children: [
-                      Icon(
-                        issueCount == 0 ? Icons.check_circle : Icons.warning,
-                        color: issueCount == 0 ? Colors.green : Colors.orange,
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        issueCount == 0
-                            ? context.l10n.envAllGood
-                            : context.l10n.envSomeIssues(issueCount),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: issueCount == 0 ? Colors.green : Colors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnvCard(_EnvItem item) {
-    final isOk = item.installed == true;
-    final isWarning = item.installed == false && !item.required_;
-    final isError = item.installed == false && item.required_;
-    final isLoading = item.installed == null;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Padding(
-        padding: AppSpacing.cardPadding,
-        child: Row(
-          children: [
-            Icon(item.icon,
-                color: isOk
-                    ? Colors.green
-                    : isError
-                        ? Colors.red
-                        : isWarning
-                            ? Colors.orange
-                            : Colors.grey,
-                size: AppIconSize.xl),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name,
-                      style: const TextStyle(
-                          fontSize: AppFontSize.lg,
-                          fontWeight: FontWeight.bold)),
-                  Text(item.description,
-                      style: TextStyle(
-                          fontSize: AppFontSize.sm,
-                          color: Colors.grey.shade600)),
-                  if (item.detail != null)
-                    Text(item.detail!,
-                        style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: AppFontSize.sm,
-                            color: Colors.grey.shade600)),
-                ],
-              ),
-            ),
-            if (isLoading)
-              const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-            else ...[
-              _envChip(
-                item.customLabel ??
-                    (isOk ? context.l10n.installed : context.l10n.notInstalled),
-                isOk,
-              ),
-              if (item.extraChip != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                _envChip(item.extraChip!.label, item.extraChip!.ok),
-              ],
-              if (!isOk) ...[
-                const SizedBox(width: AppSpacing.sm),
-                FilledButton.tonalIcon(
-                  onPressed: item.onInstall,
-                  icon: Icon(item.required_ ? Icons.download : Icons.settings),
-                  label: Text(
-                      item.required_ ? context.l10n.install : context.l10n.edit),
-                ),
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showInstallDialog({
-    required String title,
-    required String subtitle,
-    required Future<int> Function(void Function(String)) install,
-  }) {
-    showDialog(
-      context: context,
-      builder: (ctx) => _GenericInstallDialog(
-        title: title,
-        subtitle: subtitle,
-        install: install,
-        onInstalled: () => _scanEnvironment(),
-      ),
     );
   }
 
@@ -2916,115 +2670,6 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.check),
             label: Text(context.l10n.close),
-          ),
-      ],
-    );
-  }
-}
-
-// ── Environment helpers ──
-
-class _EnvItem {
-  final IconData icon;
-  final String name;
-  final String description;
-  final bool? installed;
-  final String? detail;
-  final String? customLabel;
-  final ({String label, bool ok})? extraChip;
-  final bool required_;
-  final VoidCallback onInstall;
-
-  const _EnvItem({
-    required this.icon,
-    required this.name,
-    required this.description,
-    required this.installed,
-    this.detail,
-    this.customLabel,
-    this.extraChip,
-    required this.required_,
-    required this.onInstall,
-  });
-}
-
-class _GenericInstallDialog extends StatefulWidget {
-  final String title;
-  final String subtitle;
-  final Future<int> Function(void Function(String)) install;
-  final VoidCallback onInstalled;
-
-  const _GenericInstallDialog({
-    required this.title,
-    required this.subtitle,
-    required this.install,
-    required this.onInstalled,
-  });
-
-  @override
-  State<_GenericInstallDialog> createState() => _GenericInstallDialogState();
-}
-
-class _GenericInstallDialogState extends State<_GenericInstallDialog> {
-  bool _installing = false;
-  bool _installed = false;
-  final List<String> _logLines = [];
-
-  Future<void> _install() async {
-    setState(() {
-      _installing = true;
-      _logLines.clear();
-    });
-    final exitCode = await widget.install((line) {
-      if (mounted) setState(() => _logLines.add(line));
-    });
-    if (mounted) {
-      setState(() {
-        _installing = false;
-        _installed = exitCode == 0;
-      });
-      if (exitCode == 0) widget.onInstalled();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.subtitle,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey)),
-            if (_logLines.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.lg),
-              LogOutput(lines: _logLines, height: 200),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _installing ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-        if (!_installed)
-          FilledButton.icon(
-            onPressed: _installing ? null : _install,
-            icon: _installing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download),
-            label: Text(
-                _installing ? context.l10n.installing : context.l10n.install),
           ),
       ],
     );

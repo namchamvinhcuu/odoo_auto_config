@@ -1253,4 +1253,17 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get gitInstallMacNote =>
       'macOS에서는 Xcode Command Line Tools 설치 프로그램이 열립니다.';
+
+  @override
+  String get envAutoSetup => '자동 설정';
+
+  @override
+  String get envRestartRequired => '재시작 필요';
+
+  @override
+  String get envRestartMessage =>
+      'WSL이 설치되었습니다. 컴퓨터를 재시작한 후 자동 설정을 다시 실행하여 Docker 설치를 계속하세요.';
+
+  @override
+  String get envRestartNow => '지금 재시작';
 }

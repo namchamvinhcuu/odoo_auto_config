@@ -430,5 +430,9 @@
   "notInstalled": "Chưa cài đặt",
   "gitInstallTitle": "Cài đặt Git",
   "gitInstallSubtitle": "Git cần thiết để clone mã nguồn Odoo.",
-  "gitInstallMacNote": "Trên macOS, thao tác này sẽ mở trình cài đặt Xcode Command Line Tools."
+  "gitInstallMacNote": "Trên macOS, thao tác này sẽ mở trình cài đặt Xcode Command Line Tools.",
+  "envAutoSetup": "Cài đặt tự động",
+  "envRestartRequired": "Cần khởi động lại",
+  "envRestartMessage": "WSL đã được cài đặt. Vui lòng khởi động lại máy tính, sau đó chạy Cài đặt tự động lần nữa để tiếp tục cài Docker.",
+  "envRestartNow": "Khởi động lại ngay"
 }

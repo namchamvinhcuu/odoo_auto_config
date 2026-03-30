@@ -451,5 +451,9 @@
   "notInstalled": "Not installed",
   "gitInstallTitle": "Install Git",
   "gitInstallSubtitle": "Git is required for cloning Odoo source code.",
-  "gitInstallMacNote": "On macOS, this will trigger the Xcode Command Line Tools installer."
+  "gitInstallMacNote": "On macOS, this will trigger the Xcode Command Line Tools installer.",
+  "envAutoSetup": "Auto Setup",
+  "envRestartRequired": "Restart Required",
+  "envRestartMessage": "WSL has been installed. Please restart your computer, then run Auto Setup again to continue installing Docker.",
+  "envRestartNow": "Restart Now"
 }

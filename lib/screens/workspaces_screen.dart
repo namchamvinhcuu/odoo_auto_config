@@ -142,7 +142,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final confDir = (nginx['confDir'] ?? '').toString();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (confDir.isEmpty || suffix.isEmpty) {
-      HomeScreen.navigateToSettings(settingsTab: 5);
+      HomeScreen.navigateToSettings(settingsTab: 4);
       return;
     }
 
@@ -184,7 +184,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
-      HomeScreen.navigateToSettings(settingsTab: 5);
+      HomeScreen.navigateToSettings(settingsTab: 4);
       return;
     }
 

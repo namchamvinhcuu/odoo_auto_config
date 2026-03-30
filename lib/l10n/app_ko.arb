@@ -430,5 +430,9 @@
   "notInstalled": "설치되지 않음",
   "gitInstallTitle": "Git 설치",
   "gitInstallSubtitle": "Odoo 소스 코드를 클론하려면 Git이 필요합니다.",
-  "gitInstallMacNote": "macOS에서는 Xcode Command Line Tools 설치 프로그램이 열립니다."
+  "gitInstallMacNote": "macOS에서는 Xcode Command Line Tools 설치 프로그램이 열립니다.",
+  "envAutoSetup": "자동 설정",
+  "envRestartRequired": "재시작 필요",
+  "envRestartMessage": "WSL이 설치되었습니다. 컴퓨터를 재시작한 후 자동 설정을 다시 실행하여 Docker 설치를 계속하세요.",
+  "envRestartNow": "지금 재시작"
 }

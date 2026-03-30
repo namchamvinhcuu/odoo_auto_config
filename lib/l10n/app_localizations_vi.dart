@@ -1277,4 +1277,17 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get gitInstallMacNote =>
       'Trên macOS, thao tác này sẽ mở trình cài đặt Xcode Command Line Tools.';
+
+  @override
+  String get envAutoSetup => 'Cài đặt tự động';
+
+  @override
+  String get envRestartRequired => 'Cần khởi động lại';
+
+  @override
+  String get envRestartMessage =>
+      'WSL đã được cài đặt. Vui lòng khởi động lại máy tính, sau đó chạy Cài đặt tự động lần nữa để tiếp tục cài Docker.';
+
+  @override
+  String get envRestartNow => 'Khởi động lại ngay';
 }

@@ -8,6 +8,7 @@ import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import 'workspaces_screen.dart';
+import 'environment_screen.dart';
 import 'projects_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
@@ -27,7 +28,7 @@ class HomeScreen extends StatefulWidget {
   /// Navigate to Settings tab, optionally to a specific sub-tab
   static void navigateToSettings({int settingsTab = 0}) {
     SettingsScreen.initialTab = settingsTab;
-    _HomeScreenState._instance?._goToTab(3);
+    _HomeScreenState._instance?._goToTab(4);
   }
 
   /// Re-check Docker status and update banner
@@ -131,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ProjectsScreen(),
     WorkspacesScreen(),
     ProfileScreen(),
+    EnvironmentScreen(),
     SettingsScreen(),
   ];
 
@@ -209,8 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    // Navigate to Settings > Environment tab
-                    HomeScreen.navigateToSettings(settingsTab: 0);
+                    // Navigate to Environment screen
+                    _goToTab(3);
                   },
                   child: Text(context.l10n.dockerGoToSettings),
                 ),
@@ -284,6 +286,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.person),
                 selectedIcon: const Icon(Icons.person, color: Colors.blue),
                 label: Text(context.l10n.navProfiles),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.checklist),
+                selectedIcon:
+                    const Icon(Icons.checklist, color: Colors.blue),
+                label: Text(context.l10n.envSetupTitle),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.settings),

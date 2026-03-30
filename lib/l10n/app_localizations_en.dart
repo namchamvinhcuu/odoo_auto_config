@@ -1283,4 +1283,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gitInstallMacNote =>
       'On macOS, this will trigger the Xcode Command Line Tools installer.';
+
+  @override
+  String get envAutoSetup => 'Auto Setup';
+
+  @override
+  String get envRestartRequired => 'Restart Required';
+
+  @override
+  String get envRestartMessage =>
+      'WSL has been installed. Please restart your computer, then run Auto Setup again to continue installing Docker.';
+
+  @override
+  String get envRestartNow => 'Restart Now';
 }

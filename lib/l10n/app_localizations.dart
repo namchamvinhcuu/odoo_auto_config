@@ -2379,6 +2379,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On macOS, this will trigger the Xcode Command Line Tools installer.'**
   String get gitInstallMacNote;
+
+  /// No description provided for @envAutoSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Setup'**
+  String get envAutoSetup;
+
+  /// No description provided for @envRestartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Required'**
+  String get envRestartRequired;
+
+  /// No description provided for @envRestartMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'WSL has been installed. Please restart your computer, then run Auto Setup again to continue installing Docker.'**
+  String get envRestartMessage;
+
+  /// No description provided for @envRestartNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Now'**
+  String get envRestartNow;
 }
 
 class _AppLocalizationsDelegate
