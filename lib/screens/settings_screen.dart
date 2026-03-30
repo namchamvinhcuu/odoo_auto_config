@@ -2308,6 +2308,7 @@ class _DockerInstallDialog extends StatefulWidget {
 class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   bool _installing = false;
   bool _installed = false;
+  bool _needsRestart = false;
   bool? _pmAvailable;
   final List<String> _logLines = [];
 
@@ -2331,12 +2332,19 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
       if (mounted) setState(() => _logLines.add(line));
     });
     if (mounted) {
+      // Check if WSL was just installed (needs restart before Docker)
+      final wslJustInstalled = _logLines.any((l) => l.contains('RESTART'));
       setState(() {
         _installing = false;
-        _installed = exitCode == 0;
+        _needsRestart = wslJustInstalled;
+        _installed = exitCode == 0 && !wslJustInstalled;
       });
-      if (exitCode == 0) widget.onInstalled();
+      if (_installed) widget.onInstalled();
     }
+  }
+
+  Future<void> _restart() async {
+    await Process.run('shutdown', ['/r', '/t', '5'], runInShell: true);
   }
 
   String _pmNotFound(BuildContext context) {
@@ -2388,31 +2396,72 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
         ),
       ),
       actions: [
-        if (!_installed)
-          TextButton(
-              onPressed: _installing ? null : () => Navigator.pop(context),
-              child: Text(context.l10n.close)),
-        if (_pmAvailable == true)
-          _installed
-              ? FilledButton.icon(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.check),
-                  label: Text(context.l10n.close),
-                )
-              : FilledButton.icon(
-                  onPressed: _installing ? null : _install,
-                  icon: _installing
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.download),
-                  label: Text(_installing
-                      ? context.l10n.installing
-                      : context.l10n.dockerInstall),
-                ),
+        TextButton(
+            onPressed: _installing ? null : () => Navigator.pop(context),
+            child: Text(context.l10n.close)),
+        if (_needsRestart)
+          FilledButton.icon(
+            onPressed: _restart,
+            icon: const Icon(Icons.restart_alt),
+            label: Text(context.l10n.envRestartNow),
+          )
+        else if (_installed)
+          FilledButton.icon(
+            onPressed: _startingDocker ? null : _startDocker,
+            icon: _startingDocker
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.play_arrow),
+            label: Text(_startingDocker
+                ? context.l10n.starting
+                : 'Start Docker'),
+          )
+        else if (_pmAvailable == true)
+          FilledButton.icon(
+            onPressed: _installing ? null : _install,
+            icon: _installing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download),
+            label: Text(_installing
+                ? context.l10n.installing
+                : context.l10n.dockerInstall),
+          ),
       ],
     );
+  }
+
+  bool _startingDocker = false;
+
+  Future<void> _startDocker() async {
+    setState(() => _startingDocker = true);
+    try {
+      if (PlatformService.isWindows) {
+        await Process.run(
+          'powershell',
+          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
+          runInShell: true,
+        );
+      } else if (PlatformService.isMacOS) {
+        await Process.run('open', ['-a', 'Docker']);
+      } else {
+        await Process.run('pkexec', ['systemctl', 'start', 'docker'], runInShell: true);
+      }
+      setState(() {
+        _logLines.add('');
+        _logLines.add('[+] Docker is starting...');
+        _startingDocker = false;
+      });
+    } catch (e) {
+      setState(() {
+        _logLines.add('[ERROR] $e');
+        _startingDocker = false;
+      });
+    }
   }
 }
 

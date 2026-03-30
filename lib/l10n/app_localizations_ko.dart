@@ -1266,4 +1266,38 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get envRestartNow => '지금 재시작';
+
+  @override
+  String get projectInfo => '프로젝트 정보';
+
+  @override
+  String get projectInfoDomain => '도메인';
+
+  @override
+  String get projectInfoNginxNotSetup => '구성되지 않음';
+
+  @override
+  String get projectInfoDbName => '데이터베이스 이름';
+
+  @override
+  String get projectInfoDbNameHint => '예: mydb';
+
+  @override
+  String get createDatabase => '데이터베이스 생성';
+
+  @override
+  String get creatingDatabase => '생성 중...';
+
+  @override
+  String dbCreated(String name) {
+    return '데이터베이스 \"$name\" 생성 완료!';
+  }
+
+  @override
+  String dbFailed(String error) {
+    return '데이터베이스 생성 실패: $error';
+  }
+
+  @override
+  String get noPostgresContainer => '실행 중인 PostgreSQL Docker 컨테이너 없음';
 }

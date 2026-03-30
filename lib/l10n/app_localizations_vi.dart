@@ -1290,4 +1290,39 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get envRestartNow => 'Khởi động lại ngay';
+
+  @override
+  String get projectInfo => 'Thông tin dự án';
+
+  @override
+  String get projectInfoDomain => 'Domain';
+
+  @override
+  String get projectInfoNginxNotSetup => 'Chưa cấu hình';
+
+  @override
+  String get projectInfoDbName => 'Tên Database';
+
+  @override
+  String get projectInfoDbNameHint => 'VD: mydb';
+
+  @override
+  String get createDatabase => 'Tạo Database';
+
+  @override
+  String get creatingDatabase => 'Đang tạo...';
+
+  @override
+  String dbCreated(String name) {
+    return 'Database \"$name\" đã tạo thành công!';
+  }
+
+  @override
+  String dbFailed(String error) {
+    return 'Tạo database thất bại: $error';
+  }
+
+  @override
+  String get noPostgresContainer =>
+      'Không có PostgreSQL Docker container đang chạy';
 }

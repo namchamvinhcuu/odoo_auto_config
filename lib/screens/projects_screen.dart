@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,9 @@ import '../models/project_info.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/platform_service.dart';
 import '../services/nginx_service.dart';
+import '../services/postgres_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/log_output.dart';
 import '../widgets/nginx_setup_dialog.dart';
 import '../widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
@@ -698,6 +701,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           position.dx, position.dy, position.dx, position.dy),
       items: [
         PopupMenuItem(
+          value: 'info',
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: AppIconSize.md),
+              const SizedBox(width: AppSpacing.sm),
+              Text(context.l10n.projectInfo),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'favourite',
           child: Row(
             children: [
@@ -789,6 +802,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
     if (result == null) return;
     switch (result) {
+      case 'info':
+        _showProjectInfo(proj);
       case 'favourite':
         _toggleFavourite(proj);
       case 'vscode':
@@ -806,6 +821,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       case 'delete':
         _remove(proj);
     }
+  }
+
+  void _showProjectInfo(ProjectInfo proj) async {
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    final domain = proj.hasNginx ? '${proj.nginxSubdomain}$suffix' : null;
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _ProjectInfoDialog(project: proj, domain: domain),
+    );
   }
 
   Widget _gridBtn({
@@ -1150,6 +1177,406 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
           child: Text(widget.existing != null
               ? context.l10n.save
               : context.l10n.import_),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Project Info Dialog ──
+
+class _ProjectInfoDialog extends StatefulWidget {
+  final ProjectInfo project;
+  final String? domain;
+
+  const _ProjectInfoDialog({required this.project, this.domain});
+
+  @override
+  State<_ProjectInfoDialog> createState() => _ProjectInfoDialogState();
+}
+
+class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
+  final _dbNameController = TextEditingController();
+  final _adminPasswordController = TextEditingController(text: 'admin');
+  bool _demoData = false;
+  String _language = 'en_US';
+  bool _creating = false;
+  final List<String> _logLines = [];
+  String? _pythonPath;
+  String? _odooBinPath;
+  String? _confPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _dbNameController.text = widget.project.name
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+    _detectPaths();
+  }
+
+  @override
+  void dispose() {
+    _dbNameController.dispose();
+    _adminPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _detectPaths() async {
+    final projPath = widget.project.path;
+
+    // Try to find odoo.conf
+    for (final candidate in [
+      p.join(projPath, 'odoo.conf'),
+      p.join(projPath, 'config', 'odoo.conf'),
+    ]) {
+      if (await File(candidate).exists()) {
+        _confPath = candidate;
+        break;
+      }
+    }
+
+    // Try to find python + odoo-bin from .vscode/launch.json
+    final launchFile = File(p.join(projPath, '.vscode', 'launch.json'));
+    if (await launchFile.exists()) {
+      try {
+        final content = await launchFile.readAsString();
+        final json = jsonDecode(content) as Map<String, dynamic>;
+        final configs = json['configurations'] as List?;
+        if (configs != null && configs.isNotEmpty) {
+          final config = configs.first as Map<String, dynamic>;
+          _pythonPath = config['python']?.toString();
+          _odooBinPath = config['program']?.toString();
+          // Resolve ${workspaceFolder}
+          if (_odooBinPath != null) {
+            _odooBinPath =
+                _odooBinPath!.replaceAll(r'${workspaceFolder}', projPath);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Fallback: look for common paths
+    _odooBinPath ??= await _findFile([
+      p.join(projPath, 'odoo', 'odoo-bin'),
+      p.join(projPath, 'odoo-bin'),
+    ]);
+    _pythonPath ??= await _findFile([
+      PlatformService.venvPython(p.join(projPath, 'venv')),
+      PlatformService.venvPython(p.join(projPath, '.venv')),
+    ]);
+
+    if (mounted) setState(() {});
+  }
+
+  Future<String?> _findFile(List<String> candidates) async {
+    for (final path in candidates) {
+      if (await File(path).exists()) return path;
+    }
+    return null;
+  }
+
+  bool get _canCreate =>
+      !_creating &&
+      _dbNameController.text.trim().isNotEmpty &&
+      _adminPasswordController.text.trim().isNotEmpty;
+
+  Future<void> _createDatabase() async {
+    final dbName = _dbNameController.text.trim();
+    if (dbName.isEmpty) return;
+
+    setState(() {
+      _creating = true;
+      _logLines.clear();
+    });
+
+    void log(String line) {
+      if (mounted) setState(() => _logLines.add(line));
+    }
+
+    try {
+      // Step 1: Create PostgreSQL database via Docker
+      log('[+] Creating PostgreSQL database "$dbName"...');
+      final servers = await PostgresService.detectServers();
+      final dockerServer = servers
+          .where((s) =>
+              s.source == PgServerSource.docker &&
+              s.containerRunning == true &&
+              s.containerName != null)
+          .toList();
+
+      if (dockerServer.isEmpty) {
+        if (!mounted) return;
+        log('[ERROR] ${context.l10n.noPostgresContainer}');
+        setState(() => _creating = false);
+        return;
+      }
+
+      final container = dockerServer.first.containerName!;
+      final docker = await PlatformService.dockerPath;
+
+      final createResult = await Process.run(
+        docker,
+        ['exec', container, 'createdb', '-U', 'odoo', dbName],
+        runInShell: true,
+      );
+
+      if (createResult.exitCode != 0) {
+        final err = createResult.stderr.toString().trim();
+        // If database already exists, continue with init
+        if (!err.contains('already exists')) {
+          log('[ERROR] $err');
+          setState(() => _creating = false);
+          return;
+        }
+        log('[WARN] Database "$dbName" already exists, initializing...');
+      } else {
+        log('[+] Database "$dbName" created');
+      }
+
+      // Step 2: Initialize Odoo database
+      if (_pythonPath == null || _odooBinPath == null || _confPath == null) {
+        log('[+] Database created. Start Odoo to initialize modules.');
+        log('[WARN] Could not auto-detect python/odoo-bin paths.');
+        if (_pythonPath == null) log('[WARN] Python not found in project');
+        if (_odooBinPath == null) log('[WARN] odoo-bin not found in project');
+        if (_confPath == null) log('[WARN] odoo.conf not found in project');
+        setState(() => _creating = false);
+        return;
+      }
+
+      log('');
+      log('[+] Initializing Odoo database (this may take a few minutes)...');
+      log('[+] Python: $_pythonPath');
+      log('[+] odoo-bin: $_odooBinPath');
+
+      final args = [
+        _odooBinPath!,
+        '-c', _confPath!,
+        '-d', dbName,
+        '-i', 'base',
+        '--stop-after-init',
+        '-l', _language,
+        '--admin-password', _adminPasswordController.text.trim(),
+        if (!_demoData) '--without-demo=all',
+      ];
+
+      final process = await Process.start(
+        _pythonPath!,
+        args,
+        runInShell: true,
+        workingDirectory: widget.project.path,
+      );
+
+      process.stdout.transform(const SystemEncoding().decoder).listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) log(line.trim());
+        }
+      });
+      process.stderr.transform(const SystemEncoding().decoder).listen((data) {
+        for (final line in data.split('\n')) {
+          if (line.trim().isNotEmpty) log(line.trim());
+        }
+      });
+
+      final exitCode = await process.exitCode;
+
+      if (mounted) {
+        if (exitCode == 0) {
+          // Update dbfilter in odoo.conf
+          await _updateDbFilter(dbName, log);
+          log('');
+          if (mounted) log('[+] ${context.l10n.dbCreated(dbName)}');
+        } else {
+          log('');
+          log('[ERROR] Odoo init failed with exit code $exitCode');
+        }
+        setState(() => _creating = false);
+      }
+    } catch (e) {
+      log('[ERROR] $e');
+      if (mounted) setState(() => _creating = false);
+    }
+  }
+
+  Future<void> _updateDbFilter(String dbName, void Function(String) log) async {
+    if (_confPath == null) return;
+    try {
+      final file = File(_confPath!);
+      var content = await file.readAsString();
+      // Replace dbfilter line: ^%d$ or any existing value
+      final regex = RegExp(r'^dbfilter\s*=.*$', multiLine: true);
+      if (regex.hasMatch(content)) {
+        content = content.replaceFirst(regex, 'dbfilter = ^$dbName.*\$');
+      }
+      // Also set db_name
+      final dbNameRegex = RegExp(r'^db_name\s*=.*$', multiLine: true);
+      if (dbNameRegex.hasMatch(content)) {
+        content = content.replaceFirst(dbNameRegex, 'db_name = $dbName');
+      }
+      await file.writeAsString(content);
+      log('[+] Updated odoo.conf: dbfilter = ^$dbName.*\$, db_name = $dbName');
+    } catch (e) {
+      log('[WARN] Could not update odoo.conf: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final proj = widget.project;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.info_outline),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(proj.name)),
+        ],
+      ),
+      content: SizedBox(
+        width: 560,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Info section
+              _infoRow(Icons.folder, context.l10n.projectDirectory, proj.path),
+              const SizedBox(height: AppSpacing.md),
+              _infoRow(Icons.lan, 'HTTP Port', '${proj.httpPort}'),
+              const SizedBox(height: AppSpacing.sm),
+              _infoRow(Icons.lan, 'Longpolling Port', '${proj.longpollingPort}'),
+              const SizedBox(height: AppSpacing.md),
+              _infoRow(
+                Icons.dns,
+                context.l10n.projectInfoDomain,
+                widget.domain != null
+                    ? 'https://${widget.domain}'
+                    : context.l10n.projectInfoNginxNotSetup,
+                valueColor: widget.domain != null ? Colors.green : Colors.orange,
+              ),
+              if (proj.description.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                _infoRow(Icons.description, context.l10n.descriptionOptional,
+                    proj.description),
+              ],
+
+              // Create Database section
+              const SizedBox(height: AppSpacing.xxl),
+              const Divider(),
+              const SizedBox(height: AppSpacing.md),
+              Text(context.l10n.createDatabase,
+                  style: theme.textTheme.titleSmall),
+              const SizedBox(height: AppSpacing.md),
+
+              TextField(
+                controller: _dbNameController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.projectInfoDbName,
+                  hintText: context.l10n.projectInfoDbNameHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                enabled: !_creating,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _adminPasswordController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.password,
+                  hintText: 'admin',
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                enabled: !_creating,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _language,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.language,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'en_US', child: Text('English')),
+                        DropdownMenuItem(value: 'vi_VN', child: Text('Tiếng Việt')),
+                        DropdownMenuItem(value: 'ko_KR', child: Text('한국어')),
+                        DropdownMenuItem(value: 'fr_FR', child: Text('Français')),
+                        DropdownMenuItem(value: 'de_DE', child: Text('Deutsch')),
+                        DropdownMenuItem(value: 'ja_JP', child: Text('日本語')),
+                        DropdownMenuItem(value: 'zh_CN', child: Text('中文(简体)')),
+                      ],
+                      onChanged: _creating ? null : (v) => setState(() => _language = v!),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  FilterChip(
+                    label: const Text('Demo data'),
+                    selected: _demoData,
+                    onSelected: _creating ? null : (v) => setState(() => _demoData = v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _canCreate ? _createDatabase : null,
+                  icon: _creating
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.add),
+                  label: Text(_creating
+                      ? context.l10n.creatingDatabase
+                      : context.l10n.createDatabase),
+                ),
+              ),
+
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                LogOutput(lines: _logLines, height: 200),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: _creating ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: AppSpacing.sm),
+        SizedBox(
+          width: 130,
+          child: Text(label,
+              style: TextStyle(
+                  color: Colors.grey.shade600, fontSize: AppFontSize.sm)),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: AppFontSize.sm,
+              color: valueColor,
+            ),
+          ),
         ),
       ],
     );

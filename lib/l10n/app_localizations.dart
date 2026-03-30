@@ -2403,6 +2403,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restart Now'**
   String get envRestartNow;
+
+  /// No description provided for @projectInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Info'**
+  String get projectInfo;
+
+  /// No description provided for @projectInfoDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain'**
+  String get projectInfoDomain;
+
+  /// No description provided for @projectInfoNginxNotSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get projectInfoNginxNotSetup;
+
+  /// No description provided for @projectInfoDbName.
+  ///
+  /// In en, this message translates to:
+  /// **'Database Name'**
+  String get projectInfoDbName;
+
+  /// No description provided for @projectInfoDbNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. mydb'**
+  String get projectInfoDbNameHint;
+
+  /// No description provided for @createDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Database'**
+  String get createDatabase;
+
+  /// No description provided for @creatingDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating...'**
+  String get creatingDatabase;
+
+  /// No description provided for @dbCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Database \"{name}\" created successfully!'**
+  String dbCreated(String name);
+
+  /// No description provided for @dbFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create database: {error}'**
+  String dbFailed(String error);
+
+  /// No description provided for @noPostgresContainer.
+  ///
+  /// In en, this message translates to:
+  /// **'No PostgreSQL Docker container running'**
+  String get noPostgresContainer;
 }
 
 class _AppLocalizationsDelegate

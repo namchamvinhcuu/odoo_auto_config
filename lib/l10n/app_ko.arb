@@ -434,5 +434,18 @@
   "envAutoSetup": "자동 설정",
   "envRestartRequired": "재시작 필요",
   "envRestartMessage": "WSL이 설치되었습니다. 컴퓨터를 재시작한 후 자동 설정을 다시 실행하여 Docker 설치를 계속하세요.",
-  "envRestartNow": "지금 재시작"
+  "envRestartNow": "지금 재시작",
+
+  "projectInfo": "프로젝트 정보",
+  "projectInfoDomain": "도메인",
+  "projectInfoNginxNotSetup": "구성되지 않음",
+  "projectInfoDbName": "데이터베이스 이름",
+  "projectInfoDbNameHint": "예: mydb",
+  "createDatabase": "데이터베이스 생성",
+  "creatingDatabase": "생성 중...",
+  "dbCreated": "데이터베이스 \"{name}\" 생성 완료!",
+  "@dbCreated": { "placeholders": { "name": { "type": "String" } } },
+  "dbFailed": "데이터베이스 생성 실패: {error}",
+  "@dbFailed": { "placeholders": { "error": { "type": "String" } } },
+  "noPostgresContainer": "실행 중인 PostgreSQL Docker 컨테이너 없음"
 }

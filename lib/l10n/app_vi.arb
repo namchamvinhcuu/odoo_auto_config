@@ -434,5 +434,18 @@
   "envAutoSetup": "Cài đặt tự động",
   "envRestartRequired": "Cần khởi động lại",
   "envRestartMessage": "WSL đã được cài đặt. Vui lòng khởi động lại máy tính, sau đó chạy Cài đặt tự động lần nữa để tiếp tục cài Docker.",
-  "envRestartNow": "Khởi động lại ngay"
+  "envRestartNow": "Khởi động lại ngay",
+
+  "projectInfo": "Thông tin dự án",
+  "projectInfoDomain": "Domain",
+  "projectInfoNginxNotSetup": "Chưa cấu hình",
+  "projectInfoDbName": "Tên Database",
+  "projectInfoDbNameHint": "VD: mydb",
+  "createDatabase": "Tạo Database",
+  "creatingDatabase": "Đang tạo...",
+  "dbCreated": "Database \"{name}\" đã tạo thành công!",
+  "@dbCreated": { "placeholders": { "name": { "type": "String" } } },
+  "dbFailed": "Tạo database thất bại: {error}",
+  "@dbFailed": { "placeholders": { "error": { "type": "String" } } },
+  "noPostgresContainer": "Không có PostgreSQL Docker container đang chạy"
 }

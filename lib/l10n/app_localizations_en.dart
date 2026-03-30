@@ -1296,4 +1296,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get envRestartNow => 'Restart Now';
+
+  @override
+  String get projectInfo => 'Project Info';
+
+  @override
+  String get projectInfoDomain => 'Domain';
+
+  @override
+  String get projectInfoNginxNotSetup => 'Not configured';
+
+  @override
+  String get projectInfoDbName => 'Database Name';
+
+  @override
+  String get projectInfoDbNameHint => 'e.g. mydb';
+
+  @override
+  String get createDatabase => 'Create Database';
+
+  @override
+  String get creatingDatabase => 'Creating...';
+
+  @override
+  String dbCreated(String name) {
+    return 'Database \"$name\" created successfully!';
+  }
+
+  @override
+  String dbFailed(String error) {
+    return 'Failed to create database: $error';
+  }
+
+  @override
+  String get noPostgresContainer => 'No PostgreSQL Docker container running';
 }
