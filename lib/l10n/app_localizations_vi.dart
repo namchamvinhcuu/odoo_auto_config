@@ -1089,7 +1089,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get postgresClientNote =>
-      'Công cụ client dùng để kết nối PostgreSQL server (local hoặc Docker). Không cần cài server nếu bạn dùng Docker.';
+      'Tùy chọn — Công cụ client (psql, pg_dump...) dùng cho thao tác database thủ công. Không bắt buộc nếu dùng PostgreSQL Docker, vì Odoo kết nối trực tiếp và các công cụ đã có sẵn trong container.';
 
   @override
   String get postgresToolAvailable => 'Có sẵn';
@@ -1190,4 +1190,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String importPythonSuccess(String version) {
     return 'Đã thêm Python $version';
   }
+
+  @override
+  String get installVscode => 'Cài đặt VSCode';
+
+  @override
+  String get installVscodeSubtitle =>
+      'Visual Studio Code chưa được cài đặt. Cài đặt để mở dự án trực tiếp từ ứng dụng.';
 }

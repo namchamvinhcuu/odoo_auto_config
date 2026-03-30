@@ -283,6 +283,65 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     return 'mkcert'; // fallback: rely on PATH
   }
 
+  /// Check if VSCode is installed
+  static Future<bool> isVscodeInstalled() async {
+    try {
+      if (isMacOS) {
+        final result = await Process.run(
+            'mdfind', ['kMDItemCFBundleIdentifier == "com.microsoft.VSCode"'],
+            runInShell: true);
+        return result.exitCode == 0 &&
+            result.stdout.toString().trim().isNotEmpty;
+      } else if (isWindows) {
+        final result =
+            await Process.run('cmd', ['/c', 'where', 'code'], runInShell: true);
+        return result.exitCode == 0;
+      } else {
+        final result =
+            await Process.run('which', ['code'], runInShell: true);
+        return result.exitCode == 0;
+      }
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Install command for VSCode
+  static ({String executable, List<String> args, String description})
+      vscodeInstallCommand() {
+    if (isWindows) {
+      return (
+        executable: 'winget',
+        args: [
+          'install',
+          'Microsoft.VisualStudioCode',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+        ],
+        description: 'winget install Microsoft.VisualStudioCode',
+      );
+    } else if (isMacOS) {
+      return (
+        executable: 'brew',
+        args: ['install', '--cask', 'visual-studio-code'],
+        description: 'brew install --cask visual-studio-code',
+      );
+    } else {
+      return (
+        executable: 'pkexec',
+        args: [
+          'bash', '-c',
+          'apt update && apt install -y wget gpg && '
+          'wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/ms.gpg && '
+          'install -D -o root -g root -m 644 /tmp/ms.gpg /usr/share/keyrings/microsoft-archive-keyring.gpg && '
+          'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list && '
+          'apt update && apt install -y code',
+        ],
+        description: 'apt install code (Microsoft repository)',
+      );
+    }
+  }
+
   static String venvActivateScript(String venvPath) {
     if (isWindows) {
       return '$venvPath\\Scripts\\activate.bat';

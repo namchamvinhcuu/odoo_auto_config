@@ -1073,7 +1073,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get postgresClientNote =>
-      '클라이언트 도구는 PostgreSQL 서버(로컬 또는 Docker)에 연결하는 데 사용됩니다. Docker를 사용하면 서버 설치가 필요 없습니다.';
+      '선택 사항 — 수동 데이터베이스 작업을 위한 클라이언트 도구(psql, pg_dump...). PostgreSQL Docker를 사용하면 Odoo가 직접 연결하고 도구가 컨테이너 내부에서 사용 가능하므로 필수가 아닙니다.';
 
   @override
   String get postgresToolAvailable => '사용 가능';
@@ -1172,4 +1172,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String importPythonSuccess(String version) {
     return 'Python $version 추가됨';
   }
+
+  @override
+  String get installVscode => 'VSCode 설치';
+
+  @override
+  String get installVscodeSubtitle =>
+      'Visual Studio Code가 설치되지 않았습니다. 앱에서 프로젝트를 직접 열려면 설치하세요.';
 }

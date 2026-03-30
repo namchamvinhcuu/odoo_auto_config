@@ -387,7 +387,7 @@
   "postgresInstallTitle": "Install PostgreSQL Client Tools",
   "postgresInstallSubtitle": "Install client tools (psql, pg_dump, pg_restore, createdb, dropdb) to manage PostgreSQL databases.",
   "postgresClientTools": "Client Tools",
-  "postgresClientNote": "Client tools are used to connect to PostgreSQL server (local or Docker). No server installation needed if you use Docker.",
+  "postgresClientNote": "Optional — Client tools (psql, pg_dump...) for manual database operations. Not required if you use PostgreSQL Docker, as Odoo connects directly and tools are available inside the container.",
   "postgresToolAvailable": "Available",
   "postgresToolMissing": "Missing",
 
@@ -422,5 +422,8 @@
   "importPythonInvalid": "Not a valid Python executable",
   "importPythonDuplicate": "This Python is already in the list",
   "importPythonSuccess": "Added Python {version}",
-  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } }
+  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } },
+
+  "installVscode": "Install VSCode",
+  "installVscodeSubtitle": "Visual Studio Code is not installed. Install it to open projects directly from the app."
 }

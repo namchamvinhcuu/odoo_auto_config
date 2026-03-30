@@ -366,7 +366,7 @@
   "postgresInstallTitle": "Cài đặt PostgreSQL Client Tools",
   "postgresInstallSubtitle": "Cài đặt công cụ client (psql, pg_dump, pg_restore, createdb, dropdb) để quản lý cơ sở dữ liệu PostgreSQL.",
   "postgresClientTools": "Công cụ Client",
-  "postgresClientNote": "Công cụ client dùng để kết nối PostgreSQL server (local hoặc Docker). Không cần cài server nếu bạn dùng Docker.",
+  "postgresClientNote": "Tùy chọn — Công cụ client (psql, pg_dump...) dùng cho thao tác database thủ công. Không bắt buộc nếu dùng PostgreSQL Docker, vì Odoo kết nối trực tiếp và các công cụ đã có sẵn trong container.",
   "postgresToolAvailable": "Có sẵn",
   "postgresToolMissing": "Thiếu",
 
@@ -401,5 +401,8 @@
   "importPythonInvalid": "Không phải file thực thi Python hợp lệ",
   "importPythonDuplicate": "Python này đã có trong danh sách",
   "importPythonSuccess": "Đã thêm Python {version}",
-  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } }
+  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } },
+
+  "installVscode": "Cài đặt VSCode",
+  "installVscodeSubtitle": "Visual Studio Code chưa được cài đặt. Cài đặt để mở dự án trực tiếp từ ứng dụng."
 }

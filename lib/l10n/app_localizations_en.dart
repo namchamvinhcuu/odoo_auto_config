@@ -1095,7 +1095,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get postgresClientNote =>
-      'Client tools are used to connect to PostgreSQL server (local or Docker). No server installation needed if you use Docker.';
+      'Optional — Client tools (psql, pg_dump...) for manual database operations. Not required if you use PostgreSQL Docker, as Odoo connects directly and tools are available inside the container.';
 
   @override
   String get postgresToolAvailable => 'Available';
@@ -1196,4 +1196,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String importPythonSuccess(String version) {
     return 'Added Python $version';
   }
+
+  @override
+  String get installVscode => 'Install VSCode';
+
+  @override
+  String get installVscodeSubtitle =>
+      'Visual Studio Code is not installed. Install it to open projects directly from the app.';
 }

@@ -9,6 +9,7 @@ import '../services/platform_service.dart';
 import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/nginx_setup_dialog.dart';
+import '../widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
 import 'quick_create_screen.dart';
 
@@ -124,6 +125,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _openInVscode(String path) async {
+    final installed = await PlatformService.isVscodeInstalled();
+    if (!installed) {
+      if (!mounted) return;
+      _showVscodeInstallDialog();
+      return;
+    }
     try {
       if (Platform.isMacOS) {
         await Process.run('open', ['-a', 'Visual Studio Code', path]);
@@ -139,6 +146,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         );
       }
     }
+  }
+
+  void _showVscodeInstallDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const VscodeInstallDialog(),
+    );
   }
 
   Future<void> _editProject(ProjectInfo project) async {

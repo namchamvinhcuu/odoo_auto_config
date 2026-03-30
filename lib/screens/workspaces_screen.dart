@@ -8,6 +8,7 @@ import '../services/platform_service.dart';
 import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/nginx_setup_dialog.dart';
+import '../widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
 import 'projects_screen.dart';
 
@@ -106,6 +107,12 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   Future<void> _openInVscode(String path) async {
+    final installed = await PlatformService.isVscodeInstalled();
+    if (!installed) {
+      if (!mounted) return;
+      _showVscodeInstallDialog();
+      return;
+    }
     try {
       if (Platform.isMacOS) {
         await Process.run('open', ['-a', 'Visual Studio Code', path]);
@@ -121,6 +128,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         );
       }
     }
+  }
+
+  void _showVscodeInstallDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => const VscodeInstallDialog(),
+    );
   }
 
   Future<void> _linkNginx(WorkspaceInfo ws) async {

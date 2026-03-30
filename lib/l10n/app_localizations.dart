@@ -2041,7 +2041,7 @@ abstract class AppLocalizations {
   /// No description provided for @postgresClientNote.
   ///
   /// In en, this message translates to:
-  /// **'Client tools are used to connect to PostgreSQL server (local or Docker). No server installation needed if you use Docker.'**
+  /// **'Optional — Client tools (psql, pg_dump...) for manual database operations. Not required if you use PostgreSQL Docker, as Odoo connects directly and tools are available inside the container.'**
   String get postgresClientNote;
 
   /// No description provided for @postgresToolAvailable.
@@ -2229,6 +2229,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added Python {version}'**
   String importPythonSuccess(String version);
+
+  /// No description provided for @installVscode.
+  ///
+  /// In en, this message translates to:
+  /// **'Install VSCode'**
+  String get installVscode;
+
+  /// No description provided for @installVscodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual Studio Code is not installed. Install it to open projects directly from the app.'**
+  String get installVscodeSubtitle;
 }
 
 class _AppLocalizationsDelegate

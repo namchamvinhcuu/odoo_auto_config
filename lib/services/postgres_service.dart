@@ -577,18 +577,23 @@ class PostgresService {
 
   // ── Client Install ──
 
+  static const availableVersions = [17, 16, 15, 14];
+
   static Future<({String executable, List<String> args, String description})>
-      installCommand() async {
+      installCommand({int? version}) async {
     if (PlatformService.isWindows) {
+      final pkg = version != null
+          ? 'PostgreSQL.PostgreSQL.$version'
+          : 'PostgreSQL.PostgreSQL';
       return (
         executable: 'winget',
         args: [
           'install',
-          'PostgreSQL.PostgreSQL.Client',
+          pkg,
           '--accept-package-agreements',
           '--accept-source-agreements',
         ],
-        description: 'winget install PostgreSQL.PostgreSQL.Client',
+        description: 'winget install $pkg',
       );
     } else if (PlatformService.isMacOS) {
       final brew = await PlatformService.brewPath;
@@ -610,8 +615,8 @@ class PostgresService {
     }
   }
 
-  static Future<int> install(void Function(String line) onOutput) async {
-    final cmd = await installCommand();
+  static Future<int> install(void Function(String line) onOutput, {int? version}) async {
+    final cmd = await installCommand(version: version);
     onOutput('[+] Running: ${cmd.description}');
     onOutput('');
 
@@ -657,6 +662,13 @@ class PostgresService {
       if (exitCode == 0) {
         onOutput('');
         onOutput('[+] PostgreSQL client tools installed successfully!');
+        if (PlatformService.isWindows) {
+          onOutput('');
+          onOutput('[+] Note: This also installs PostgreSQL server.');
+          onOutput('[+] If you only need client tools (for Docker), you can stop the local server:');
+          onOutput('[+]   sc stop postgresql-x64-17');
+          onOutput('[+]   sc config postgresql-x64-17 start=demand');
+        }
       } else {
         onOutput('');
         onOutput('[ERROR] Installation failed with exit code $exitCode');

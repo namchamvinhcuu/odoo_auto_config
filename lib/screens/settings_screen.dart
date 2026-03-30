@@ -235,6 +235,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           _confDirController.text = confDir;
           _domainSuffixController.text = '.$domain';
           _saveNginxSettings();
+          setState(() {
+            _editingNginx = false;
+          });
+          _checkPorts();
         },
       ),
     );
@@ -716,8 +720,10 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     setState(() {
       _confDirController.text = confDir;
+      _editingNginx = false;
     });
     await _saveNginxSettings();
+    _checkPorts();
   }
 
   Future<void> _deleteNginxConfig() async {
@@ -1167,6 +1173,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               onPressed: () async {
                 await _saveNginxSettings();
                 setState(() => _editingNginx = false);
+                _checkPorts();
               },
               icon: const Icon(Icons.save),
               label: Text(context.l10n.save),
@@ -2146,23 +2153,30 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
   bool _installed = false;
   bool? _pmAvailable;
   String? _installDescription;
+  int? _selectedVersion;
   final List<String> _logLines = [];
 
   @override
   void initState() {
     super.initState();
+    _selectedVersion = PlatformService.isWindows ? PostgresService.availableVersions.first : null;
     _init();
   }
 
   Future<void> _init() async {
     final ok = await PythonInstallService.isPackageManagerAvailable();
-    final cmd = await PostgresService.installCommand();
+    final cmd = await PostgresService.installCommand(version: _selectedVersion);
     if (mounted) {
       setState(() {
         _pmAvailable = ok;
         _installDescription = cmd.description;
       });
     }
+  }
+
+  Future<void> _updateDescription() async {
+    final cmd = await PostgresService.installCommand(version: _selectedVersion);
+    if (mounted) setState(() => _installDescription = cmd.description);
   }
 
   Future<void> _install() async {
@@ -2172,7 +2186,7 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
     });
     final exitCode = await PostgresService.install((line) {
       if (mounted) setState(() => _logLines.add(line));
-    });
+    }, version: _selectedVersion);
     if (mounted) {
       setState(() {
         _installing = false;
@@ -2217,6 +2231,27 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
                   subtitle: _pmNotFound(context),
                   status: StatusType.error)
             else ...[
+              if (PlatformService.isWindows) ...[
+                Text(context.l10n.selectVersion,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  children: PostgresService.availableVersions.map((v) {
+                    return ChoiceChip(
+                      label: Text('PostgreSQL $v'),
+                      selected: _selectedVersion == v,
+                      onSelected: _installing
+                          ? null
+                          : (sel) {
+                              setState(() => _selectedVersion = sel ? v : null);
+                              _updateDescription();
+                            },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               if (_installDescription != null)
                 Text(_installDescription!,
                     style: TextStyle(

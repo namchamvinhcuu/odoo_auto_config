@@ -649,6 +649,47 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
   bool get _canClone =>
       !_cloning && _baseDir.isNotEmpty && _folderController.text.trim().isNotEmpty;
 
+  Future<bool> _ensureGit() async {
+    try {
+      final result = await Process.run('git', ['--version'], runInShell: true);
+      if (result.exitCode == 0) return true;
+    } catch (_) {}
+
+    // Git not found — install it
+    setState(() => _logLines.add('[+] Git not found. Installing...'));
+
+    if (Platform.isWindows) {
+      final process = await Process.start(
+        'winget',
+        ['install', '--id', 'Git.Git', '-e', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'],
+        runInShell: true,
+      );
+      await process.stdout.drain();
+      await process.stderr.drain();
+      final exitCode = await process.exitCode;
+      if (exitCode == 0) {
+        setState(() => _logLines.add('[+] Git installed successfully!'));
+        return true;
+      }
+    } else if (Platform.isMacOS) {
+      // macOS: xcode-select triggers git install dialog
+      final result = await Process.run('xcode-select', ['--install'], runInShell: true);
+      if (result.exitCode == 0) {
+        setState(() => _logLines.add('[+] Git install triggered. Please complete the dialog and try again.'));
+        return false;
+      }
+    } else {
+      final result = await Process.run('pkexec', ['apt', 'install', '-y', 'git'], runInShell: true);
+      if (result.exitCode == 0) {
+        setState(() => _logLines.add('[+] Git installed successfully!'));
+        return true;
+      }
+    }
+
+    setState(() => _logLines.add('[ERROR] Failed to install Git'));
+    return false;
+  }
+
   Future<void> _clone() async {
     final folder = _folderController.text.trim();
     final targetDir = p.join(_baseDir, folder);
@@ -661,6 +702,16 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
     setState(() {
       _cloning = true;
       _logLines.clear();
+    });
+
+    // Check/install git first
+    final gitOk = await _ensureGit();
+    if (!gitOk) {
+      setState(() => _cloning = false);
+      return;
+    }
+
+    setState(() {
       _logLines.add('[+] Cloning Odoo $_version.0 into $targetDir...');
     });
 
@@ -677,12 +728,16 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
 
       final process = await Process.start('git', args, runInShell: true);
 
+      final stderrLines = <String>[];
+
       // git clone progress goes to stderr
       final stderrDone = process.stderr
           .transform(utf8.decoder)
           .listen((data) {
         if (!mounted) return;
         for (final line in data.split('\n')) {
+          final trimmed = line.trim();
+          if (trimmed.isNotEmpty) stderrLines.add(trimmed);
           final cleaned = CommandRunner.cleanLine(line);
           if (cleaned != null) {
             setState(() => _logLines.add(cleaned));
@@ -718,6 +773,12 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
         widget.onCloned(targetDir);
       } else {
         setState(() {
+          // Show raw error lines that cleanLine may have filtered
+          for (final line in stderrLines) {
+            if (!_logLines.contains(line) && !line.contains('%')) {
+              _logLines.add('[ERROR] $line');
+            }
+          }
           _logLines.add('[ERROR] Clone failed with exit code $exitCode');
           _cloning = false;
         });
