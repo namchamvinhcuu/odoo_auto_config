@@ -58,6 +58,25 @@ Write-Host "[4/4] Creating MSIX package..." -ForegroundColor Yellow
 fvm dart run msix:create --build-windows false --install-certificate false --output-name $OutputName
 if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: msix:create failed" -ForegroundColor Red; exit 1 }
 
+# Step 5: Copy certificate.pfx and install.ps1 to output dir
+Write-Host ""
+Write-Host "[5/5] Copying installer files..." -ForegroundColor Yellow
+$certSource = "$ProjectDir\certificate.pfx"
+$installSource = "$ProjectDir\install.ps1"
+if (Test-Path $certSource) {
+    Copy-Item $certSource "$OutputDir\certificate.pfx" -Force
+    Write-Host "  Copied certificate.pfx" -ForegroundColor Green
+}
+if (Test-Path $installSource) {
+    Copy-Item $installSource "$OutputDir\install.ps1" -Force
+    Write-Host "  Copied install.ps1" -ForegroundColor Green
+}
+$batSource = "$ProjectDir\install.bat"
+if (Test-Path $batSource) {
+    Copy-Item $batSource "$OutputDir\install.bat" -Force
+    Write-Host "  Copied install.bat" -ForegroundColor Green
+}
+
 # Done
 $MsixPath = "$OutputDir\$OutputName.msix"
 $ExePath = "$OutputDir\$OutputName.exe"
@@ -78,5 +97,6 @@ if (Test-Path $ExePath) {
 }
 
 Write-Host ""
-Write-Host "To install: double-click $OutputName.msix (certificate required first time)" -ForegroundColor Gray
+Write-Host "  Output:  $OutputDir" -ForegroundColor White
+Write-Host "  Install: Run install.ps1 in the output folder" -ForegroundColor Gray
 Write-Host ""
