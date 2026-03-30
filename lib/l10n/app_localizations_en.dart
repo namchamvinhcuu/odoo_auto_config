@@ -1175,4 +1175,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String postgresSetupSuccess(String path) {
     return 'PostgreSQL Docker project created at $path';
   }
+
+  @override
+  String get importPython => 'Import Python';
+
+  @override
+  String get importPythonTitle => 'Select Python executable';
+
+  @override
+  String get importPythonFilter =>
+      'Python executable|python3*;python*;python.exe';
+
+  @override
+  String get importPythonInvalid => 'Not a valid Python executable';
+
+  @override
+  String get importPythonDuplicate => 'This Python is already in the list';
+
+  @override
+  String importPythonSuccess(String version) {
+    return 'Added Python $version';
+  }
 }

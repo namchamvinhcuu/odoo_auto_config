@@ -414,5 +414,13 @@
   "postgresSetupPort": "Host port",
   "postgresSetupNetwork": "Docker network",
   "postgresSetupSuccess": "PostgreSQL Docker project created at {path}",
-  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } }
+  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } },
+
+  "importPython": "Import Python",
+  "importPythonTitle": "Select Python executable",
+  "importPythonFilter": "Python executable|python3*;python*;python.exe",
+  "importPythonInvalid": "Not a valid Python executable",
+  "importPythonDuplicate": "This Python is already in the list",
+  "importPythonSuccess": "Added Python {version}",
+  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } }
 }

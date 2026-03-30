@@ -2193,6 +2193,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'PostgreSQL Docker project created at {path}'**
   String postgresSetupSuccess(String path);
+
+  /// No description provided for @importPython.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Python'**
+  String get importPython;
+
+  /// No description provided for @importPythonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Python executable'**
+  String get importPythonTitle;
+
+  /// No description provided for @importPythonFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Python executable|python3*;python*;python.exe'**
+  String get importPythonFilter;
+
+  /// No description provided for @importPythonInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a valid Python executable'**
+  String get importPythonInvalid;
+
+  /// No description provided for @importPythonDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'This Python is already in the list'**
+  String get importPythonDuplicate;
+
+  /// No description provided for @importPythonSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Added Python {version}'**
+  String importPythonSuccess(String version);
 }
 
 class _AppLocalizationsDelegate

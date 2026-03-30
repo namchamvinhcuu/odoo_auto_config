@@ -393,5 +393,13 @@
   "postgresSetupPort": "호스트 포트",
   "postgresSetupNetwork": "Docker 네트워크",
   "postgresSetupSuccess": "{path}에 PostgreSQL Docker 프로젝트가 생성되었습니다",
-  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } }
+  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } },
+
+  "importPython": "Python 가져오기",
+  "importPythonTitle": "Python 실행 파일 선택",
+  "importPythonFilter": "Python 실행 파일|python3*;python*;python.exe",
+  "importPythonInvalid": "유효한 Python 실행 파일이 아닙니다",
+  "importPythonDuplicate": "이 Python은 이미 목록에 있습니다",
+  "importPythonSuccess": "Python {version} 추가됨",
+  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } }
 }

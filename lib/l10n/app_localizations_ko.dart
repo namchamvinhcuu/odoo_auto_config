@@ -1152,4 +1152,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String postgresSetupSuccess(String path) {
     return '$path에 PostgreSQL Docker 프로젝트가 생성되었습니다';
   }
+
+  @override
+  String get importPython => 'Python 가져오기';
+
+  @override
+  String get importPythonTitle => 'Python 실행 파일 선택';
+
+  @override
+  String get importPythonFilter => 'Python 실행 파일|python3*;python*;python.exe';
+
+  @override
+  String get importPythonInvalid => '유효한 Python 실행 파일이 아닙니다';
+
+  @override
+  String get importPythonDuplicate => '이 Python은 이미 목록에 있습니다';
+
+  @override
+  String importPythonSuccess(String version) {
+    return 'Python $version 추가됨';
+  }
 }

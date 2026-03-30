@@ -393,5 +393,13 @@
   "postgresSetupPort": "Port máy chủ",
   "postgresSetupNetwork": "Docker network",
   "postgresSetupSuccess": "Đã tạo PostgreSQL Docker project tại {path}",
-  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } }
+  "@postgresSetupSuccess": { "placeholders": { "path": { "type": "String" } } },
+
+  "importPython": "Nhập Python",
+  "importPythonTitle": "Chọn file thực thi Python",
+  "importPythonFilter": "File thực thi Python|python3*;python*;python.exe",
+  "importPythonInvalid": "Không phải file thực thi Python hợp lệ",
+  "importPythonDuplicate": "Python này đã có trong danh sách",
+  "importPythonSuccess": "Đã thêm Python {version}",
+  "@importPythonSuccess": { "placeholders": { "version": { "type": "String" } } }
 }

@@ -9,7 +9,7 @@ class PythonCheckerService {
 
     for (final candidate in PlatformService.pythonCandidates) {
       try {
-        final info = await _checkPython(candidate);
+        final info = await checkPython(candidate);
         if (info != null && !seen.contains(info.executablePath)) {
           seen.add(info.executablePath);
           results.add(info);
@@ -61,7 +61,8 @@ class PythonCheckerService {
     return results;
   }
 
-  Future<PythonInfo?> _checkPython(String executable) async {
+  /// Check a single Python executable and return its info, or null if invalid.
+  Future<PythonInfo?> checkPython(String executable) async {
     // Check if absolute path exists before trying to run it
     if (executable.startsWith('/') || RegExp(r'^[A-Za-z]:\\').hasMatch(executable)) {
       if (!File(executable).existsSync()) return null;
@@ -143,7 +144,7 @@ class PythonCheckerService {
       final match = RegExp(r'-V:(\d+\.\d+)').firstMatch(line);
       if (match != null) {
         final ver = match.group(1)!;
-        final info = await _checkPython('py -$ver');
+        final info = await checkPython('py -$ver');
         if (info != null) results.add(info);
       }
     }

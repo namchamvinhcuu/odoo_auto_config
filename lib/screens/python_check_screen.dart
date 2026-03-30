@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../l10n/l10n_extension.dart';
@@ -81,6 +82,53 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
     );
   }
 
+  Future<void> _importPython() async {
+    String? path;
+    if (PlatformService.isWindows) {
+      path = await PlatformService.pickFile(
+        dialogTitle: context.l10n.importPythonTitle,
+        filter: 'Executable (*.exe)|*.exe',
+      );
+    } else {
+      final result = await FilePicker.platform.pickFiles(
+        dialogTitle: context.l10n.importPythonTitle,
+        type: FileType.any,
+      );
+      path = result?.files.single.path;
+    }
+    if (path == null || !mounted) return;
+
+    // Validate: check if it's a real Python executable
+    final info = await _checker.checkPython(path);
+    if (!mounted) return;
+
+    if (info == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.importPythonInvalid)),
+      );
+      return;
+    }
+
+    // Check duplicate
+    final isDuplicate = _results?.any(
+          (r) => r.executablePath == info.executablePath || r.version == info.version,
+        ) ??
+        false;
+    if (isDuplicate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.importPythonDuplicate)),
+      );
+      return;
+    }
+
+    setState(() {
+      _results = [...?_results, info];
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.importPythonSuccess(info.version))),
+    );
+  }
+
   void _showInstallDialog() {
     showDialog(
       context: context,
@@ -116,6 +164,11 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(width: AppSpacing.xxxl),
+              FilledButton.tonalIcon(
+                onPressed: _loading ? null : _importPython,
+                icon: const Icon(Icons.folder_open),
+                label: Text(context.l10n.importPython),
+              ),
               FilledButton.tonalIcon(
                 onPressed: _loading ? null : _showInstallDialog,
                 icon: const Icon(Icons.download),

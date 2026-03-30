@@ -1169,4 +1169,25 @@ class AppLocalizationsVi extends AppLocalizations {
   String postgresSetupSuccess(String path) {
     return 'Đã tạo PostgreSQL Docker project tại $path';
   }
+
+  @override
+  String get importPython => 'Nhập Python';
+
+  @override
+  String get importPythonTitle => 'Chọn file thực thi Python';
+
+  @override
+  String get importPythonFilter =>
+      'File thực thi Python|python3*;python*;python.exe';
+
+  @override
+  String get importPythonInvalid => 'Không phải file thực thi Python hợp lệ';
+
+  @override
+  String get importPythonDuplicate => 'Python này đã có trong danh sách';
+
+  @override
+  String importPythonSuccess(String version) {
+    return 'Đã thêm Python $version';
+  }
 }
