@@ -160,6 +160,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openInBrowser => 'Open in browser';
 
   @override
+  String get back => 'Back';
+
+  @override
+  String get forward => 'Forward';
+
+  @override
   String get removeFromList => 'Remove from list';
 
   @override

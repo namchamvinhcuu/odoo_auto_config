@@ -388,6 +388,18 @@ abstract class AppLocalizations {
   /// **'Open in browser'**
   String get openInBrowser;
 
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @forward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get forward;
+
   /// No description provided for @removeFromList.
   ///
   /// In en, this message translates to:

@@ -43,9 +43,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static _HomeScreenState? _instance;
   int _selectedIndex = 0;
+  final List<int> _backHistory = [];
+  final List<int> _forwardHistory = [];
 
   void _goToTab(int index) {
+    if (index != _selectedIndex) {
+      _backHistory.add(_selectedIndex);
+      _forwardHistory.clear();
+    }
     setState(() => _selectedIndex = index);
+  }
+
+  void _goBack() {
+    if (_backHistory.isEmpty) return;
+    _forwardHistory.add(_selectedIndex);
+    setState(() => _selectedIndex = _backHistory.removeLast());
+  }
+
+  void _goForward() {
+    if (_forwardHistory.isEmpty) return;
+    _backHistory.add(_selectedIndex);
+    setState(() => _selectedIndex = _forwardHistory.removeLast());
   }
   WindowSize _windowSize = WindowSize.large;
 
@@ -195,7 +213,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ? context.l10n.dockerNotRunningBanner
             : null;
 
-    return Scaffold(
+    return Listener(
+      onPointerDown: (event) {
+        // Mouse back button (bit 3 = 8) and forward button (bit 4 = 16)
+        if (event.buttons & 0x08 != 0) {
+          _goBack();
+        } else if (event.buttons & 0x10 != 0) {
+          _goForward();
+        }
+      },
+      child: Scaffold(
       body: Column(
         children: [
           if (dockerBanner != null)
@@ -225,9 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
             extended: true,
             minExtendedWidth: AppNav.minExtendedWidth,
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
-            },
+            onDestinationSelected: (index) => _goToTab(index),
             leading: Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Column(
@@ -299,6 +324,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: Text(context.l10n.navSettings),
               ),
             ],
+            trailing: Expanded(
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: _backHistory.isNotEmpty ? _goBack : null,
+                        icon: const Icon(Icons.arrow_back),
+                        tooltip: _backHistory.isNotEmpty ? context.l10n.back : null,
+                        iconSize: AppIconSize.md,
+                      ),
+                      IconButton(
+                        onPressed: _forwardHistory.isNotEmpty ? _goForward : null,
+                        icon: const Icon(Icons.arrow_forward),
+                        tooltip: _forwardHistory.isNotEmpty ? context.l10n.forward : null,
+                        iconSize: AppIconSize.md,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
@@ -309,6 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

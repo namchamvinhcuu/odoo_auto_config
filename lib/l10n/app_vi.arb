@@ -52,6 +52,8 @@
   "openInVscode": "Mở trong VSCode",
   "openFolder": "Mở thư mục",
   "openInBrowser": "Mở trên trình duyệt",
+  "back": "Quay lại",
+  "forward": "Tiếp theo",
   "removeFromList": "Xóa khỏi danh sách",
   "deleteProjectTitle": "Xóa dự án?",
   "deleteProjectConfirm": "Xóa \"{name}\" khỏi danh sách?",

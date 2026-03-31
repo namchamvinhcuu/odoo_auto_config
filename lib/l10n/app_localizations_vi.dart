@@ -160,6 +160,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openInBrowser => 'Mở trên trình duyệt';
 
   @override
+  String get back => 'Quay lại';
+
+  @override
+  String get forward => 'Tiếp theo';
+
+  @override
   String get removeFromList => 'Xóa khỏi danh sách';
 
   @override

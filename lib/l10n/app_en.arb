@@ -54,6 +54,8 @@
   "openInVscode": "Open in VSCode",
   "openFolder": "Open folder",
   "openInBrowser": "Open in browser",
+  "back": "Back",
+  "forward": "Forward",
   "removeFromList": "Remove from list",
   "deleteProjectTitle": "Delete project?",
   "deleteProjectConfirm": "Remove \"{name}\" from the list?",

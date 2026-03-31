@@ -158,6 +158,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openInBrowser => '브라우저에서 열기';
 
   @override
+  String get back => '뒤로';
+
+  @override
+  String get forward => '앞으로';
+
+  @override
   String get removeFromList => '목록에서 제거';
 
   @override
