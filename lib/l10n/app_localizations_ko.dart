@@ -155,6 +155,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openFolder => '폴더 열기';
 
   @override
+  String get openInBrowser => '브라우저에서 열기';
+
+  @override
   String get removeFromList => '목록에서 제거';
 
   @override

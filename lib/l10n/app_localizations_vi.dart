@@ -157,6 +157,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openFolder => 'Mở thư mục';
 
   @override
+  String get openInBrowser => 'Mở trên trình duyệt';
+
+  @override
   String get removeFromList => 'Xóa khỏi danh sách';
 
   @override

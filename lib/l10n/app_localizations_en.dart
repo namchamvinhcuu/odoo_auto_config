@@ -157,6 +157,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openFolder => 'Open folder';
 
   @override
+  String get openInBrowser => 'Open in browser';
+
+  @override
   String get removeFromList => 'Remove from list';
 
   @override

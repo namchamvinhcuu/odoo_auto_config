@@ -109,6 +109,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
+  Future<void> _openInBrowser(ProjectInfo proj) async {
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+    final url = 'https://${proj.nginxSubdomain}$dotSuffix';
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [url]);
+      } else if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', url]);
+      } else {
+        await Process.run('xdg-open', [url]);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _openInFileManager(String path) async {
     try {
       if (Platform.isMacOS) {
@@ -769,6 +785,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             iconSize: btnSize,
                             boxSize: btnBox,
                           ),
+                          if (proj.hasNginx)
+                            _gridBtn(
+                              icon: Icons.language,
+                              tooltip: context.l10n.openInBrowser,
+                              onPressed: () => _openInBrowser(proj),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
                           if (exists) ...[
                             _gridBtn(
                               icon: Icons.code,

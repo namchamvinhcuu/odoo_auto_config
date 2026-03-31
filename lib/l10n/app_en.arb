@@ -53,6 +53,7 @@
   "@projectLpPort": { "placeholders": { "port": { "type": "int" } } },
   "openInVscode": "Open in VSCode",
   "openFolder": "Open folder",
+  "openInBrowser": "Open in browser",
   "removeFromList": "Remove from list",
   "deleteProjectTitle": "Delete project?",
   "deleteProjectConfirm": "Remove \"{name}\" from the list?",

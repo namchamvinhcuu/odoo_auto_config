@@ -382,6 +382,12 @@ abstract class AppLocalizations {
   /// **'Open folder'**
   String get openFolder;
 
+  /// No description provided for @openInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in browser'**
+  String get openInBrowser;
+
   /// No description provided for @removeFromList.
   ///
   /// In en, this message translates to:

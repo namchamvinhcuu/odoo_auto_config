@@ -51,6 +51,7 @@
   "projectLpPort": "LP: {port}",
   "openInVscode": "VSCode에서 열기",
   "openFolder": "폴더 열기",
+  "openInBrowser": "브라우저에서 열기",
   "removeFromList": "목록에서 제거",
   "deleteProjectTitle": "프로젝트 삭제?",
   "deleteProjectConfirm": "목록에서 \"{name}\"을(를) 제거하시겠습니까?",

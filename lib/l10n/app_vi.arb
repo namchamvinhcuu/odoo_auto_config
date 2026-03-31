@@ -51,6 +51,7 @@
   "projectLpPort": "LP: {port}",
   "openInVscode": "Mở trong VSCode",
   "openFolder": "Mở thư mục",
+  "openInBrowser": "Mở trên trình duyệt",
   "removeFromList": "Xóa khỏi danh sách",
   "deleteProjectTitle": "Xóa dự án?",
   "deleteProjectConfirm": "Xóa \"{name}\" khỏi danh sách?",
