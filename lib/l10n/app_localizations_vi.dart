@@ -73,6 +73,17 @@ class AppLocalizationsVi extends AppLocalizations {
   String get close => 'Đóng';
 
   @override
+  String updateAvailable(String current, String latest) {
+    return 'Có bản cập nhật: $current → $latest';
+  }
+
+  @override
+  String get updateNow => 'Cập nhật ngay';
+
+  @override
+  String get dismiss => 'Bỏ qua';
+
+  @override
   String get install => 'Cài đặt';
 
   @override

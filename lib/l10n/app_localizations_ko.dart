@@ -72,6 +72,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get close => '닫기';
 
   @override
+  String updateAvailable(String current, String latest) {
+    return '업데이트 가능: $current → $latest';
+  }
+
+  @override
+  String get updateNow => '지금 업데이트';
+
+  @override
+  String get dismiss => '무시';
+
+  @override
   String get install => '설치';
 
   @override

@@ -73,6 +73,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
+  String updateAvailable(String current, String latest) {
+    return 'Update available: $current → $latest';
+  }
+
+  @override
+  String get updateNow => 'Update now';
+
+  @override
+  String get dismiss => 'Dismiss';
+
+  @override
   String get install => 'Install';
 
   @override

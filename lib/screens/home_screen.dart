@@ -7,6 +7,7 @@ import '../services/docker_install_service.dart';
 import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
+import '../services/update_service.dart';
 import 'workspaces_screen.dart';
 import 'environment_screen.dart';
 import 'projects_screen.dart';
@@ -71,11 +72,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _dockerInstalled;
   bool? _dockerRunning;
 
+  // Update status
+  UpdateInfo? _updateInfo;
+  bool _updating = false;
+
   @override
   void initState() {
     super.initState();
     _instance = this;
     _loadWindowSize();
+    _checkUpdate();
     _checkDocker();
   }
 
@@ -123,6 +129,26 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_dockerInstalled == true && _dockerRunning == true) {
       await _autoStartNginx();
     }
+  }
+
+  Future<void> _checkUpdate() async {
+    final info = await UpdateService.checkForUpdate();
+    if (info != null && info.hasUpdate && mounted) {
+      setState(() => _updateInfo = info);
+    }
+  }
+
+  Future<void> _performUpdate() async {
+    final info = _updateInfo;
+    if (info == null || info.downloadUrl == null || info.assetName == null) {
+      return;
+    }
+    setState(() => _updating = true);
+    final path = await UpdateService.download(info.downloadUrl!, info.assetName!);
+    if (path != null) {
+      await UpdateService.install(path);
+    }
+    if (mounted) setState(() => _updating = false);
   }
 
   Future<void> _autoStartNginx() async {
@@ -225,6 +251,35 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
       body: Column(
         children: [
+          if (_updateInfo != null && _updateInfo!.hasUpdate)
+            MaterialBanner(
+              content: Text(
+                context.l10n.updateAvailable(
+                    _updateInfo!.currentVersion, _updateInfo!.latestVersion),
+              ),
+              leading: const Icon(Icons.system_update, color: Colors.blue),
+              backgroundColor: Colors.blue.withValues(alpha: 0.1),
+              actions: [
+                if (_updating)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.sm),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  TextButton(
+                    onPressed: _performUpdate,
+                    child: Text(context.l10n.updateNow),
+                  ),
+                TextButton(
+                  onPressed: () => setState(() => _updateInfo = null),
+                  child: Text(context.l10n.dismiss),
+                ),
+              ],
+            ),
           if (dockerBanner != null)
             MaterialBanner(
               content: Text(dockerBanner),
