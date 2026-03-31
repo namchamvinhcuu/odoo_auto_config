@@ -149,6 +149,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final existingSubs = await NginxService.getExistingSubdomains(confDir);
     if (existingSubs.isEmpty) return;
 
+    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+
     if (!mounted) return;
     final selected = await showDialog<String>(
       context: context,
@@ -160,7 +162,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
             child: ListTile(
               leading: const Icon(Icons.dns, color: Colors.green),
               title: Text(sub),
-              subtitle: Text('$sub$suffix'),
+              subtitle: Text('$sub$dotSuffix'),
               dense: true,
             ),
           );
@@ -174,7 +176,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     await StorageService.addWorkspace(updated.toJson());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.nginxLinked('$selected$suffix'))),
+        SnackBar(content: Text(context.l10n.nginxLinked('$selected$dotSuffix'))),
       );
     }
     await _load();
@@ -268,6 +270,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     try {
       final nginx = await NginxService.loadSettings();
       final suffix = (nginx['domainSuffix'] ?? '').toString();
+      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
       final sub = ws.nginxSubdomain ?? subdomain;
       await NginxService.removeNginx(sub);
       // Clear subdomain from workspace
@@ -278,7 +281,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  context.l10n.nginxRemoveSuccess('$sub$suffix'))),
+                  context.l10n.nginxRemoveSuccess('$sub$dotSuffix'))),
         );
       }
       await _load();

@@ -25,6 +25,8 @@ class ProjectInfo {
   bool get hasDb => dbName != null && dbName!.isNotEmpty;
 
   ProjectInfo copyWith({
+    int? httpPort,
+    int? longpollingPort,
     bool? favourite,
     String? Function()? nginxSubdomain,
     String? Function()? dbName,
@@ -33,8 +35,8 @@ class ProjectInfo {
         name: name,
         path: path,
         description: description,
-        httpPort: httpPort,
-        longpollingPort: longpollingPort,
+        httpPort: httpPort ?? this.httpPort,
+        longpollingPort: longpollingPort ?? this.longpollingPort,
         createdAt: createdAt,
         favourite: favourite ?? this.favourite,
         nginxSubdomain: nginxSubdomain != null

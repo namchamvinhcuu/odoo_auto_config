@@ -247,6 +247,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final existingSubs = await NginxService.getExistingSubdomains(confDir);
     if (existingSubs.isEmpty) return;
 
+    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+
     if (!mounted) return;
     final selected = await showDialog<String>(
       context: context,
@@ -258,7 +260,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             child: ListTile(
               leading: const Icon(Icons.dns, color: Colors.green),
               title: Text(sub),
-              subtitle: Text('$sub$suffix'),
+              subtitle: Text('$sub$dotSuffix'),
               dense: true,
             ),
           );
@@ -267,12 +269,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
     if (selected == null) return;
 
-    final updated = proj.copyWith(nginxSubdomain: () => selected);
+    // Read ports from nginx conf and update project + odoo.conf
+    final ports = await NginxService.parseOdooPorts(confDir, selected);
+    var updated = proj.copyWith(nginxSubdomain: () => selected);
+    if (ports.httpPort != null && ports.lpPort != null) {
+      updated = updated.copyWith(
+        httpPort: ports.httpPort,
+        longpollingPort: ports.lpPort,
+      );
+      await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
+    }
     await StorageService.removeProject(proj.path);
     await StorageService.addProject(updated.toJson());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.nginxLinked('$selected$suffix'))),
+        SnackBar(content: Text(context.l10n.nginxLinked('$selected$dotSuffix'))),
       );
     }
     await _load();
@@ -353,6 +364,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     try {
       final nginx = await NginxService.loadSettings();
       final suffix = (nginx['domainSuffix'] ?? '').toString();
+      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
       final sub = proj.nginxSubdomain ?? subdomain;
       await NginxService.removeNginx(sub);
       // Clear subdomain from project
@@ -363,7 +375,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  context.l10n.nginxRemoveSuccess('$sub$suffix'))),
+                  context.l10n.nginxRemoveSuccess('$sub$dotSuffix'))),
         );
       }
       await _load();
@@ -664,11 +676,30 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   onTap: exists ? () => _openInVscode(proj.path) : null,
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(details.globalPosition, proj, exists),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Nginx banner
+                      if (proj.hasNginx)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          color: Colors.teal,
+                          child: Text(
+                            'nginx',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: portSize,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
                       Align(
                         alignment: Alignment.topRight,
                         child: IconButton(
@@ -756,10 +787,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           ],
                         ],
                       ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
               ),
             );
           },

@@ -352,6 +352,41 @@ class NginxService {
     return '$sanitized.conf';
   }
 
+  /// Parse http and longpolling ports from an Odoo nginx conf file
+  static Future<({int? httpPort, int? lpPort})> parseOdooPorts(
+      String confDir, String subdomain) async {
+    final file = File(p.join(confDir, getConfFileName(subdomain)));
+    if (!await file.exists()) return (httpPort: null, lpPort: null);
+    final content = await file.readAsString();
+
+    // proxy_pass http://host:PORT in location / block → httpPort
+    // proxy_pass http://host:PORT in location /longpolling/ block → lpPort
+    int? httpPort;
+    int? lpPort;
+
+    final blocks = RegExp(
+      r'location\s+(.*?)\s*\{(.*?)\}',
+      dotAll: true,
+    ).allMatches(content);
+
+    for (final block in blocks) {
+      final loc = block.group(1)?.trim() ?? '';
+      final body = block.group(2) ?? '';
+      final portMatch =
+          RegExp(r'proxy_pass\s+https?://[^:]+:(\d+)').firstMatch(body);
+      if (portMatch == null) continue;
+      final port = int.tryParse(portMatch.group(1)!);
+      if (port == null) continue;
+
+      if (loc == '/longpolling/' || loc == '/longpolling') {
+        lpPort = port;
+      } else if (loc == '/' && httpPort == null) {
+        httpPort = port;
+      }
+    }
+    return (httpPort: httpPort, lpPort: lpPort);
+  }
+
   // ── Check status ──
 
   static Future<bool> isNginxSetup(String confDir, String subdomain) async {
