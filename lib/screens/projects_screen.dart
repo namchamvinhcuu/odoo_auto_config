@@ -1511,17 +1511,17 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
           Icon(icon, size: 20, color: Colors.grey),
           const SizedBox(width: AppSpacing.sm),
           SizedBox(
-            width: 140,
+            width: 160,
             child: Text(label,
                 style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: AppFontSize.md)),
+                    color: Colors.grey.shade600, fontSize: AppFontSize.lg)),
           ),
           Expanded(
             child: SelectableText(
               value,
               style: TextStyle(
                 fontFamily: 'monospace',
-                fontSize: AppFontSize.md,
+                fontSize: AppFontSize.lg,
                 color: valueColor,
               ),
             ),
