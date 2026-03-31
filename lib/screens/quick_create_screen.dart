@@ -47,20 +47,24 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     final profilesJson = await StorageService.loadProfiles();
     final projectsJson = await StorageService.loadProjects();
 
-    int maxHttp = 8068;
-    int maxLp = 8071;
+    // Find max port across all projects
+    int maxPort = 8068;
     for (final pr in projectsJson) {
       final hp = pr['httpPort'] as int? ?? 0;
       final lp = pr['longpollingPort'] as int? ?? 0;
-      if (hp > maxHttp) maxHttp = hp;
-      if (lp > maxLp) maxLp = lp;
+      if (hp > maxPort) maxPort = hp;
+      if (lp > maxPort) maxPort = lp;
     }
+
+    // Next pair: max+1 / max+2 (default 8069/8070)
+    final nextHttp = maxPort + 1;
+    final nextLp = maxPort + 2;
 
     setState(() {
       _profiles = profilesJson.map((j) => Profile.fromJson(j)).toList();
       if (_profiles.isNotEmpty) _selectedProfile = _profiles.first;
-      _httpPortController.text = '${maxHttp + 1}';
-      _longpollingPortController.text = '${maxLp + 1}';
+      _httpPortController.text = '$nextHttp';
+      _longpollingPortController.text = '$nextLp';
       _loading = false;
     });
   }

@@ -172,10 +172,63 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         );
         return;
       }
+
+      // Preserve nginxSubdomain, favourite, dbName from old project
+      final updated = result.copyWith(
+        nginxSubdomain: project.nginxSubdomain != null
+            ? () => project.nginxSubdomain
+            : null,
+        favourite: project.favourite,
+        dbName: project.dbName != null ? () => project.dbName : null,
+      );
+
       await StorageService.removeProject(project.path);
-      await StorageService.addProject(result.toJson());
+      await StorageService.addProject(updated.toJson());
+
+      // Update odoo.conf if ports changed
+      final portsChanged = project.httpPort != result.httpPort ||
+          project.longpollingPort != result.longpollingPort;
+      if (portsChanged) {
+        await _updateOdooConf(result.path, result.httpPort, result.longpollingPort);
+        // Update nginx conf if project has nginx setup
+        if (project.hasNginx) {
+          await _updateNginxConf(
+            project.nginxSubdomain!,
+            result.httpPort,
+            result.longpollingPort,
+          );
+        }
+      }
+
       await _load();
     }
+  }
+
+  Future<void> _updateOdooConf(String projectPath, int httpPort, int lpPort) async {
+    final confFile = File(p.join(projectPath, 'odoo.conf'));
+    if (!await confFile.exists()) return;
+    try {
+      var content = await confFile.readAsString();
+      content = content.replaceFirst(
+        RegExp(r'http_port\s*=\s*\d+'),
+        'http_port = $httpPort',
+      );
+      content = content.replaceFirst(
+        RegExp(r'longpolling_port\s*=\s*\d+'),
+        'longpolling_port = $lpPort',
+      );
+      await confFile.writeAsString(content);
+    } catch (_) {}
+  }
+
+  Future<void> _updateNginxConf(String subdomain, int httpPort, int lpPort) async {
+    try {
+      await NginxService.setupOdoo(
+        subdomain: subdomain,
+        httpPort: httpPort,
+        longpollingPort: lpPort,
+      );
+    } catch (_) {}
   }
 
   Future<void> _linkNginx(ProjectInfo proj) async {
@@ -1003,12 +1056,30 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     super.initState();
     final e = widget.existing;
     _nameController = TextEditingController(text: e?.name ?? '');
-    _httpPortController =
-        TextEditingController(text: '${e?.httpPort ?? 8069}');
-    _lpPortController =
-        TextEditingController(text: '${e?.longpollingPort ?? 8072}');
+    _httpPortController = TextEditingController(text: '${e?.httpPort ?? 0}');
+    _lpPortController = TextEditingController(text: '${e?.longpollingPort ?? 0}');
     _projectPath = e?.path ?? '';
     _description = e?.description ?? '';
+    if (e == null) _suggestPorts();
+  }
+
+  Future<void> _suggestPorts() async {
+    final projectsJson = await StorageService.loadProjects();
+    int maxPort = 8068;
+    for (final pr in projectsJson) {
+      final hp = pr['httpPort'] as int? ?? 0;
+      final lp = pr['longpollingPort'] as int? ?? 0;
+      if (hp > maxPort) maxPort = hp;
+      if (lp > maxPort) maxPort = lp;
+    }
+    final nextHttp = maxPort + 1;
+    final nextLp = maxPort + 2;
+    if (mounted && !_autoDetected) {
+      setState(() {
+        _httpPortController.text = '$nextHttp';
+        _lpPortController.text = '$nextLp';
+      });
+    }
   }
 
   Future<void> _pickDir() async {
@@ -1071,7 +1142,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
       description: _description,
       httpPort: int.tryParse(_httpPortController.text) ?? 8069,
       longpollingPort: int.tryParse(_lpPortController.text) ?? 8072,
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: widget.existing?.createdAt ?? DateTime.now().toIso8601String(),
     );
 
     Navigator.pop(context, project);
@@ -1508,20 +1579,20 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.grey),
+          Icon(icon, size: 22, color: Colors.grey),
           const SizedBox(width: AppSpacing.sm),
           SizedBox(
-            width: 160,
+            width: 170,
             child: Text(label,
                 style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: AppFontSize.lg)),
+                    color: Colors.grey.shade600, fontSize: AppFontSize.xl)),
           ),
           Expanded(
             child: SelectableText(
               value,
               style: TextStyle(
                 fontFamily: 'monospace',
-                fontSize: AppFontSize.lg,
+                fontSize: AppFontSize.xl,
                 color: valueColor,
               ),
             ),
