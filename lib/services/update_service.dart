@@ -25,11 +25,32 @@ class UpdateService {
   static const _repo = 'namchamvinhcuu/odoo_auto_config';
   static const _apiUrl =
       'https://api.github.com/repos/$_repo/releases/latest';
-  static const currentVersion = '1.0.0';
+
+  /// Read app version from flutter_assets/version.json (auto-generated from pubspec.yaml)
+  static Future<String> getCurrentVersion() async {
+    try {
+      final exe = Platform.resolvedExecutable;
+      // Linux/Windows: <bundle>/data/flutter_assets/version.json
+      // macOS: <app>/Contents/Frameworks/App.framework/Resources/flutter_assets/version.json
+      final candidates = [
+        File(p.join(p.dirname(exe), 'data', 'flutter_assets', 'version.json')),
+        File(p.join(p.dirname(exe), '..', 'Frameworks', 'App.framework',
+            'Resources', 'flutter_assets', 'version.json')),
+      ];
+      for (final file in candidates) {
+        if (await file.exists()) {
+          final json = jsonDecode(await file.readAsString());
+          return (json['version'] ?? '0.0.0').toString();
+        }
+      }
+    } catch (_) {}
+    return '0.0.0';
+  }
 
   /// Check GitHub for latest release
   static Future<UpdateInfo?> checkForUpdate() async {
     try {
+      final currentVersion = await getCurrentVersion();
       final result = await Process.run('curl', [
         '-sL',
         '-H', 'Accept: application/vnd.github.v3+json',

@@ -113,7 +113,17 @@ jobs:
       - name: Create MSIX
         run: dart run msix:create --build-windows false --install-certificate false --output-name WorkspaceConfiguration
 
+      - name: Copy installer files
+        run: |
+          Copy-Item certificate.pfx build/windows/x64/runner/Release/
+          Copy-Item install.ps1 build/windows/x64/runner/Release/
+          Copy-Item install.bat build/windows/x64/runner/Release/
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/windows/x64/runner/Release/WorkspaceConfiguration.msix
+          files: |
+            build/windows/x64/runner/Release/WorkspaceConfiguration.msix
+            build/windows/x64/runner/Release/certificate.pfx
+            build/windows/x64/runner/Release/install.ps1
+            build/windows/x64/runner/Release/install.bat

@@ -274,6 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void _showDockerInstallDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) =>
           _DockerInstallDialog(onInstalled: () => _scanEnvironment()),
     );
@@ -2310,17 +2311,28 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   bool _installed = false;
   bool _needsRestart = false;
   bool? _pmAvailable;
+  bool? _wslInstalled;
   final List<String> _logLines = [];
+
+  // Start Docker after install
+  bool _startingDocker = false;
 
   @override
   void initState() {
     super.initState();
     _checkPM();
+    _checkWsl();
   }
 
   Future<void> _checkPM() async {
     final ok = await PythonInstallService.isPackageManagerAvailable();
     if (mounted) setState(() => _pmAvailable = ok);
+  }
+
+  Future<void> _checkWsl() async {
+    if (!PlatformService.isWindows) return;
+    final ok = await DockerInstallService.isWslInstalled();
+    if (mounted) setState(() => _wslInstalled = ok);
   }
 
   Future<void> _install() async {
@@ -2382,6 +2394,16 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
                   subtitle: _pmNotFound(context),
                   status: StatusType.error)
             else ...[
+              if (PlatformService.isWindows && _wslInstalled == false)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: StatusCard(
+                    title: 'WSL not installed',
+                    subtitle: 'WSL is required for Docker Desktop on Windows.\n'
+                        'It will be installed first, then you need to restart your PC.',
+                    status: StatusType.warning,
+                  ),
+                ),
               Text(DockerInstallService.installCommand().description,
                   style: TextStyle(
                       fontFamily: 'monospace',
@@ -2434,8 +2456,6 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
       ],
     );
   }
-
-  bool _startingDocker = false;
 
   Future<void> _startDocker() async {
     setState(() => _startingDocker = true);
