@@ -73,30 +73,44 @@ class OdooAutoConfigApp extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: localeService.locale,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: theme.seedColor,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: theme.seedColor,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          isDense: true,
-        ),
-      ),
+      theme: _buildTheme(theme.seedColor, Brightness.light),
+      darkTheme: _buildTheme(theme.seedColor, Brightness.dark),
       themeMode: theme.themeMode,
       home: const SelectionArea(child: HomeScreen()),
+    );
+  }
+
+  static const _buttonCursor = WidgetStatePropertyAll(SystemMouseCursors.click);
+
+  static ThemeData _buildTheme(Color seedColor, Brightness brightness) {
+    return ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: seedColor,
+        brightness: brightness,
+      ),
+      useMaterial3: true,
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(mouseCursor: _buttonCursor),
+      ),
     );
   }
 }
