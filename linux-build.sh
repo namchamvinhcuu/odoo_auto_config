@@ -50,7 +50,7 @@ fi
 
 echo "=== Building AppImage ==="
 rm -f "$OUTPUT"
-ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run "$APPDIR" "$OUTPUT"
+ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run --no-appstream "$APPDIR" "$OUTPUT"
 
 echo ""
 echo "=== Done ==="
