@@ -127,3 +127,38 @@ jobs:
             build/windows/x64/runner/Release/certificate.pfx
             build/windows/x64/runner/Release/install.ps1
             build/windows/x64/runner/Release/install.bat
+
+  publish-public:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release assets from private repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          mkdir -p assets
+          gh release download "$TAG" \
+            --repo namchamvinhcuu/odoo_auto_config \
+            --dir assets
+
+      - name: Create release on public repo
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          gh release create "$TAG" \
+            --repo namchamvinhcuu/workspace-configuration \
+            --title "Workspace Configuration $TAG" \
+            --notes "## Download
+
+          | Platform | File |
+          |----------|------|
+          | Linux | WorkspaceConfiguration.AppImage |
+          | macOS | WorkspaceConfiguration.dmg |
+          | Windows | WorkspaceConfiguration.msix |
+
+          ### Windows Installation
+          Download all 4 Windows files, then run \`install.bat\` as Administrator." \
+            assets/*
