@@ -33,8 +33,12 @@ OLD_VERSION=$(grep '^version:' "$PUBSPEC" | head -1)
 sed -i "s/^version: .*/version: $VERSION+1/" "$PUBSPEC"
 echo "Updated $PUBSPEC: $OLD_VERSION → version: $VERSION+1"
 
+# Update version.json
+echo "{\"version\": \"$VERSION\"}" > assets/version.json
+echo "Updated assets/version.json → $VERSION"
+
 # Commit, tag, push
-git add "$PUBSPEC"
+git add "$PUBSPEC" assets/version.json
 git commit -m "release v$VERSION"
 git tag "v$VERSION"
 git push origin "$(git branch --show-current)" --tags

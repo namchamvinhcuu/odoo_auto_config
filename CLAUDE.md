@@ -47,7 +47,8 @@ lib/
 │   ├── vscode_config_service.dart   # Sinh .vscode/launch.json (debugpy)
 │   ├── theme_service.dart       # Theme mode + accent color (ChangeNotifier)
 │   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
-│   └── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
+│   ├── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
+│   └── update_service.dart      # Auto-update: check GitHub releases, download, install
 ├── screens/                     # UI screens (StatefulWidget)
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
 │   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
@@ -119,6 +120,17 @@ lib/
 - Banner chi mat khi Docker daemon thuc su running
 - `HomeScreen.navigateToSettings(settingsTab: N)` de chuyen tab tu bat ky screen nao
   (VD: bam Setup Nginx khi chua config -> tu dong chuyen sang Settings > Nginx tab)
+
+## Auto-Update Feature
+- **Version detection**: Doc tu `assets/version.json` qua Flutter `rootBundle.loadString()`
+  File nay PHAI duoc generate truoc khi build (CI workflow va release.sh tu dong lam)
+- **GitHub check**: Query `api.github.com/repos/namchamvinhcuu/workspace-configuration/releases/latest`
+  So sanh semver: currentVersion vs tag_name. Hien MaterialBanner neu co update
+- **Download + Install**: Tai asset theo platform (.dmg/.AppImage/.msix), tao script thay the app roi restart
+- **Public repo**: Releases publish len `namchamvinhcuu/workspace-configuration` (public)
+  Code dev tai `namchamvinhcuu/odoo_auto_config` (private)
+- **QUAN TRONG**: Khi release, `assets/version.json` phai khop voi version tag
+  CI workflow tu dong generate tu `$GITHUB_REF_NAME`. Local release qua `release.sh` cung tu dong update
 
 ## Nginx Feature
 - **Init project**: Tao structure (conf.d/, certs/, nginx.conf, docker-compose.yml, .gitignore)

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 
 class UpdateInfo {
@@ -26,23 +27,12 @@ class UpdateService {
   static const _apiUrl =
       'https://api.github.com/repos/$_repo/releases/latest';
 
-  /// Read app version from flutter_assets/version.json (auto-generated from pubspec.yaml)
+  /// Read app version from assets/version.json (declared in pubspec.yaml)
   static Future<String> getCurrentVersion() async {
     try {
-      final exe = Platform.resolvedExecutable;
-      // Linux/Windows: <bundle>/data/flutter_assets/version.json
-      // macOS: <app>/Contents/Frameworks/App.framework/Resources/flutter_assets/version.json
-      final candidates = [
-        File(p.join(p.dirname(exe), 'data', 'flutter_assets', 'version.json')),
-        File(p.join(p.dirname(exe), '..', 'Frameworks', 'App.framework',
-            'Resources', 'flutter_assets', 'version.json')),
-      ];
-      for (final file in candidates) {
-        if (await file.exists()) {
-          final json = jsonDecode(await file.readAsString());
-          return (json['version'] ?? '0.0.0').toString();
-        }
-      }
+      final data = await rootBundle.loadString('assets/version.json');
+      final json = jsonDecode(data);
+      return (json['version'] ?? '0.0.0').toString();
     } catch (_) {}
     return '0.0.0';
   }
