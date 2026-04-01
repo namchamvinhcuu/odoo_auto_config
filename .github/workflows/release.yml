@@ -151,14 +151,35 @@ jobs:
           gh release create "$TAG" \
             --repo namchamvinhcuu/workspace-configuration \
             --title "Workspace Configuration $TAG" \
-            --notes "## Download
+            --notes "## Download & Install
 
-          | Platform | File |
-          |----------|------|
-          | Linux | WorkspaceConfiguration.AppImage |
-          | macOS | WorkspaceConfiguration.dmg |
-          | Windows | WorkspaceConfiguration.msix |
+          | Platform | File | Size |
+          |----------|------|------|
+          | Linux | \`WorkspaceConfiguration.AppImage\` | ~17 MB |
+          | macOS | \`WorkspaceConfiguration.dmg\` | ~19 MB |
+          | Windows | \`WorkspaceConfiguration.msix\` | ~14 MB |
 
-          ### Windows Installation
-          Download all 4 Windows files, then run \`install.bat\` as Administrator." \
+          ---
+
+          ### Linux
+          \`\`\`bash
+          chmod +x WorkspaceConfiguration.AppImage
+          ./WorkspaceConfiguration.AppImage
+          \`\`\`
+
+          ### macOS
+          1. Open \`WorkspaceConfiguration.dmg\`
+          2. Drag app to **Applications**
+          3. First launch: right-click > **Open**
+
+          > If you see \"App is damaged\", run: \`xattr -cr /Applications/Workspace\ Configuration.app\`
+
+          ### Windows
+          1. Download **all 4 files** (\`.msix\`, \`.pfx\`, \`.ps1\`, \`.bat\`)
+          2. Place them in the **same folder**
+          3. Right-click \`install.bat\` > **Run as Administrator**
+          4. Launch from **Start Menu**
+
+          ---
+          See [README](https://github.com/namchamvinhcuu/workspace-configuration#readme) for full usage guide." \
             assets/*
