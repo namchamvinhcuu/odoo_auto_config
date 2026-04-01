@@ -170,9 +170,11 @@ jobs:
           ### macOS
           1. Open \`WorkspaceConfiguration.dmg\`
           2. Drag app to **Applications**
-          3. First launch: right-click > **Open**
+          3. Double-click to launch — macOS will block it
+          4. Go to **System Settings** > **Privacy & Security**
+          5. Find the blocked message > click **Open Anyway** > enter password > **Open**
 
-          > If you see \"App is damaged\", run: \`xattr -cr /Applications/Workspace\ Configuration.app\`
+          > If you see \"App is damaged\", run: \`xattr -cr /Applications/Workspace\\ Configuration.app\`
 
           ### Windows
           1. Download **all 4 files** (\`.msix\`, \`.pfx\`, \`.ps1\`, \`.bat\`)
