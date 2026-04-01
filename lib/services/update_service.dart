@@ -22,7 +22,7 @@ class UpdateInfo {
 }
 
 class UpdateService {
-  static const _repo = 'namchamvinhcuu/odoo_auto_config';
+  static const _repo = 'namchamvinhcuu/workspace-configuration';
   static const _apiUrl =
       'https://api.github.com/repos/$_repo/releases/latest';
 
