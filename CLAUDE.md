@@ -185,6 +185,12 @@ cp -R "$APP_PATH" "$TMP_DIR/Workspace Configuration.app"
 ln -s /Applications "$TMP_DIR/Applications"
 hdiutil create -volname "Workspace Configuration" -srcfolder "$TMP_DIR" -ov -format UDZO "$DMG_PATH"
 rm -rf "$TMP_DIR"
+
+# Release (macOS/Linux)
+bash release.sh 1.0.5
+
+# Release (Windows PowerShell)
+.\release.ps1 1.0.5
 ```
 
 ## Internationalization (i18n)
@@ -197,6 +203,10 @@ rm -rf "$TMP_DIR"
 - Luu y dich thuat: "Theme Mode" tieng Viet la "Tuy chinh giao dien" (khong phai "Che do giao dien")
 
 ## Cross-Platform Notes
+
+### Shell scripts cross-platform
+- `sed -i` khac nhau: macOS (BSD) can `sed -i ''`, Linux (GNU) dung `sed -i`
+  Trong release.sh: dung `$OSTYPE` check de chon dung variant
 
 ### QUAN TRONG: App duoc build va cai dat de chay doc lap (DMG/MSIX/bundle)
 - **MOI thay doi code PHAI tinh den release mode**, khong chi debug

@@ -30,7 +30,11 @@ PUBSPEC="pubspec.yaml"
 
 # Bump version in pubspec.yaml
 OLD_VERSION=$(grep '^version:' "$PUBSPEC" | head -1)
-sed -i "s/^version: .*/version: $VERSION+1/" "$PUBSPEC"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' "s/^version: .*/version: $VERSION+1/" "$PUBSPEC"
+else
+  sed -i "s/^version: .*/version: $VERSION+1/" "$PUBSPEC"
+fi
 echo "Updated $PUBSPEC: $OLD_VERSION → version: $VERSION+1"
 
 # Update version.json

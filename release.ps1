@@ -1,0 +1,48 @@
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$Version
+)
+
+$ErrorActionPreference = "Stop"
+
+# Validate semver format
+if ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    Write-Error "Error: Version must be semver (e.g., 1.1.0)"
+    exit 1
+}
+
+# Check clean working tree
+$status = git status --porcelain
+if ($status) {
+    Write-Error "Error: Working tree not clean. Commit or stash changes first."
+    exit 1
+}
+
+# Check tag doesn't exist
+git rev-parse "v$Version" 2>$null
+if ($LASTEXITCODE -eq 0) {
+    Write-Error "Error: Tag v$Version already exists."
+    exit 1
+}
+
+$pubspec = "pubspec.yaml"
+
+# Bump version in pubspec.yaml
+$oldVersion = (Select-String -Path $pubspec -Pattern '^version:').Line
+(Get-Content $pubspec) -replace '^version: .*', "version: $Version+1" | Set-Content $pubspec -Encoding UTF8
+Write-Host "Updated $pubspec`: $oldVersion -> version: $Version+1"
+
+# Update version.json
+@{version=$Version} | ConvertTo-Json -Compress | Set-Content "assets/version.json" -Encoding UTF8
+Write-Host "Updated assets/version.json -> $Version"
+
+# Commit, tag, push
+git add $pubspec assets/version.json
+git commit -m "release v$Version"
+git tag "v$Version"
+$branch = git branch --show-current
+git push origin $branch --tags
+
+Write-Host ""
+Write-Host "Done! v$Version pushed. GitHub Actions will build & release."
+Write-Host "Track: https://github.com/namchamvinhcuu/odoo_auto_config/actions"
