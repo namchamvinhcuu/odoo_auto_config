@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
+
+import '../generated/version.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -27,20 +28,13 @@ class UpdateService {
   static const _apiUrl =
       'https://api.github.com/repos/$_repo/releases/latest';
 
-  /// Read app version from assets/version.json (declared in pubspec.yaml)
-  static Future<String> getCurrentVersion() async {
-    try {
-      final data = await rootBundle.loadString('assets/version.json');
-      final json = jsonDecode(data);
-      return (json['version'] ?? '0.0.0').toString();
-    } catch (_) {}
-    return '0.0.0';
-  }
+  /// App version from compiled Dart const (lib/generated/version.dart)
+  static String getCurrentVersion() => appVersion;
 
   /// Check GitHub for latest release
   static Future<UpdateInfo?> checkForUpdate() async {
     try {
-      final currentVersion = await getCurrentVersion();
+      final currentVersion = getCurrentVersion();
       final result = await Process.run('curl', [
         '-sL',
         '-H', 'Accept: application/vnd.github.v3+json',
@@ -97,6 +91,12 @@ class UpdateService {
       ], runInShell: true);
 
       if (result.exitCode != 0) return null;
+
+      // Remove quarantine on macOS (prevents Gatekeeper blocking)
+      if (Platform.isMacOS) {
+        await Process.run('xattr', ['-d', 'com.apple.quarantine', filePath],
+            runInShell: true);
+      }
 
       // Make executable on Linux
       if (Platform.isLinux && fileName.endsWith('.AppImage')) {
@@ -162,6 +162,10 @@ rm "\$0"
   // ── macOS: mount DMG and copy .app ──
 
   static Future<bool> _installMacOS(String dmgPath) async {
+    // Remove quarantine from DMG before mounting (prevents Gatekeeper)
+    await Process.run('xattr', ['-d', 'com.apple.quarantine', dmgPath],
+        runInShell: true);
+
     // Mount DMG
     final mountResult = await Process.run('hdiutil', [
       'attach', dmgPath, '-nobrowse', '-quiet',
