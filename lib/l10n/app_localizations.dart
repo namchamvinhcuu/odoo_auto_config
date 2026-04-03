@@ -394,6 +394,42 @@ abstract class AppLocalizations {
   /// **'Open in VSCode'**
   String get openInVscode;
 
+  /// No description provided for @gitPull.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Pull'**
+  String get gitPull;
+
+  /// No description provided for @gitPullTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Pull — {name}'**
+  String gitPullTitle(String name);
+
+  /// No description provided for @gitPullNoScript.
+  ///
+  /// In en, this message translates to:
+  /// **'git-repositories.sh not found in project directory'**
+  String get gitPullNoScript;
+
+  /// No description provided for @gitPullRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get gitPullRunning;
+
+  /// No description provided for @gitPullDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done!'**
+  String get gitPullDone;
+
+  /// No description provided for @gitPullFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Script failed with exit code {code}'**
+  String gitPullFailed(int code);
+
   /// No description provided for @openFolder.
   ///
   /// In en, this message translates to:

@@ -165,6 +165,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openInVscode => 'Open in VSCode';
 
   @override
+  String get gitPull => 'Git Pull';
+
+  @override
+  String gitPullTitle(String name) {
+    return 'Git Pull — $name';
+  }
+
+  @override
+  String get gitPullNoScript =>
+      'git-repositories.sh not found in project directory';
+
+  @override
+  String get gitPullRunning => 'Running...';
+
+  @override
+  String get gitPullDone => 'Done!';
+
+  @override
+  String gitPullFailed(int code) {
+    return 'Script failed with exit code $code';
+  }
+
+  @override
   String get openFolder => 'Open folder';
 
   @override

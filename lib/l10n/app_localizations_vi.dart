@@ -165,6 +165,29 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openInVscode => 'Mở trong VSCode';
 
   @override
+  String get gitPull => 'Git Pull';
+
+  @override
+  String gitPullTitle(String name) {
+    return 'Git Pull — $name';
+  }
+
+  @override
+  String get gitPullNoScript =>
+      'Không tìm thấy git-repositories.sh trong thư mục dự án';
+
+  @override
+  String get gitPullRunning => 'Đang chạy...';
+
+  @override
+  String get gitPullDone => 'Hoàn tất!';
+
+  @override
+  String gitPullFailed(int code) {
+    return 'Script thất bại với mã thoát $code';
+  }
+
+  @override
   String get openFolder => 'Mở thư mục';
 
   @override

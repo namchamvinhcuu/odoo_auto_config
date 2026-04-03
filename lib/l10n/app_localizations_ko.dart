@@ -163,6 +163,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openInVscode => 'VSCode에서 열기';
 
   @override
+  String get gitPull => 'Git Pull';
+
+  @override
+  String gitPullTitle(String name) {
+    return 'Git Pull — $name';
+  }
+
+  @override
+  String get gitPullNoScript => '프로젝트 디렉토리에 git-repositories.sh 파일이 없습니다';
+
+  @override
+  String get gitPullRunning => '실행 중...';
+
+  @override
+  String get gitPullDone => '완료!';
+
+  @override
+  String gitPullFailed(int code) {
+    return '스크립트가 종료 코드 $code(으)로 실패했습니다';
+  }
+
+  @override
   String get openFolder => '폴더 열기';
 
   @override

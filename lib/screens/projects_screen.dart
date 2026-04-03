@@ -147,7 +147,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final installed = await PlatformService.isVscodeInstalled();
     if (!installed) {
       if (!mounted) return;
-      _showVscodeInstallDialog();
+      showDialog(
+        context: context,
+        builder: (ctx) => const VscodeInstallDialog(),
+      );
       return;
     }
     try {
@@ -167,10 +170,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
   }
 
-  void _showVscodeInstallDialog() {
+  void _runGitPull(ProjectInfo project) {
+    final scriptPath = p.join(project.path, 'git-repositories.sh');
+    if (!File(scriptPath).existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.gitPullNoScript)),
+      );
+      return;
+    }
     showDialog(
       context: context,
-      builder: (ctx) => const VscodeInstallDialog(),
+      builder: (ctx) => _GitPullDialog(
+        projectName: project.name,
+        projectPath: project.path,
+        scriptPath: scriptPath,
+      ),
     );
   }
 
@@ -587,6 +601,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ),
                     if (exists) ...[
                       IconButton(
+                        onPressed: () => _runGitPull(proj),
+                        icon: const Icon(Icons.sync),
+                        tooltip: context.l10n.gitPull,
+                      ),
+                      IconButton(
                         onPressed: () => _openInVscode(proj.path),
                         icon: const Icon(Icons.code),
                         tooltip: context.l10n.openInVscode,
@@ -795,9 +814,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             ),
                           if (exists) ...[
                             _gridBtn(
-                              icon: Icons.code,
-                              tooltip: context.l10n.openInVscode,
-                              onPressed: () => _openInVscode(proj.path),
+                              icon: Icons.sync,
+                              tooltip: context.l10n.gitPull,
+                              onPressed: () => _runGitPull(proj),
                               iconSize: btnSize,
                               boxSize: btnBox,
                             ),
@@ -857,12 +876,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ),
         if (exists)
           PopupMenuItem(
-            value: 'vscode',
+            value: 'git_pull',
             child: Row(
               children: [
-                const Icon(Icons.code, size: AppIconSize.md),
+                const Icon(Icons.sync, size: AppIconSize.md),
                 const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.openInVscode),
+                Text(context.l10n.gitPull),
               ],
             ),
           ),
@@ -939,8 +958,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         _showProjectInfo(proj);
       case 'favourite':
         _toggleFavourite(proj);
-      case 'vscode':
-        _openInVscode(proj.path);
+      case 'git_pull':
+        _runGitPull(proj);
       case 'folder':
         _openInFileManager(proj.path);
       case 'nginx_setup':
@@ -1906,6 +1925,196 @@ class _CreateDbDialogState extends State<_CreateDbDialog> {
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.add),
           label: Text(_creating ? context.l10n.creatingDatabase : context.l10n.createDatabase),
+        ),
+      ],
+    );
+  }
+}
+
+class _GitPullDialog extends StatefulWidget {
+  final String projectName;
+  final String projectPath;
+  final String scriptPath;
+
+  const _GitPullDialog({
+    required this.projectName,
+    required this.projectPath,
+    required this.scriptPath,
+  });
+
+  @override
+  State<_GitPullDialog> createState() => _GitPullDialogState();
+}
+
+class _GitPullDialogState extends State<_GitPullDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    30: Color(0xFF000000), // black
+    31: Color(0xFFCD3131), // red
+    32: Color(0xFF0DBC79), // green
+    33: Color(0xFFE5E510), // yellow
+    34: Color(0xFF2472C8), // blue
+    35: Color(0xFFBC3FBC), // magenta
+    36: Color(0xFF11A8CD), // cyan
+    37: Color(0xFFE5E5E5), // white
+    90: Color(0xFF666666), // bright black (gray)
+    91: Color(0xFFF14C4C), // bright red
+    92: Color(0xFF23D18B), // bright green
+    93: Color(0xFFF5F543), // bright yellow
+    94: Color(0xFF3B8EEA), // bright blue
+    95: Color(0xFFD670D6), // bright magenta
+    96: Color(0xFF29B8DB), // bright cyan
+    97: Color(0xFFFFFFFF), // bright white
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    try {
+      final process = await Process.start(
+        'bash',
+        [widget.scriptPath],
+        workingDirectory: widget.projectPath,
+        runInShell: true,
+      );
+      process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+        if (mounted) _addLine(line);
+      });
+      process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+        if (mounted) _addLine(line);
+      });
+      final exitCode = await process.exitCode;
+      if (!mounted) return;
+      if (exitCode == 0) {
+        _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
+      } else {
+        _addLine('\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m');
+      }
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) setState(() => _running = false);
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final p in params) {
+        final n = int.tryParse(p) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.gitPullTitle(widget.projectName)),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              ),
+            Container(
+              height: 350,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppLogColors.terminalBg,
+                borderRadius: AppRadius.mediumBorderRadius,
+                border: Border.all(color: Colors.grey.shade700),
+              ),
+              child: _logLines.isEmpty
+                  ? Center(
+                      child: Text(
+                        context.l10n.noOutputYet,
+                        style: const TextStyle(color: Colors.grey, fontFamily: 'monospace'),
+                      ),
+                    )
+                  : SelectionArea(
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: _logLines.length,
+                        itemBuilder: (context, index) {
+                          return RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: AppFontSize.md,
+                              ),
+                              children: _parseAnsi(_logLines[index]),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
         ),
       ],
     );
