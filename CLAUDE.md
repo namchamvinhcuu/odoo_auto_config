@@ -1,49 +1,49 @@
 # Workspace Configuration - Project Context
 
-## Overview
-Flutter desktop app (macOS/Linux/Windows) giup developer thiet lap va quan ly moi truong phat trien.
-Ho tro Odoo projects va cac du an ngon ngu khac (Flutter, React, NextJS, .NET, Rust, Go, Java...).
-Cung cap GUI de quan ly project, Python/venv, nginx reverse proxy, Docker, va sinh cau hinh VSCode debug.
+## Tổng quan
+Flutter desktop app (macOS/Linux/Windows) giúp developer thiết lập và quản lý môi trường phát triển.
+Hỗ trợ Odoo projects và các dự án ngôn ngữ khác (Flutter, React, NextJS, .NET, Rust, Go, Java...).
+Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docker, và sinh cấu hình VSCode debug.
 
 ## Tech Stack
 - **Flutter** SDK ^3.9.2 (FVM managed)
 - **Provider** 6.1.0 - state management (ThemeService, LocaleService)
-- **file_picker** 8.0.0 - chon thu muc/file (macOS/Linux; Windows dung native PowerShell dialog)
-- **path** 1.9.0 - xu ly duong dan cross-platform
+- **file_picker** 8.0.0 - chọn thư mục/file (macOS/Linux; Windows dùng native PowerShell dialog)
+- **path** 1.9.0 - xử lý đường dẫn cross-platform
 - **window_manager** 0.5.1 - control window size, min size, center, animation resize
 - **msix** 3.16.13 - build MSIX installer cho Windows
-- **flutter_launcher_icons** 0.14.4 - generate app icon da nen tang
+- **flutter_launcher_icons** 0.14.4 - generate app icon đa nền tảng
 
-## App Name
-- Display name: **Workspace Configuration** (tat ca ARB, main.dart, pubspec.yaml, Info.plist)
-- Package name: `odoo_auto_config` (giu nguyen, khong anh huong user)
-- macOS CFBundleName: "Workspace Configuration" (co dau cach)
+## Tên ứng dụng
+- Display name: **Workspace Configuration** (tất cả ARB, main.dart, pubspec.yaml, Info.plist)
+- Package name: `odoo_auto_config` (giữ nguyên, không ảnh hưởng user)
+- macOS CFBundleName: "Workspace Configuration" (có dấu cách)
 - App icon: `workspaces.png` (512x512)
 
-## Architecture
+## Kiến trúc
 ```
 lib/
 ├── main.dart                    # Entry point, Provider setup, window_manager init, SelectionArea
 ├── constants/app_constants.dart # Design tokens: spacing, font-size, colors, radius, dialog sizes
 ├── models/                      # Data classes (immutable, fromJson/toJson, copyWith)
-│   ├── profile.dart             # Cau hinh Odoo dev profile
+│   ├── profile.dart             # Cấu hình Odoo dev profile
 │   ├── workspace_info.dart      # Other project (name, path, type, description, favourite, port, nginxSubdomain)
 │   ├── project_info.dart        # Odoo project (name, path, ports, description, favourite, nginxSubdomain)
-│   ├── venv_info.dart           # Thong tin virtual environment
+│   ├── venv_info.dart           # Thông tin virtual environment
 │   ├── python_info.dart         # Python installation detected
-│   ├── command_result.dart      # Ket qua chay process
-│   ├── venv_config.dart         # Config tao venv moi
-│   └── folder_structure_config.dart # Config tao folder structure
+│   ├── command_result.dart      # Kết quả chạy process
+│   ├── venv_config.dart         # Config tạo venv mới
+│   └── folder_structure_config.dart # Config tạo folder structure
 ├── services/                    # Business logic (stateless, static methods)
-│   ├── storage_service.dart     # Luu tru JSON tai ~/.config/odoo_auto_config/
+│   ├── storage_service.dart     # Lưu trữ JSON tại ~/.config/odoo_auto_config/
 │   ├── command_runner.dart      # Wrap Process.run() -> CommandResult (runInShell: true)
 │   ├── python_checker_service.dart # Detect Python installations (absolute paths + dedup shims)
 │   ├── python_install_service.dart # Cross-platform Python install (winget/brew/apt)
 │   ├── docker_install_service.dart # Docker install + status check (winget/brew/apt)
 │   ├── postgres_service.dart    # PostgreSQL: client detect, server detect (Docker+local), init Docker project, start/stop/restart
 │   ├── nginx_service.dart       # Nginx: init project, setup/remove proxy, port check, hosts, mkcert
-│   ├── venv_service.dart        # Tao/scan/inspect venv, pip install
-│   ├── folder_structure_service.dart # Tao cau truc thu muc Odoo project
+│   ├── venv_service.dart        # Tạo/scan/inspect venv, pip install
+│   ├── folder_structure_service.dart # Tạo cấu trúc thư mục Odoo project
 │   ├── vscode_config_service.dart   # Sinh .vscode/launch.json (debugpy)
 │   ├── theme_service.dart       # Theme mode + accent color (ChangeNotifier)
 │   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
@@ -53,20 +53,20 @@ lib/
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
 │   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
 │   ├── workspaces_screen.dart   # Other Projects: list/grid, favourite, auto-detect type, nginx
-│   ├── quick_create_screen.dart # Dialog tao Odoo project nhanh tu profile
+│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile
 │   ├── profile_screen.dart      # CRUD profiles
-│   ├── python_check_screen.dart # (an khoi menu, code giu nguyen)
-│   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhung trong Settings > Python)
-│   ├── vscode_config_screen.dart # Sinh debug config (an khoi menu, code giu nguyen)
-│   ├── folder_structure_screen.dart # Tao folder structure doc lap
-│   └── settings_screen.dart     # 4 tabs: Theme, Python+Venv, Nginx, Docker
+│   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
+│   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
+│   ├── vscode_config_screen.dart # Sinh debug config (ẩn khỏi menu, code giữ nguyên)
+│   ├── folder_structure_screen.dart # Tạo folder structure độc lập
+│   └── settings_screen.dart     # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
 ├── widgets/                     # Reusable components
-│   ├── status_card.dart         # Card hien thi trang thai
+│   ├── status_card.dart         # Card hiển thị trạng thái
 │   ├── directory_picker_field.dart # Text field + browse button
-│   ├── log_output.dart          # Real-time log voi color coding + SelectionArea
+│   ├── log_output.dart          # Real-time log với color coding + SelectionArea
 │   └── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
 └── templates/
-    ├── odoo_templates.dart      # Sinh odoo.conf va README.md
+    ├── odoo_templates.dart      # Sinh odoo.conf, README.md, git-repositories.sh/.ps1
     ├── nginx_templates.dart     # Sinh nginx conf (odoo/generic), nginx.conf, docker-compose.yml
     └── postgres_templates.dart  # Sinh docker-compose.yml, .env, postgresql.conf cho PostgreSQL Docker
 ```
@@ -76,106 +76,134 @@ lib/
 2. **Other Projects** - workspaces_screen.dart (icon: workspaces)
 3. **Profiles** - profile_screen.dart (icon: person)
 4. **Settings** - settings_screen.dart (icon: settings)
-   - Tab 0 **Theme**: language, theme mode, accent color, preview
-   - Tab 1 **Docker**: status + install
-   - Tab 2 **Python**: Python installations + install + Venv Manager (nhung VenvScreen)
-   - Tab 3 **PostgreSQL**: 2 sections:
-     1. Client Tools: detect 6 tools (psql, pg_dump, pg_restore, createdb, dropdb, pg_isready),
-        hien path tung tool, install tu dong (brew install libpq / apt install postgresql-client / winget)
-     2. Server Status: detect Docker containers (running+stopped, filter internal port 5432) + local service
-        (brew services/systemctl/sc query/Postgres.app), verify bang pg_isready -t 1, chay song song
+   - Tab 0 **Theme**: ngôn ngữ, theme mode, accent color, preview
+   - Tab 1 **Docker**: trạng thái + cài đặt
+   - Tab 2 **Python**: Python installations + cài đặt + Venv Manager (nhúng VenvScreen)
+   - Tab 3 **PostgreSQL**: 2 phần:
+     1. Client Tools: phát hiện 6 tools (psql, pg_dump, pg_restore, createdb, dropdb, pg_isready),
+        hiện path từng tool, cài tự động (brew install libpq / apt install postgresql-client / winget)
+     2. Server Status: phát hiện Docker containers (running+stopped, lọc internal port 5432) + local service
+        (brew services/systemctl/sc query/Postgres.app), xác minh bằng pg_isready -t 1, chạy song song
         Controls: Start/Stop/Restart cho Docker containers, Start cho local service
-        Setup: Dialog tao PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
-        Neu chua co server nao -> hien nut "Setup PostgreSQL Docker"
+        Setup: Dialog tạo PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
+        Nếu chưa có server nào → hiện nút "Setup PostgreSQL Docker"
    - Tab 4 **Nginx**: config record (init/import/edit/delete) + port check (80/443)
+   - Tab 5 **Git**: GitHub token (lưu vào settings, dùng khi tạo git-repositories script)
 
-> Python Check va VSCode Config **an khoi menu** nhung code giu nguyen.
+> Python Check và VSCode Config **ẩn khỏi menu** nhưng code giữ nguyên.
 
-## Key Patterns
-- **Immutable models** voi `fromJson()`/`toJson()` + `copyWith()` (nullable field dung `Function()`)
-- **Stateless services** - static methods, khong giu state
-- **Provider** chi cho ThemeService, LocaleService (ChangeNotifier)
-- **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap rieng
-- **SelectionArea** - wrap toan bo app tai main.dart, cho phep select + copy text bat ky
+## Các pattern chính
+- **Immutable models** với `fromJson()`/`toJson()` + `copyWith()` (nullable field dùng `Function()`)
+- **Stateless services** - static methods, không giữ state
+- **Provider** chỉ cho ThemeService, LocaleService (ChangeNotifier)
+- **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
+- **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
-- **Port conflict detection** - kiem tra trung port giua cac Odoo project
-- **Cross-platform** - PlatformService abstract paths; moi service co branch cho 3 OS
-- **Responsive layout** - Row cho header (Spacer day nut sang phai), Wrap cho card actions
+- **Port conflict detection** - kiểm tra trùng port giữa các Odoo project
+- **Cross-platform** - PlatformService abstract paths; mỗi service có branch cho 3 OS
+- **Responsive layout** - Row cho header (Spacer đẩy nút sang phải), Wrap cho card actions
 - **Window size** - 3 preset: Small (800x600 min), Medium (1100x750), Large (1400x900 default)
-  Persisted vao settings JSON (`windowSize`). Lan dau = Large, lan sau = size da chon truoc do.
-  Animation ease-out cubic 200ms khi chuyen size, guard chong spam click
-- **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vao settings JSON
+  Persisted vào settings JSON (`windowSize`). Lần đầu = Large, lần sau = size đã chọn trước đó.
+  Animation ease-out cubic 200ms khi chuyển size, guard chống spam click
+- **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vào settings JSON
   Grid default, responsive columns: S=3, M=4, L=5. Scale icon/button theo cell width
-- **Favourite** - Star icon (IconButton voi hover), sort favourite len dau roi by name A-Z
-- **Grid context menu** - Right-click hien menu (favourite, nginx setup/link/remove, VSCode, folder, edit, delete)
-- **Grid tooltip** - Hover hien description (hoac path neu khong co description)
-- **Auto-detect project type** - Import workspace tu dong nhan dien tu marker files
-- **Nginx status** - Luu `nginxSubdomain` vao model JSON (khong derive tu ten project)
-  Khi setup: luu subdomain. Khi remove: xoa subdomain. Check bang `hasNginx` getter.
+- **Favourite** - Star icon (IconButton với hover), sort favourite lên đầu rồi by name A-Z
+- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit, nginx setup/link/remove, VSCode, folder, edit, delete)
+- **Grid tooltip** - Hover hiện description (hoặc path nếu không có description)
+- **Auto-detect project type** - Import workspace tự động nhận diện từ marker files
+- **Nginx status** - Lưu `nginxSubdomain` vào model JSON (không derive từ tên project)
+  Khi setup: lưu subdomain. Khi remove: xóa subdomain. Check bằng `hasNginx` getter.
 
-## Startup Behavior
-- Check Docker installed + daemon running (retry 3 lan, moi lan cach 5s - phong truong hop auto-start after login)
-- Neu Docker khong cai hoac daemon chua chay -> hien MaterialBanner (khong tu tat) voi nut "Go to Settings"
-- Neu Docker running + nginx container stopped -> tu dong `docker start <container>`
-- Banner chi mat khi Docker daemon thuc su running
-- `HomeScreen.navigateToSettings(settingsTab: N)` de chuyen tab tu bat ky screen nao
-  (VD: bam Setup Nginx khi chua config -> tu dong chuyen sang Settings > Nginx tab)
+## Hành vi khi khởi động
+- Check Docker installed + daemon running (retry 3 lần, mỗi lần cách 5s - phòng trường hợp auto-start after login)
+- Nếu Docker không cài hoặc daemon chưa chạy → hiện MaterialBanner (không tự tắt) với nút "Go to Settings"
+- Nếu Docker running + nginx container stopped → tự động `docker start <container>`
+- Banner chỉ mất khi Docker daemon thực sự running
+- `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
+  (VD: bấm Setup Nginx khi chưa config → tự động chuyển sang Settings > Nginx tab)
 
-## Auto-Update Feature
-- **Version detection**: Doc tu `assets/version.json` qua Flutter `rootBundle.loadString()`
-  File nay PHAI duoc generate truoc khi build (CI workflow va release.sh tu dong lam)
-- **GitHub check**: Query `api.github.com/repos/namchamvinhcuu/workspace-configuration/releases/latest`
-  So sanh semver: currentVersion vs tag_name. Hien MaterialBanner neu co update
-- **Download + Install**: Tai asset theo platform (.dmg/.AppImage/.msix), tao script thay the app roi restart
-- **Public repo**: Releases publish len `namchamvinhcuu/workspace-configuration` (public)
-  Code dev tai `namchamvinhcuu/odoo_auto_config` (private)
-- **QUAN TRONG**: Khi release, `assets/version.json` phai khop voi version tag
-  CI workflow tu dong generate tu `$GITHUB_REF_NAME`. Local release qua `release.sh` cung tu dong update
+## Tính năng Auto-Update
+- **Phát hiện version**: Đọc từ `lib/generated/version.dart` (compiled Dart const)
+  File này PHẢI được generate trước khi build (CI workflow và release.sh tự động làm)
+- **Kiểm tra GitHub**: Query `api.github.com/repos/namchamvinhcuu/workspace-configuration/releases/latest`
+  So sánh semver: currentVersion vs tag_name. Hiện MaterialBanner nếu có update
+- **Download + Install** (theo platform):
+  - **macOS**: Tải `.zip` (KHÔNG phải .dmg) → `ditto -xk` unzip → shell script replace .app → relaunch
+    DMG chỉ dùng cho user tải manual. ZIP dùng cho auto-update (đơn giản, không cần mount/unmount)
+  - **Linux**: Tải `.AppImage` → shell script replace → relaunch
+  - **Windows**: Tải `.msix` → `Add-AppPackage -ForceApplicationShutdown` → `Start-Process` relaunch
+- **Xử lý lỗi**: Download/install fail → hiện SnackBar thông báo. macOS log tại `/tmp/wsc_update.log`
+- **Public repo**: Releases publish lên `namchamvinhcuu/workspace-configuration` (public)
+  Code dev tại `namchamvinhcuu/odoo_auto_config` (private)
+- **QUAN TRỌNG**: Khi release, `assets/version.json` phải khớp với version tag
+  CI workflow tự động generate từ `$GITHUB_REF_NAME`. Local release qua `release.sh` cũng tự động update
+- **MSIX version**: Không hardcode `msix_version` trong pubspec.yaml. Tự động derive từ `version` field
+  (VD: version 1.2.0+1 → msix_version 1.2.0.1). release.sh/ps1 chỉ cần update `version`
 
-## Nginx Feature
-- **Init project**: Tao structure (conf.d/, certs/, nginx.conf, docker-compose.yml, .gitignore)
-  Dung mkcert de tao SSL cert. App co the cai mkcert tu dong (brew/winget/apt).
-- **Import**: Chon folder nginx co san, tu detect conf.d ben trong
-- **Config record**: Chi 1 record duy nhat. Hien info card (confDir, domainSuffix, containerName)
-  Co nut Edit (chuyen sang form) va Delete (confirm + option xoa folder)
-- **Port check**: Tu dong check port 80/443 khi hien info card
-  macOS/Linux: `lsof`, Windows: `netstat + tasklist`. Hien process name + PID
-  Phan biet docker vs local: neu docker container running + process la docker runtime -> xanh (OK)
-  Neu process khac (local nginx, apache, ...) -> cam (warning) + nut Kill Process
-  Neu la local nginx -> hien them huong dan disable auto-start (brew services stop / systemctl disable)
-- **Container controls**: Start (khi stopped), Stop (khi running), Restart. Error hien inline card do
-- **Nginx config record**: 3 trang thai: empty (chua config), info card (da config), edit form
-- **Setup per project**: Dialog voi subdomain (fill san, co the sua ngan gon) + port (Other Projects)
-  Validation: ky tu hop le (a-z, 0-9, -), trung domain, trung port
-- **Link existing**: Chon tu danh sach conf co san trong conf.d/
-- **Remove**: Xoa conf file + hosts entry + reload container
+## Tính năng Nginx
+- **Init project**: Tạo structure (conf.d/, certs/, nginx.conf, docker-compose.yml, .gitignore)
+  Dùng mkcert để tạo SSL cert. App có thể cài mkcert tự động (brew/winget/apt).
+- **Import**: Chọn folder nginx có sẵn, tự detect conf.d bên trong
+- **Config record**: Chỉ 1 record duy nhất. Hiện info card (confDir, domainSuffix, containerName)
+  Có nút Edit (chuyển sang form) và Delete (confirm + option xóa folder)
+- **Port check**: Tự động check port 80/443 khi hiện info card
+  macOS/Linux: `lsof`, Windows: `netstat + tasklist`. Hiện process name + PID
+  Phân biệt docker vs local: nếu docker container running + process là docker runtime → xanh (OK)
+  Nếu process khác (local nginx, apache, ...) → cam (warning) + nút Kill Process
+  Nếu là local nginx → hiện thêm hướng dẫn disable auto-start (brew services stop / systemctl disable)
+- **Container controls**: Start (khi stopped), Stop (khi running), Restart. Error hiện inline card đỏ
+- **Nginx config record**: 3 trạng thái: empty (chưa config), info card (đã config), edit form
+- **Setup per project**: Dialog với subdomain (fill sẵn, có thể sửa ngắn gọn) + port (Other Projects)
+  Validation: ký tự hợp lệ (a-z, 0-9, -), trùng domain, trùng port
+- **Link existing**: Chọn từ danh sách conf có sẵn trong conf.d/
+- **Remove**: Xóa conf file + hosts entry + reload container
 - **Hosts file**: macOS (osascript), Linux (pkexec), Windows (PowerShell RunAs/UAC)
 - **Conf templates**: Odoo (3 location: /, /websocket, /longpolling), Generic (1 location: /)
-- **Docker only**: Khong ho tro nginx cai local (structure khac nhau tuy OS, qua nhieu bien the)
+- **Chỉ Docker**: Không hỗ trợ nginx cài local (structure khác nhau tùy OS, quá nhiều biến thể)
 
-## Persistent Storage
-Tat ca data luu tai: `~/.config/odoo_auto_config/odoo_auto_config.json`
-Gom: profiles, projects, workspaces, registered_venvs, settings
-Settings gom: theme, locale, gridView, nginx (confDir, domainSuffix, containerName)
+## Tính năng Git
+- **Git Pull**:
+  - Odoo Projects: chạy `git-repositories.sh` (macOS/Linux) hoặc `.ps1` (Windows) — pull hàng loạt repos trong addons/
+  - Other Projects: chạy `git pull` trực tiếp (single repo, check .git tồn tại)
+- **Git Commit**:
+  - Other Projects: `git status --porcelain` → checkbox list files → `git add --` từng file → `git commit` → optional `git push`
+  - Odoo Projects: scan `addons/` tìm repos có changes → checkbox list repos → `git add -A` + `git commit` + optional `git push` cho mỗi repo
+  - Reload status sau khi commit để hiện file/repo còn lại
+- **Git Repositories Script** (`git-repositories.sh` / `.ps1`):
+  - Template trong `odoo_templates.dart` với params `token` và `org`
+  - Tạo tự động khi Quick Create Odoo project
+  - Token đọc từ settings (`gitToken`), org nhập khi tạo project
+  - Edit project: đọc/sửa token+org trực tiếp từ file script (regex parse)
+- **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
+- **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
+  `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
+- **Parse git status**: Dùng regex `^(.{2}) (.+)$` thay vì `substring(3)` để tránh lỗi cắt path
+  Handle rename format `old -> new`
+- **git add**: Add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files)
 
-## Commands
+## Lưu trữ dữ liệu
+Tất cả data lưu tại: `~/.config/odoo_auto_config/odoo_auto_config.json`
+Gồm: profiles, projects, workspaces, registered_venvs, settings
+Settings gồm: theme, locale, gridView, nginx (confDir, domainSuffix, containerName), gitToken
+
+## Lệnh thường dùng
 ```bash
-# Run debug
-fvm flutter run -d macos   # hoac linux, windows
-# LUU Y: `fvm flutter run macOS` (khong co -d) se bao loi "Target file not found"
+# Chạy debug
+fvm flutter run -d macos   # hoặc linux, windows
+# LƯU Ý: `fvm flutter run macOS` (không có -d) sẽ báo lỗi "Target file not found"
 
 # Build release
 fvm flutter build macos --release
 
-# Gen l10n (sau khi sua file ARB)
+# Gen l10n (sau khi sửa file ARB)
 fvm flutter gen-l10n
 
 # Analyze
 fvm flutter analyze
 
-# Generate app icons (sau khi doi file icon)
+# Generate app icons (sau khi đổi file icon)
 fvm dart run flutter_launcher_icons
-# Can flutter clean + restart sau khi doi icon (macOS cache)
+# Cần flutter clean + restart sau khi đổi icon (macOS cache)
 
 # Build DMG
 APP_PATH="build/macos/Build/Products/Release/odoo_auto_config.app"
@@ -193,86 +221,86 @@ bash release.sh 1.0.5
 .\release.ps1 1.0.5
 ```
 
-## Internationalization (i18n)
-- **Supported locales**: English (default), Vietnamese (`vi`), Korean (`ko`)
+## Đa ngôn ngữ (i18n)
+- **Ngôn ngữ hỗ trợ**: English (default), Vietnamese (`vi`), Korean (`ko`)
 - **ARB files**: `lib/l10n/app_en.arb`, `app_vi.arb`, `app_ko.arb`
-- **Generated files**: `lib/l10n/app_localizations*.dart` (DO NOT edit manually)
+- **Generated files**: `lib/l10n/app_localizations*.dart` (KHÔNG sửa thủ công)
 - **Extension**: `context.l10n.keyName` qua `lib/l10n/l10n_extension.dart`
-- **Log messages**: giu nguyen tieng Anh (technical output)
-- Khi them string moi: them vao ca 3 file ARB, chay `fvm flutter gen-l10n`
-- Luu y dich thuat: "Theme Mode" tieng Viet la "Tuy chinh giao dien" (khong phai "Che do giao dien")
+- **Log messages**: giữ nguyên tiếng Anh (technical output)
+- Khi thêm string mới: thêm vào cả 3 file ARB, chạy `fvm flutter gen-l10n`
+- Lưu ý dịch thuật: "Theme Mode" tiếng Việt là "Tùy chỉnh giao diện" (không phải "Chế độ giao diện")
 
-## Cross-Platform Notes
+## Lưu ý Cross-Platform
 
 ### Shell scripts cross-platform
-- `sed -i` khac nhau: macOS (BSD) can `sed -i ''`, Linux (GNU) dung `sed -i`
-  Trong release.sh: dung `$OSTYPE` check de chon dung variant
+- `sed -i` khác nhau: macOS (BSD) cần `sed -i ''`, Linux (GNU) dùng `sed -i`
+  Trong release.sh: dùng `$OSTYPE` check để chọn đúng variant
 
-### QUAN TRONG: App duoc build va cai dat de chay doc lap (DMG/MSIX/bundle)
-- **MOI thay doi code PHAI tinh den release mode**, khong chi debug
-- macOS GUI app (.app) KHONG co PATH tu shell (~/.zshrc khong duoc load)
-- Tat ca external binary (docker, mkcert, python, code, ...) PHAI resolve absolute path
-- Test tren release build (DMG) truoc khi xac nhan tinh nang hoat dong
-- KHONG dung hardcode `'docker'`, `'mkcert'`, ... ma phai qua PlatformService
+### QUAN TRỌNG: App được build và cài đặt để chạy độc lập (DMG/MSIX/bundle)
+- **MỌI thay đổi code PHẢI tính đến release mode**, không chỉ debug
+- macOS GUI app (.app) KHÔNG có PATH từ shell (~/.zshrc không được load)
+- Tất cả external binary (docker, mkcert, python, code, ...) PHẢI resolve absolute path
+- Test trên release build (DMG) trước khi xác nhận tính năng hoạt động
+- KHÔNG dùng hardcode `'docker'`, `'mkcert'`, ... mà phải qua PlatformService
 
-### Tat ca OS
-- Process.run PHAI dung `runInShell: true` (AOT mode)
-- window_manager can **full restart** (khong hot reload) khi them moi
-- App icon can `flutter clean` + rebuild sau khi thay doi
-- External binaries PHAI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
-- **KHONG BAO GIO hardcode separator `/` hoac `\` khi noi duong dan local file system**
-  Luon dung `p.join()` tu `package:path/path.dart` (import as `p`)
-  VD: `p.join(baseDir, 'conf.d')` thay vi `'$baseDir/conf.d'`
-  `p.dirname(path)` thay vi `path.substring(0, path.length - N)`
-  CHI NGOAI LE: paths ben trong Docker container (nginx conf, docker-compose volumes) luon dung `/` vi container la Linux
-- **Process output (winget/brew/apt)**: dung `utf8.decoder` thay vi `SystemEncoding().decoder`
-  Dung `CommandRunner.cleanLine()` de strip ANSI codes, spinner chars, va progress bars
+### Tất cả OS
+- Process.run PHẢI dùng `runInShell: true` (AOT mode)
+- window_manager cần **full restart** (không hot reload) khi thêm mới
+- App icon cần `flutter clean` + rebuild sau khi thay đổi
+- External binaries PHẢI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
+- **KHÔNG BAO GIỜ hardcode separator `/` hoặc `\` khi nối đường dẫn local file system**
+  Luôn dùng `p.join()` từ `package:path/path.dart` (import as `p`)
+  VD: `p.join(baseDir, 'conf.d')` thay vì `'$baseDir/conf.d'`
+  `p.dirname(path)` thay vì `path.substring(0, path.length - N)`
+  CHỈ NGOẠI LỆ: paths bên trong Docker container (nginx conf, docker-compose volumes) luôn dùng `/` vì container là Linux
+- **Process output (winget/brew/apt)**: dùng `utf8.decoder` thay vì `SystemEncoding().decoder`
+  Dùng `CommandRunner.cleanLine()` để strip ANSI codes, spinner chars, và progress bars
 
 ### macOS
-- App Sandbox PHAI tat trong ca DebugProfile va Release entitlements
-- **GUI app (.app) khong load ~/.zshrc** -> PATH rat toi gian
-  Fix: PlatformService resolve absolute paths cho tat ca binaries:
+- App Sandbox PHẢI tắt trong cả DebugProfile và Release entitlements
+- **GUI app (.app) không load ~/.zshrc** → PATH rất tối giản
+  Fix: PlatformService resolve absolute paths cho tất cả binaries:
   - Python: pyenv shims, pyenv versions, homebrew, /usr/local/bin, /usr/bin
   - Docker: /usr/local/bin/docker, ~/.orbstack/bin/docker, /opt/homebrew/bin/docker,
     /Applications/Docker.app/.../docker, /Applications/OrbStack.app/.../docker
-  - VSCode: `open -a "Visual Studio Code"` (tranh PATH issue)
-- Hosts: `osascript` voi `with administrator privileges` (native password dialog)
-- Sau khi copy/rename .app: can `xattr -cr` va `codesign --force --deep --sign -`
+  - VSCode: `open -a "Visual Studio Code"` (tránh PATH issue)
+- Hosts: `osascript` với `with administrator privileges` (native password dialog)
+- Sau khi copy/rename .app: cần `xattr -cr` (KHÔNG cần codesign, chỉ xattr là đủ)
 
 ### Windows
-- MSIX can `runFullTrust` capability de Process.run hoat dong
-- Native file/folder picker bang PowerShell + COM (IFileOpenDialog)
+- MSIX cần `runFullTrust` capability để Process.run hoạt động
+- Native file/folder picker bằng PowerShell + COM (IFileOpenDialog)
 - Open VSCode: `cmd /c code` (qua PATH)
 - Hosts: `C:\Windows\System32\drivers\etc\hosts`, PowerShell `Start-Process -Verb RunAs` (UAC)
 - Port check: `netstat -ano` + `tasklist /FI "PID eq ..."`
 - Docker/Python install: `winget`
 - mkcert install: `winget install FiloSottile.mkcert`
 
-### Windows - CHUA TEST (can kiem tra khi co dieu kien)
-| Chuc nang | Rui ro | Chi tiet |
+### Windows - CHƯA TEST (cần kiểm tra khi có điều kiện)
+| Chức năng | Rủi ro | Chi tiết |
 |-----------|--------|----------|
-| Hosts file edit | CAO | PowerShell RunAs + UAC, escape string chua verify thuc te |
-| mkcert install | TRUNG BINH | `winget install FiloSottile.mkcert` - chua verify package name |
-| Docker install | TRUNG BINH | `winget install Docker.DockerDesktop` - can restart sau cai |
-| Port check | TRUNG BINH | `netstat -ano` output format co the khac giua Windows versions |
-| Kill process | TRUNG BINH | `taskkill /F /PID` - can quyen admin cho system processes |
-| Native file picker | THAP | Da test truoc do, dung PowerShell COM |
-| nginx conf write | THAP | File.writeAsString cross-platform |
-- macOS: da test OK
-- Linux: da test OK (2026-03-29)
+| Hosts file edit | CAO | PowerShell RunAs + UAC, escape string chưa verify thực tế |
+| mkcert install | TRUNG BÌNH | `winget install FiloSottile.mkcert` - chưa verify package name |
+| Docker install | TRUNG BÌNH | `winget install Docker.DockerDesktop` - cần restart sau cài |
+| Port check | TRUNG BÌNH | `netstat -ano` output format có thể khác giữa Windows versions |
+| Kill process | TRUNG BÌNH | `taskkill /F /PID` - cần quyền admin cho system processes |
+| Native file picker | THẤP | Đã test trước đó, dùng PowerShell COM |
+| nginx conf write | THẤP | File.writeAsString cross-platform |
+- macOS: đã test OK
+- Linux: đã test OK (2026-03-29)
 
 ### Linux
-- Python install: `pkexec apt install` (graphical sudo, khong can terminal)
+- Python install: `pkexec apt install` (graphical sudo, không cần terminal)
 - Hosts: `pkexec` (polkit graphical sudo)
 - Port check: `lsof -i :PORT`
 - Docker install: `pkexec apt install docker.io docker-compose-v2` + systemctl enable
 
-## Design Decisions
-- **Nginx Docker only**: Khong ho tro nginx local vi conf structure khac nhau tuy OS/cach cai
-- **1 nginx record**: Moi PC chi can 1 container nginx, khong can nhieu record
-- **nginxSubdomain luu trong model**: De track status chinh xac, khong phu thuoc ten project
-  (user co the dat subdomain khac ten project, VD: "pltax" cho project "polish-tax-odoo")
-- **Link existing conf**: Cho phep gan conf da co vao project ma khong tao/sua file
-- **Settings tabbed**: Theme / Python+Venv / Nginx / Docker - de mo rong them framework sau
-- **Hidden screens**: Python Check va VSCode Config an khoi NavigationRail nhung giu code
-  (Python Check nhung vao Settings > Python, VSCode Config co the dung rieng neu can)
+## Quyết định thiết kế
+- **Nginx chỉ Docker**: Không hỗ trợ nginx local vì conf structure khác nhau tùy OS/cách cài
+- **1 nginx record**: Mỗi PC chỉ cần 1 container nginx, không cần nhiều record
+- **nginxSubdomain lưu trong model**: Để track status chính xác, không phụ thuộc tên project
+  (user có thể đặt subdomain khác tên project, VD: "pltax" cho project "polish-tax-odoo")
+- **Link existing conf**: Cho phép gán conf đã có vào project mà không tạo/sửa file
+- **Settings tabbed**: Theme / Docker / Python+Venv / PostgreSQL / Nginx / Git - để mở rộng thêm framework sau
+- **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
+  (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)

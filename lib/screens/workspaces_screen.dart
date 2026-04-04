@@ -1518,8 +1518,13 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
         runInShell: true,
       );
       if (!mounted) return;
-      final output = (result.stdout as String).trim();
+      final output = (result.stdout as String).trimRight();
       if (output.isEmpty) {
+        // Kiểm tra xem git có lỗi không
+        final stderr = (result.stderr as String).trim();
+        if (stderr.isNotEmpty) {
+          _addLine('\x1B[0;31m[-] $stderr\x1B[0m');
+        }
         setState(() {
           _changedFiles = [];
           _loading = false;
@@ -1528,12 +1533,11 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
       }
       final files = <Map<String, dynamic>>[];
       for (final line in output.split('\n')) {
-        // git status --porcelain format: XY filename
-        // X=index status, Y=worktree status, then space, then filename
-        final match = RegExp(r'^(.{2}) (.+)$').firstMatch(line);
-        if (match == null) continue;
-        final status = match.group(1)!.trim();
-        var file = match.group(2)!;
+        if (line.length < 4) continue;
+        // git status --porcelain format: XY filename (XY = 2 chars, then space, then filename)
+        final status = line.substring(0, 2).trim();
+        var file = line.substring(3);
+        if (status.isEmpty || file.isEmpty) continue;
         // Handle renames: "old -> new"
         if (file.contains(' -> ')) file = file.split(' -> ').last;
         files.add({'status': status, 'file': file, 'selected': true});
