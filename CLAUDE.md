@@ -327,3 +327,43 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   Không còn nút Edit riêng. `_ImportProjectDialog` chỉ dùng cho import
 - **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
   (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
+
+## Lessons Learned — KHÔNG lặp lại các lỗi này
+
+### UI / Layout
+- **KHÔNG hardcode số** cho size/spacing/font — luôn dùng `AppFontSize`, `AppIconSize`, `AppSpacing`, `AppRadius`, `AppDialog`
+- **Grid card top row** dùng `Stack` + `Align` cho elements ở các góc (branch top-left, star top-right).
+  KHÔNG dùng `Row` + `Spacer`/`Flexible` — gây lỗi vị trí khi có/không có conditional children
+- **Dialog responsive** dùng `Builder` + `MediaQuery.of(context).size.width`.
+  KHÔNG dùng `LayoutBuilder` trong `AlertDialog.content` → lỗi "Cannot hit test a render box with no size"
+  Rộng (>900px): 2 cột + `widthLg`. Hẹp: 1 cột stacked + `widthMd`
+- **TextField commit message**: `maxLines: 8`, `minLines: 3`. KHÔNG dùng `maxLines: null` → overflow layout
+- **`Text.rich`** thay `RichText` trong `SelectionArea` để copy text được.
+  `RichText` là render-level widget, không tham gia `SelectionArea`
+- **`SingleChildScrollView` + `Column`** thay `ListView.builder` cho text selection
+- **`GestureDetector`** wrap cả Checkbox + label để click label cũng toggle
+
+### Git operations
+- **Parse `git status --porcelain`**: dùng `.trimRight()` KHÔNG `.trim()` — sẽ xóa space đầu dòng đầu = mất status char
+- **`git add`**: add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files + `runInShell: true`)
+- **Parse branches**: dùng `git branch -a --format=%(refname)` KHÔNG `%(refname:short)` — vì `origin` bị lọt vào local
+  `refs/heads/` → local, `refs/remotes/origin/` → remote
+- **Highlight branch**: chỉ highlight current ở cột local (`!isRemote && branch == _current`)
+
+### Auto-update
+- **macOS**: dùng `.zip` + `ditto -xk` KHÔNG dùng `.dmg` (mount/unmount/codesign phức tạp và hay fail)
+  `xattr -cr` là đủ, KHÔNG cần `codesign`
+- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown`. Relaunch bằng `Get-AppxPackage` + `explorer.exe shell:AppsFolder\`
+  KHÔNG dùng `Platform.resolvedExecutable` vì MSIX thay đổi exe path mỗi version
+- **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
+- **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
+
+### Code quality
+- **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
+  KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
+- Khi edit workspace: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
+
+### Process / Shell
+- **`runInShell: true`** bắt buộc cho mọi `Process.run` trong AOT/release mode
+- **`hdiutil`** không có `runInShell: true` → fail im lặng trong release build
+- **Shell script template**: header (token/org) dùng string interpolation `'''`, body dùng raw string `r'''` để tránh Dart interpret `$`
