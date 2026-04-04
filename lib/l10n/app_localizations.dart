@@ -448,6 +448,48 @@ abstract class AppLocalizations {
   /// **'This project is not a git repository'**
   String get gitPullNotARepo;
 
+  /// No description provided for @gitSelectivePull.
+  ///
+  /// In en, this message translates to:
+  /// **'Selective Pull'**
+  String get gitSelectivePull;
+
+  /// No description provided for @gitSelectivePullTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selective Pull — {name}'**
+  String gitSelectivePullTitle(String name);
+
+  /// No description provided for @gitSearchRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Search repository...'**
+  String get gitSearchRepo;
+
+  /// No description provided for @gitSelectedRepos.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected repositories ({count})'**
+  String gitSelectedRepos(int count);
+
+  /// No description provided for @gitNoReposFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No git repositories found in addons/'**
+  String get gitNoReposFound;
+
+  /// No description provided for @gitClearList.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear list'**
+  String get gitClearList;
+
+  /// No description provided for @gitPullSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull selected'**
+  String get gitPullSelected;
+
   /// No description provided for @gitCommit.
   ///
   /// In en, this message translates to:

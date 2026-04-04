@@ -199,6 +199,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gitPullNotARepo => 'This project is not a git repository';
 
   @override
+  String get gitSelectivePull => 'Selective Pull';
+
+  @override
+  String gitSelectivePullTitle(String name) {
+    return 'Selective Pull — $name';
+  }
+
+  @override
+  String get gitSearchRepo => 'Search repository...';
+
+  @override
+  String gitSelectedRepos(int count) {
+    return 'Selected repositories ($count)';
+  }
+
+  @override
+  String get gitNoReposFound => 'No git repositories found in addons/';
+
+  @override
+  String get gitClearList => 'Clear list';
+
+  @override
+  String get gitPullSelected => 'Pull selected';
+
+  @override
   String get gitCommit => 'Git Commit';
 
   @override

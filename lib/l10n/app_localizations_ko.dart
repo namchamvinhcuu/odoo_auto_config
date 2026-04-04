@@ -195,6 +195,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gitPullNotARepo => '이 프로젝트는 git 저장소가 아닙니다';
 
   @override
+  String get gitSelectivePull => '선택 Pull';
+
+  @override
+  String gitSelectivePullTitle(String name) {
+    return '선택 Pull — $name';
+  }
+
+  @override
+  String get gitSearchRepo => '저장소 검색...';
+
+  @override
+  String gitSelectedRepos(int count) {
+    return '선택된 저장소 ($count개)';
+  }
+
+  @override
+  String get gitNoReposFound => 'addons/에서 git 저장소를 찾을 수 없습니다';
+
+  @override
+  String get gitClearList => '목록 지우기';
+
+  @override
+  String get gitPullSelected => '선택 항목 Pull';
+
+  @override
   String get gitCommit => 'Git Commit';
 
   @override

@@ -199,6 +199,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get gitPullNotARepo => 'Dự án này không phải là git repository';
 
   @override
+  String get gitSelectivePull => 'Pull chọn lọc';
+
+  @override
+  String gitSelectivePullTitle(String name) {
+    return 'Pull chọn lọc — $name';
+  }
+
+  @override
+  String get gitSearchRepo => 'Tìm repository...';
+
+  @override
+  String gitSelectedRepos(int count) {
+    return 'Repositories đã chọn ($count)';
+  }
+
+  @override
+  String get gitNoReposFound => 'Không tìm thấy git repository trong addons/';
+
+  @override
+  String get gitClearList => 'Xóa danh sách';
+
+  @override
+  String get gitPullSelected => 'Pull đã chọn';
+
+  @override
   String get gitCommit => 'Git Commit';
 
   @override

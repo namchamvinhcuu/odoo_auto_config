@@ -209,6 +209,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
+  void _runSelectivePull(ProjectInfo project) {
+    final addonsDir = Directory(p.join(project.path, 'addons'));
+    if (!addonsDir.existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.gitNoReposFound)),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => _SelectivePullDialog(
+        projectName: project.name,
+        projectPath: project.path,
+      ),
+    );
+  }
+
   Future<void> _updateOdooConf(String projectPath, int httpPort, int lpPort) async {
     final confFile = File(p.join(projectPath, 'odoo.conf'));
     if (!await confFile.exists()) return;
@@ -581,6 +598,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         tooltip: context.l10n.gitPull,
                       ),
                       IconButton(
+                        onPressed: () => _runSelectivePull(proj),
+                        icon: const Icon(Icons.checklist),
+                        tooltip: context.l10n.gitSelectivePull,
+                      ),
+                      IconButton(
                         onPressed: () => _runGitCommit(proj),
                         icon: const Icon(Icons.commit),
                         tooltip: context.l10n.gitCommit,
@@ -590,45 +612,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         icon: const Icon(Icons.code),
                         tooltip: context.l10n.openInVscode,
                       ),
-                      IconButton(
-                        onPressed: () => _openInFileManager(proj.path),
-                        icon: const Icon(Icons.folder_open),
-                        tooltip: context.l10n.openFolder,
-                      ),
                     ],
-                    if (proj.hasNginx)
-                      IconButton(
-                        onPressed: () => _removeNginx(proj),
-                        icon: const Icon(Icons.dns, color: Colors.green),
-                        tooltip: context.l10n.nginxRemove,
-                      )
-                    else
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.dns),
-                        tooltip: context.l10n.nginxSetup,
-                        onSelected: (v) {
-                          if (v == 'setup') _setupNginx(proj);
-                          if (v == 'link') _linkNginx(proj);
-                        },
-                        itemBuilder: (ctx) => [
-                          PopupMenuItem(
-                            value: 'setup',
-                            child: Row(children: [
-                              const Icon(Icons.add, size: AppIconSize.md),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(context.l10n.nginxSetup),
-                            ]),
-                          ),
-                          PopupMenuItem(
-                            value: 'link',
-                            child: Row(children: [
-                              const Icon(Icons.link, size: AppIconSize.md),
-                              const SizedBox(width: AppSpacing.sm),
-                              Text(context.l10n.nginxLink),
-                            ]),
-                          ),
-                        ],
-                      ),
                     const Spacer(),
                     IconButton(
                       onPressed: () => _remove(proj),
@@ -789,16 +773,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             ),
                           if (exists) ...[
                             _gridBtn(
-                              icon: Icons.sync,
-                              tooltip: context.l10n.gitPull,
-                              onPressed: () => _runGitPull(proj),
+                              icon: Icons.checklist,
+                              tooltip: context.l10n.gitSelectivePull,
+                              onPressed: () => _runSelectivePull(proj),
                               iconSize: btnSize,
                               boxSize: btnBox,
                             ),
                             _gridBtn(
-                              icon: Icons.folder_open,
-                              tooltip: context.l10n.openFolder,
-                              onPressed: () => _openInFileManager(proj.path),
+                              icon: Icons.commit,
+                              tooltip: context.l10n.gitCommit,
+                              onPressed: () => _runGitCommit(proj),
                               iconSize: btnSize,
                               boxSize: btnBox,
                             ),
@@ -851,6 +835,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ),
         if (exists)
           PopupMenuItem(
+            value: 'git_selective_pull',
+            child: Row(
+              children: [
+                const Icon(Icons.checklist, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.gitSelectivePull),
+              ],
+            ),
+          ),
+        if (exists)
+          PopupMenuItem(
             value: 'git_pull',
             child: Row(
               children: [
@@ -882,39 +877,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ],
             ),
           ),
-        if (proj.hasNginx)
-          PopupMenuItem(
-            value: 'nginx_remove',
-            child: Row(
-              children: [
-                const Icon(Icons.dns, size: AppIconSize.md, color: Colors.green),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.nginxRemove),
-              ],
-            ),
-          )
-        else ...[
-          PopupMenuItem(
-            value: 'nginx_setup',
-            child: Row(
-              children: [
-                const Icon(Icons.dns, size: AppIconSize.md),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.nginxSetup),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'nginx_link',
-            child: Row(
-              children: [
-                const Icon(Icons.link, size: AppIconSize.md),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.nginxLink),
-              ],
-            ),
-          ),
-        ],
         PopupMenuItem(
           value: 'delete',
           child: Row(
@@ -936,16 +898,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         _toggleFavourite(proj);
       case 'git_pull':
         _runGitPull(proj);
+      case 'git_selective_pull':
+        _runSelectivePull(proj);
       case 'git_commit':
         _runGitCommit(proj);
       case 'folder':
         _openInFileManager(proj.path);
-      case 'nginx_setup':
-        _setupNginx(proj);
-      case 'nginx_link':
-        _linkNginx(proj);
-      case 'nginx_remove':
-        _removeNginx(proj);
       case 'delete':
         _remove(proj);
     }
@@ -963,13 +921,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       builder: (ctx) => _ProjectInfoDialog(
         project: proj,
         domain: domain,
+        domainSuffix: dotSuffix,
         onDbChanged: (dbName) async {
           final updated = proj.copyWith(dbName: () => dbName);
           await StorageService.addProject(updated.toJson());
           _load();
         },
         onSaved: (updated) async {
-          // Preserve nginxSubdomain, favourite, dbName
           final full = updated.copyWith(
             nginxSubdomain: proj.nginxSubdomain != null
                 ? () => proj.nginxSubdomain
@@ -981,7 +939,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           await StorageService.removeProject(proj.path);
           await StorageService.addProject(full.toJson());
 
-          // Update odoo.conf if ports changed
           if (proj.httpPort != updated.httpPort ||
               proj.longpollingPort != updated.longpollingPort) {
             await _updateOdooConf(updated.path, updated.httpPort, updated.longpollingPort);
@@ -991,6 +948,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           }
 
           await _load();
+        },
+        onNginxSetup: (p) async {
+          Navigator.pop(ctx);
+          await _setupNginx(p);
+        },
+        onNginxLink: (p) async {
+          Navigator.pop(ctx);
+          await _linkNginx(p);
+        },
+        onNginxRemove: (p) async {
+          Navigator.pop(ctx);
+          await _removeNginx(p);
         },
       ),
     );
@@ -1361,14 +1330,22 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
 class _ProjectInfoDialog extends StatefulWidget {
   final ProjectInfo project;
   final String? domain;
+  final String domainSuffix;
   final void Function(String dbName) onDbChanged;
   final Future<void> Function(ProjectInfo updated) onSaved;
+  final Future<void> Function(ProjectInfo proj) onNginxSetup;
+  final Future<void> Function(ProjectInfo proj) onNginxLink;
+  final Future<void> Function(ProjectInfo proj) onNginxRemove;
 
   const _ProjectInfoDialog({
     required this.project,
     this.domain,
+    this.domainSuffix = '',
     required this.onDbChanged,
     required this.onSaved,
+    required this.onNginxSetup,
+    required this.onNginxLink,
+    required this.onNginxRemove,
   });
 
   @override
@@ -1734,10 +1711,50 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
               proj.description),
         ],
 
-        // Database actions
-        const SizedBox(height: AppSpacing.xxl),
+        // Nginx section
+        const SizedBox(height: AppSpacing.lg),
         const Divider(),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.sm),
+        Text('Nginx', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.sm),
+        if (proj.hasNginx) ...[
+          _infoRow(Icons.dns, 'Domain',
+              'https://${proj.nginxSubdomain}${widget.domainSuffix}',
+              valueColor: Colors.green),
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton.tonalIcon(
+            onPressed: () => widget.onNginxRemove(proj),
+            icon: const Icon(Icons.delete, size: AppIconSize.md),
+            label: Text(context.l10n.nginxRemove),
+            style: FilledButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ] else
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => widget.onNginxSetup(proj),
+                  icon: const Icon(Icons.add, size: AppIconSize.md),
+                  label: Text(context.l10n.nginxSetup),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => widget.onNginxLink(proj),
+                  icon: const Icon(Icons.link, size: AppIconSize.md),
+                  label: Text(context.l10n.nginxLink),
+                ),
+              ),
+            ],
+          ),
+
+        // Database actions
+        const SizedBox(height: AppSpacing.lg),
+        const Divider(),
+        const SizedBox(height: AppSpacing.sm),
+        Text('Database', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
             Expanded(
@@ -1752,7 +1769,7 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
               child: FilledButton.tonalIcon(
                 onPressed: _selectDatabase,
                 icon: const Icon(Icons.list),
-                label: Text(context.l10n.import_),
+                label: const Text('Import Database'),
               ),
             ),
           ],
@@ -2763,6 +2780,382 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
           ),
         TextButton(
           onPressed: (_running || _scanning) ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Selective Pull Dialog ──
+
+class _SelectivePullDialog extends StatefulWidget {
+  final String projectName;
+  final String projectPath;
+
+  const _SelectivePullDialog({
+    required this.projectName,
+    required this.projectPath,
+  });
+
+  @override
+  State<_SelectivePullDialog> createState() => _SelectivePullDialogState();
+}
+
+class _SelectivePullDialogState extends State<_SelectivePullDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  List<String> _allRepos = [];
+  List<String> _selectedRepos = [];
+  final _scrollController = ScrollController();
+  final List<String> _logLines = [];
+  bool _loading = true;
+  bool _running = false;
+
+  // Persist key for this project
+  String get _storageKey => 'selectivePull_${widget.projectPath}';
+
+  @override
+  void initState() {
+    super.initState();
+    _scanRepos();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _scanRepos() async {
+    setState(() => _loading = true);
+    try {
+      final addonsDir = Directory(p.join(widget.projectPath, 'addons'));
+      final repos = <String>[];
+      await for (final entity in addonsDir.list()) {
+        if (entity is Directory) {
+          final gitDir = Directory(p.join(entity.path, '.git'));
+          if (await gitDir.exists()) {
+            repos.add(p.basename(entity.path));
+          }
+        }
+      }
+      repos.sort();
+
+      // Load persisted selection
+      final settings = await StorageService.loadSettings();
+      final saved = (settings[_storageKey] as List?)
+              ?.map((e) => e.toString())
+              .where((r) => repos.contains(r))
+              .toList() ??
+          [];
+
+      if (mounted) {
+        setState(() {
+          _allRepos = repos;
+          _selectedRepos = saved;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _saveSelection() async {
+    final settings = await StorageService.loadSettings();
+    settings[_storageKey] = _selectedRepos;
+    await StorageService.saveSettings(settings);
+  }
+
+  void _addRepo(String repo) {
+    if (_selectedRepos.contains(repo)) return;
+    setState(() => _selectedRepos.add(repo));
+    _saveSelection();
+  }
+
+  void _removeRepo(String repo) {
+    setState(() => _selectedRepos.remove(repo));
+    _saveSelection();
+  }
+
+  void _clearAll() {
+    setState(() => _selectedRepos.clear());
+    _saveSelection();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _pull() async {
+    setState(() {
+      _running = true;
+      _logLines.clear();
+    });
+
+    for (final repo in _selectedRepos) {
+      final repoPath = p.join(widget.projectPath, 'addons', repo);
+      _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
+
+      try {
+        final process = await Process.start(
+          'git', ['pull'],
+          workingDirectory: repoPath,
+          runInShell: true,
+        );
+        process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+          if (mounted) _addLine(line);
+        });
+        process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+          if (mounted) _addLine(line);
+        });
+        final exitCode = await process.exitCode;
+        if (!mounted) return;
+        if (exitCode == 0) {
+          _addLine('\x1B[0;32m[+] $repo done\x1B[0m');
+        } else {
+          _addLine('\x1B[0;31m[-] $repo failed (exit $exitCode)\x1B[0m');
+        }
+      } catch (e) {
+        if (mounted) _addLine('\x1B[0;31m[-] $repo: $e\x1B[0m');
+      }
+    }
+
+    if (mounted) {
+      _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
+      setState(() => _running = false);
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+            text: line.substring(lastEnd, match.start),
+            style: TextStyle(color: currentColor)));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+          text: line.substring(lastEnd),
+          style: TextStyle(color: currentColor)));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.gitSelectivePullTitle(widget.projectName)),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_allRepos.isEmpty)
+              Center(child: Text(context.l10n.gitNoReposFound))
+            else ...[
+              // Search bar
+              Row(
+                children: [
+                  Expanded(
+                    child: Autocomplete<String>(
+                      optionsBuilder: (textEditingValue) {
+                        final q = textEditingValue.text.toLowerCase();
+                        if (q.isEmpty) return _allRepos.where((r) => !_selectedRepos.contains(r));
+                        return _allRepos.where((r) =>
+                            r.toLowerCase().contains(q) &&
+                            !_selectedRepos.contains(r));
+                      },
+                      onSelected: _addRepo,
+                      fieldViewBuilder: (ctx, controller, focusNode, onSubmit) {
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.gitSearchRepo,
+                            prefixIcon: const Icon(Icons.search),
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        );
+                      },
+                      optionsViewBuilder: (ctx, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: AppRadius.mediumBorderRadius,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 400),
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (ctx, i) {
+                                  final repo = options.elementAt(i);
+                                  return ListTile(
+                                    dense: true,
+                                    leading: const Icon(Icons.source, size: AppIconSize.md),
+                                    title: Text(repo, style: const TextStyle(fontFamily: 'monospace')),
+                                    onTap: () => onSelected(repo),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Selected repos header
+              Row(
+                children: [
+                  Text(
+                    context.l10n.gitSelectedRepos(_selectedRepos.length),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const Spacer(),
+                  if (_selectedRepos.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: _running ? null : _clearAll,
+                      icon: const Icon(Icons.clear_all, size: AppIconSize.md),
+                      label: Text(context.l10n.gitClearList),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+
+              // Selected repos list
+              Container(
+                height: 150,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade700),
+                  borderRadius: AppRadius.mediumBorderRadius,
+                ),
+                child: _selectedRepos.isEmpty
+                    ? Center(
+                        child: Text(
+                          context.l10n.gitSearchRepo,
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _selectedRepos.length,
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        itemBuilder: (ctx, i) {
+                          final repo = _selectedRepos[i];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.source, size: AppIconSize.md, color: Colors.green),
+                            title: Text(repo,
+                                style: const TextStyle(fontFamily: 'monospace', fontSize: AppFontSize.md)),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.close, size: AppIconSize.md),
+                              onPressed: _running ? null : () => _removeRepo(repo),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Log output
+              if (_logLines.isNotEmpty || _running) ...[
+                if (_running)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.md),
+                    child: LinearProgressIndicator(),
+                  ),
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppLogColors.terminalBg,
+                    borderRadius: AppRadius.mediumBorderRadius,
+                    border: Border.all(color: Colors.grey.shade700),
+                  ),
+                  child: SelectionArea(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final line in _logLines)
+                              Text.rich(
+                                TextSpan(
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.md,
+                                  ),
+                                  children: _parseAnsi(line),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        if (_selectedRepos.isNotEmpty && !_running)
+          FilledButton.icon(
+            onPressed: _pull,
+            icon: const Icon(Icons.sync, size: AppIconSize.md),
+            label: Text(context.l10n.gitPullSelected),
+          ),
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
           child: Text(context.l10n.close),
         ),
       ],
