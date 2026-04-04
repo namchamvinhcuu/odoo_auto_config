@@ -145,10 +145,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     setState(() => _updating = true);
     final path = await UpdateService.download(info.downloadUrl!, info.assetName!);
-    if (path != null) {
-      await UpdateService.install(path);
+    if (path == null) {
+      if (mounted) {
+        setState(() => _updating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.updateDownloadFailed)),
+        );
+      }
+      return;
     }
-    if (mounted) setState(() => _updating = false);
+    final installed = await UpdateService.install(path);
+    if (!installed && mounted) {
+      // Cleanup downloaded file on failure
+      try { File(path).deleteSync(); } catch (_) {}
+      setState(() => _updating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.updateInstallFailed)),
+      );
+    }
   }
 
   Future<void> _autoStartNginx() async {

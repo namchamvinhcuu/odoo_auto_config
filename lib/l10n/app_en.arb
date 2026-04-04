@@ -27,6 +27,8 @@
   "@updateAvailable": { "placeholders": { "current": { "type": "String" }, "latest": { "type": "String" } } },
   "updateNow": "Update now",
   "dismiss": "Dismiss",
+  "updateDownloadFailed": "Failed to download update. Please try again.",
+  "updateInstallFailed": "Failed to install update. Please try again.",
   "install": "Install",
   "refresh": "Refresh",
   "rescan": "Rescan",

@@ -159,61 +159,62 @@ rm "\$0"
     exit(0);
   }
 
-  // ── macOS: mount DMG and copy .app ──
+  // ── macOS: unzip and replace .app ──
 
-  static Future<bool> _installMacOS(String dmgPath) async {
-    // Remove quarantine from DMG before mounting (prevents Gatekeeper)
-    await Process.run('xattr', ['-d', 'com.apple.quarantine', dmgPath],
-        runInShell: true);
+  static Future<bool> _installMacOS(String zipPath) async {
+    // Unzip to temp directory
+    final tmpDir = p.join(Directory.systemTemp.path, 'wsc_update');
+    await Process.run('rm', ['-rf', tmpDir], runInShell: true);
+    final unzipResult = await Process.run(
+        'ditto', ['-xk', zipPath, tmpDir], runInShell: true);
+    if (unzipResult.exitCode != 0) return false;
 
-    // Mount DMG
-    final mountResult = await Process.run('hdiutil', [
-      'attach', dmgPath, '-nobrowse', '-quiet',
-    ]);
-    if (mountResult.exitCode != 0) return false;
-
-    // Find mount point
-    final mountOutput = mountResult.stdout.toString();
-    final mountPoint = RegExp(r'/Volumes/[^\n]+')
-        .firstMatch(mountOutput)
-        ?.group(0)
-        ?.trim();
-    if (mountPoint == null) return false;
-
-    // Find .app in mounted volume
-    final appDir = Directory(mountPoint);
-    String? appPath;
-    await for (final entity in appDir.list()) {
+    // Find .app in unzipped content
+    final tmpDirEntity = Directory(tmpDir);
+    String? newAppPath;
+    await for (final entity in tmpDirEntity.list()) {
       if (entity.path.endsWith('.app')) {
-        appPath = entity.path;
+        newAppPath = entity.path;
         break;
       }
     }
-    if (appPath == null) {
-      await Process.run('hdiutil', ['detach', mountPoint, '-quiet']);
+    if (newAppPath == null) {
+      await Process.run('rm', ['-rf', tmpDir], runInShell: true);
       return false;
     }
 
-    final appName = p.basename(appPath);
-    final destPath = '/Applications/$appName';
+    // Detect current .app location from running executable
+    // Platform.resolvedExecutable → .../Workspace Configuration.app/Contents/MacOS/odoo_auto_config
+    final execPath = Platform.resolvedExecutable;
+    final currentAppPath = p.dirname(p.dirname(p.dirname(execPath)));
+    final destPath = currentAppPath.endsWith('.app')
+        ? currentAppPath
+        : p.join('/Applications', p.basename(newAppPath));
 
     // Create update script
-    final scriptPath =
-        p.join(Directory.systemTemp.path, 'wsc_update.sh');
+    final logPath = p.join(Directory.systemTemp.path, 'wsc_update.log');
+    final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.sh');
     await File(scriptPath).writeAsString('''#!/bin/bash
-while kill -0 \$1 2>/dev/null; do sleep 0.5; done
-rm -rf "$destPath"
-cp -R "$appPath" "$destPath"
-xattr -cr "$destPath"
-codesign --force --deep --sign - "$destPath"
-hdiutil detach "$mountPoint" -quiet
-rm "$dmgPath"
-open "$destPath"
-rm "\$0"
-''');
-    await Process.run('chmod', ['+x', scriptPath]);
+exec > "$logPath" 2>&1
+set -e
 
-    await Process.start('bash', [scriptPath, '$pid'],
+# Wait for current process to exit
+while kill -0 \$1 2>/dev/null; do sleep 0.5; done
+
+rm -rf "$destPath"
+/usr/bin/ditto "$newAppPath" "$destPath"
+xattr -cr "$destPath"
+
+# Cleanup
+rm -rf "$tmpDir"
+rm -f "$zipPath"
+
+open "$destPath"
+rm -f "\$0"
+''');
+    await Process.run('chmod', ['+x', scriptPath], runInShell: true);
+
+    await Process.start('/bin/bash', [scriptPath, '$pid'],
         mode: ProcessStartMode.detached);
 
     exit(0);
@@ -232,7 +233,7 @@ rm "\$0"
 
   static String _platformAssetSuffix() {
     if (Platform.isLinux) return '.AppImage';
-    if (Platform.isMacOS) return '.dmg';
+    if (Platform.isMacOS) return '-macOS.zip';
     if (Platform.isWindows) return '.msix';
     return '';
   }

@@ -83,6 +83,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dismiss => '무시';
 
   @override
+  String get updateDownloadFailed => '업데이트 다운로드에 실패했습니다. 다시 시도해 주세요.';
+
+  @override
+  String get updateInstallFailed => '업데이트 설치에 실패했습니다. 다시 시도해 주세요.';
+
+  @override
   String get install => '설치';
 
   @override

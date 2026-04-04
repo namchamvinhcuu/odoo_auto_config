@@ -244,6 +244,18 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get dismiss;
 
+  /// No description provided for @updateDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to download update. Please try again.'**
+  String get updateDownloadFailed;
+
+  /// No description provided for @updateInstallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to install update. Please try again.'**
+  String get updateInstallFailed;
+
   /// No description provided for @install.
   ///
   /// In en, this message translates to:

@@ -84,6 +84,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dismiss => 'Dismiss';
 
   @override
+  String get updateDownloadFailed =>
+      'Failed to download update. Please try again.';
+
+  @override
+  String get updateInstallFailed =>
+      'Failed to install update. Please try again.';
+
+  @override
   String get install => 'Install';
 
   @override

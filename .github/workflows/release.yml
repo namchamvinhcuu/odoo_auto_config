@@ -107,10 +107,17 @@ jobs:
           hdiutil create -volname "Workspace Configuration" -srcfolder "$TMP_DIR" -ov -format UDZO "$DMG_PATH"
           rm -rf "$TMP_DIR"
 
+      - name: Create ZIP for auto-update
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --sequesterRsrc --keepParent odoo_auto_config.app ../../../WorkspaceConfiguration-macOS.zip
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/WorkspaceConfiguration.dmg
+          files: |
+            build/WorkspaceConfiguration.dmg
+            build/WorkspaceConfiguration-macOS.zip
 
   build-windows:
     runs-on: windows-latest
