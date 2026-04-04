@@ -27,6 +27,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   final _searchController = TextEditingController();
   bool _loading = true;
   String _filterType = '';
+  final Map<String, String> _branches = {};
 
   @override
   void initState() {
@@ -48,6 +49,49 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       _applyFilter();
       _loading = false;
     });
+    _loadBranches(workspaces);
+  }
+
+  Future<void> _loadBranches(List<WorkspaceInfo> workspaces) async {
+    for (final ws in workspaces) {
+      if (!Directory(p.join(ws.path, '.git')).existsSync()) continue;
+      try {
+        final result = await Process.run(
+          'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
+          workingDirectory: ws.path,
+          runInShell: true,
+        );
+        if (result.exitCode == 0 && mounted) {
+          final branch = (result.stdout as String).trim();
+          if (branch.isNotEmpty) {
+            setState(() => _branches[ws.path] = branch);
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  void _switchBranch(WorkspaceInfo ws) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _SwitchBranchDialog(
+        projectPath: ws.path,
+        currentBranch: _branches[ws.path] ?? '',
+        branchColor: _branchColor,
+        onSwitched: (branch) {
+          setState(() => _branches[ws.path] = branch);
+        },
+      ),
+    );
+  }
+
+  Color _branchColor(String branch) {
+    final b = branch.toLowerCase();
+    if (b == 'main' || b == 'master') return Colors.green;
+    if (b == 'dev' || b == 'develop' || b.startsWith('dev')) return Colors.orange;
+    if (b.startsWith('feature') || b.startsWith('feat')) return Colors.blue;
+    if (b.startsWith('hotfix') || b.startsWith('fix')) return Colors.red;
+    return Colors.cyan;
   }
 
   void _applyFilter() {
@@ -439,6 +483,26 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                         ),
                       ),
                     ],
+                    if (_branches.containsKey(ws.path)) ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      GestureDetector(
+                        onTap: () => _switchBranch(ws),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Chip(
+                            label: Text(
+                              _branches[ws.path]!,
+                              style: TextStyle(color: _branchColor(_branches[ws.path]!)),
+                            ),
+                            avatar: Icon(Icons.account_tree,
+                                size: AppIconSize.md,
+                                color: _branchColor(_branches[ws.path]!)),
+                            backgroundColor: _branchColor(_branches[ws.path]!).withValues(alpha: 0.1),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -581,21 +645,50 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Favourite star top-right
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: IconButton(
-                          onPressed: () => _toggleFavourite(ws),
-                          icon: Icon(
-                            ws.favourite ? Icons.star : Icons.star_border,
-                            size: AppIconSize.lg,
-                            color: ws.favourite ? Colors.amber : Colors.grey.shade600,
+                      // Top row: branch (left) + star (right)
+                      Row(
+                        children: [
+                          if (_branches.containsKey(ws.path))
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () => _switchBranch(ws),
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.sm,
+                                        vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: _branchColor(_branches[ws.path]!).withValues(alpha: 0.15),
+                                      borderRadius: AppRadius.smallBorderRadius,
+                                    ),
+                                    child: Text(
+                                      _branches[ws.path]!,
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.xs,
+                                        fontFamily: 'monospace',
+                                        color: _branchColor(_branches[ws.path]!),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () => _toggleFavourite(ws),
+                            icon: Icon(
+                              ws.favourite ? Icons.star : Icons.star_border,
+                              size: AppIconSize.lg,
+                              color: ws.favourite ? Colors.amber : Colors.grey.shade600,
+                            ),
+                            tooltip: ws.favourite ? context.l10n.unfavourite : context.l10n.favourite,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                           ),
-                          tooltip: ws.favourite ? context.l10n.unfavourite : context.l10n.favourite,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                        ),
+                        ],
                       ),
                       const Spacer(),
                       // Project type as accent badge
@@ -1924,6 +2017,581 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
           onPressed: _running ? null : () => Navigator.pop(context),
           child: Text(context.l10n.close),
         ),
+      ],
+    );
+  }
+}
+
+// ── Switch Branch Dialog ──
+
+class _SwitchBranchDialog extends StatefulWidget {
+  final String projectPath;
+  final String currentBranch;
+  final Color Function(String) branchColor;
+  final void Function(String branch) onSwitched;
+
+  const _SwitchBranchDialog({
+    required this.projectPath,
+    required this.currentBranch,
+    required this.branchColor,
+    required this.onSwitched,
+  });
+
+  @override
+  State<_SwitchBranchDialog> createState() => _SwitchBranchDialogState();
+}
+
+class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
+  List<String> _local = [];
+  List<String> _remote = [];
+  String _current = '';
+  bool _loading = true;
+  bool _switching = false;
+  String? _message;
+  bool _isError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.currentBranch;
+    _loadBranches();
+  }
+
+  Future<void> _loadBranches() async {
+    setState(() => _loading = true);
+    final result = await Process.run(
+      'git', ['branch', '-a', '--format=%(refname)'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (result.exitCode != 0 || !mounted) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    final localBranches = <String>{};
+    final remoteBranches = <String>{};
+    for (final ref in (result.stdout as String)
+        .split('\n')
+        .map((b) => b.trim())
+        .where((b) => b.isNotEmpty)) {
+      if (ref.contains('HEAD')) continue;
+      if (ref.startsWith('refs/heads/')) {
+        localBranches.add(ref.substring('refs/heads/'.length));
+      } else if (ref.startsWith('refs/remotes/origin/')) {
+        remoteBranches.add(ref.substring('refs/remotes/origin/'.length));
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _local = localBranches.toList()
+          ..sort((a, b) {
+            if (a == _current) return -1;
+            if (b == _current) return 1;
+            return a.compareTo(b);
+          });
+        _remote = remoteBranches.toList()..sort();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _pruneCheck() async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    // Fetch + prune remote refs
+    await Process.run(
+      'git', ['fetch', '--prune'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    // Find local branches whose upstream is gone
+    final result = await Process.run(
+      'git', ['branch', '-vv'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+
+    final gone = <String>[];
+    for (final line in (result.stdout as String).split('\n')) {
+      if (line.contains(': gone]')) {
+        final branch = line.trim().split(RegExp(r'\s+')).first.replaceFirst('*', '').trim();
+        if (branch.isNotEmpty && branch != _current) {
+          gone.add(branch);
+        }
+      }
+    }
+
+    if (gone.isEmpty) {
+      setState(() {
+        _switching = false;
+        _message = 'All local branches are up to date with remote';
+        _isError = false;
+      });
+      return;
+    }
+
+    setState(() => _switching = false);
+
+    if (!mounted) return;
+    final toDelete = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => _PruneDialog(branches: gone),
+    );
+    if (toDelete == null || toDelete.isEmpty || !mounted) return;
+
+    final deleted = <String>[];
+    final failed = <String>[];
+    for (final branch in toDelete) {
+      final del = await Process.run(
+        'git', ['branch', '-D', branch],
+        workingDirectory: widget.projectPath,
+        runInShell: true,
+      );
+      if (del.exitCode == 0) {
+        deleted.add(branch);
+      } else {
+        failed.add(branch);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        if (deleted.isNotEmpty) {
+          _message = 'Deleted: ${deleted.join(', ')}';
+          _isError = false;
+        }
+        if (failed.isNotEmpty) {
+          _message = '${_message ?? ''}${_message != null ? '\n' : ''}Failed: ${failed.join(', ')}';
+          _isError = failed.isNotEmpty && deleted.isEmpty;
+        }
+      });
+      _loadBranches();
+    }
+  }
+
+  Future<void> _createBranch() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Create Branch'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Branch name',
+            hintText: 'feature/my-feature',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) Navigator.pop(ctx, v.trim());
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(context.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = controller.text.trim();
+              if (v.isNotEmpty) Navigator.pop(ctx, v);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || !mounted) return;
+
+    final result = await Process.run(
+      'git', ['checkout', '-b', name],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _current = name;
+        _message = 'Created and switched to $name';
+        _isError = false;
+      });
+      widget.onSwitched(name);
+      _loadBranches();
+    } else {
+      setState(() {
+        _message = (result.stderr as String).trim();
+        _isError = true;
+      });
+    }
+  }
+
+  Future<void> _deleteBranch(String branch) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Branch'),
+        content: Text('Delete local branch "$branch"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final result = await Process.run(
+      'git', ['branch', '-d', branch],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _message = 'Deleted branch $branch';
+        _isError = false;
+      });
+      _loadBranches();
+    } else {
+      // Try force delete if not merged
+      final stderr = (result.stderr as String).trim();
+      if (stderr.contains('not fully merged')) {
+        final force = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Force Delete?'),
+            content: Text('Branch "$branch" is not fully merged. Force delete?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Force Delete'),
+              ),
+            ],
+          ),
+        );
+        if (force == true && mounted) {
+          final forceResult = await Process.run(
+            'git', ['branch', '-D', branch],
+            workingDirectory: widget.projectPath,
+            runInShell: true,
+          );
+          if (mounted) {
+            if (forceResult.exitCode == 0) {
+              setState(() {
+                _message = 'Force deleted branch $branch';
+                _isError = false;
+              });
+              _loadBranches();
+            } else {
+              setState(() {
+                _message = (forceResult.stderr as String).trim();
+                _isError = true;
+              });
+            }
+          }
+        }
+      } else {
+        setState(() {
+          _message = stderr;
+          _isError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _checkout(String branch) async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    final result = await Process.run(
+      'git', ['checkout', branch],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _current = branch;
+        _switching = false;
+        _message = 'Switched to $branch';
+        _isError = false;
+      });
+      widget.onSwitched(branch);
+      _loadBranches();
+    } else {
+      setState(() {
+        _switching = false;
+        _message = (result.stderr as String).trim();
+        _isError = true;
+      });
+    }
+  }
+
+  Widget _branchTile(String branch, {bool isRemote = false}) {
+    final isCurrent = !isRemote && branch == _current;
+    return InkWell(
+      onTap: (isCurrent || _switching) ? null : () => _checkout(branch),
+      borderRadius: AppRadius.smallBorderRadius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(
+              isCurrent ? Icons.check_circle : Icons.circle_outlined,
+              size: AppIconSize.md,
+              color: isCurrent ? widget.branchColor(branch) : Colors.grey,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                branch,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontWeight: isCurrent ? FontWeight.bold : null,
+                  color: isCurrent ? widget.branchColor(branch) : null,
+                ),
+              ),
+            ),
+            if (isRemote)
+              Icon(Icons.cloud_outlined,
+                  size: AppIconSize.sm, color: Colors.grey.shade500),
+            if (!isRemote && !isCurrent)
+              IconButton(
+                onPressed: _switching ? null : () => _deleteBranch(branch),
+                icon: const Icon(Icons.delete_outline,
+                    size: AppIconSize.sm, color: Colors.red),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                tooltip: 'Delete branch',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Text('Switch Branch'),
+          const SizedBox(width: AppSpacing.sm),
+          TextButton.icon(
+            onPressed: _switching ? null : _pruneCheck,
+            icon: const Icon(Icons.cleaning_services, size: AppIconSize.md),
+            label: const Text('Clean stale'),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Action bar
+            Row(
+              children: [
+                const Spacer(),
+                FilledButton.tonalIcon(
+                  onPressed: _switching ? null : () async {
+                    await showDialog(
+                      context: context,
+                      builder: (ctx) => _SimpleGitCommitDialog(
+                        projectName: p.basename(widget.projectPath),
+                        projectPath: widget.projectPath,
+                      ),
+                    );
+                    if (mounted) setState(() => _message = null);
+                  },
+                  icon: const Icon(Icons.commit, size: AppIconSize.md),
+                  label: const Text('Commit'),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                FilledButton.icon(
+                  onPressed: _switching ? null : _createBranch,
+                  icon: const Icon(Icons.add, size: AppIconSize.md),
+                  label: const Text('Create'),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_switching)
+              const Center(child: CircularProgressIndicator())
+            else
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(children: [
+                            Icon(Icons.account_tree,
+                                size: AppIconSize.md,
+                                color: Colors.grey.shade500),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text('Local',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade500,
+                                )),
+                          ]),
+                          const SizedBox(height: AppSpacing.sm),
+                          ..._local.map((b) => _branchTile(b)),
+                        ],
+                      ),
+                    ),
+                    if (_remote.isNotEmpty) ...[
+                      const VerticalDivider(width: AppSpacing.xxl),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(children: [
+                              Icon(Icons.cloud_outlined,
+                                  size: AppIconSize.md,
+                                  color: Colors.grey.shade500),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text('Remote',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade500,
+                                  )),
+                            ]),
+                            const SizedBox(height: AppSpacing.sm),
+                            ..._remote
+                                .map((b) => _branchTile(b, isRemote: true)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            if (_message != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: (_isError ? Colors.red : Colors.green)
+                      .withValues(alpha: 0.1),
+                  borderRadius: AppRadius.smallBorderRadius,
+                ),
+                child: Text(
+                  _message!,
+                  style: TextStyle(
+                    color: _isError ? Colors.red : Colors.green,
+                    fontFamily: 'monospace',
+                    fontSize: AppFontSize.md,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Prune Stale Branches Dialog ──
+
+class _PruneDialog extends StatefulWidget {
+  final List<String> branches;
+  const _PruneDialog({required this.branches});
+
+  @override
+  State<_PruneDialog> createState() => _PruneDialogState();
+}
+
+class _PruneDialogState extends State<_PruneDialog> {
+  late final Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.branches.toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Stale Branches'),
+      content: SizedBox(
+        width: AppDialog.widthMd,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'These local branches no longer exist on remote:',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: AppFontSize.md),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ...widget.branches.map((b) => CheckboxListTile(
+              value: _selected.contains(b),
+              onChanged: (v) {
+                setState(() {
+                  if (v == true) {
+                    _selected.add(b);
+                  } else {
+                    _selected.remove(b);
+                  }
+                });
+              },
+              title: Text(b, style: const TextStyle(fontFamily: 'monospace')),
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
+            )),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.cancel),
+        ),
+        if (_selected.isNotEmpty)
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _selected.toList()),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Delete ${_selected.length} branch(es)'),
+          ),
       ],
     );
   }
