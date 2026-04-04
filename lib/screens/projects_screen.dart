@@ -1129,9 +1129,13 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _httpPortController;
   late final TextEditingController _lpPortController;
+  final _gitTokenController = TextEditingController();
+  final _gitOrgController = TextEditingController();
   late String _projectPath;
   late String _description;
   bool _autoDetected = false;
+  bool _gitTokenObscured = true;
+  String? _gitScriptPath;
 
   @override
   void initState() {
@@ -1142,7 +1146,38 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     _lpPortController = TextEditingController(text: '${e?.longpollingPort ?? 0}');
     _projectPath = e?.path ?? '';
     _description = e?.description ?? '';
-    if (e == null) _suggestPorts();
+    if (e == null) {
+      _suggestPorts();
+    } else {
+      _loadGitConfig(e.path);
+    }
+  }
+
+  Future<void> _loadGitConfig(String projectPath) async {
+    // Find script file
+    final shPath = p.join(projectPath, 'git-repositories.sh');
+    final ps1Path = p.join(projectPath, 'git-repositories.ps1');
+    String? scriptPath;
+    if (File(ps1Path).existsSync()) {
+      scriptPath = ps1Path;
+    } else if (File(shPath).existsSync()) {
+      scriptPath = shPath;
+    }
+    if (scriptPath == null) return;
+
+    _gitScriptPath = scriptPath;
+    final content = await File(scriptPath).readAsString();
+
+    // Parse TOKEN and ORG_NAME from script
+    final tokenMatch = RegExp(r'(?:TOKEN|TOKEN)\s*=\s*"([^"]*)"').firstMatch(content);
+    final orgMatch = RegExp(r'ORG_NAME\s*=\s*"([^"]*)"').firstMatch(content);
+
+    if (mounted) {
+      setState(() {
+        _gitTokenController.text = tokenMatch?.group(1) ?? '';
+        _gitOrgController.text = orgMatch?.group(1) ?? '';
+      });
+    }
   }
 
   Future<void> _suggestPorts() async {
@@ -1215,7 +1250,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_projectPath.isEmpty || _nameController.text.isEmpty) return;
 
     final project = ProjectInfo(
@@ -1227,7 +1262,26 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
       createdAt: widget.existing?.createdAt ?? DateTime.now().toIso8601String(),
     );
 
-    Navigator.pop(context, project);
+    // Update git-repositories script if editing and script exists
+    if (_gitScriptPath != null) {
+      final file = File(_gitScriptPath!);
+      if (await file.exists()) {
+        var content = await file.readAsString();
+        final newToken = _gitTokenController.text.trim();
+        final newOrg = _gitOrgController.text.trim();
+        if (newToken.isNotEmpty) {
+          content = content.replaceFirst(
+              RegExp(r'(TOKEN\s*=\s*)"[^"]*"'), '\$1"$newToken"');
+        }
+        if (newOrg.isNotEmpty) {
+          content = content.replaceFirst(
+              RegExp(r'(ORG_NAME\s*=\s*)"[^"]*"'), '\$1"$newOrg"');
+        }
+        await file.writeAsString(content);
+      }
+    }
+
+    if (mounted) Navigator.pop(context, project);
   }
 
   @override
@@ -1235,6 +1289,8 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     _nameController.dispose();
     _httpPortController.dispose();
     _lpPortController.dispose();
+    _gitTokenController.dispose();
+    _gitOrgController.dispose();
     super.dispose();
   }
 
@@ -1345,6 +1401,42 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   ),
                 ],
               ),
+
+              // Git config (only when editing and script exists)
+              if (widget.existing != null && _gitScriptPath != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                const Divider(),
+                const SizedBox(height: AppSpacing.sm),
+                Text('Git Repositories',
+                    style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _gitTokenController,
+                  obscureText: _gitTokenObscured,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.gitToken,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    suffixIcon: IconButton(
+                      icon: Icon(_gitTokenObscured
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () =>
+                          setState(() => _gitTokenObscured = !_gitTokenObscured),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _gitOrgController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.gitOrg,
+                    hintText: context.l10n.gitOrgHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -2113,8 +2205,8 @@ class _GitPullDialogState extends State<_GitPullDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               for (final line in _logLines)
-                                RichText(
-                                  text: TextSpan(
+                                Text.rich(
+                                  TextSpan(
                                     style: const TextStyle(
                                       fontFamily: 'monospace',
                                       fontSize: AppFontSize.md,

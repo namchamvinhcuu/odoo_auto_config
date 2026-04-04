@@ -220,13 +220,19 @@ rm -f "\$0"
     exit(0);
   }
 
-  // ── Windows: force update MSIX via PowerShell ──
+  // ── Windows: force update MSIX via PowerShell, then relaunch ──
 
   static Future<bool> _installWindows(String msixPath) async {
-    // Use Add-AppPackage -ForceApplicationShutdown to handle same-identity updates
+    // Get current executable path to relaunch after update
+    final exe = Platform.resolvedExecutable;
     await Process.start(
       'powershell',
-      ['-Command', 'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown'],
+      [
+        '-Command',
+        'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown; '
+            'Start-Sleep -Seconds 2; '
+            'Start-Process "$exe"',
+      ],
       mode: ProcessStartMode.detached,
       runInShell: true,
     );

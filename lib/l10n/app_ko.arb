@@ -462,5 +462,12 @@
   "@dbCreated": { "placeholders": { "name": { "type": "String" } } },
   "dbFailed": "데이터베이스 생성 실패: {error}",
   "@dbFailed": { "placeholders": { "error": { "type": "String" } } },
-  "noPostgresContainer": "실행 중인 PostgreSQL Docker 컨테이너 없음"
+  "noPostgresContainer": "실행 중인 PostgreSQL Docker 컨테이너 없음",
+
+  "saved": "저장됨",
+  "gitSettingsTitle": "GitHub 설정",
+  "gitSettingsDescription": "git-repositories 스크립트용 토큰 및 조직 (Odoo 프로젝트에서 사용)",
+  "gitToken": "GitHub 토큰",
+  "gitOrg": "조직",
+  "gitOrgHint": "예: my-org"
 }

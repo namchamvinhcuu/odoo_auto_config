@@ -1383,8 +1383,8 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               for (final line in _logLines)
-                                RichText(
-                                  text: TextSpan(
+                                Text.rich(
+                                  TextSpan(
                                     style: const TextStyle(
                                       fontFamily: 'monospace',
                                       fontSize: AppFontSize.md,

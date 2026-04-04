@@ -486,5 +486,12 @@
   "@dbCreated": { "placeholders": { "name": { "type": "String" } } },
   "dbFailed": "Failed to create database: {error}",
   "@dbFailed": { "placeholders": { "error": { "type": "String" } } },
-  "noPostgresContainer": "No PostgreSQL Docker container running"
+  "noPostgresContainer": "No PostgreSQL Docker container running",
+
+  "saved": "Saved",
+  "gitSettingsTitle": "GitHub Configuration",
+  "gitSettingsDescription": "Token and organization for git-repositories script (used in Odoo projects)",
+  "gitToken": "GitHub Token",
+  "gitOrg": "Organization",
+  "gitOrgHint": "e.g. my-org"
 }

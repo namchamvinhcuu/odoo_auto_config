@@ -26,11 +26,13 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   final _projectNameController = TextEditingController();
   final _httpPortController = TextEditingController();
   final _longpollingPortController = TextEditingController();
+  final _gitOrgController = TextEditingController();
   final _logs = <String>[];
 
   List<Profile> _profiles = [];
   Profile? _selectedProfile;
   String _baseDir = '';
+  String _gitToken = '';
   bool _loading = true;
   bool _creating = false;
   bool _done = false;
@@ -46,6 +48,8 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     setState(() => _loading = true);
     final profilesJson = await StorageService.loadProfiles();
     final projectsJson = await StorageService.loadProjects();
+    final settings = await StorageService.loadSettings();
+    _gitToken = (settings['gitToken'] ?? '').toString();
 
     // Find max port across all projects
     int maxPort = 8068;
@@ -184,6 +188,30 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
         ),
       );
       setState(() => _logs.add('[+] Written: $readmePath'));
+
+      // Create git-repositories script (platform-specific)
+      final gitOrg = _gitOrgController.text.trim();
+      if (Platform.isWindows) {
+        final scriptPath = p.join(projectPath, 'git-repositories.ps1');
+        await File(scriptPath).writeAsString(
+            OdooTemplates.gitRepositoriesPs1(token: _gitToken, org: gitOrg));
+        setState(() => _logs.add('[+] Written: $scriptPath'));
+      } else {
+        final scriptPath = p.join(projectPath, 'git-repositories.sh');
+        await File(scriptPath).writeAsString(
+            OdooTemplates.gitRepositoriesSh(token: _gitToken, org: gitOrg));
+        await Process.run('chmod', ['+x', scriptPath], runInShell: true);
+        setState(() => _logs.add('[+] Written: $scriptPath'));
+      }
+      // Save token to settings if provided during create
+      if (_gitToken.isEmpty && gitOrg.isNotEmpty) {
+        // No token yet but user entered org — nothing to save
+      }
+
+      // Create empty ignore_repos.txt
+      final ignorePath = p.join(projectPath, 'ignore_repos.txt');
+      await File(ignorePath).writeAsString('');
+      setState(() => _logs.add('[+] Written: $ignorePath'));
 
       final projectInfo = ProjectInfo(
         name: projectName,
@@ -400,6 +428,18 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                             style: const TextStyle(
                                 color: Colors.red, fontSize: AppFontSize.sm)),
                       ],
+                      const SizedBox(height: AppSpacing.md),
+
+                      // Git Organization
+                      TextField(
+                        controller: _gitOrgController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.gitOrg,
+                          hintText: context.l10n.gitOrgHint,
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.md),
 
                       // Create button

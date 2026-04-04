@@ -1379,4 +1379,23 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get noPostgresContainer =>
       'Không có PostgreSQL Docker container đang chạy';
+
+  @override
+  String get saved => 'Đã lưu';
+
+  @override
+  String get gitSettingsTitle => 'Cấu hình GitHub';
+
+  @override
+  String get gitSettingsDescription =>
+      'Token và organization cho script git-repositories (dùng trong Odoo projects)';
+
+  @override
+  String get gitToken => 'GitHub Token';
+
+  @override
+  String get gitOrg => 'Organization';
+
+  @override
+  String get gitOrgHint => 'VD: my-org';
 }

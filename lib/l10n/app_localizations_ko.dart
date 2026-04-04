@@ -1352,4 +1352,23 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noPostgresContainer => '실행 중인 PostgreSQL Docker 컨테이너 없음';
+
+  @override
+  String get saved => '저장됨';
+
+  @override
+  String get gitSettingsTitle => 'GitHub 설정';
+
+  @override
+  String get gitSettingsDescription =>
+      'git-repositories 스크립트용 토큰 및 조직 (Odoo 프로젝트에서 사용)';
+
+  @override
+  String get gitToken => 'GitHub 토큰';
+
+  @override
+  String get gitOrg => '조직';
+
+  @override
+  String get gitOrgHint => '예: my-org';
 }

@@ -2553,6 +2553,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No PostgreSQL Docker container running'**
   String get noPostgresContainer;
+
+  /// No description provided for @saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get saved;
+
+  /// No description provided for @gitSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Configuration'**
+  String get gitSettingsTitle;
+
+  /// No description provided for @gitSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Token and organization for git-repositories script (used in Odoo projects)'**
+  String get gitSettingsDescription;
+
+  /// No description provided for @gitToken.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Token'**
+  String get gitToken;
+
+  /// No description provided for @gitOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get gitOrg;
+
+  /// No description provided for @gitOrgHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. my-org'**
+  String get gitOrgHint;
 }
 
 class _AppLocalizationsDelegate

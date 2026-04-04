@@ -1384,4 +1384,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noPostgresContainer => 'No PostgreSQL Docker container running';
+
+  @override
+  String get saved => 'Saved';
+
+  @override
+  String get gitSettingsTitle => 'GitHub Configuration';
+
+  @override
+  String get gitSettingsDescription =>
+      'Token and organization for git-repositories script (used in Odoo projects)';
+
+  @override
+  String get gitToken => 'GitHub Token';
+
+  @override
+  String get gitOrg => 'Organization';
+
+  @override
+  String get gitOrgHint => 'e.g. my-org';
 }

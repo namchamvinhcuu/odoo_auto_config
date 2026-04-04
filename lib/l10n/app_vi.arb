@@ -462,5 +462,12 @@
   "@dbCreated": { "placeholders": { "name": { "type": "String" } } },
   "dbFailed": "Tạo database thất bại: {error}",
   "@dbFailed": { "placeholders": { "error": { "type": "String" } } },
-  "noPostgresContainer": "Không có PostgreSQL Docker container đang chạy"
+  "noPostgresContainer": "Không có PostgreSQL Docker container đang chạy",
+
+  "saved": "Đã lưu",
+  "gitSettingsTitle": "Cấu hình GitHub",
+  "gitSettingsDescription": "Token và organization cho script git-repositories (dùng trong Odoo projects)",
+  "gitToken": "GitHub Token",
+  "gitOrg": "Organization",
+  "gitOrgHint": "VD: my-org"
 }

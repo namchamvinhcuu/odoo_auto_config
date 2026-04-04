@@ -14,6 +14,7 @@ import '../services/platform_service.dart';
 import '../services/postgres_service.dart';
 import '../services/python_checker_service.dart';
 import '../services/python_install_service.dart';
+import '../services/storage_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/log_output.dart';
 import '../widgets/status_card.dart';
@@ -49,6 +50,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _dockerVersion;
   String? _dockerComposeVersion;
 
+  // Git
+  final _gitTokenController = TextEditingController();
+  bool _gitTokenObscured = true;
+  bool _gitLoaded = false;
+
   // PostgreSQL
   bool? _pgInstalled;
   String? _pgVersion;
@@ -59,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 5,
+      length: 6,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
@@ -76,6 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     _confDirController.dispose();
     _domainSuffixController.dispose();
     _containerNameController.dispose();
+    _gitTokenController.dispose();
     super.dispose();
   }
 
@@ -294,6 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             Tab(icon: const Icon(Icons.code), text: 'Python'),
             Tab(icon: const Icon(Icons.storage), text: 'PostgreSQL'),
             Tab(icon: const Icon(Icons.dns), text: 'Nginx'),
+            Tab(icon: const Icon(Icons.key), text: 'Git'),
           ],
         ),
         Expanded(
@@ -305,6 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               _buildPythonTab(),
               _buildPostgresTab(),
               _buildNginxTab(),
+              _buildGitTab(),
             ],
           ),
         ),
@@ -1674,6 +1683,65 @@ class _SettingsScreenState extends State<SettingsScreen>
       backgroundColor: ok
           ? Colors.green.withValues(alpha: 0.1)
           : Colors.red.withValues(alpha: 0.1),
+    );
+  }
+
+  // ── Git Tab ──
+
+  Future<void> _loadGitSettings() async {
+    if (_gitLoaded) return;
+    final settings = await StorageService.loadSettings();
+    _gitTokenController.text = (settings['gitToken'] ?? '').toString();
+    _gitLoaded = true;
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _saveGitSettings() async {
+    final settings = await StorageService.loadSettings();
+    settings['gitToken'] = _gitTokenController.text.trim();
+    await StorageService.saveSettings(settings);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.saved)),
+      );
+    }
+  }
+
+  Widget _buildGitTab() {
+    _loadGitSettings();
+    return SingleChildScrollView(
+      padding: AppSpacing.screenPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.l10n.gitSettingsTitle,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          Text(context.l10n.gitSettingsDescription,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: AppFontSize.md)),
+          const SizedBox(height: AppSpacing.lg),
+          TextField(
+            controller: _gitTokenController,
+            obscureText: _gitTokenObscured,
+            decoration: InputDecoration(
+              labelText: context.l10n.gitToken,
+              hintText: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: Icon(_gitTokenObscured ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setState(() => _gitTokenObscured = !_gitTokenObscured),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton.icon(
+            onPressed: _saveGitSettings,
+            icon: const Icon(Icons.save),
+            label: Text(context.l10n.save),
+          ),
+        ],
+      ),
     );
   }
 }
