@@ -2941,7 +2941,10 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                                   projectPath: widget.projectPath,
                                 ),
                               );
-                              if (mounted) setState(() => _message = null);
+                              if (mounted) {
+                                setState(() => _message = null);
+                                _loadBranches();
+                              }
                             },
                       icon: const Icon(Icons.commit, size: AppIconSize.md),
                       label: const Text('Commit'),
