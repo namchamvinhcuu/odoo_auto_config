@@ -1,11 +1,32 @@
 #!/bin/bash
 set -e
 
-VERSION="$1"
-if [ -z "$VERSION" ]; then
-  echo "Usage: ./release.sh <version>"
-  echo "Example: ./release.sh 1.1.0"
-  exit 1
+PUBSPEC="pubspec.yaml"
+
+# Read current version from pubspec.yaml
+CURRENT=$(grep '^version:' "$PUBSPEC" | head -1 | sed 's/version: //' | sed 's/+.*//')
+
+# Auto-bump or use provided version
+if [ -z "$1" ]; then
+  # Auto bump patch: 1.1.3 → 1.1.4
+  MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+  MINOR=$(echo "$CURRENT" | cut -d. -f2)
+  PATCH=$(echo "$CURRENT" | cut -d. -f3)
+  VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+  echo "Auto bump: $CURRENT → $VERSION"
+elif [ "$1" = "minor" ]; then
+  # Bump minor: 1.1.3 → 1.2.0
+  MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+  MINOR=$(echo "$CURRENT" | cut -d. -f2)
+  VERSION="$MAJOR.$((MINOR + 1)).0"
+  echo "Bump minor: $CURRENT → $VERSION"
+elif [ "$1" = "major" ]; then
+  # Bump major: 1.1.3 → 2.0.0
+  MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+  VERSION="$((MAJOR + 1)).0.0"
+  echo "Bump major: $CURRENT → $VERSION"
+else
+  VERSION="$1"
 fi
 
 # Validate semver format
@@ -25,8 +46,6 @@ if git rev-parse "v$VERSION" >/dev/null 2>&1; then
   echo "Error: Tag v$VERSION already exists."
   exit 1
 fi
-
-PUBSPEC="pubspec.yaml"
 
 # Bump version in pubspec.yaml
 OLD_VERSION=$(grep '^version:' "$PUBSPEC" | head -1)

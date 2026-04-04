@@ -32,7 +32,8 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   List<Profile> _profiles = [];
   Profile? _selectedProfile;
   String _baseDir = '';
-  String _gitToken = '';
+  List<Map<String, dynamic>> _gitAccounts = [];
+  Map<String, dynamic>? _selectedGitAccount;
   bool _loading = true;
   bool _creating = false;
   bool _done = false;
@@ -49,7 +50,14 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     final profilesJson = await StorageService.loadProfiles();
     final projectsJson = await StorageService.loadProjects();
     final settings = await StorageService.loadSettings();
-    _gitToken = (settings['gitToken'] ?? '').toString();
+    final accounts = (settings['gitAccounts'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    final defaultName = (settings['defaultGitAccount'] ?? '').toString();
+    _gitAccounts = accounts;
+    _selectedGitAccount = accounts.where((a) => a['name'] == defaultName).firstOrNull
+        ?? (accounts.isNotEmpty ? accounts.first : null);
 
     // Find max port across all projects
     int maxPort = 8068;
@@ -191,21 +199,18 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
 
       // Create git-repositories script (platform-specific)
       final gitOrg = _gitOrgController.text.trim();
+      final gitToken = (_selectedGitAccount?['token'] ?? '').toString();
       if (Platform.isWindows) {
         final scriptPath = p.join(projectPath, 'git-repositories.ps1');
         await File(scriptPath).writeAsString(
-            OdooTemplates.gitRepositoriesPs1(token: _gitToken, org: gitOrg));
+            OdooTemplates.gitRepositoriesPs1(token: gitToken, org: gitOrg));
         setState(() => _logs.add('[+] Written: $scriptPath'));
       } else {
         final scriptPath = p.join(projectPath, 'git-repositories.sh');
         await File(scriptPath).writeAsString(
-            OdooTemplates.gitRepositoriesSh(token: _gitToken, org: gitOrg));
+            OdooTemplates.gitRepositoriesSh(token: gitToken, org: gitOrg));
         await Process.run('chmod', ['+x', scriptPath], runInShell: true);
         setState(() => _logs.add('[+] Written: $scriptPath'));
-      }
-      // Save token to settings if provided during create
-      if (_gitToken.isEmpty && gitOrg.isNotEmpty) {
-        // No token yet but user entered org — nothing to save
       }
 
       // Create empty ignore_repos.txt
@@ -430,7 +435,32 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                       ],
                       const SizedBox(height: AppSpacing.md),
 
-                      // Git Organization
+                      // Git Account + Organization
+                      if (_gitAccounts.isNotEmpty) ...[
+                        DropdownButtonFormField<String>(
+                          initialValue: _selectedGitAccount?['name'] as String?,
+                          decoration: const InputDecoration(
+                            labelText: 'Git Account',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          items: _gitAccounts.map<DropdownMenuItem<String>>((a) {
+                            final name = (a['name'] ?? '').toString();
+                            return DropdownMenuItem<String>(
+                              value: name,
+                              child: Text(name),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            setState(() {
+                              _selectedGitAccount = _gitAccounts
+                                  .where((a) => a['name'] == v)
+                                  .firstOrNull;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
                       TextField(
                         controller: _gitOrgController,
                         decoration: InputDecoration(

@@ -51,8 +51,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   String? _dockerComposeVersion;
 
   // Git
-  final _gitTokenController = TextEditingController();
-  bool _gitTokenObscured = true;
+  List<Map<String, dynamic>> _gitAccounts = [];
+  String? _defaultGitAccount; // name of default account
   bool _gitLoaded = false;
 
   // PostgreSQL
@@ -82,7 +82,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     _confDirController.dispose();
     _domainSuffixController.dispose();
     _containerNameController.dispose();
-    _gitTokenController.dispose();
     super.dispose();
   }
 
@@ -1691,20 +1690,77 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _loadGitSettings() async {
     if (_gitLoaded) return;
     final settings = await StorageService.loadSettings();
-    _gitTokenController.text = (settings['gitToken'] ?? '').toString();
+    final accounts = (settings['gitAccounts'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    final defaultName = (settings['defaultGitAccount'] ?? '').toString();
     _gitLoaded = true;
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        _gitAccounts = accounts;
+        _defaultGitAccount = defaultName.isEmpty ? null : defaultName;
+      });
+    }
   }
 
-  Future<void> _saveGitSettings() async {
+  Future<void> _saveGitAccounts() async {
     final settings = await StorageService.loadSettings();
-    settings['gitToken'] = _gitTokenController.text.trim();
+    settings['gitAccounts'] = _gitAccounts;
+    settings['defaultGitAccount'] = _defaultGitAccount ?? '';
+    // Giữ tương thích: lưu token của default account vào gitToken
+    final def = _gitAccounts.where((a) => a['name'] == _defaultGitAccount).firstOrNull;
+    settings['gitToken'] = def?['token'] ?? '';
     await StorageService.saveSettings(settings);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.saved)),
-      );
-    }
+  }
+
+  void _addGitAccount() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitAccountDialog(),
+    ).then((result) {
+      if (result == null) return;
+      final account = result as Map<String, dynamic>;
+      setState(() {
+        _gitAccounts.add(account);
+        if (_gitAccounts.length == 1) _defaultGitAccount = account['name'];
+      });
+      _saveGitAccounts();
+    });
+  }
+
+  void _editGitAccount(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitAccountDialog(existing: _gitAccounts[index]),
+    ).then((result) {
+      if (result == null) return;
+      final account = result as Map<String, dynamic>;
+      final oldName = _gitAccounts[index]['name'];
+      setState(() {
+        _gitAccounts[index] = account;
+        if (_defaultGitAccount == oldName) {
+          _defaultGitAccount = account['name'];
+        }
+      });
+      _saveGitAccounts();
+    });
+  }
+
+  void _deleteGitAccount(int index) {
+    final name = _gitAccounts[index]['name'];
+    setState(() {
+      _gitAccounts.removeAt(index);
+      if (_defaultGitAccount == name) {
+        _defaultGitAccount = _gitAccounts.isNotEmpty ? _gitAccounts.first['name'] : null;
+      }
+    });
+    _saveGitAccounts();
+  }
+
+  void _setDefaultGitAccount(String name) {
+    setState(() => _defaultGitAccount = name);
+    _saveGitAccounts();
   }
 
   Widget _buildGitTab() {
@@ -1714,34 +1770,235 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.gitSettingsTitle,
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(context.l10n.gitSettingsDescription,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: AppFontSize.md)),
-          const SizedBox(height: AppSpacing.lg),
-          TextField(
-            controller: _gitTokenController,
-            obscureText: _gitTokenObscured,
-            decoration: InputDecoration(
-              labelText: context.l10n.gitToken,
-              hintText: 'ghp_xxxxxxxxxxxxxxxxxxxx',
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: IconButton(
-                icon: Icon(_gitTokenObscured ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _gitTokenObscured = !_gitTokenObscured),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(context.l10n.gitSettingsTitle,
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(context.l10n.gitSettingsDescription,
+                        style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: AppFontSize.md)),
+                  ],
+                ),
               ),
-            ),
+              FilledButton.icon(
+                onPressed: _addGitAccount,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Account'),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: _saveGitSettings,
-            icon: const Icon(Icons.save),
-            label: Text(context.l10n.save),
-          ),
+          if (_gitAccounts.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Text(
+                  'No Git accounts configured',
+                  style: TextStyle(color: Colors.grey.shade500),
+                ),
+              ),
+            )
+          else
+            ...List.generate(_gitAccounts.length, (i) {
+              final account = _gitAccounts[i];
+              final name = account['name'] ?? '';
+              final username = account['username'] ?? '';
+              final email = account['email'] ?? '';
+              final isDefault = _defaultGitAccount == name;
+              return Card(
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                color: isDefault
+                    ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    : null,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isDefault
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.grey,
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Row(
+                    children: [
+                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (isDefault) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Chip(
+                          label: const Text('Default'),
+                          labelStyle: TextStyle(fontSize: AppFontSize.sm),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ],
+                  ),
+                  subtitle: Text(
+                    '$username • $email',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.sm,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!isDefault)
+                        IconButton(
+                          onPressed: () => _setDefaultGitAccount(name),
+                          icon: const Icon(Icons.star_border),
+                          tooltip: 'Set as default',
+                        ),
+                      IconButton(
+                        onPressed: () => _editGitAccount(i),
+                        icon: const Icon(Icons.edit),
+                        tooltip: context.l10n.edit,
+                      ),
+                      IconButton(
+                        onPressed: () => _deleteGitAccount(i),
+                        icon: const Icon(Icons.delete),
+                        color: Colors.red,
+                        tooltip: context.l10n.removeFromList,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
         ],
       ),
+    );
+  }
+}
+
+// ── Git Account Dialog ──
+
+class _GitAccountDialog extends StatefulWidget {
+  final Map<String, dynamic>? existing;
+
+  const _GitAccountDialog({this.existing});
+
+  @override
+  State<_GitAccountDialog> createState() => _GitAccountDialogState();
+}
+
+class _GitAccountDialogState extends State<_GitAccountDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _usernameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _tokenController;
+  bool _tokenObscured = true;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _nameController = TextEditingController(text: (e?['name'] ?? '').toString());
+    _usernameController = TextEditingController(text: (e?['username'] ?? '').toString());
+    _emailController = TextEditingController(text: (e?['email'] ?? '').toString());
+    _tokenController = TextEditingController(text: (e?['token'] ?? '').toString());
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  bool get _canSave =>
+      _nameController.text.trim().isNotEmpty &&
+      _tokenController.text.trim().isNotEmpty;
+
+  void _save() {
+    Navigator.pop(context, {
+      'name': _nameController.text.trim(),
+      'username': _usernameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'token': _tokenController.text.trim(),
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.existing != null ? 'Edit Account' : 'Add Git Account'),
+      content: SizedBox(
+        width: AppDialog.widthMd,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Display Name *',
+                hintText: 'e.g. namchamvinhcuu',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: _usernameController,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                hintText: 'GitHub username',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                hintText: 'user@example.com',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextField(
+              controller: _tokenController,
+              obscureText: _tokenObscured,
+              decoration: InputDecoration(
+                labelText: 'Token *',
+                hintText: 'ghp_xxxxxxxxxxxxxxxxxxxx',
+                border: const OutlineInputBorder(),
+                isDense: true,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                      _tokenObscured ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () =>
+                      setState(() => _tokenObscured = !_tokenObscured),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: _canSave ? _save : null,
+          child: Text(context.l10n.save),
+        ),
+      ],
     );
   }
 }

@@ -1,9 +1,35 @@
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$false)]
     [string]$Version
 )
 
 $ErrorActionPreference = "Stop"
+$pubspec = "pubspec.yaml"
+
+# Read current version from pubspec.yaml
+$currentLine = (Select-String -Path $pubspec -Pattern '^version:').Line
+$current = ($currentLine -replace 'version: ', '' -replace '\+.*', '').Trim()
+$parts = $current.Split('.')
+$major = [int]$parts[0]
+$minor = [int]$parts[1]
+$patch = [int]$parts[2]
+
+# Auto-bump or use provided version
+if ([string]::IsNullOrEmpty($Version)) {
+    # Auto bump patch: 1.1.3 -> 1.1.4
+    $Version = "$major.$minor.$($patch + 1)"
+    Write-Host "Auto bump: $current -> $Version"
+}
+elseif ($Version -eq "minor") {
+    # Bump minor: 1.1.3 -> 1.2.0
+    $Version = "$major.$($minor + 1).0"
+    Write-Host "Bump minor: $current -> $Version"
+}
+elseif ($Version -eq "major") {
+    # Bump major: 1.1.3 -> 2.0.0
+    $Version = "$($major + 1).0.0"
+    Write-Host "Bump major: $current -> $Version"
+}
 
 # Validate semver format
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
@@ -24,8 +50,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Error "Error: Tag v$Version already exists."
     exit 1
 }
-
-$pubspec = "pubspec.yaml"
 
 # Bump version in pubspec.yaml
 $oldVersion = (Select-String -Path $pubspec -Pattern '^version:').Line

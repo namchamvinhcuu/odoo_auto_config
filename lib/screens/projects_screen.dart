@@ -1358,7 +1358,6 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _httpPortController;
   late final TextEditingController _lpPortController;
-  final _gitTokenController = TextEditingController();
   final _gitOrgController = TextEditingController();
   List<String>? _databases;
   String? _pythonPath;
@@ -1366,8 +1365,10 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
   String? _confPath;
   String _dbUser = 'odoo';
   bool _editing = false;
-  bool _gitTokenObscured = true;
   String? _gitScriptPath;
+  List<Map<String, dynamic>> _gitAccounts = [];
+  Map<String, dynamic>? _selectedGitAccount;
+  String _currentScriptToken = '';
 
   @override
   void initState() {
@@ -1392,7 +1393,6 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     _descriptionController.dispose();
     _httpPortController.dispose();
     _lpPortController.dispose();
-    _gitTokenController.dispose();
     _gitOrgController.dispose();
     super.dispose();
   }
@@ -1405,14 +1405,31 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     } else if (File(shPath).existsSync()) {
       _gitScriptPath = shPath;
     }
-    if (_gitScriptPath == null) return;
+
+    // Load git accounts from settings
+    final settings = await StorageService.loadSettings();
+    final accounts = (settings['gitAccounts'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    _gitAccounts = accounts;
+
+    if (_gitScriptPath == null) {
+      if (mounted) setState(() {});
+      return;
+    }
 
     final content = await File(_gitScriptPath!).readAsString();
     final tokenMatch = RegExp(r'TOKEN\s*=\s*"([^"]*)"').firstMatch(content);
     final orgMatch = RegExp(r'ORG_NAME\s*=\s*"([^"]*)"').firstMatch(content);
+    _currentScriptToken = tokenMatch?.group(1) ?? '';
+
+    // Match token to account
+    _selectedGitAccount = accounts.where(
+        (a) => a['token'] == _currentScriptToken).firstOrNull;
+
     if (mounted) {
       setState(() {
-        _gitTokenController.text = tokenMatch?.group(1) ?? '';
         _gitOrgController.text = orgMatch?.group(1) ?? '';
       });
     }
@@ -1612,7 +1629,7 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
       final file = File(_gitScriptPath!);
       if (await file.exists()) {
         var content = await file.readAsString();
-        final newToken = _gitTokenController.text.trim();
+        final newToken = (_selectedGitAccount?['token'] ?? '').toString();
         final newOrg = _gitOrgController.text.trim();
         if (newToken.isNotEmpty) {
           content = content.replaceFirst(
@@ -1847,22 +1864,32 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
           Text('Git Repositories',
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _gitTokenController,
-            obscureText: _gitTokenObscured,
-            decoration: InputDecoration(
-              labelText: context.l10n.gitToken,
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: IconButton(
-                icon: Icon(_gitTokenObscured
-                    ? Icons.visibility_off
-                    : Icons.visibility),
-                onPressed: () =>
-                    setState(() => _gitTokenObscured = !_gitTokenObscured),
+          if (_gitAccounts.isNotEmpty)
+            DropdownButtonFormField<String>(
+              initialValue: _selectedGitAccount?['name'] as String?,
+              decoration: const InputDecoration(
+                labelText: 'Git Account',
+                border: OutlineInputBorder(),
+                isDense: true,
               ),
-            ),
-          ),
+              items: _gitAccounts.map<DropdownMenuItem<String>>((a) {
+                final name = (a['name'] ?? '').toString();
+                return DropdownMenuItem<String>(
+                  value: name,
+                  child: Text(name),
+                );
+              }).toList(),
+              onChanged: (v) {
+                setState(() {
+                  _selectedGitAccount = _gitAccounts
+                      .where((a) => a['name'] == v)
+                      .firstOrNull;
+                });
+              },
+            )
+          else
+            Text('No Git accounts configured. Add in Settings > Git.',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: AppFontSize.md)),
           const SizedBox(height: AppSpacing.md),
           TextField(
             controller: _gitOrgController,
