@@ -88,7 +88,8 @@ lib/
         Setup: Dialog tạo PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
         Nếu chưa có server nào → hiện nút "Setup PostgreSQL Docker"
    - Tab 4 **Nginx**: config record (init/import/edit/delete) + port check (80/443)
-   - Tab 5 **Git**: GitHub token (lưu vào settings, dùng khi tạo git-repositories script)
+   - Tab 5 **Git**: Danh sách Git accounts (name, username, email, token) + default account
+     CRUD qua dialog. Lưu `gitAccounts` + `defaultGitAccount` vào settings
 
 > Python Check và VSCode Config **ẩn khỏi menu** nhưng code giữ nguyên.
 
@@ -165,6 +166,10 @@ lib/
 - **Git Pull**:
   - Odoo Projects: chạy `git-repositories.sh` (macOS/Linux) hoặc `.ps1` (Windows) — pull hàng loạt repos trong addons/
   - Other Projects: chạy `git pull` trực tiếp (single repo, check .git tồn tại)
+- **Selective Pull** (chỉ Odoo Projects):
+  - Scan `addons/` tìm repos có `.git`, user search + chọn repos cụ thể qua Autocomplete
+  - Selection persist vào settings (`selectivePull_<projectPath>`)
+  - Nút Clear list + remove từng repo, Pull chạy tuần tự cho repos đã chọn
 - **Git Commit**:
   - Other Projects: `git status --porcelain` → checkbox list files → `git add --` từng file → `git commit` → optional `git push`
   - Odoo Projects: scan `addons/` tìm repos có changes → checkbox list repos → `git add -A` + `git commit` + optional `git push` cho mỗi repo
@@ -172,8 +177,8 @@ lib/
 - **Git Repositories Script** (`git-repositories.sh` / `.ps1`):
   - Template trong `odoo_templates.dart` với params `token` và `org`
   - Tạo tự động khi Quick Create Odoo project
-  - Token đọc từ settings (`gitToken`), org nhập khi tạo project
-  - Edit project: đọc/sửa token+org trực tiếp từ file script (regex parse)
+  - Token đọc từ Git account (dropdown chọn account), org nhập khi tạo project
+  - Edit project (Info dialog > Edit): dropdown chọn account + sửa org, save vào file script
 - **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
 - **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
   `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
@@ -185,7 +190,9 @@ lib/
 ## Lưu trữ dữ liệu
 Tất cả data lưu tại: `~/.config/odoo_auto_config/odoo_auto_config.json`
 Gồm: profiles, projects, workspaces, registered_venvs, settings
-Settings gồm: theme, locale, gridView, nginx (confDir, domainSuffix, containerName), gitToken
+Settings gồm: theme, locale, gridView, nginx (confDir, domainSuffix, containerName),
+  gitAccounts (danh sách accounts), defaultGitAccount, gitToken (tương thích ngược),
+  selectivePull_<path> (selection per project)
 
 ## Lệnh thường dùng
 ```bash
@@ -216,10 +223,15 @@ hdiutil create -volname "Workspace Configuration" -srcfolder "$TMP_DIR" -ov -for
 rm -rf "$TMP_DIR"
 
 # Release (macOS/Linux)
-bash release.sh 1.0.5
+bash release.sh          # auto bump patch: 1.1.3 → 1.1.4
+bash release.sh minor    # bump minor: 1.1.3 → 1.2.0
+bash release.sh major    # bump major: 1.1.3 → 2.0.0
+bash release.sh 2.0.0    # chỉ định version cụ thể
 
 # Release (Windows PowerShell)
-.\release.ps1 1.0.5
+.\release.ps1            # auto bump patch
+.\release.ps1 minor
+.\release.ps1 2.0.0
 ```
 
 ## Đa ngôn ngữ (i18n)
@@ -303,5 +315,7 @@ bash release.sh 1.0.5
   (user có thể đặt subdomain khác tên project, VD: "pltax" cho project "polish-tax-odoo")
 - **Link existing conf**: Cho phép gán conf đã có vào project mà không tạo/sửa file
 - **Settings tabbed**: Theme / Docker / Python+Venv / PostgreSQL / Nginx / Git - để mở rộng thêm framework sau
+- **Project Info dialog gộp**: Info + Edit + Nginx + Database trong 1 dialog. Toggle edit mode bằng icon bút chì.
+  Không còn nút Edit riêng. `_ImportProjectDialog` chỉ dùng cho import
 - **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
   (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
