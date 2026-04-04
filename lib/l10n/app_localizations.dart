@@ -442,6 +442,12 @@ abstract class AppLocalizations {
   /// **'Script failed with exit code {code}'**
   String gitPullFailed(int code);
 
+  /// No description provided for @gitPullNotARepo.
+  ///
+  /// In en, this message translates to:
+  /// **'This project is not a git repository'**
+  String get gitPullNotARepo;
+
   /// No description provided for @openFolder.
   ///
   /// In en, this message translates to:

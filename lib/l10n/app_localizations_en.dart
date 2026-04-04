@@ -196,6 +196,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get gitPullNotARepo => 'This project is not a git repository';
+
+  @override
   String get openFolder => 'Open folder';
 
   @override

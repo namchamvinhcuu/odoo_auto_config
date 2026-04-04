@@ -61,6 +61,7 @@
   "gitPullRunning": "Đang chạy...",
   "gitPullDone": "Hoàn tất!",
   "gitPullFailed": "Script thất bại với mã thoát {code}",
+  "gitPullNotARepo": "Dự án này không phải là git repository",
   "openFolder": "Mở thư mục",
   "openInBrowser": "Mở trên trình duyệt",
   "back": "Quay lại",

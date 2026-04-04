@@ -61,6 +61,7 @@
   "gitPullRunning": "실행 중...",
   "gitPullDone": "완료!",
   "gitPullFailed": "스크립트가 종료 코드 {code}(으)로 실패했습니다",
+  "gitPullNotARepo": "이 프로젝트는 git 저장소가 아닙니다",
   "openFolder": "폴더 열기",
   "openInBrowser": "브라우저에서 열기",
   "back": "뒤로",

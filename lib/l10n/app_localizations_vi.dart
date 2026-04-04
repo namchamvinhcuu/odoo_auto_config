@@ -196,6 +196,9 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get gitPullNotARepo => 'Dự án này không phải là git repository';
+
+  @override
   String get openFolder => 'Mở thư mục';
 
   @override

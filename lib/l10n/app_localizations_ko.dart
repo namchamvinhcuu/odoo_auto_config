@@ -192,6 +192,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get gitPullNotARepo => '이 프로젝트는 git 저장소가 아닙니다';
+
+  @override
   String get openFolder => '폴더 열기';
 
   @override

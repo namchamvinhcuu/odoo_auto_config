@@ -66,6 +66,7 @@
   "gitPullDone": "Done!",
   "gitPullFailed": "Script failed with exit code {code}",
   "@gitPullFailed": { "placeholders": { "code": { "type": "int" } } },
+  "gitPullNotARepo": "This project is not a git repository",
   "openFolder": "Open folder",
   "openInBrowser": "Open in browser",
   "back": "Back",
