@@ -57,7 +57,7 @@
   "openInVscode": "Mở trong VSCode",
   "gitPull": "Git Pull",
   "gitPullTitle": "Git Pull — {name}",
-  "gitPullNoScript": "Không tìm thấy git-repositories.sh trong thư mục dự án",
+  "gitPullNoScript": "Không tìm thấy script git-repositories trong thư mục dự án (.sh hoặc .ps1)",
   "gitPullRunning": "Đang chạy...",
   "gitPullDone": "Hoàn tất!",
   "gitPullFailed": "Script thất bại với mã thoát {code}",

@@ -61,7 +61,7 @@
   "gitPull": "Git Pull",
   "gitPullTitle": "Git Pull — {name}",
   "@gitPullTitle": { "placeholders": { "name": { "type": "String" } } },
-  "gitPullNoScript": "git-repositories.sh not found in project directory",
+  "gitPullNoScript": "git-repositories script not found in project directory (.sh or .ps1)",
   "gitPullRunning": "Running...",
   "gitPullDone": "Done!",
   "gitPullFailed": "Script failed with exit code {code}",

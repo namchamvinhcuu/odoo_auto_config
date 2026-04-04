@@ -177,7 +177,8 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get gitPullNoScript => '프로젝트 디렉토리에 git-repositories.sh 파일이 없습니다';
+  String get gitPullNoScript =>
+      '프로젝트 디렉토리에 git-repositories 스크립트가 없습니다 (.sh 또는 .ps1)';
 
   @override
   String get gitPullRunning => '실행 중...';

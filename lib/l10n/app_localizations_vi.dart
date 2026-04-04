@@ -182,7 +182,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get gitPullNoScript =>
-      'Không tìm thấy git-repositories.sh trong thư mục dự án';
+      'Không tìm thấy script git-repositories trong thư mục dự án (.sh hoặc .ps1)';
 
   @override
   String get gitPullRunning => 'Đang chạy...';

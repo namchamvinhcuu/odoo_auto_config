@@ -421,7 +421,7 @@ abstract class AppLocalizations {
   /// No description provided for @gitPullNoScript.
   ///
   /// In en, this message translates to:
-  /// **'git-repositories.sh not found in project directory'**
+  /// **'git-repositories script not found in project directory (.sh or .ps1)'**
   String get gitPullNoScript;
 
   /// No description provided for @gitPullRunning.

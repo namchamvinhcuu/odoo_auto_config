@@ -182,7 +182,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gitPullNoScript =>
-      'git-repositories.sh not found in project directory';
+      'git-repositories script not found in project directory (.sh or .ps1)';
 
   @override
   String get gitPullRunning => 'Running...';

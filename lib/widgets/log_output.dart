@@ -59,21 +59,26 @@ class _LogOutputState extends State<LogOutput> {
               ),
             )
           : SelectionArea(
-              child: ListView.builder(
+              child: SingleChildScrollView(
                 controller: _scrollController,
                 padding: EdgeInsets.all(AppSpacing.md),
-                itemCount: widget.lines.length,
-                itemBuilder: (context, index) {
-                  final line = widget.lines[index];
-                  return Text(
-                    line,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: AppFontSize.md,
-                      color: _getLineColor(line),
-                    ),
-                  );
-                },
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final line in widget.lines)
+                        Text(
+                          line,
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: AppFontSize.md,
+                            color: _getLineColor(line),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ),
     );

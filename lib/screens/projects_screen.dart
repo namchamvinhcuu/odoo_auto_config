@@ -171,8 +171,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   void _runGitPull(ProjectInfo project) {
-    final scriptPath = p.join(project.path, 'git-repositories.sh');
-    if (!File(scriptPath).existsSync()) {
+    // Detect script: .sh for macOS/Linux, .ps1 for Windows
+    final shPath = p.join(project.path, 'git-repositories.sh');
+    final ps1Path = p.join(project.path, 'git-repositories.ps1');
+    final scriptPath = Platform.isWindows
+        ? (File(ps1Path).existsSync() ? ps1Path : null)
+        : (File(shPath).existsSync() ? shPath : null);
+    if (scriptPath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.gitPullNoScript)),
       );
@@ -2001,9 +2006,18 @@ class _GitPullDialogState extends State<_GitPullDialog> {
   Future<void> _run() async {
     setState(() => _running = true);
     try {
+      final String executable;
+      final List<String> args;
+      if (Platform.isWindows) {
+        executable = 'powershell';
+        args = ['-ExecutionPolicy', 'Bypass', '-File', widget.scriptPath];
+      } else {
+        executable = 'bash';
+        args = [widget.scriptPath];
+      }
       final process = await Process.start(
-        'bash',
-        [widget.scriptPath],
+        executable,
+        args,
         workingDirectory: widget.projectPath,
         runInShell: true,
       );
@@ -2090,21 +2104,27 @@ class _GitPullDialogState extends State<_GitPullDialog> {
                       ),
                     )
                   : SelectionArea(
-                      child: ListView.builder(
+                      child: SingleChildScrollView(
                         controller: _scrollController,
                         padding: const EdgeInsets.all(AppSpacing.md),
-                        itemCount: _logLines.length,
-                        itemBuilder: (context, index) {
-                          return RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: AppFontSize.md,
-                              ),
-                              children: _parseAnsi(_logLines[index]),
-                            ),
-                          );
-                        },
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final line in _logLines)
+                                RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: AppFontSize.md,
+                                    ),
+                                    children: _parseAnsi(line),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
             ),
