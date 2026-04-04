@@ -361,7 +361,12 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 ### Code quality
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
-- Khi edit workspace: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
+- Khi edit workspace/project: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
+- **Dialog reload**: Khi dialog con đóng (VD: Commit dialog đóng → quay lại Branches dialog), phải reload status trong dialog cha.
+  Khi dialog cha đóng, phải reload data ở parent screen (dùng `.then()` sau `showDialog`)
+- **Branch status trên grid/list**: hiện `changed count ↑` (cam) + `behind count ↓` (cyan) cạnh branch name
+  Load async song song với branch detection trong `_loadBranches`
+  `git status --porcelain` cho changed, `git rev-list --count HEAD..@{upstream}` cho behind (sau `git fetch --quiet`)
 
 ### Process / Shell
 - **`runInShell: true`** bắt buộc cho mọi `Process.run` trong AOT/release mode

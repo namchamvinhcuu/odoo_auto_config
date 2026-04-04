@@ -56,48 +56,53 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     _loadBranches(workspaces);
   }
 
+  Future<void> _loadBranchStatus(String path) async {
+    if (!Directory(p.join(path, '.git')).existsSync()) return;
+    try {
+      // Current branch
+      final result = await Process.run(
+        'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
+        workingDirectory: path,
+        runInShell: true,
+      );
+      if (result.exitCode == 0 && mounted) {
+        final branch = (result.stdout as String).trim();
+        if (branch.isNotEmpty) {
+          setState(() => _branches[path] = branch);
+        }
+      }
+
+      // Changed files count
+      final statusResult = await Process.run(
+        'git', ['status', '--porcelain'],
+        workingDirectory: path,
+        runInShell: true,
+      );
+      if (statusResult.exitCode == 0 && mounted) {
+        final lines = (statusResult.stdout as String)
+            .trimRight()
+            .split('\n')
+            .where((l) => l.isNotEmpty)
+            .length;
+        setState(() => _changedCount[path] = lines);
+      }
+
+      // Behind remote count (không fetch — chỉ check local cache)
+      final behindResult = await Process.run(
+        'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
+        workingDirectory: path,
+        runInShell: true,
+      );
+      if (behindResult.exitCode == 0 && mounted) {
+        final count = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
+        setState(() => _behindCount[path] = count);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _loadBranches(List<WorkspaceInfo> workspaces) async {
     for (final ws in workspaces) {
-      if (!Directory(p.join(ws.path, '.git')).existsSync()) continue;
-      try {
-        final result = await Process.run(
-          'git',
-          ['rev-parse', '--abbrev-ref', 'HEAD'],
-          workingDirectory: ws.path,
-          runInShell: true,
-        );
-        if (result.exitCode == 0 && mounted) {
-          final branch = (result.stdout as String).trim();
-          if (branch.isNotEmpty) {
-            setState(() => _branches[ws.path] = branch);
-
-            // Changed files count
-            final statusResult = await Process.run(
-              'git', ['status', '--porcelain'],
-              workingDirectory: ws.path,
-              runInShell: true,
-            );
-            if (statusResult.exitCode == 0 && mounted) {
-              final lines = (statusResult.stdout as String).trimRight().split('\n')
-                  .where((l) => l.isNotEmpty).length;
-              setState(() => _changedCount[ws.path] = lines);
-            }
-
-            // Behind remote count (fetch first)
-            await Process.run('git', ['fetch', '--quiet'],
-                workingDirectory: ws.path, runInShell: true);
-            final behindResult = await Process.run(
-              'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
-              workingDirectory: ws.path,
-              runInShell: true,
-            );
-            if (behindResult.exitCode == 0 && mounted) {
-              final count = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
-              setState(() => _behindCount[ws.path] = count);
-            }
-          }
-        }
-      } catch (_) {}
+      await _loadBranchStatus(ws.path);
     }
   }
 
@@ -113,9 +118,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         },
       ),
     ).then((_) {
-      // Reload branches + status khi đóng dialog
       if (mounted) {
-        _loadBranches(_workspaces);
+        _loadBranchStatus(ws.path);
       }
     });
   }
@@ -238,7 +242,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       context: context,
       builder: (ctx) =>
           _SimpleGitPullDialog(projectName: ws.name, projectPath: ws.path),
-    );
+    ).then((_) {
+      if (mounted) {
+        _loadBranchStatus(ws.path);
+      }
+    });
   }
 
   void _runGitCommit(WorkspaceInfo ws) {
@@ -253,7 +261,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       context: context,
       builder: (ctx) =>
           _SimpleGitCommitDialog(projectName: ws.name, projectPath: ws.path),
-    );
+    ).then((_) {
+      if (mounted) {
+        _loadBranchStatus(ws.path);
+      }
+    });
   }
 
   Future<void> _linkNginx(WorkspaceInfo ws) async {
