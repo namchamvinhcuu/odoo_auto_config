@@ -1476,7 +1476,7 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
   final _messageController = TextEditingController();
   bool _running = false;
   bool _loading = true;
-  bool _pushAfterCommit = false;
+  bool _pushAfterCommit = true;
 
   /// Each entry: {'status': 'M', 'file': 'path/to/file', 'selected': true}
   List<Map<String, dynamic>> _changedFiles = [];
@@ -1836,14 +1836,23 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
                 // Push checkbox + commit button
                 Row(
                   children: [
-                    Checkbox(
-                      value: _pushAfterCommit,
-                      onChanged: _running
+                    GestureDetector(
+                      onTap: _running
                           ? null
-                          : (v) =>
-                              setState(() => _pushAfterCommit = v ?? false),
+                          : () => setState(() => _pushAfterCommit = !_pushAfterCommit),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _pushAfterCommit,
+                            onChanged: _running
+                                ? null
+                                : (v) =>
+                                    setState(() => _pushAfterCommit = v ?? false),
+                          ),
+                          Text(context.l10n.gitPushAfterCommit),
+                        ],
+                      ),
                     ),
-                    Text(context.l10n.gitPushAfterCommit),
                     const Spacer(),
                     FilledButton.icon(
                       onPressed: _canCommit ? _commit : null,

@@ -2322,7 +2322,7 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
   final _messageController = TextEditingController();
   bool _scanning = true;
   bool _running = false;
-  bool _pushAfterCommit = false;
+  bool _pushAfterCommit = true;
 
   @override
   void initState() {
@@ -2603,22 +2603,21 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               // Push after commit checkbox
-              Row(
-                children: [
-                  Checkbox(
-                    value: _pushAfterCommit,
-                    onChanged: _running
-                        ? null
-                        : (v) => setState(() => _pushAfterCommit = v ?? false),
-                  ),
-                  GestureDetector(
-                    onTap: _running
-                        ? null
-                        : () => setState(
-                            () => _pushAfterCommit = !_pushAfterCommit),
-                    child: Text(context.l10n.gitPushAfterCommit),
-                  ),
-                ],
+              GestureDetector(
+                onTap: _running
+                    ? null
+                    : () => setState(() => _pushAfterCommit = !_pushAfterCommit),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _pushAfterCommit,
+                      onChanged: _running
+                          ? null
+                          : (v) => setState(() => _pushAfterCommit = v ?? false),
+                    ),
+                    Text(context.l10n.gitPushAfterCommit),
+                  ],
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
