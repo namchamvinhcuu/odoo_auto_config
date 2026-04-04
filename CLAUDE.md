@@ -177,7 +177,8 @@ lib/
 - **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
 - **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
   `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
-- **Parse git status**: Dùng regex `^(.{2}) (.+)$` thay vì `substring(3)` để tránh lỗi cắt path
+- **Parse git status**: Dùng `substring(0,2)` cho status + `substring(3)` cho filename.
+  QUAN TRỌNG: output phải dùng `.trimRight()` (KHÔNG dùng `.trim()` vì sẽ xóa space đầu dòng đầu tiên → mất ký tự status)
   Handle rename format `old -> new`
 - **git add**: Add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files)
 
