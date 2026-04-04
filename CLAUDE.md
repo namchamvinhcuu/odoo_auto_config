@@ -328,6 +328,15 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 - **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
   (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
 
+## Roadmap — Odoo Workspace View (chưa triển khai)
+Màn hình/dialog chuyên biệt khi mở 1 Odoo project — dashboard quản lý toàn bộ repos trong `addons/`:
+- **Mỗi repo hiện**: tên module, branch, changed files count, ahead/behind, nút Pull/Commit/Push/Switch Branch
+- **Batch actions**: chọn nhiều repos → commit chung message → push tất cả, pull tất cả, switch branch tất cả
+- **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
+- **Bối cảnh**: dev Odoo thường code nhiều module liên quan cùng lúc (module A phụ thuộc B, C → commit/push cả 3)
+- **Cách tiếp cận**: bắt đầu với dialog đơn giản, sau mở rộng thêm watcher và batch actions
+- **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS, cần lazy loading cho nhiều repos
+
 ## Lessons Learned — KHÔNG lặp lại các lỗi này
 
 ### UI / Layout

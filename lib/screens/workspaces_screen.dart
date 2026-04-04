@@ -16,6 +16,8 @@ import '../widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
 import 'projects_screen.dart';
 
+// thay đổi để test
+
 class WorkspacesScreen extends StatefulWidget {
   const WorkspacesScreen({super.key});
 
@@ -30,8 +32,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   bool _loading = true;
   String _filterType = '';
   final Map<String, String> _branches = {};
-  final Map<String, int> _changedCount = {};   // path → number of changed files
-  final Map<String, int> _behindCount = {};    // path → commits behind remote
+  final Map<String, int> _changedCount = {}; // path → number of changed files
+  final Map<String, int> _behindCount = {}; // path → commits behind remote
 
   @override
   void initState() {
@@ -61,7 +63,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     try {
       // Current branch
       final result = await Process.run(
-        'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
+        'git',
+        ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: path,
         runInShell: true,
       );
@@ -74,7 +77,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
 
       // Changed files count
       final statusResult = await Process.run(
-        'git', ['status', '--porcelain'],
+        'git',
+        ['status', '--porcelain'],
         workingDirectory: path,
         runInShell: true,
       );
@@ -89,7 +93,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
 
       // Behind remote count (không fetch — chỉ check local cache)
       final behindResult = await Process.run(
-        'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
+        'git',
+        ['rev-list', '--count', 'HEAD..@{upstream}'],
         workingDirectory: path,
         runInShell: true,
       );
@@ -770,7 +775,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          if ((_changedCount[ws.path] ?? 0) > 0) ...[
+                                          if ((_changedCount[ws.path] ?? 0) >
+                                              0) ...[
                                             Text(
                                               '${_changedCount[ws.path]}↑',
                                               style: const TextStyle(
@@ -779,9 +785,12 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(width: AppSpacing.xs),
+                                            const SizedBox(
+                                              width: AppSpacing.xs,
+                                            ),
                                           ],
-                                          if ((_behindCount[ws.path] ?? 0) > 0) ...[
+                                          if ((_behindCount[ws.path] ?? 0) >
+                                              0) ...[
                                             Text(
                                               '${_behindCount[ws.path]}↓',
                                               style: const TextStyle(
@@ -790,7 +799,9 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(width: AppSpacing.xs),
+                                            const SizedBox(
+                                              width: AppSpacing.xs,
+                                            ),
                                           ],
                                           Flexible(
                                             child: Text(
@@ -2302,19 +2313,24 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     // Load changed files count
     int changed = 0;
     final statusResult = await Process.run(
-      'git', ['status', '--porcelain'],
+      'git',
+      ['status', '--porcelain'],
       workingDirectory: widget.projectPath,
       runInShell: true,
     );
     if (statusResult.exitCode == 0) {
-      changed = (statusResult.stdout as String).trimRight()
-          .split('\n').where((l) => l.isNotEmpty).length;
+      changed = (statusResult.stdout as String)
+          .trimRight()
+          .split('\n')
+          .where((l) => l.isNotEmpty)
+          .length;
     }
 
     // Load behind remote count
     int behind = 0;
     final behindResult = await Process.run(
-      'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
+      'git',
+      ['rev-list', '--count', 'HEAD..@{upstream}'],
       workingDirectory: widget.projectPath,
       runInShell: true,
     );
@@ -2819,11 +2835,23 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(children: [
-          Icon(Icons.account_tree, size: AppIconSize.md, color: Colors.grey.shade500),
-          const SizedBox(width: AppSpacing.sm),
-          Text('Local', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-        ]),
+        Row(
+          children: [
+            Icon(
+              Icons.account_tree,
+              size: AppIconSize.md,
+              color: Colors.grey.shade500,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Local',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.sm),
         ..._local.map((b) => _branchTile(b)),
       ],
@@ -2835,11 +2863,23 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(children: [
-          Icon(Icons.cloud_outlined, size: AppIconSize.md, color: Colors.grey.shade500),
-          const SizedBox(width: AppSpacing.sm),
-          Text('Remote', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-        ]),
+        Row(
+          children: [
+            Icon(
+              Icons.cloud_outlined,
+              size: AppIconSize.md,
+              color: Colors.grey.shade500,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Remote',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.sm),
         ..._remote.map((b) => _branchTile(b, isRemote: true)),
       ],
@@ -2890,7 +2930,10 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   color: Colors.blue,
                 ),
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: AppIconSize.xl, minHeight: AppIconSize.xl),
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
                 tooltip: 'Merge',
               ),
               if (branch != 'main' && branch != 'master')
@@ -2976,8 +3019,15 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                     children: [
                       if (_changedFiles > 0)
                         Chip(
-                          avatar: const Icon(Icons.edit_note, size: AppIconSize.md, color: Colors.orange),
-                          label: Text('$_changedFiles changed', style: const TextStyle(color: Colors.orange)),
+                          avatar: const Icon(
+                            Icons.edit_note,
+                            size: AppIconSize.md,
+                            color: Colors.orange,
+                          ),
+                          label: Text(
+                            '$_changedFiles changed',
+                            style: const TextStyle(color: Colors.orange),
+                          ),
                           backgroundColor: Colors.orange.withValues(alpha: 0.1),
                           visualDensity: VisualDensity.compact,
                         ),
@@ -2985,8 +3035,15 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                         const SizedBox(width: AppSpacing.sm),
                       if (_behindRemote > 0)
                         Chip(
-                          avatar: const Icon(Icons.arrow_downward, size: AppIconSize.md, color: Colors.cyan),
-                          label: Text('$_behindRemote behind', style: const TextStyle(color: Colors.cyan)),
+                          avatar: const Icon(
+                            Icons.arrow_downward,
+                            size: AppIconSize.md,
+                            color: Colors.cyan,
+                          ),
+                          label: Text(
+                            '$_behindRemote behind',
+                            style: const TextStyle(color: Colors.cyan),
+                          ),
                           backgroundColor: Colors.cyan.withValues(alpha: 0.1),
                           visualDensity: VisualDensity.compact,
                         ),
