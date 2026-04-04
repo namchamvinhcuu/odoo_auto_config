@@ -220,12 +220,16 @@ rm -f "\$0"
     exit(0);
   }
 
-  // ── Windows: run MSIX installer ──
+  // ── Windows: force update MSIX via PowerShell ──
 
   static Future<bool> _installWindows(String msixPath) async {
-    // MSIX can be installed by simply running it, or via PowerShell
-    await Process.start('cmd', ['/c', 'start', '', msixPath],
-        mode: ProcessStartMode.detached);
+    // Use Add-AppPackage -ForceApplicationShutdown to handle same-identity updates
+    await Process.start(
+      'powershell',
+      ['-Command', 'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown'],
+      mode: ProcessStartMode.detached,
+      runInShell: true,
+    );
     exit(0);
   }
 
