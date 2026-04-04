@@ -223,17 +223,22 @@ rm -f "\$0"
   // ── Windows: force update MSIX via PowerShell, then relaunch ──
 
   static Future<bool> _installWindows(String msixPath) async {
-    // After MSIX update, exe path changes (new version folder in WindowsApps)
-    // Use Get-AppxPackage to find and launch the updated app
+    // Write PowerShell script to temp file to avoid quoting issues
+    final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.ps1');
+    // Use raw string for PowerShell script body, interpolate paths manually
+    final script = '\$ErrorActionPreference = "SilentlyContinue"\n'
+        'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown\n'
+        'Start-Sleep -Seconds 3\n'
+        r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1" '\n'
+        r"if ($app) {" '\n'
+        r"  $uri = 'shell:AppsFolder\' + $app.PackageFamilyName + '!App'" '\n'
+        r'  Start-Process explorer.exe $uri' '\n'
+        '}\n'
+        'Remove-Item -Path "$scriptPath" -Force\n';
+    await File(scriptPath).writeAsString(script);
     await Process.start(
       'powershell',
-      [
-        '-Command',
-        'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown; '
-            'Start-Sleep -Seconds 3; '
-            r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1; "
-            r"if ($app) { Start-Process ('explorer.exe') -ArgumentList ('shell:AppsFolder\' + $app.PackageFamilyName + '!App') }",
-      ],
+      ['-ExecutionPolicy', 'Bypass', '-File', scriptPath],
       mode: ProcessStartMode.detached,
       runInShell: true,
     );
