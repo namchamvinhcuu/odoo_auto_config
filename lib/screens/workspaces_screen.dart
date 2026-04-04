@@ -112,7 +112,12 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
           setState(() => _branches[ws.path] = branch);
         },
       ),
-    );
+    ).then((_) {
+      // Reload branches + status khi đóng dialog
+      if (mounted) {
+        _loadBranches(_workspaces);
+      }
+    });
   }
 
   Color _branchColor(String branch) {
