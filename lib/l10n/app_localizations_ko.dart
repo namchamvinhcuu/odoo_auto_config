@@ -195,6 +195,54 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gitPullNotARepo => '이 프로젝트는 git 저장소가 아닙니다';
 
   @override
+  String get gitCommit => 'Git Commit';
+
+  @override
+  String gitCommitTitle(String name) {
+    return 'Git Commit — $name';
+  }
+
+  @override
+  String get gitCommitMessage => '커밋 메시지';
+
+  @override
+  String get gitCommitMessageHint => '변경 사항을 설명하세요...';
+
+  @override
+  String get gitCommitNoChanges => '커밋할 변경 사항이 없습니다';
+
+  @override
+  String get gitCommitDone => '커밋 성공!';
+
+  @override
+  String gitCommitFailed(int code) {
+    return '커밋이 종료 코드 $code(으)로 실패했습니다';
+  }
+
+  @override
+  String get gitCommitAndPush => '커밋 & 푸시';
+
+  @override
+  String get gitCommitOnly => '커밋';
+
+  @override
+  String get gitPushAfterCommit => '커밋 후 푸시';
+
+  @override
+  String get gitSelectAll => '모두 선택';
+
+  @override
+  String get gitDeselectAll => '모두 해제';
+
+  @override
+  String gitStagedFiles(int count) {
+    return '$count개 파일 선택됨';
+  }
+
+  @override
+  String get gitNoReposWithChanges => '변경 사항이 있는 저장소가 없습니다';
+
+  @override
   String get openFolder => '폴더 열기';
 
   @override

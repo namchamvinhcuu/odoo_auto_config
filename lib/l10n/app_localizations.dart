@@ -448,6 +448,90 @@ abstract class AppLocalizations {
   /// **'This project is not a git repository'**
   String get gitPullNotARepo;
 
+  /// No description provided for @gitCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Commit'**
+  String get gitCommit;
+
+  /// No description provided for @gitCommitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Commit — {name}'**
+  String gitCommitTitle(String name);
+
+  /// No description provided for @gitCommitMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit message'**
+  String get gitCommitMessage;
+
+  /// No description provided for @gitCommitMessageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your changes...'**
+  String get gitCommitMessageHint;
+
+  /// No description provided for @gitCommitNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes to commit'**
+  String get gitCommitNoChanges;
+
+  /// No description provided for @gitCommitDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Committed successfully!'**
+  String get gitCommitDone;
+
+  /// No description provided for @gitCommitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit failed with exit code {code}'**
+  String gitCommitFailed(int code);
+
+  /// No description provided for @gitCommitAndPush.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit & Push'**
+  String get gitCommitAndPush;
+
+  /// No description provided for @gitCommitOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit'**
+  String get gitCommitOnly;
+
+  /// No description provided for @gitPushAfterCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Push after commit'**
+  String get gitPushAfterCommit;
+
+  /// No description provided for @gitSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get gitSelectAll;
+
+  /// No description provided for @gitDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get gitDeselectAll;
+
+  /// No description provided for @gitStagedFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) selected'**
+  String gitStagedFiles(int count);
+
+  /// No description provided for @gitNoReposWithChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'No repositories with changes found'**
+  String get gitNoReposWithChanges;
+
   /// No description provided for @openFolder.
   ///
   /// In en, this message translates to:

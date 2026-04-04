@@ -199,6 +199,54 @@ class AppLocalizationsVi extends AppLocalizations {
   String get gitPullNotARepo => 'Dự án này không phải là git repository';
 
   @override
+  String get gitCommit => 'Git Commit';
+
+  @override
+  String gitCommitTitle(String name) {
+    return 'Git Commit — $name';
+  }
+
+  @override
+  String get gitCommitMessage => 'Nội dung commit';
+
+  @override
+  String get gitCommitMessageHint => 'Mô tả thay đổi...';
+
+  @override
+  String get gitCommitNoChanges => 'Không có thay đổi để commit';
+
+  @override
+  String get gitCommitDone => 'Commit thành công!';
+
+  @override
+  String gitCommitFailed(int code) {
+    return 'Commit thất bại với mã thoát $code';
+  }
+
+  @override
+  String get gitCommitAndPush => 'Commit & Push';
+
+  @override
+  String get gitCommitOnly => 'Commit';
+
+  @override
+  String get gitPushAfterCommit => 'Push sau khi commit';
+
+  @override
+  String get gitSelectAll => 'Chọn tất cả';
+
+  @override
+  String get gitDeselectAll => 'Bỏ chọn tất cả';
+
+  @override
+  String gitStagedFiles(int count) {
+    return '$count file được chọn';
+  }
+
+  @override
+  String get gitNoReposWithChanges => 'Không có repository nào có thay đổi';
+
+  @override
   String get openFolder => 'Mở thư mục';
 
   @override

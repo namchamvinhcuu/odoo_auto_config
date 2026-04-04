@@ -199,6 +199,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gitPullNotARepo => 'This project is not a git repository';
 
   @override
+  String get gitCommit => 'Git Commit';
+
+  @override
+  String gitCommitTitle(String name) {
+    return 'Git Commit — $name';
+  }
+
+  @override
+  String get gitCommitMessage => 'Commit message';
+
+  @override
+  String get gitCommitMessageHint => 'Describe your changes...';
+
+  @override
+  String get gitCommitNoChanges => 'No changes to commit';
+
+  @override
+  String get gitCommitDone => 'Committed successfully!';
+
+  @override
+  String gitCommitFailed(int code) {
+    return 'Commit failed with exit code $code';
+  }
+
+  @override
+  String get gitCommitAndPush => 'Commit & Push';
+
+  @override
+  String get gitCommitOnly => 'Commit';
+
+  @override
+  String get gitPushAfterCommit => 'Push after commit';
+
+  @override
+  String get gitSelectAll => 'Select all';
+
+  @override
+  String get gitDeselectAll => 'Deselect all';
+
+  @override
+  String gitStagedFiles(int count) {
+    return '$count file(s) selected';
+  }
+
+  @override
+  String get gitNoReposWithChanges => 'No repositories with changes found';
+
+  @override
   String get openFolder => 'Open folder';
 
   @override

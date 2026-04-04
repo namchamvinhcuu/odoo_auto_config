@@ -157,6 +157,23 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     );
   }
 
+  void _runGitCommit(WorkspaceInfo ws) {
+    final gitDir = Directory(p.join(ws.path, '.git'));
+    if (!gitDir.existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.gitPullNotARepo)),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => _SimpleGitCommitDialog(
+        projectName: ws.name,
+        projectPath: ws.path,
+      ),
+    );
+  }
+
   Future<void> _linkNginx(WorkspaceInfo ws) async {
     final nginx = await NginxService.loadSettings();
     final confDir = (nginx['confDir'] ?? '').toString();
@@ -451,6 +468,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                         tooltip: context.l10n.gitPull,
                       ),
                       IconButton(
+                        onPressed: () => _runGitCommit(ws),
+                        icon: const Icon(Icons.commit),
+                        tooltip: context.l10n.gitCommit,
+                      ),
+                      IconButton(
                         onPressed: () => _openInVscode(ws.path),
                         icon: const Icon(Icons.code),
                         tooltip: context.l10n.openInVscode,
@@ -682,6 +704,17 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
           ),
         if (exists)
           PopupMenuItem(
+            value: 'git_commit',
+            child: Row(
+              children: [
+                const Icon(Icons.commit, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.gitCommit),
+              ],
+            ),
+          ),
+        if (exists)
+          PopupMenuItem(
             value: 'vscode',
             child: Row(
               children: [
@@ -764,6 +797,8 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         _toggleFavourite(ws);
       case 'git_pull':
         _runGitPull(ws);
+      case 'git_commit':
+        _runGitCommit(ws);
       case 'vscode':
         _openInVscode(ws.path);
       case 'folder':
@@ -1398,6 +1433,472 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
                       ),
                     ),
             ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Simple Git Commit dialog ──
+
+class _SimpleGitCommitDialog extends StatefulWidget {
+  final String projectName;
+  final String projectPath;
+
+  const _SimpleGitCommitDialog({
+    required this.projectName,
+    required this.projectPath,
+  });
+
+  @override
+  State<_SimpleGitCommitDialog> createState() => _SimpleGitCommitDialogState();
+}
+
+class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  final _messageController = TextEditingController();
+  bool _running = false;
+  bool _loading = true;
+  bool _pushAfterCommit = false;
+
+  /// Each entry: {'status': 'M', 'file': 'path/to/file', 'selected': true}
+  List<Map<String, dynamic>> _changedFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _loadStatus() async {
+    setState(() => _loading = true);
+    try {
+      final result = await Process.run(
+        'git', ['status', '--porcelain'],
+        workingDirectory: widget.projectPath,
+        runInShell: true,
+      );
+      if (!mounted) return;
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) {
+        setState(() {
+          _changedFiles = [];
+          _loading = false;
+        });
+        return;
+      }
+      final files = <Map<String, dynamic>>[];
+      for (final line in output.split('\n')) {
+        // git status --porcelain format: XY filename
+        // X=index status, Y=worktree status, then space, then filename
+        final match = RegExp(r'^(.{2}) (.+)$').firstMatch(line);
+        if (match == null) continue;
+        final status = match.group(1)!.trim();
+        var file = match.group(2)!;
+        // Handle renames: "old -> new"
+        if (file.contains(' -> ')) file = file.split(' -> ').last;
+        files.add({'status': status, 'file': file, 'selected': true});
+      }
+      setState(() {
+        _changedFiles = files;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        _addLine('\x1B[0;31m[-] $e\x1B[0m');
+      }
+    }
+  }
+
+  int get _selectedCount =>
+      _changedFiles.where((f) => f['selected'] == true).length;
+
+  bool get _canCommit =>
+      !_running &&
+      !_loading &&
+      _selectedCount > 0 &&
+      _messageController.text.trim().isNotEmpty;
+
+  Future<void> _commit() async {
+    setState(() => _running = true);
+
+    final selectedFiles =
+        _changedFiles.where((f) => f['selected'] == true).toList();
+    final filePaths = selectedFiles.map((f) => f['file'] as String).toList();
+    final message = _messageController.text.trim();
+
+    try {
+      // git add files one by one
+      _addLine('\x1B[0;34m> git add (${filePaths.length} files)\x1B[0m');
+      for (final file in filePaths) {
+        final addResult = await Process.run(
+          'git', ['add', '--', file],
+          workingDirectory: widget.projectPath,
+          runInShell: true,
+        );
+        if (addResult.exitCode != 0) {
+          _addLine('\x1B[0;31m[-] git add failed for: $file\x1B[0m');
+          if ((addResult.stderr as String).trim().isNotEmpty) {
+            _addLine((addResult.stderr as String).trim());
+          }
+          if (mounted) setState(() => _running = false);
+          return;
+        }
+      }
+
+      // git commit -m "message"
+      _addLine('\x1B[0;34m> git commit -m "$message"\x1B[0m');
+      final commitProcess = await Process.start(
+        'git', ['commit', '-m', message],
+        workingDirectory: widget.projectPath,
+        runInShell: true,
+      );
+      commitProcess.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (mounted) _addLine(line);
+      });
+      commitProcess.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (mounted) _addLine(line);
+      });
+      final commitExit = await commitProcess.exitCode;
+      if (!mounted) return;
+
+      if (commitExit != 0) {
+        _addLine('\x1B[0;31m[-] ${context.l10n.gitCommitFailed(commitExit)}\x1B[0m');
+        setState(() => _running = false);
+        return;
+      }
+      _addLine('\x1B[0;32m[+] ${context.l10n.gitCommitDone}\x1B[0m');
+
+      // Optional push
+      if (_pushAfterCommit) {
+        _addLine('\x1B[0;34m> git push\x1B[0m');
+        final pushProcess = await Process.start(
+          'git', ['push'],
+          workingDirectory: widget.projectPath,
+          runInShell: true,
+        );
+        pushProcess.stdout
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) {
+          if (mounted) _addLine(line);
+        });
+        pushProcess.stderr
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) {
+          if (mounted) _addLine(line);
+        });
+        final pushExit = await pushProcess.exitCode;
+        if (!mounted) return;
+        if (pushExit == 0) {
+          _addLine('\x1B[0;32m[+] Push done\x1B[0m');
+        } else {
+          _addLine('\x1B[0;31m[-] Push failed (exit $pushExit)\x1B[0m');
+        }
+      }
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) setState(() => _running = false);
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'M':
+        return const Color(0xFFE5E510); // yellow
+      case 'A':
+        return const Color(0xFF0DBC79); // green
+      case 'D':
+        return const Color(0xFFCD3131); // red
+      case '??':
+        return Colors.grey;
+      case 'R':
+        return const Color(0xFF2472C8); // blue
+      default:
+        return Colors.grey.shade300;
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allSelected = _changedFiles.isNotEmpty &&
+        _changedFiles.every((f) => f['selected'] == true);
+
+    return AlertDialog(
+      title: Text(context.l10n.gitCommitTitle(widget.projectName)),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              )
+            else if (_changedFiles.isEmpty && _logLines.isEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Center(
+                  child: Text(
+                    context.l10n.gitCommitNoChanges,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+              ),
+            ] else ...[
+              // File list with checkboxes
+              if (_changedFiles.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Text(
+                      context.l10n.gitStagedFiles(_selectedCount),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _running
+                          ? null
+                          : () {
+                              setState(() {
+                                final newVal = !allSelected;
+                                for (final f in _changedFiles) {
+                                  f['selected'] = newVal;
+                                }
+                              });
+                            },
+                      icon: Icon(
+                        allSelected
+                            ? Icons.deselect
+                            : Icons.select_all,
+                        size: AppIconSize.md,
+                      ),
+                      label: Text(allSelected
+                          ? context.l10n.gitDeselectAll
+                          : context.l10n.gitSelectAll),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade600),
+                    borderRadius: AppRadius.mediumBorderRadius,
+                  ),
+                  child: ListView.builder(
+                    itemCount: _changedFiles.length,
+                    itemBuilder: (ctx, i) {
+                      final f = _changedFiles[i];
+                      final status = f['status'] as String;
+                      final file = f['file'] as String;
+                      final selected = f['selected'] as bool;
+                      return CheckboxListTile(
+                        dense: true,
+                        value: selected,
+                        onChanged: _running
+                            ? null
+                            : (v) => setState(
+                                () => _changedFiles[i]['selected'] = v!),
+                        title: Text.rich(
+                          TextSpan(children: [
+                            TextSpan(
+                              text: '$status  ',
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.bold,
+                                color: _statusColor(status),
+                                fontSize: AppFontSize.md,
+                              ),
+                            ),
+                            TextSpan(
+                              text: file,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: AppFontSize.md,
+                              ),
+                            ),
+                          ]),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Commit message
+                TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.gitCommitMessage,
+                    hintText: context.l10n.gitCommitMessageHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  maxLines: 3,
+                  minLines: 1,
+                  enabled: !_running,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Push checkbox + commit button
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _pushAfterCommit,
+                      onChanged: _running
+                          ? null
+                          : (v) =>
+                              setState(() => _pushAfterCommit = v ?? false),
+                    ),
+                    Text(context.l10n.gitPushAfterCommit),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: _canCommit ? _commit : null,
+                      icon: const Icon(Icons.check, size: AppIconSize.md),
+                      label: Text(_pushAfterCommit
+                          ? context.l10n.gitCommitAndPush
+                          : context.l10n.gitCommitOnly),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+
+              // Log output area
+              if (_logLines.isNotEmpty || _running)
+                Container(
+                  height: 180,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppLogColors.terminalBg,
+                    borderRadius: AppRadius.mediumBorderRadius,
+                    border: Border.all(color: Colors.grey.shade700),
+                  ),
+                  child: _logLines.isEmpty
+                      ? Center(
+                          child: Text(
+                            context.l10n.noOutputYet,
+                            style: const TextStyle(
+                                color: Colors.grey, fontFamily: 'monospace'),
+                          ),
+                        )
+                      : SelectionArea(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (final line in _logLines)
+                                    Text.rich(
+                                      TextSpan(
+                                        style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: AppFontSize.md,
+                                        ),
+                                        children: _parseAnsi(line),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+            ],
+
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(top: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              ),
           ],
         ),
       ),
