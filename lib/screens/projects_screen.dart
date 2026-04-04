@@ -209,52 +209,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
   }
 
-  Future<void> _editProject(ProjectInfo project) async {
-    final result = await showDialog<ProjectInfo>(
-      context: context,
-      builder: (ctx) => _ImportProjectDialog(existing: project),
-    );
-    if (result != null) {
-      final conflict = await StorageService.checkPortConflict(
-          result.httpPort, result.longpollingPort, result.path);
-      if (conflict != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(conflict), backgroundColor: Colors.red),
-        );
-        return;
-      }
-
-      // Preserve nginxSubdomain, favourite, dbName from old project
-      final updated = result.copyWith(
-        nginxSubdomain: project.nginxSubdomain != null
-            ? () => project.nginxSubdomain
-            : null,
-        favourite: project.favourite,
-        dbName: project.dbName != null ? () => project.dbName : null,
-      );
-
-      await StorageService.removeProject(project.path);
-      await StorageService.addProject(updated.toJson());
-
-      // Update odoo.conf if ports changed
-      final portsChanged = project.httpPort != result.httpPort ||
-          project.longpollingPort != result.longpollingPort;
-      if (portsChanged) {
-        await _updateOdooConf(result.path, result.httpPort, result.longpollingPort);
-        // Update nginx conf if project has nginx setup
-        if (project.hasNginx) {
-          await _updateNginxConf(
-            project.nginxSubdomain!,
-            result.httpPort,
-            result.longpollingPort,
-          );
-        }
-      }
-
-      await _load();
-    }
-  }
-
   Future<void> _updateOdooConf(String projectPath, int httpPort, int lpPort) async {
     final confFile = File(p.join(projectPath, 'odoo.conf'));
     if (!await confFile.exists()) return;
@@ -642,11 +596,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         tooltip: context.l10n.openFolder,
                       ),
                     ],
-                    IconButton(
-                      onPressed: () => _editProject(proj),
-                      icon: const Icon(Icons.edit),
-                      tooltip: context.l10n.edit,
-                    ),
                     if (proj.hasNginx)
                       IconButton(
                         onPressed: () => _removeNginx(proj),
@@ -967,16 +916,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           ),
         ],
         PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              const Icon(Icons.edit, size: AppIconSize.md),
-              const SizedBox(width: AppSpacing.sm),
-              Text(context.l10n.edit),
-            ],
-          ),
-        ),
-        PopupMenuItem(
           value: 'delete',
           child: Row(
             children: [
@@ -1007,8 +946,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         _linkNginx(proj);
       case 'nginx_remove':
         _removeNginx(proj);
-      case 'edit':
-        _editProject(proj);
       case 'delete':
         _remove(proj);
     }
@@ -1030,6 +967,30 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           final updated = proj.copyWith(dbName: () => dbName);
           await StorageService.addProject(updated.toJson());
           _load();
+        },
+        onSaved: (updated) async {
+          // Preserve nginxSubdomain, favourite, dbName
+          final full = updated.copyWith(
+            nginxSubdomain: proj.nginxSubdomain != null
+                ? () => proj.nginxSubdomain
+                : null,
+            favourite: proj.favourite,
+            dbName: proj.dbName != null ? () => proj.dbName : null,
+          );
+
+          await StorageService.removeProject(proj.path);
+          await StorageService.addProject(full.toJson());
+
+          // Update odoo.conf if ports changed
+          if (proj.httpPort != updated.httpPort ||
+              proj.longpollingPort != updated.longpollingPort) {
+            await _updateOdooConf(updated.path, updated.httpPort, updated.longpollingPort);
+            if (proj.hasNginx) {
+              await _updateNginxConf(proj.nginxSubdomain!, updated.httpPort, updated.longpollingPort);
+            }
+          }
+
+          await _load();
         },
       ),
     );
@@ -1151,9 +1112,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 // ── Import Project Dialog ──
 
 class _ImportProjectDialog extends StatefulWidget {
-  final ProjectInfo? existing;
-
-  const _ImportProjectDialog({this.existing});
+  const _ImportProjectDialog();
 
   @override
   State<_ImportProjectDialog> createState() => _ImportProjectDialogState();
@@ -1163,55 +1122,19 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _httpPortController;
   late final TextEditingController _lpPortController;
-  final _gitTokenController = TextEditingController();
-  final _gitOrgController = TextEditingController();
   late String _projectPath;
   late String _description;
   bool _autoDetected = false;
-  bool _gitTokenObscured = true;
-  String? _gitScriptPath;
 
   @override
   void initState() {
     super.initState();
-    final e = widget.existing;
-    _nameController = TextEditingController(text: e?.name ?? '');
-    _httpPortController = TextEditingController(text: '${e?.httpPort ?? 0}');
-    _lpPortController = TextEditingController(text: '${e?.longpollingPort ?? 0}');
-    _projectPath = e?.path ?? '';
-    _description = e?.description ?? '';
-    if (e == null) {
-      _suggestPorts();
-    } else {
-      _loadGitConfig(e.path);
-    }
-  }
-
-  Future<void> _loadGitConfig(String projectPath) async {
-    // Find script file
-    final shPath = p.join(projectPath, 'git-repositories.sh');
-    final ps1Path = p.join(projectPath, 'git-repositories.ps1');
-    String? scriptPath;
-    if (File(ps1Path).existsSync()) {
-      scriptPath = ps1Path;
-    } else if (File(shPath).existsSync()) {
-      scriptPath = shPath;
-    }
-    if (scriptPath == null) return;
-
-    _gitScriptPath = scriptPath;
-    final content = await File(scriptPath).readAsString();
-
-    // Parse TOKEN and ORG_NAME from script
-    final tokenMatch = RegExp(r'(?:TOKEN|TOKEN)\s*=\s*"([^"]*)"').firstMatch(content);
-    final orgMatch = RegExp(r'ORG_NAME\s*=\s*"([^"]*)"').firstMatch(content);
-
-    if (mounted) {
-      setState(() {
-        _gitTokenController.text = tokenMatch?.group(1) ?? '';
-        _gitOrgController.text = orgMatch?.group(1) ?? '';
-      });
-    }
+    _nameController = TextEditingController();
+    _httpPortController = TextEditingController(text: '0');
+    _lpPortController = TextEditingController(text: '0');
+    _projectPath = '';
+    _description = '';
+    _suggestPorts();
   }
 
   Future<void> _suggestPorts() async {
@@ -1293,27 +1216,8 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
       description: _description,
       httpPort: int.tryParse(_httpPortController.text) ?? 8069,
       longpollingPort: int.tryParse(_lpPortController.text) ?? 8072,
-      createdAt: widget.existing?.createdAt ?? DateTime.now().toIso8601String(),
+      createdAt: DateTime.now().toIso8601String(),
     );
-
-    // Update git-repositories script if editing and script exists
-    if (_gitScriptPath != null) {
-      final file = File(_gitScriptPath!);
-      if (await file.exists()) {
-        var content = await file.readAsString();
-        final newToken = _gitTokenController.text.trim();
-        final newOrg = _gitOrgController.text.trim();
-        if (newToken.isNotEmpty) {
-          content = content.replaceFirst(
-              RegExp(r'(TOKEN\s*=\s*)"[^"]*"'), '\$1"$newToken"');
-        }
-        if (newOrg.isNotEmpty) {
-          content = content.replaceFirst(
-              RegExp(r'(ORG_NAME\s*=\s*)"[^"]*"'), '\$1"$newOrg"');
-        }
-        await file.writeAsString(content);
-      }
-    }
 
     if (mounted) Navigator.pop(context, project);
   }
@@ -1323,17 +1227,13 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
     _nameController.dispose();
     _httpPortController.dispose();
     _lpPortController.dispose();
-    _gitTokenController.dispose();
-    _gitOrgController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing != null
-          ? context.l10n.editProject
-          : context.l10n.importExistingProject),
+      title: Text(context.l10n.importExistingProject),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: SingleChildScrollView(
@@ -1436,41 +1336,6 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                 ],
               ),
 
-              // Git config (only when editing and script exists)
-              if (widget.existing != null && _gitScriptPath != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                const Divider(),
-                const SizedBox(height: AppSpacing.sm),
-                Text('Git Repositories',
-                    style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: _gitTokenController,
-                  obscureText: _gitTokenObscured,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.gitToken,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    suffixIcon: IconButton(
-                      icon: Icon(_gitTokenObscured
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () =>
-                          setState(() => _gitTokenObscured = !_gitTokenObscured),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: _gitOrgController,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.gitOrg,
-                    hintText: context.l10n.gitOrgHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -1484,9 +1349,7 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
                   _nameController.text.isNotEmpty)
               ? _save
               : null,
-          child: Text(widget.existing != null
-              ? context.l10n.save
-              : context.l10n.import_),
+          child: Text(context.l10n.import_),
         ),
       ],
     );
@@ -1499,11 +1362,13 @@ class _ProjectInfoDialog extends StatefulWidget {
   final ProjectInfo project;
   final String? domain;
   final void Function(String dbName) onDbChanged;
+  final Future<void> Function(ProjectInfo updated) onSaved;
 
   const _ProjectInfoDialog({
     required this.project,
     this.domain,
     required this.onDbChanged,
+    required this.onSaved,
   });
 
   @override
@@ -1512,26 +1377,68 @@ class _ProjectInfoDialog extends StatefulWidget {
 
 class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
   final _dbNameController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _httpPortController;
+  late final TextEditingController _lpPortController;
+  final _gitTokenController = TextEditingController();
+  final _gitOrgController = TextEditingController();
   List<String>? _databases;
   String? _pythonPath;
   String? _odooBinPath;
   String? _confPath;
   String _dbUser = 'odoo';
+  bool _editing = false;
+  bool _gitTokenObscured = true;
+  String? _gitScriptPath;
 
   @override
   void initState() {
     super.initState();
-    _dbNameController.text = widget.project.name
+    final proj = widget.project;
+    _nameController = TextEditingController(text: proj.name);
+    _descriptionController = TextEditingController(text: proj.description);
+    _httpPortController = TextEditingController(text: '${proj.httpPort}');
+    _lpPortController = TextEditingController(text: '${proj.longpollingPort}');
+    _dbNameController.text = proj.name
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9_]'), '_');
     _detectPaths();
     _loadDatabases();
+    _loadGitConfig(proj.path);
   }
 
   @override
   void dispose() {
     _dbNameController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _httpPortController.dispose();
+    _lpPortController.dispose();
+    _gitTokenController.dispose();
+    _gitOrgController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGitConfig(String projectPath) async {
+    final shPath = p.join(projectPath, 'git-repositories.sh');
+    final ps1Path = p.join(projectPath, 'git-repositories.ps1');
+    if (File(ps1Path).existsSync()) {
+      _gitScriptPath = ps1Path;
+    } else if (File(shPath).existsSync()) {
+      _gitScriptPath = shPath;
+    }
+    if (_gitScriptPath == null) return;
+
+    final content = await File(_gitScriptPath!).readAsString();
+    final tokenMatch = RegExp(r'TOKEN\s*=\s*"([^"]*)"').firstMatch(content);
+    final orgMatch = RegExp(r'ORG_NAME\s*=\s*"([^"]*)"').firstMatch(content);
+    if (mounted) {
+      setState(() {
+        _gitTokenController.text = tokenMatch?.group(1) ?? '';
+        _gitOrgController.text = orgMatch?.group(1) ?? '';
+      });
+    }
   }
 
   Future<void> _detectPaths() async {
@@ -1699,6 +1606,59 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     } catch (_) {}
   }
 
+  Future<void> _saveChanges() async {
+    final newName = _nameController.text.trim();
+    final newDesc = _descriptionController.text.trim();
+    final newHttp = int.tryParse(_httpPortController.text) ?? widget.project.httpPort;
+    final newLp = int.tryParse(_lpPortController.text) ?? widget.project.longpollingPort;
+
+    // Check port conflict
+    final conflict = await StorageService.checkPortConflict(newHttp, newLp, widget.project.path);
+    if (conflict != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(conflict), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final updated = ProjectInfo(
+      name: newName,
+      path: widget.project.path,
+      description: newDesc,
+      httpPort: newHttp,
+      longpollingPort: newLp,
+      createdAt: widget.project.createdAt,
+    );
+
+    // Update git script if exists
+    if (_gitScriptPath != null) {
+      final file = File(_gitScriptPath!);
+      if (await file.exists()) {
+        var content = await file.readAsString();
+        final newToken = _gitTokenController.text.trim();
+        final newOrg = _gitOrgController.text.trim();
+        if (newToken.isNotEmpty) {
+          content = content.replaceFirst(
+              RegExp(r'(TOKEN\s*=\s*)"[^"]*"'), '\$1"$newToken"');
+        }
+        if (newOrg.isNotEmpty) {
+          content = content.replaceFirst(
+              RegExp(r'(ORG_NAME\s*=\s*)"[^"]*"'), '\$1"$newOrg"');
+        }
+        await file.writeAsString(content);
+      }
+    }
+
+    await widget.onSaved(updated);
+    if (mounted) {
+      setState(() => _editing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.saved)),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final proj = widget.project;
@@ -1706,77 +1666,197 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.info_outline),
+          Icon(_editing ? Icons.edit : Icons.info_outline),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(proj.name)),
+          Expanded(child: Text(_editing ? context.l10n.editProject : proj.name)),
+          if (!_editing)
+            IconButton(
+              onPressed: () => setState(() => _editing = true),
+              icon: const Icon(Icons.edit),
+              tooltip: context.l10n.edit,
+            ),
         ],
       ),
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Info section
-              _infoRow(Icons.folder, context.l10n.projectDirectory, proj.path),
-              const SizedBox(height: AppSpacing.md),
-              _infoRow(Icons.lan, 'HTTP Port', '${proj.httpPort}'),
-              const SizedBox(height: AppSpacing.sm),
-              _infoRow(Icons.lan, 'Longpolling Port', '${proj.longpollingPort}'),
-              const SizedBox(height: AppSpacing.md),
-              _infoRow(
-                Icons.dns,
-                context.l10n.projectInfoDomain,
-                widget.domain != null
-                    ? 'https://${widget.domain}'
-                    : context.l10n.projectInfoNginxNotSetup,
-                valueColor: widget.domain != null ? Colors.green : Colors.orange,
-              ),
-              _infoRow(
-                Icons.storage,
-                'Database',
-                proj.hasDb ? proj.dbName! : '—',
-                valueColor: proj.hasDb ? null : Colors.grey,
-              ),
-              if (proj.description.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                _infoRow(Icons.description, context.l10n.descriptionOptional,
-                    proj.description),
-              ],
-
-              // Database actions
-              const SizedBox(height: AppSpacing.xxl),
-              const Divider(),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => _showCreateDbDialog(),
-                      icon: const Icon(Icons.add),
-                      label: Text(context.l10n.createDatabase),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: _selectDatabase,
-                      icon: const Icon(Icons.list),
-                      label: Text(context.l10n.import_),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: _editing ? _buildEditView() : _buildInfoView(),
         ),
       ),
       actions: [
-        FilledButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.close),
+        if (_editing) ...[
+          TextButton(
+            onPressed: () => setState(() => _editing = false),
+            child: Text(context.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: _nameController.text.trim().isNotEmpty ? _saveChanges : null,
+            child: Text(context.l10n.save),
+          ),
+        ] else
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.l10n.close),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfoView() {
+    final proj = widget.project;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _infoRow(Icons.folder, context.l10n.projectDirectory, proj.path),
+        const SizedBox(height: AppSpacing.md),
+        _infoRow(Icons.lan, 'HTTP Port', '${proj.httpPort}'),
+        const SizedBox(height: AppSpacing.sm),
+        _infoRow(Icons.lan, 'Longpolling Port', '${proj.longpollingPort}'),
+        const SizedBox(height: AppSpacing.md),
+        _infoRow(
+          Icons.dns,
+          context.l10n.projectInfoDomain,
+          widget.domain != null
+              ? 'https://${widget.domain}'
+              : context.l10n.projectInfoNginxNotSetup,
+          valueColor: widget.domain != null ? Colors.green : Colors.orange,
         ),
+        _infoRow(
+          Icons.storage,
+          'Database',
+          proj.hasDb ? proj.dbName! : '—',
+          valueColor: proj.hasDb ? null : Colors.grey,
+        ),
+        if (proj.description.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          _infoRow(Icons.description, context.l10n.descriptionOptional,
+              proj.description),
+        ],
+
+        // Database actions
+        const SizedBox(height: AppSpacing.xxl),
+        const Divider(),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => _showCreateDbDialog(),
+                icon: const Icon(Icons.add),
+                label: Text(context.l10n.createDatabase),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: _selectDatabase,
+                icon: const Icon(Icons.list),
+                label: Text(context.l10n.import_),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditView() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Path (read-only)
+        _infoRow(Icons.folder, context.l10n.projectDirectory, widget.project.path),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Name
+        TextField(
+          controller: _nameController,
+          decoration: InputDecoration(
+            labelText: context.l10n.projectName,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Description
+        TextField(
+          controller: _descriptionController,
+          decoration: InputDecoration(
+            labelText: context.l10n.descriptionOptional,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Ports
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _httpPortController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.httpPort,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: TextField(
+                controller: _lpPortController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.longpollingPort,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+
+        // Git config (if script exists)
+        if (_gitScriptPath != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          const Divider(),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Git Repositories',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _gitTokenController,
+            obscureText: _gitTokenObscured,
+            decoration: InputDecoration(
+              labelText: context.l10n.gitToken,
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: Icon(_gitTokenObscured
+                    ? Icons.visibility_off
+                    : Icons.visibility),
+                onPressed: () =>
+                    setState(() => _gitTokenObscured = !_gitTokenObscured),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _gitOrgController,
+            decoration: InputDecoration(
+              labelText: context.l10n.gitOrg,
+              hintText: context.l10n.gitOrgHint,
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ],
       ],
     );
   }
