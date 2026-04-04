@@ -1646,7 +1646,11 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() => _running = false);
+      // Reload status to show remaining changes
+      await _loadStatus();
+    }
   }
 
   Color _statusColor(String status) {
