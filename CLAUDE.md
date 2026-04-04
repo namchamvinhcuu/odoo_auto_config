@@ -109,7 +109,7 @@ lib/
 - **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vào settings JSON
   Grid default, responsive columns: S=3, M=4, L=5. Scale icon/button theo cell width
 - **Favourite** - Star icon (IconButton với hover), sort favourite lên đầu rồi by name A-Z
-- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit, nginx setup/link/remove, VSCode, folder, edit, delete)
+- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit/selective pull, VSCode, folder, edit, delete)
 - **Grid tooltip** - Hover hiện description (hoặc path nếu không có description)
 - **Auto-detect project type** - Import workspace tự động nhận diện từ marker files
 - **Nginx status** - Lưu `nginxSubdomain` vào model JSON (không derive từ tên project)
@@ -193,6 +193,7 @@ lib/
   QUAN TRỌNG: output phải dùng `.trimRight()` (KHÔNG dùng `.trim()` vì sẽ xóa space đầu dòng đầu tiên → mất ký tự status)
   Handle rename format `old -> new`
 - **git add**: Add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files)
+- **Commit message**: TextField với `minLines: 3`, `maxLines: 8` (tự scroll khi vượt 8 dòng, KHÔNG dùng `maxLines: null` sẽ overflow)
 
 ## Lưu trữ dữ liệu
 Tất cả data lưu tại: `~/.config/odoo_auto_config/odoo_auto_config.json`
