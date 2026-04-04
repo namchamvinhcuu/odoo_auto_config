@@ -1919,8 +1919,8 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                   ),
-                  maxLines: 3,
-                  minLines: 1,
+                  maxLines: 8,
+                  minLines: 3,
                   enabled: !_running,
                   onChanged: (_) => setState(() {}),
                 ),
@@ -2376,7 +2376,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
             if (isRemote)
               Icon(Icons.cloud_outlined,
                   size: AppIconSize.sm, color: Colors.grey.shade500),
-            if (!isRemote && !isCurrent)
+            if (!isRemote && !isCurrent && branch != 'main' && branch != 'master')
               IconButton(
                 onPressed: _switching ? null : () => _deleteBranch(branch),
                 icon: const Icon(Icons.delete_outline,
@@ -2396,7 +2396,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const Text('Switch Branch'),
+          const Text('Git Branches'),
           const SizedBox(width: AppSpacing.sm),
           TextButton.icon(
             onPressed: _switching ? null : _pruneCheck,

@@ -179,6 +179,13 @@ lib/
   - Tạo tự động khi Quick Create Odoo project
   - Token đọc từ Git account (dropdown chọn account), org nhập khi tạo project
   - Edit project (Info dialog > Edit): dropdown chọn account + sửa org, save vào file script
+- **Git Branches Dialog** (Other Projects — `_SwitchBranchDialog`):
+  - Stateful dialog 2 cột: Local + Remote, click branch để switch
+  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit
+  - Branch chip hiện trên grid (top-left) và list view, click mở dialog
+  - Màu theo branch: main/master=xanh lá, dev=cam, feature/feat=xanh dương, hotfix/fix=đỏ
+  - Không cho delete main/master
+  - Parse branches dùng `%(refname)` (KHÔNG `%(refname:short)`)
 - **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
 - **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
   `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
