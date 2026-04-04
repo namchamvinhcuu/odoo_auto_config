@@ -223,15 +223,16 @@ rm -f "\$0"
   // ── Windows: force update MSIX via PowerShell, then relaunch ──
 
   static Future<bool> _installWindows(String msixPath) async {
-    // Get current executable path to relaunch after update
-    final exe = Platform.resolvedExecutable;
+    // After MSIX update, exe path changes (new version folder in WindowsApps)
+    // Use Get-AppxPackage to find and launch the updated app
     await Process.start(
       'powershell',
       [
         '-Command',
         'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown; '
-            'Start-Sleep -Seconds 2; '
-            'Start-Process "$exe"',
+            'Start-Sleep -Seconds 3; '
+            r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1; "
+            r"if ($app) { Start-Process ('explorer.exe') -ArgumentList ('shell:AppsFolder\' + $app.PackageFamilyName + '!App') }",
       ],
       mode: ProcessStartMode.detached,
       runInShell: true,
