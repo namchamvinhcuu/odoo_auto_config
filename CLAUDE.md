@@ -59,6 +59,7 @@ lib/
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
 │   ├── vscode_config_screen.dart # Sinh debug config (ẩn khỏi menu, code giữ nguyên)
 │   ├── folder_structure_screen.dart # Tạo folder structure độc lập
+│   ├── odoo_workspace_dialog.dart # Workspace View: dashboard quản lý repos trong addons/
 │   └── settings_screen.dart     # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
 ├── widgets/                     # Reusable components
 │   ├── status_card.dart         # Card hiển thị trạng thái
@@ -328,14 +329,33 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 - **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
   (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
 
-## Roadmap — Odoo Workspace View (chưa triển khai)
-Màn hình/dialog chuyên biệt khi mở 1 Odoo project — dashboard quản lý toàn bộ repos trong `addons/`:
-- **Mỗi repo hiện**: tên module, branch, changed files count, ahead/behind, nút Pull/Commit/Push/Switch Branch
-- **Batch actions**: chọn nhiều repos → commit chung message → push tất cả, pull tất cả, switch branch tất cả
+## Tính năng Odoo Workspace View
+Dialog chuyên biệt quản lý **pinned repos** trong `addons/` của 1 Odoo project.
+File: `lib/screens/odoo_workspace_dialog.dart`
+- **Mở từ**: List view (IconButton workspaces), Grid view (grid button), Context menu (Workspace View)
+- **Pinned repos**: KHÔNG hiện tất cả repos. User search + add repos quan tâm, persist vào settings
+  Storage key: `workspaceRepos_<projectPath>` (danh sách pin), `workspaceSelected_<projectPath>` (selection)
+- **Search dropdown**: `RawAutocomplete` — click/focus hiện toàn bộ repos chưa pin, gõ để lọc
+  Có nút dropdown arrow + counter `3 / 30`. Giữ focus sau khi add để tiếp tục thêm
+- **Mỗi repo hiện**: tên module, branch (color coded), changed files count, ahead/behind, nút Pull/Push/Remove
+- **Selection**: ban đầu deselect all, user select repos nào → persist cho lần sau
+  Add repo mới → sort A-Z. Remove repo → xóa khỏi cả pin list và selection
+- **Batch actions toolbar** (dùng `Wrap` để tự xuống dòng):
+  - **Pull Selected**: pull tất cả repos đã select
+  - **Git Commit**: kiểm tra repos có thay đổi →
+    Không có → hiện dialog thông báo "No changes to commit"
+    Có → mở `_WorkspaceCommitDialog` riêng (danh sách repos + changed count, message, push after commit, log)
+  - **Switch Branch**: dialog chọn branch gộp unique từ tất cả repos, hoặc nhập tên tạo branch mới
+    Thử checkout existing → checkout -b từ origin → checkout -b mới
+- **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
+- **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
+- **Grid columns** (projects_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
+
+### Roadmap — Chưa triển khai
 - **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
-- **Bối cảnh**: dev Odoo thường code nhiều module liên quan cùng lúc (module A phụ thuộc B, C → commit/push cả 3)
-- **Cách tiếp cận**: bắt đầu với dialog đơn giản, sau mở rộng thêm watcher và batch actions
-- **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS, cần lazy loading cho nhiều repos
+- **Lazy loading**: cho nhiều repos (hiện load tất cả cùng lúc)
+- **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
+- **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
 
 ## Lessons Learned — KHÔNG lặp lại các lỗi này
 

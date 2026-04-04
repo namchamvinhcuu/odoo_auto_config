@@ -2715,6 +2715,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'e.g. my-org'**
   String get gitOrgHint;
+
+  /// No description provided for @workspaceViewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace — {name}'**
+  String workspaceViewTitle(String name);
+
+  /// No description provided for @workspaceView.
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace View'**
+  String get workspaceView;
+
+  /// No description provided for @workspaceViewScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning repositories...'**
+  String get workspaceViewScanning;
+
+  /// No description provided for @workspaceViewNoRepos.
+  ///
+  /// In en, this message translates to:
+  /// **'No git repositories found in addons/'**
+  String get workspaceViewNoRepos;
+
+  /// No description provided for @workspaceViewRepoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} repositories'**
+  String workspaceViewRepoCount(int count);
+
+  /// No description provided for @workspaceViewPullAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull All'**
+  String get workspaceViewPullAll;
+
+  /// No description provided for @workspaceViewPullSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull Selected'**
+  String get workspaceViewPullSelected;
+
+  /// No description provided for @workspaceViewCommitPush.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit & Push'**
+  String get workspaceViewCommitPush;
+
+  /// No description provided for @workspaceViewCommitOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit Only'**
+  String get workspaceViewCommitOnly;
+
+  /// No description provided for @workspaceViewSwitchBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch Branch'**
+  String get workspaceViewSwitchBranch;
+
+  /// No description provided for @workspaceViewPushSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Selected'**
+  String get workspaceViewPushSelected;
+
+  /// No description provided for @workspaceViewChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} changed'**
+  String workspaceViewChanged(int count);
+
+  /// No description provided for @workspaceViewBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} behind'**
+  String workspaceViewBehind(int count);
+
+  /// No description provided for @workspaceViewAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ahead'**
+  String workspaceViewAhead(int count);
+
+  /// No description provided for @workspaceViewNewBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'New branch name'**
+  String get workspaceViewNewBranch;
+
+  /// No description provided for @workspaceViewCreateBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Branch'**
+  String get workspaceViewCreateBranch;
+
+  /// No description provided for @workspaceViewFetching.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching...'**
+  String get workspaceViewFetching;
+
+  /// No description provided for @workspaceViewPulling.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulling...'**
+  String get workspaceViewPulling;
+
+  /// No description provided for @workspaceViewPushing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushing...'**
+  String get workspaceViewPushing;
+
+  /// No description provided for @workspaceViewSwitching.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching...'**
+  String get workspaceViewSwitching;
 }
 
 class _AppLocalizationsDelegate

@@ -490,5 +490,26 @@
   "gitSettingsDescription": "git-repositories 스크립트용 토큰 및 조직 (Odoo 프로젝트에서 사용)",
   "gitToken": "GitHub 토큰",
   "gitOrg": "조직",
-  "gitOrgHint": "예: my-org"
+  "gitOrgHint": "예: my-org",
+
+  "workspaceViewTitle": "워크스페이스 — {name}",
+  "workspaceView": "워크스페이스 뷰",
+  "workspaceViewScanning": "저장소 스캔 중...",
+  "workspaceViewNoRepos": "addons/에서 git 저장소를 찾을 수 없습니다",
+  "workspaceViewRepoCount": "{count}개 저장소",
+  "workspaceViewPullAll": "전체 Pull",
+  "workspaceViewPullSelected": "선택 Pull",
+  "workspaceViewCommitPush": "Commit & Push",
+  "workspaceViewCommitOnly": "Commit만",
+  "workspaceViewSwitchBranch": "브랜치 전환",
+  "workspaceViewPushSelected": "선택 Push",
+  "workspaceViewChanged": "{count}개 변경",
+  "workspaceViewBehind": "{count}개 뒤처짐",
+  "workspaceViewAhead": "{count}개 앞섬",
+  "workspaceViewNewBranch": "새 브랜치 이름",
+  "workspaceViewCreateBranch": "브랜치 생성",
+  "workspaceViewFetching": "가져오는 중...",
+  "workspaceViewPulling": "Pull 중...",
+  "workspaceViewPushing": "Push 중...",
+  "workspaceViewSwitching": "전환 중..."
 }

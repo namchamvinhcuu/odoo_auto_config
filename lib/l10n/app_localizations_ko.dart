@@ -1444,4 +1444,74 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get gitOrgHint => '예: my-org';
+
+  @override
+  String workspaceViewTitle(String name) {
+    return '워크스페이스 — $name';
+  }
+
+  @override
+  String get workspaceView => '워크스페이스 뷰';
+
+  @override
+  String get workspaceViewScanning => '저장소 스캔 중...';
+
+  @override
+  String get workspaceViewNoRepos => 'addons/에서 git 저장소를 찾을 수 없습니다';
+
+  @override
+  String workspaceViewRepoCount(int count) {
+    return '$count개 저장소';
+  }
+
+  @override
+  String get workspaceViewPullAll => '전체 Pull';
+
+  @override
+  String get workspaceViewPullSelected => '선택 Pull';
+
+  @override
+  String get workspaceViewCommitPush => 'Commit & Push';
+
+  @override
+  String get workspaceViewCommitOnly => 'Commit만';
+
+  @override
+  String get workspaceViewSwitchBranch => '브랜치 전환';
+
+  @override
+  String get workspaceViewPushSelected => '선택 Push';
+
+  @override
+  String workspaceViewChanged(int count) {
+    return '$count개 변경';
+  }
+
+  @override
+  String workspaceViewBehind(int count) {
+    return '$count개 뒤처짐';
+  }
+
+  @override
+  String workspaceViewAhead(int count) {
+    return '$count개 앞섬';
+  }
+
+  @override
+  String get workspaceViewNewBranch => '새 브랜치 이름';
+
+  @override
+  String get workspaceViewCreateBranch => '브랜치 생성';
+
+  @override
+  String get workspaceViewFetching => '가져오는 중...';
+
+  @override
+  String get workspaceViewPulling => 'Pull 중...';
+
+  @override
+  String get workspaceViewPushing => 'Push 중...';
+
+  @override
+  String get workspaceViewSwitching => '전환 중...';
 }

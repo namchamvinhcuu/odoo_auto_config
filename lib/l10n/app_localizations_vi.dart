@@ -1471,4 +1471,75 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get gitOrgHint => 'VD: my-org';
+
+  @override
+  String workspaceViewTitle(String name) {
+    return 'Workspace — $name';
+  }
+
+  @override
+  String get workspaceView => 'Quản lý Workspace';
+
+  @override
+  String get workspaceViewScanning => 'Đang quét repositories...';
+
+  @override
+  String get workspaceViewNoRepos =>
+      'Không tìm thấy git repository trong addons/';
+
+  @override
+  String workspaceViewRepoCount(int count) {
+    return '$count repositories';
+  }
+
+  @override
+  String get workspaceViewPullAll => 'Pull tất cả';
+
+  @override
+  String get workspaceViewPullSelected => 'Pull đã chọn';
+
+  @override
+  String get workspaceViewCommitPush => 'Commit & Push';
+
+  @override
+  String get workspaceViewCommitOnly => 'Chỉ Commit';
+
+  @override
+  String get workspaceViewSwitchBranch => 'Chuyển nhánh';
+
+  @override
+  String get workspaceViewPushSelected => 'Push đã chọn';
+
+  @override
+  String workspaceViewChanged(int count) {
+    return '$count thay đổi';
+  }
+
+  @override
+  String workspaceViewBehind(int count) {
+    return '$count phía sau';
+  }
+
+  @override
+  String workspaceViewAhead(int count) {
+    return '$count phía trước';
+  }
+
+  @override
+  String get workspaceViewNewBranch => 'Tên nhánh mới';
+
+  @override
+  String get workspaceViewCreateBranch => 'Tạo nhánh';
+
+  @override
+  String get workspaceViewFetching => 'Đang fetch...';
+
+  @override
+  String get workspaceViewPulling => 'Đang pull...';
+
+  @override
+  String get workspaceViewPushing => 'Đang push...';
+
+  @override
+  String get workspaceViewSwitching => 'Đang chuyển...';
 }

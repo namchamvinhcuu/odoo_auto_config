@@ -1476,4 +1476,74 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gitOrgHint => 'e.g. my-org';
+
+  @override
+  String workspaceViewTitle(String name) {
+    return 'Workspace — $name';
+  }
+
+  @override
+  String get workspaceView => 'Workspace View';
+
+  @override
+  String get workspaceViewScanning => 'Scanning repositories...';
+
+  @override
+  String get workspaceViewNoRepos => 'No git repositories found in addons/';
+
+  @override
+  String workspaceViewRepoCount(int count) {
+    return '$count repositories';
+  }
+
+  @override
+  String get workspaceViewPullAll => 'Pull All';
+
+  @override
+  String get workspaceViewPullSelected => 'Pull Selected';
+
+  @override
+  String get workspaceViewCommitPush => 'Commit & Push';
+
+  @override
+  String get workspaceViewCommitOnly => 'Commit Only';
+
+  @override
+  String get workspaceViewSwitchBranch => 'Switch Branch';
+
+  @override
+  String get workspaceViewPushSelected => 'Push Selected';
+
+  @override
+  String workspaceViewChanged(int count) {
+    return '$count changed';
+  }
+
+  @override
+  String workspaceViewBehind(int count) {
+    return '$count behind';
+  }
+
+  @override
+  String workspaceViewAhead(int count) {
+    return '$count ahead';
+  }
+
+  @override
+  String get workspaceViewNewBranch => 'New branch name';
+
+  @override
+  String get workspaceViewCreateBranch => 'Create Branch';
+
+  @override
+  String get workspaceViewFetching => 'Fetching...';
+
+  @override
+  String get workspaceViewPulling => 'Pulling...';
+
+  @override
+  String get workspaceViewPushing => 'Pushing...';
+
+  @override
+  String get workspaceViewSwitching => 'Switching...';
 }

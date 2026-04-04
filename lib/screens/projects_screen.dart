@@ -14,6 +14,7 @@ import '../widgets/log_output.dart';
 import '../widgets/nginx_setup_dialog.dart';
 import '../widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
+import 'odoo_workspace_dialog.dart';
 import 'quick_create_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -203,6 +204,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => _GitCommitDialog(
+        projectName: project.name,
+        projectPath: project.path,
+      ),
+    );
+  }
+
+  void _openWorkspaceView(ProjectInfo project) {
+    if (!Directory(project.path).existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotOpen(project.path))),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (ctx) => OdooWorkspaceDialog(
         projectName: project.name,
         projectPath: project.path,
       ),
@@ -593,6 +610,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ),
                     if (exists) ...[
                       IconButton(
+                        onPressed: () => _openWorkspaceView(proj),
+                        icon: const Icon(Icons.workspaces),
+                        tooltip: context.l10n.workspaceView,
+                      ),
+                      IconButton(
                         onPressed: () => _runGitPull(proj),
                         icon: const Icon(Icons.sync),
                         tooltip: context.l10n.gitPull,
@@ -633,9 +655,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   // ── Grid View ──
 
   int _gridCrossAxisCount(double width) {
-    if (width >= 1100) return 5;
-    if (width >= 800) return 4;
-    return 3;
+    if (width >= 1100) return 4;
+    if (width >= 800) return 3;
+    return 2;
   }
 
   Widget _buildGridView() {
@@ -752,9 +774,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       ),
                       const Spacer(),
                       // Quick actions
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
                         spacing: AppSpacing.lg,
+                        runSpacing: AppSpacing.xs,
                         children: [
                           _gridBtn(
                             icon: Icons.info_outline,
@@ -772,6 +795,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               boxSize: btnBox,
                             ),
                           if (exists) ...[
+                            _gridBtn(
+                              icon: Icons.workspaces,
+                              tooltip: context.l10n.workspaceView,
+                              onPressed: () => _openWorkspaceView(proj),
+                              iconSize: btnSize,
+                              boxSize: btnBox,
+                            ),
                             _gridBtn(
                               icon: Icons.checklist,
                               tooltip: context.l10n.gitSelectivePull,
@@ -835,6 +865,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ),
         if (exists)
           PopupMenuItem(
+            value: 'workspace_view',
+            child: Row(
+              children: [
+                const Icon(Icons.workspaces, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.workspaceView),
+              ],
+            ),
+          ),
+        if (exists)
+          PopupMenuItem(
             value: 'git_selective_pull',
             child: Row(
               children: [
@@ -896,6 +937,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         _showProjectInfo(proj);
       case 'favourite':
         _toggleFavourite(proj);
+      case 'workspace_view':
+        _openWorkspaceView(proj);
       case 'git_pull':
         _runGitPull(proj);
       case 'git_selective_pull':

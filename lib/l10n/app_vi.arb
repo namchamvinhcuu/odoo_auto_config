@@ -490,5 +490,26 @@
   "gitSettingsDescription": "Token và organization cho script git-repositories (dùng trong Odoo projects)",
   "gitToken": "GitHub Token",
   "gitOrg": "Organization",
-  "gitOrgHint": "VD: my-org"
+  "gitOrgHint": "VD: my-org",
+
+  "workspaceViewTitle": "Workspace — {name}",
+  "workspaceView": "Quản lý Workspace",
+  "workspaceViewScanning": "Đang quét repositories...",
+  "workspaceViewNoRepos": "Không tìm thấy git repository trong addons/",
+  "workspaceViewRepoCount": "{count} repositories",
+  "workspaceViewPullAll": "Pull tất cả",
+  "workspaceViewPullSelected": "Pull đã chọn",
+  "workspaceViewCommitPush": "Commit & Push",
+  "workspaceViewCommitOnly": "Chỉ Commit",
+  "workspaceViewSwitchBranch": "Chuyển nhánh",
+  "workspaceViewPushSelected": "Push đã chọn",
+  "workspaceViewChanged": "{count} thay đổi",
+  "workspaceViewBehind": "{count} phía sau",
+  "workspaceViewAhead": "{count} phía trước",
+  "workspaceViewNewBranch": "Tên nhánh mới",
+  "workspaceViewCreateBranch": "Tạo nhánh",
+  "workspaceViewFetching": "Đang fetch...",
+  "workspaceViewPulling": "Đang pull...",
+  "workspaceViewPushing": "Đang push...",
+  "workspaceViewSwitching": "Đang chuyển..."
 }
