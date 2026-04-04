@@ -645,9 +645,9 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                               boxSize: btnBox,
                             ),
                             _gridBtn(
-                              icon: Icons.code,
-                              tooltip: context.l10n.openInVscode,
-                              onPressed: () => _openInVscode(ws.path),
+                              icon: Icons.commit,
+                              tooltip: context.l10n.gitCommit,
+                              onPressed: () => _runGitCommit(ws),
                               iconSize: btnSize,
                               boxSize: btnBox,
                             ),
