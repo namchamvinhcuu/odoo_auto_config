@@ -382,7 +382,8 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 ### Auto-update
 - **macOS**: dùng `.zip` + `ditto -xk` KHÔNG dùng `.dmg` (mount/unmount/codesign phức tạp và hay fail)
   `xattr -cr` là đủ, KHÔNG cần `codesign`
-- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown`. Relaunch bằng `Get-AppxPackage` + `explorer.exe shell:AppsFolder\`
+- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown`. Không relaunch — user tự mở lại app
+  (Relaunch qua `Get-AppxPackage` + `explorer.exe shell:AppsFolder\` bị lỗi mở OneDrive/Documents, tạm tắt)
   KHÔNG dùng `Platform.resolvedExecutable` vì MSIX thay đổi exe path mỗi version
 - **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
 - **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)

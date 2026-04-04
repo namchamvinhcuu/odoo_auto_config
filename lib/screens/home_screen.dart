@@ -7,6 +7,7 @@ import '../services/docker_install_service.dart';
 import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
+import '../generated/version.dart';
 import '../services/update_service.dart';
 import 'workspaces_screen.dart';
 import 'environment_screen.dart';
@@ -131,10 +132,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _checkUpdate() async {
+  Future<void> _checkUpdate({bool showUpToDate = false}) async {
     final info = await UpdateService.checkForUpdate();
     if (info != null && info.hasUpdate && mounted) {
       setState(() => _updateInfo = info);
+    } else if (showUpToDate && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('v$appVersion — up to date')),
+      );
     }
   }
 
@@ -398,20 +403,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 alignment: Alignment.bottomCenter,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                  child: Row(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        onPressed: _backHistory.isNotEmpty ? _goBack : null,
-                        icon: const Icon(Icons.arrow_back),
-                        tooltip: _backHistory.isNotEmpty ? context.l10n.back : null,
-                        iconSize: AppIconSize.md,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: _backHistory.isNotEmpty ? _goBack : null,
+                            icon: const Icon(Icons.arrow_back),
+                            tooltip: _backHistory.isNotEmpty ? context.l10n.back : null,
+                            iconSize: AppIconSize.lg,
+                          ),
+                          IconButton(
+                            onPressed: _forwardHistory.isNotEmpty ? _goForward : null,
+                            icon: const Icon(Icons.arrow_forward),
+                            tooltip: _forwardHistory.isNotEmpty ? context.l10n.forward : null,
+                            iconSize: AppIconSize.lg,
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        onPressed: _forwardHistory.isNotEmpty ? _goForward : null,
-                        icon: const Icon(Icons.arrow_forward),
-                        tooltip: _forwardHistory.isNotEmpty ? context.l10n.forward : null,
-                        iconSize: AppIconSize.md,
+                      const SizedBox(height: AppSpacing.sm),
+                      TextButton.icon(
+                        onPressed: _updating
+                            ? null
+                            : () => _checkUpdate(showUpToDate: true),
+                        icon: const Icon(Icons.system_update,
+                            size: AppIconSize.lg),
+                        label: const Text('Check Update'),
                       ),
                     ],
                   ),
