@@ -552,11 +552,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                     ],
                     if (_branches.containsKey(ws.path)) ...[
                       const SizedBox(width: AppSpacing.sm),
-                      GestureDetector(
+                      InkWell(
                         onTap: () => _switchBranch(ws),
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Chip(
+                        mouseCursor: SystemMouseCursors.click,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Chip(
                             label: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -598,7 +598,6 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                             ).withValues(alpha: 0.1),
                             visualDensity: VisualDensity.compact,
                           ),
-                        ),
                       ),
                     ],
                   ],
@@ -756,11 +755,11 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                             if (_branches.containsKey(ws.path))
                               Align(
                                 alignment: Alignment.topLeft,
-                                child: GestureDetector(
+                                child: InkWell(
                                   onTap: () => _switchBranch(ws),
-                                  child: MouseRegion(
-                                    cursor: SystemMouseCursors.click,
-                                    child: Container(
+                                  mouseCursor: SystemMouseCursors.click,
+                                  borderRadius: AppRadius.smallBorderRadius,
+                                  child: Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: AppSpacing.sm,
                                         vertical: 2,
@@ -821,7 +820,6 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                                     ),
                                   ),
                                 ),
-                              ),
                             Align(
                               alignment: Alignment.topRight,
                               child: IconButton(
@@ -2888,9 +2886,11 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
 
   Widget _branchTile(String branch, {bool isRemote = false}) {
     final isCurrent = !isRemote && branch == _current;
+    final canTap = !isCurrent && !_switching;
     return InkWell(
-      onTap: (isCurrent || _switching) ? null : () => _checkout(branch),
-      borderRadius: AppRadius.smallBorderRadius,
+        onTap: canTap ? () => _checkout(branch) : null,
+        mouseCursor: canTap ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        borderRadius: AppRadius.smallBorderRadius,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
@@ -2964,6 +2964,27 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
       title: Row(
         children: [
           const Text('Git Branches'),
+          if (_current.isNotEmpty) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Chip(
+              avatar: Icon(
+                Icons.check_circle,
+                size: AppIconSize.md,
+                color: widget.branchColor(_current),
+              ),
+              label: Text(
+                _current,
+                style: TextStyle(
+                  color: widget.branchColor(_current),
+                  fontFamily: 'monospace',
+                  fontSize: AppFontSize.md,
+                ),
+              ),
+              backgroundColor:
+                  widget.branchColor(_current).withValues(alpha: 0.1),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
           const SizedBox(width: AppSpacing.sm),
           TextButton.icon(
             onPressed: _switching ? null : _pruneCheck,
