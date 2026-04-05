@@ -3,7 +3,10 @@
     "allow": [
       "Bash(fvm flutter:*)",
       "Bash(taskkill //F //IM WorkspaceConfiguration.exe)",
-      "Bash(\"c:/Users/Nam/Workspace/nam-custom/odoo_auto_config/build/windows/x64/runner/Release/WorkspaceConfiguration.exe\")"
+      "Bash(\"c:/Users/Nam/Workspace/nam-custom/odoo_auto_config/build/windows/x64/runner/Release/WorkspaceConfiguration.exe\")",
+      "Bash(sudo apt:*)",
+      "Bash(bash /home/namchamvinhcuu/Workspaces/nam-projects/odoo_auto_config/linux-build.sh)",
+      "Bash(gh api:*)"
     ]
   }
 }

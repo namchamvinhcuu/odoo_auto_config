@@ -7,11 +7,11 @@ class TrayService {
   static final SystemTray _tray = SystemTray();
   static bool _initialized = false;
 
-  /// System tray hỗ trợ macOS và Windows
-  /// Linux: tạm tắt (tạo duplicate instance)
-  static bool get supported => Platform.isMacOS || Platform.isWindows;
+  /// System tray hỗ trợ macOS, Windows và Linux
+  static bool get supported =>
+      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
-  /// Khởi tạo system tray (macOS + Windows)
+  /// Khởi tạo system tray
   static Future<void> init({
     required String showLabel,
     required String quitLabel,
@@ -71,7 +71,6 @@ class TrayService {
   }
 
   /// Đọc setting close behavior: 'tray' hoặc 'exit'
-  /// Linux luôn return 'exit' (chưa hỗ trợ)
   static Future<String> getCloseBehavior() async {
     if (!supported) return 'exit';
     final settings = await StorageService.loadSettings();

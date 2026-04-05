@@ -30,6 +30,7 @@ Icon=workspace-configuration
 Type=Application
 Categories=Development;
 Comment=Setup and manage development environments
+StartupWMClass=com.namchamvinhcuu.WorkspaceConfiguration
 EOF
 
 # AppRun
