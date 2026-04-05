@@ -1546,4 +1546,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workspaceViewSwitching => 'Switching...';
+
+  @override
+  String get closeBehavior => 'Close behavior';
+
+  @override
+  String get closeBehaviorExit => 'Exit app';
+
+  @override
+  String get closeBehaviorTray => 'Minimize to system tray';
+
+  @override
+  String get trayShow => 'Show';
+
+  @override
+  String get trayQuit => 'Quit';
 }

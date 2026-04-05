@@ -511,5 +511,11 @@
   "workspaceViewFetching": "가져오는 중...",
   "workspaceViewPulling": "Pull 중...",
   "workspaceViewPushing": "Push 중...",
-  "workspaceViewSwitching": "전환 중..."
+  "workspaceViewSwitching": "전환 중...",
+
+  "closeBehavior": "닫기 동작",
+  "closeBehaviorExit": "앱 종료",
+  "closeBehaviorTray": "시스템 트레이로 최소화",
+  "trayShow": "표시",
+  "trayQuit": "종료"
 }

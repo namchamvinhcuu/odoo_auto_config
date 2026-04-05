@@ -1514,4 +1514,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get workspaceViewSwitching => '전환 중...';
+
+  @override
+  String get closeBehavior => '닫기 동작';
+
+  @override
+  String get closeBehaviorExit => '앱 종료';
+
+  @override
+  String get closeBehaviorTray => '시스템 트레이로 최소화';
+
+  @override
+  String get trayShow => '표시';
+
+  @override
+  String get trayQuit => '종료';
 }

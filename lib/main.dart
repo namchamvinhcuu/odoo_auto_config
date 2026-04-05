@@ -9,6 +9,7 @@ import 'screens/projects_screen.dart';
 import 'services/locale_service.dart';
 import 'services/storage_service.dart';
 import 'services/theme_service.dart';
+import 'services/tray_service.dart';
 
 void main() async {
   // Log uncaught Flutter errors to stderr so we can see crashes
@@ -39,6 +40,7 @@ void main() async {
   await windowManager.setMinimumSize(minSize);
   await windowManager.setSize(windowSize.size);
   await windowManager.center();
+  await windowManager.setPreventClose(true);
   await windowManager.show();
 
   final themeService = ThemeService();
@@ -48,6 +50,10 @@ void main() async {
     localeService.load(),
     ProjectsScreen.loadViewPreference(),
   ]);
+
+  // Init system tray
+  await TrayService.init(showLabel: 'Show', quitLabel: 'Quit');
+
   runApp(
     MultiProvider(
       providers: [

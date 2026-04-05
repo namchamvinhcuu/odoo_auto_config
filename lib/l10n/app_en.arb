@@ -545,5 +545,11 @@
   "workspaceViewFetching": "Fetching...",
   "workspaceViewPulling": "Pulling...",
   "workspaceViewPushing": "Pushing...",
-  "workspaceViewSwitching": "Switching..."
+  "workspaceViewSwitching": "Switching...",
+
+  "closeBehavior": "Close behavior",
+  "closeBehaviorExit": "Exit app",
+  "closeBehaviorTray": "Minimize to system tray",
+  "trayShow": "Show",
+  "trayQuit": "Quit"
 }

@@ -1542,4 +1542,19 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get workspaceViewSwitching => 'Đang chuyển...';
+
+  @override
+  String get closeBehavior => 'Khi đóng cửa sổ';
+
+  @override
+  String get closeBehaviorExit => 'Thoát app';
+
+  @override
+  String get closeBehaviorTray => 'Thu nhỏ vào system tray';
+
+  @override
+  String get trayShow => 'Hiện';
+
+  @override
+  String get trayQuit => 'Thoát';
 }

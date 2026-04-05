@@ -511,5 +511,11 @@
   "workspaceViewFetching": "Đang fetch...",
   "workspaceViewPulling": "Đang pull...",
   "workspaceViewPushing": "Đang push...",
-  "workspaceViewSwitching": "Đang chuyển..."
+  "workspaceViewSwitching": "Đang chuyển...",
+
+  "closeBehavior": "Khi đóng cửa sổ",
+  "closeBehaviorExit": "Thoát app",
+  "closeBehaviorTray": "Thu nhỏ vào system tray",
+  "trayShow": "Hiện",
+  "trayQuit": "Thoát"
 }

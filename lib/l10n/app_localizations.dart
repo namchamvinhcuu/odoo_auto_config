@@ -2835,6 +2835,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switching...'**
   String get workspaceViewSwitching;
+
+  /// No description provided for @closeBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Close behavior'**
+  String get closeBehavior;
+
+  /// No description provided for @closeBehaviorExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit app'**
+  String get closeBehaviorExit;
+
+  /// No description provided for @closeBehaviorTray.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize to system tray'**
+  String get closeBehaviorTray;
+
+  /// No description provided for @trayShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get trayShow;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get trayQuit;
 }
 
 class _AppLocalizationsDelegate

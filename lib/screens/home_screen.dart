@@ -8,6 +8,7 @@ import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import '../generated/version.dart';
+import '../services/tray_service.dart';
 import '../services/update_service.dart';
 import 'workspaces_screen.dart';
 import 'environment_screen.dart';
@@ -42,7 +43,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WindowListener {
   static _HomeScreenState? _instance;
   int _selectedIndex = 0;
   final List<int> _backHistory = [];
@@ -81,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _instance = this;
+    windowManager.addListener(this);
     _loadWindowSize();
     _checkUpdate();
     _checkDocker();
@@ -186,9 +188,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  @override
   void dispose() {
+    windowManager.removeListener(this);
     if (_instance == this) _instance = null;
     super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    final behavior = await TrayService.getCloseBehavior();
+    if (behavior == 'tray') {
+      await TrayService.hideToTray();
+    } else {
+      await TrayService.destroy();
+      await windowManager.destroy();
+    }
   }
 
   static const _screens = <Widget>[
