@@ -2344,6 +2344,461 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
   }
 }
 
+// ── Create Pull Request Dialog ──
+
+class _CreatePRDialog extends StatefulWidget {
+  final String projectName;
+  final String projectPath;
+  final String currentBranch;
+
+  const _CreatePRDialog({
+    required this.projectName,
+    required this.projectPath,
+    required this.currentBranch,
+  });
+
+  @override
+  State<_CreatePRDialog> createState() => _CreatePRDialogState();
+}
+
+class _CreatePRDialogState extends State<_CreatePRDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+  bool _running = false;
+  bool _done = false;
+  bool _loading = true;
+  bool _ghInstalled = false;
+  String _baseBranch = 'main';
+  List<String> _remoteBranches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.currentBranch;
+    _checkGh();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkGh() async {
+    // Check gh CLI installed
+    final result = await Process.run(
+      'gh',
+      ['--version'],
+      runInShell: true,
+    );
+    final installed = result.exitCode == 0;
+
+    // Load remote branches
+    List<String> branches = [];
+    final brResult = await Process.run(
+      'git',
+      ['branch', '-r', '--format=%(refname:short)'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (brResult.exitCode == 0) {
+      branches = (brResult.stdout as String)
+          .split('\n')
+          .map((b) => b.trim().replaceFirst('origin/', ''))
+          .where((b) => b.isNotEmpty && !b.contains('HEAD'))
+          .toSet()
+          .toList()
+        ..sort();
+    }
+
+    // Detect default base branch
+    String base = 'main';
+    if (branches.contains('main')) {
+      base = 'main';
+    } else if (branches.contains('master')) {
+      base = 'master';
+    } else if (branches.contains('dev')) {
+      base = 'dev';
+    }
+
+    if (mounted) {
+      setState(() {
+        _ghInstalled = installed;
+        _remoteBranches = branches;
+        _baseBranch = base;
+        _loading = false;
+      });
+    }
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _createPR() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() => _running = true);
+
+    // Check for uncommitted changes
+    final status = await Process.run(
+      'git',
+      ['status', '--porcelain'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    final uncommitted = (status.stdout as String)
+        .trimRight()
+        .split('\n')
+        .where((l) => l.isNotEmpty)
+        .length;
+
+    if (uncommitted > 0 && mounted) {
+      setState(() => _running = false);
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Uncommitted changes'),
+          content: Text(
+            '$uncommitted file(s) not committed.\n'
+            'These changes will NOT be included in the PR.\n\n'
+            'Commit first, or continue anyway?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.pop(ctx, false);
+                // Open commit dialog
+                showDialog(
+                  context: context,
+                  builder: (c) => _SimpleGitCommitDialog(
+                    projectName: widget.projectName,
+                    projectPath: widget.projectPath,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.commit),
+              label: const Text('Commit first'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Continue anyway'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+      setState(() => _running = true);
+    }
+
+    // Push current branch first
+    _addLine('\x1B[0;33m[~] Pushing ${widget.currentBranch} to origin...\x1B[0m');
+    final push = await Process.start(
+      'git',
+      ['push', '-u', 'origin', widget.currentBranch],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    push.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    push.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    final pushExit = await push.exitCode;
+    if (pushExit != 0) {
+      if (mounted) {
+        _addLine('\x1B[0;31m[-] Push failed\x1B[0m');
+        setState(() => _running = false);
+      }
+      return;
+    }
+
+    // Create PR
+    _addLine('\x1B[0;33m[~] Creating pull request...\x1B[0m');
+    final args = [
+      'pr',
+      'create',
+      '--base',
+      _baseBranch,
+      '--title',
+      title,
+    ];
+    final body = _bodyController.text.trim();
+    if (body.isNotEmpty) {
+      args.addAll(['--body', body]);
+    }
+
+    final pr = await Process.start(
+      'gh',
+      args,
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    pr.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    pr.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    final prExit = await pr.exitCode;
+
+    if (!mounted) return;
+    if (prExit == 0) {
+      _addLine('\x1B[0;32m[+] Pull request created!\x1B[0m');
+      setState(() {
+        _done = true;
+        _running = false;
+      });
+    } else {
+      _addLine('\x1B[0;31m[-] Failed to create pull request\x1B[0m');
+      setState(() => _running = false);
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Pull Request — ${widget.projectName}'),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (!_ghInstalled)
+              Column(
+                children: [
+                  const Icon(Icons.warning_amber,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  const Text(
+                    'GitHub CLI (gh) is not installed.',
+                    style: TextStyle(fontSize: AppFontSize.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Install: brew install gh (macOS)\n'
+                    '         winget install GitHub.cli (Windows)\n'
+                    '         apt install gh (Linux)',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.md,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              // Base branch
+              Row(
+                children: [
+                  Text('Base: ',
+                      style: TextStyle(color: Colors.grey.shade400)),
+                  const SizedBox(width: AppSpacing.sm),
+                  DropdownButton<String>(
+                    value: _remoteBranches.contains(_baseBranch)
+                        ? _baseBranch
+                        : _remoteBranches.firstOrNull,
+                    isDense: true,
+                    items: _remoteBranches
+                        .map((b) => DropdownMenuItem(
+                              value: b,
+                              child: Text(b),
+                            ))
+                        .toList(),
+                    onChanged: _running
+                        ? null
+                        : (v) {
+                            if (v != null) setState(() => _baseBranch = v);
+                          },
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Icon(Icons.arrow_back, size: AppIconSize.md,
+                      color: Colors.grey.shade500),
+                  const SizedBox(width: AppSpacing.sm),
+                  Chip(
+                    label: Text(widget.currentBranch,
+                        style: const TextStyle(fontFamily: 'monospace')),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Title
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                enabled: !_running && !_done,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Body
+              TextField(
+                controller: _bodyController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                minLines: 2,
+                maxLines: 5,
+                enabled: !_running && !_done,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Create button
+              Row(
+                children: [
+                  FilledButton.icon(
+                    onPressed: (_running ||
+                            _done ||
+                            _titleController.text.trim().isEmpty)
+                        ? null
+                        : _createPR,
+                    icon: _running
+                        ? const SizedBox(
+                            width: AppIconSize.md,
+                            height: AppIconSize.md,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.send),
+                    label: const Text('Create Pull Request'),
+                  ),
+                  if (_done) ...[
+                    const SizedBox(width: AppSpacing.md),
+                    const Icon(Icons.check_circle, color: Colors.green),
+                    const SizedBox(width: AppSpacing.xs),
+                    const Text('Created',
+                        style: TextStyle(color: Colors.green)),
+                  ],
+                ],
+              ),
+            ],
+            if (_logLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                height: 180,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppLogColors.terminalBg,
+                  borderRadius: AppRadius.mediumBorderRadius,
+                  border: Border.all(color: Colors.grey.shade700),
+                ),
+                child: SelectionArea(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _logLines
+                          .map((line) => Text.rich(
+                                TextSpan(
+                                  children: _parseAnsi(line),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.md,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Switch Branch Dialog ──
 
 class _SwitchBranchDialog extends StatefulWidget {
@@ -3250,6 +3705,32 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                       icon: const Icon(Icons.commit, size: AppIconSize.md),
                       label: const Text('Commit'),
                     ),
+                    if (_current != 'main' &&
+                        _current != 'master') ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.tonalIcon(
+                        onPressed: _switching
+                            ? null
+                            : () async {
+                                await showDialog(
+                                  context: context,
+                                  builder: (ctx) => _CreatePRDialog(
+                                    projectName:
+                                        p.basename(widget.projectPath),
+                                    projectPath: widget.projectPath,
+                                    currentBranch: _current,
+                                  ),
+                                );
+                                if (mounted) {
+                                  setState(() => _message = null);
+                                  _loadBranches();
+                                }
+                              },
+                        icon: const Icon(Icons.merge_type,
+                            size: AppIconSize.md),
+                        label: const Text('PR'),
+                      ),
+                    ],
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.icon(
                       onPressed: _switching ? null : _createBranch,
