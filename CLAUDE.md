@@ -142,6 +142,8 @@ lib/
   Nếu `true` → macOS kill app khi window đóng → tray icon biến mất
 - **macOS**: không cần `setSkipTaskbar`, chỉ `hide()/show()`
 - **Windows/Linux**: `setSkipTaskbar(true/false)` khi hide/show
+- **Chỉ macOS**: Windows (MSIX sandbox) và Linux (duplicate instance) tạm tắt
+  `TrayService.supported` = `Platform.isMacOS`. Setting ẩn trên Windows/Linux
 - **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
 
 ## Tính năng Auto-Update

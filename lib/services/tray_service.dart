@@ -7,20 +7,20 @@ class TrayService {
   static final SystemTray _tray = SystemTray();
   static bool _initialized = false;
 
-  /// Khởi tạo system tray với icon và menu cơ bản
+  /// System tray chỉ hỗ trợ macOS hiện tại
+  /// Windows/Linux: tạm tắt (Windows MSIX sandbox issue, Linux tạo duplicate instance)
+  static bool get supported => Platform.isMacOS;
+
+  /// Khởi tạo system tray (chỉ macOS)
   static Future<void> init({
     required String showLabel,
     required String quitLabel,
   }) async {
-    if (_initialized) return;
-
-    final iconPath = Platform.isWindows
-        ? 'assets/tray_icon.ico'
-        : 'assets/tray_icon.png';
+    if (_initialized || !supported) return;
 
     await _tray.initSystemTray(
       title: '',
-      iconPath: iconPath,
+      iconPath: 'assets/tray_icon.png',
       toolTip: 'Workspace Configuration',
     );
 
@@ -38,7 +38,6 @@ class TrayService {
     ]);
     await _tray.setContextMenu(menu);
 
-    // Double-click tray icon → show window
     _tray.registerSystemTrayEventHandler((eventName) {
       if (eventName == kSystemTrayEventClick ||
           eventName == kSystemTrayEventDoubleClick) {
@@ -53,9 +52,6 @@ class TrayService {
 
   static Future<void> _showWindow() async {
     await windowManager.show();
-    if (!Platform.isMacOS) {
-      await windowManager.setSkipTaskbar(false);
-    }
     await windowManager.focus();
   }
 
@@ -64,17 +60,15 @@ class TrayService {
     exit(0);
   }
 
-  /// Ẩn window vào tray
+  /// Ẩn window vào tray (chỉ macOS)
   static Future<void> hideToTray() async {
     await windowManager.hide();
-    // setSkipTaskbar chỉ hoạt động trên Windows/Linux, macOS không cần
-    if (!Platform.isMacOS) {
-      await windowManager.setSkipTaskbar(true);
-    }
   }
 
   /// Đọc setting close behavior: 'tray' hoặc 'exit'
+  /// Windows/Linux luôn return 'exit'
   static Future<String> getCloseBehavior() async {
+    if (!supported) return 'exit';
     final settings = await StorageService.loadSettings();
     return (settings['closeBehavior'] ?? 'exit').toString();
   }

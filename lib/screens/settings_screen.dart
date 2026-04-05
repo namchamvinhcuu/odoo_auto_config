@@ -408,37 +408,39 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           const SizedBox(height: AppSpacing.xxxl),
 
-          // Close behavior
-          Text(context.l10n.closeBehavior,
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.md),
-          FutureBuilder<String>(
-            future: TrayService.getCloseBehavior(),
-            builder: (context, snapshot) {
-              final value = snapshot.data ?? 'exit';
-              return SegmentedButton<String>(
-                segments: [
-                  ButtonSegment(
-                    value: 'exit',
-                    icon: const Icon(Icons.close),
-                    label: Text(context.l10n.closeBehaviorExit),
-                  ),
-                  ButtonSegment(
-                    value: 'tray',
-                    icon: const Icon(Icons.hide_source),
-                    label: Text(context.l10n.closeBehaviorTray),
-                  ),
-                ],
-                selected: {value},
-                onSelectionChanged: (v) {
-                  TrayService.setCloseBehavior(v.first);
-                  HomeScreen.updateCloseBehavior(v.first);
-                  setState(() {});
-                },
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.xxxl),
+          // Close behavior (chỉ macOS)
+          if (TrayService.supported) ...[
+            Text(context.l10n.closeBehavior,
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.md),
+            FutureBuilder<String>(
+              future: TrayService.getCloseBehavior(),
+              builder: (context, snapshot) {
+                final value = snapshot.data ?? 'exit';
+                return SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(
+                      value: 'exit',
+                      icon: const Icon(Icons.close),
+                      label: Text(context.l10n.closeBehaviorExit),
+                    ),
+                    ButtonSegment(
+                      value: 'tray',
+                      icon: const Icon(Icons.hide_source),
+                      label: Text(context.l10n.closeBehaviorTray),
+                    ),
+                  ],
+                  selected: {value},
+                  onSelectionChanged: (v) {
+                    TrayService.setCloseBehavior(v.first);
+                    HomeScreen.updateCloseBehavior(v.first);
+                    setState(() {});
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.xxxl),
+          ],
 
           // Preview
           Text(context.l10n.preview,
