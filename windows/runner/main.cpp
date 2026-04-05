@@ -5,8 +5,24 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+constexpr const wchar_t kMutexName[] = L"WorkspaceConfiguration_SingleInstance";
+constexpr const wchar_t kWindowClass[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
+
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  // Single instance check: if another instance is running, activate it and exit
+  HANDLE mutex = ::CreateMutexW(nullptr, TRUE, kMutexName);
+  if (::GetLastError() == ERROR_ALREADY_EXISTS) {
+    // Find and activate the existing window
+    HWND existing = ::FindWindowW(kWindowClass, nullptr);
+    if (existing) {
+      ::ShowWindow(existing, SW_SHOW);
+      ::SetForegroundWindow(existing);
+    }
+    if (mutex) ::CloseHandle(mutex);
+    return EXIT_SUCCESS;
+  }
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
@@ -30,7 +46,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (!window.Create(L"Workspace Configuration", origin, size)) {
     return EXIT_FAILURE;
   }
-  window.SetQuitOnClose(true);
+  window.SetQuitOnClose(false);
 
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {
@@ -39,5 +55,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   ::CoUninitialize();
+  if (mutex) ::CloseHandle(mutex);
   return EXIT_SUCCESS;
 }

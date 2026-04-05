@@ -133,17 +133,32 @@ lib/
 - **Init**: luôn init khi app khởi động (main.dart), tray icon luôn hiện
 - **Close behavior**: setting trong Settings > Theme tab
   `'exit'` (mặc định): đóng cửa sổ = thoát app
-  `'tray'`: đóng cửa sổ = ẩn vào tray, double-click tray icon để mở lại
+  `'tray'`: đóng cửa sổ = ẩn vào tray, click tray icon để mở lại
 - **Events**: click/double-click → show, right-click → menu (Show / Quit)
-- **WindowListener**: `onWindowClose` trong HomeScreen, dùng `windowManager.setPreventClose(true)`
-  Cache `_closeBehavior` trong initState, KHÔNG async đọc file trong onWindowClose
+- **Hỗ trợ**: macOS + Windows. `TrayService.supported` = `Platform.isMacOS || Platform.isWindows`
+  Linux: tạm tắt (tạo duplicate instance)
+- **macOS**: dùng `windowManager.setPreventClose(true)` + `onWindowClose` callback
+  `applicationShouldTerminateAfterLastWindowClosed` PHẢI return `false`
+  Không cần `setSkipTaskbar`, chỉ `hide()/show()`
+- **Windows**: cơ chế hoàn toàn khác macOS (xem chi tiết bên dưới)
+  - `window_manager 0.5.1` + Flutter 3.41: `setPreventClose(true)` KHÔNG hoạt động
+    Plugin intercept `WM_CLOSE` nhưng `onWindowClose` callback không fire
+  - **Giải pháp**: xử lý `WM_CLOSE` ở native C++ level
+    `flutter_window.cpp`: `case WM_CLOSE: ShowWindow(hwnd, SW_HIDE); return 0;`
+    Window bị hide thay vì destroy, tray icon giữ nguyên
+  - **Close behavior exit**: dùng `onWindowEvent('hide')` trong HomeScreen
+    Phân biệt minimize vs close bằng flag `_isMinimizing`
+    (`minimize` event fire trước `hide` khi minimize, nhưng không fire khi nhấn X)
+  - **Close behavior tray**: window đã bị hide bởi native code, không cần làm gì thêm
+  - `main.cpp`: `SetQuitOnClose(false)` — QUAN TRỌNG, nếu `true` thì `PostQuitMessage` sẽ
+    thoát app khi window bị destroy
+  - **KHÔNG dùng `setSkipTaskbar`** trên Windows — gây native crash với window_manager 0.5.1
+  - **Single instance**: Named mutex `WorkspaceConfiguration_SingleInstance` trong `main.cpp`
+    Nếu mutex đã tồn tại → `FindWindow` + `ShowWindow(SW_SHOW)` + `SetForegroundWindow` → exit
+    Tránh tạo duplicate instance khi click taskbar icon hoặc chạy exe lần 2
+- **WindowListener**: `onWindowClose` trong HomeScreen (macOS), `onWindowEvent` (Windows)
+  Cache `_closeBehavior` trong initState, KHÔNG async đọc file trong callback
   `HomeScreen.updateCloseBehavior(value)` sync khi user đổi setting
-- **macOS AppDelegate**: `applicationShouldTerminateAfterLastWindowClosed` PHẢI return `false`
-  Nếu `true` → macOS kill app khi window đóng → tray icon biến mất
-- **macOS**: không cần `setSkipTaskbar`, chỉ `hide()/show()`
-- **Windows/Linux**: `setSkipTaskbar(true/false)` khi hide/show
-- **Chỉ macOS**: Windows (MSIX sandbox) và Linux (duplicate instance) tạm tắt
-  `TrayService.supported` = `Platform.isMacOS`. Setting ẩn trên Windows/Linux
 - **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
 
 ## Tính năng Auto-Update
@@ -156,6 +171,8 @@ lib/
     DMG chỉ dùng cho user tải manual. ZIP dùng cho auto-update (đơn giản, không cần mount/unmount)
   - **Linux**: Tải `.AppImage` → shell script replace → relaunch
   - **Windows**: Tải `.msix` → `Add-AppPackage -ForceApplicationShutdown` → `Start-Process` relaunch
+    Relaunch dùng `Start-Process ('shell:AppsFolder\' + PackageFamilyName + '!App')`
+    KHÔNG dùng `explorer.exe` (sẽ mở OneDrive/Documents thay vì app)
 - **Xử lý lỗi**: Download/install fail → hiện SnackBar thông báo. macOS log tại `/tmp/wsc_update.log`
 - **Public repo**: Releases publish lên `namchamvinhcuu/workspace-configuration` (public)
   Code dev tại `namchamvinhcuu/odoo_auto_config` (private)
@@ -339,6 +356,7 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 | nginx conf write | THẤP | File.writeAsString cross-platform |
 - macOS: đã test OK
 - Linux: đã test OK (2026-03-29)
+- Windows system tray: đã test OK (2026-04-05) — hide to tray, show from tray, single instance, exit mode
 
 ### Linux
 - Python install: `pkexec apt install` (graphical sudo, không cần terminal)
@@ -415,8 +433,8 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 ### Auto-update
 - **macOS**: dùng `.zip` + `ditto -xk` KHÔNG dùng `.dmg` (mount/unmount/codesign phức tạp và hay fail)
   `xattr -cr` là đủ, KHÔNG cần `codesign`
-- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown`. Không relaunch — user tự mở lại app
-  (Relaunch qua `Get-AppxPackage` + `explorer.exe shell:AppsFolder\` bị lỗi mở OneDrive/Documents, tạm tắt)
+- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown` + relaunch qua `Start-Process ('shell:AppsFolder\' + PackageFamilyName + '!App')`
+  KHÔNG dùng `explorer.exe shell:AppsFolder\` (mở nhầm OneDrive/Documents thay vì app)
   KHÔNG dùng `Platform.resolvedExecutable` vì MSIX thay đổi exe path mỗi version
 - **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
 - **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
@@ -433,6 +451,19 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 - **Branch status trên grid/list**: hiện `changed count ↑` (cam) + `behind count ↓` (cyan) cạnh branch name
   Load async song song với branch detection trong `_loadBranches`
   `git status --porcelain` cho changed, `git rev-list --count HEAD..@{upstream}` cho behind (sau `git fetch --quiet`)
+
+### System Tray (Windows)
+- **`window_manager 0.5.1` + Flutter 3.41**: `setPreventClose(true)` KHÔNG hoạt động trên Windows
+  Plugin intercept `WM_CLOSE` nhưng `onWindowClose` Dart callback không bao giờ fire
+  PHẢI xử lý `WM_CLOSE` ở native C++ (`flutter_window.cpp`) thay vì dựa vào Dart callback
+- **KHÔNG dùng `windowManager.setSkipTaskbar()`** trên Windows — gây native crash (process exit không log)
+  Chỉ dùng `windowManager.show()` / `windowManager.hide()` / `windowManager.focus()`
+- **`SetQuitOnClose(false)`** trong `main.cpp` — bắt buộc khi dùng tray, nếu `true` thì `PostQuitMessage`
+  sẽ thoát app ngay khi window bị destroy
+- **Phân biệt minimize vs close trên Windows**: dùng flag `_isMinimizing` trong `onWindowEvent`
+  `minimize` event fire trước `hide` khi minimize, nhưng KHÔNG fire khi nhấn X → dùng để phân biệt
+- **Single instance**: Named mutex trong `main.cpp`, `FindWindow` + `ShowWindow` để activate cái cũ
+  Tránh duplicate instance khi click taskbar icon hoặc chạy exe lần 2
 
 ### Process / Shell
 - **`runInShell: true`** bắt buộc cho mọi `Process.run` trong AOT/release mode

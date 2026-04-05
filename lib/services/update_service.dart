@@ -221,21 +221,18 @@ rm -f "\$0"
   }
 
   // ── Windows: update MSIX via PowerShell ──
-  // TODO: relaunch sau khi update bị lỗi mở OneDrive/Documents, tạm tắt
-  // Khi fix xong thì bỏ comment phần relaunch bên dưới
 
   static Future<bool> _installWindows(String msixPath) async {
     final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.ps1');
     final script = '\$ErrorActionPreference = "SilentlyContinue"\n'
         'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown\n'
-        // --- Relaunch disabled: mở nhầm OneDrive/Documents thay vì app ---
-        // 'Start-Sleep -Seconds 3\n'
-        // r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1" '\n'
-        // r"if ($app) {" '\n'
-        // r"  $uri = 'shell:AppsFolder\' + $app.PackageFamilyName + '!App'" '\n'
-        // r'  Start-Process explorer.exe $uri' '\n'
-        // '}\n'
-        // --- End relaunch disabled ---
+        'Start-Sleep -Seconds 3\n'
+        // Relaunch: dùng Start-Process trực tiếp với shell: URI
+        // KHÔNG dùng explorer.exe (sẽ mở OneDrive/Documents thay vì app)
+        r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1" '\n'
+        r"if ($app) {" '\n'
+        r"  Start-Process ('shell:AppsFolder\' + $app.PackageFamilyName + '!App')" '\n'
+        '}\n'
         'Remove-Item -Path "$scriptPath" -Force\n';
     await File(scriptPath).writeAsString(script);
     await Process.start(

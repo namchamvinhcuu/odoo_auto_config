@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(fvm flutter:*)"
+      "Bash(fvm flutter:*)",
+      "Bash(taskkill //F //IM WorkspaceConfiguration.exe)",
+      "Bash(\"c:/Users/Nam/Workspace/nam-custom/odoo_auto_config/build/windows/x64/runner/Release/WorkspaceConfiguration.exe\")"
     ]
   }
 }

@@ -208,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   void onWindowClose() async {
+    // macOS: onWindowClose works normally via setPreventClose
     if (_closeBehavior == 'tray') {
       await TrayService.hideToTray();
     } else {
@@ -215,6 +216,29 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       await windowManager.destroy();
     }
   }
+
+  @override
+  void onWindowEvent(String eventName) {
+    // Windows: WM_CLOSE is handled natively (ShowWindow SW_HIDE in flutter_window.cpp),
+    // so onWindowClose never fires. Instead, when window is hidden and close behavior
+    // is 'exit', we quit the app. The 'hide' event fires for both minimize and close,
+    // but minimize also fires 'minimize' event first, so we use the flag to distinguish.
+    if (!Platform.isWindows) return;
+    if (eventName == 'minimize') {
+      _isMinimizing = true;
+    } else if (eventName == 'hide') {
+      if (_isMinimizing) {
+        _isMinimizing = false;
+        return;
+      }
+      // hide from X button (not minimize)
+      if (_closeBehavior == 'exit') {
+        TrayService.destroy().then((_) => exit(0));
+      }
+    }
+  }
+
+  bool _isMinimizing = false;
 
   static const _screens = <Widget>[
     ProjectsScreen(),
