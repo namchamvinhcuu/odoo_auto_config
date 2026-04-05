@@ -55,7 +55,7 @@ lib/
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
 │   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
 │   ├── workspaces_screen.dart   # Other Projects: list/grid, favourite, auto-detect type, nginx
-│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile
+│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile + Setup Nginx sau tạo
 │   ├── profile_screen.dart      # CRUD profiles
 │   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
@@ -221,8 +221,18 @@ lib/
   - Edit project (Info dialog > Edit): dropdown chọn account + sửa org, save vào file script
 - **Git Branches Dialog** (Other Projects — `_SwitchBranchDialog`):
   - Stateful dialog 2 cột: Local + Remote, click branch để switch
-  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit
-  - Branch chip hiện trên grid (top-left) và list view, click mở dialog
+  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit, Pull, PR, Publish
+  - **Action bar** (giữa dialog): Pull, Commit, PR (ẩn khi trên main/master), + Create
+  - **Pull branch khác** (icon trên mỗi branch tile): stash → checkout target → pull → checkout back → stash pop, mở dialog log
+  - **Publish branch**: `git push -u origin <branch>`, hiện khi branch chưa có remote, tự ẩn sau publish
+  - **Create PR** (`_CreatePRDialog`): check `gh` CLI, chọn base branch, nhập title/body, auto push trước
+    Detect PR đã tồn tại (URL từ stderr) → hiện "PR already exists. New commits have been pushed."
+    Check uncommitted changes → cảnh báo + cho commit trước hoặc continue
+    Nút "View in Browser" mở PR URL (cross-platform: open/start/xdg-open)
+  - **Divider** tách main/master xuống cuối danh sách local và remote
+  - **Current branch chip** hiện trong title dialog
+  - **Mouse cursor** pointer cho branch tiles (dùng `InkWell.mouseCursor`, KHÔNG `MouseRegion`)
+  - Branch chip hiện ở giữa card (trên tên project), type badge lên top-left grid card
   - Màu theo branch: main/master=xanh lá, dev=cam, feature/feat=xanh dương, hotfix/fix=đỏ
   - Không cho delete main/master
   - Parse branches dùng `%(refname)` (KHÔNG `%(refname:short)`)
@@ -396,9 +406,13 @@ File: `lib/screens/odoo_workspace_dialog.dart`
     Thử checkout existing → checkout -b từ origin → checkout -b mới
 - **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
 - **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
-- **Grid columns** (projects_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
+- **Grid columns** (projects_screen + workspaces_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
+- **Grid card layout** (workspaces): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
 
 ### Roadmap — Chưa triển khai
+- **Cherry-pick**: Chọn 1 hoặc nhiều commits cụ thể từ branch khác để copy vào branch hiện tại
+  UI: click branch → hiện danh sách commits (`git log --oneline <current>..<target>`) → checkbox chọn → cherry-pick tuần tự
+  Dùng `git cherry-pick <hash>`, hiện dialog log output, xử lý conflict
 - **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
 - **Lazy loading**: cho nhiều repos (hiện load tất cả cùng lúc)
 - **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
@@ -445,6 +459,11 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 - **`StorageService.saveSettings` PHẢI load trước rồi merge** — KHÔNG BAO GIỜ ghi đè toàn bộ settings
   Pattern đúng: `final settings = await StorageService.loadSettings(); settings['key'] = value; await StorageService.saveSettings(settings);`
   Bug đã xảy ra: ThemeService ghi đè toàn bộ settings → mất nginx config, git accounts, workspace repos
+- **`StorageService` có `_synchronized` lock** — serialize tất cả write operations để tránh race condition
+  Nếu 2 save chạy đồng thời (VD: saveSettings + saveWorkspaces), operation sau đọc config cũ → ghi đè mất data
+  Tất cả save/add/remove methods đều wrap trong `_synchronized`, read-modify-write trong cùng 1 lock
+- **Xóa project/workspace phải cleanup nginx** — nếu `hasNginx` thì gọi `NginxService.removeNginx(sub)` trước khi xóa
+  Wrap try-catch để không block việc xóa nếu nginx cleanup fail
 - Khi edit workspace/project: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
 - **Dialog reload**: Khi dialog con đóng (VD: Commit dialog đóng → quay lại Branches dialog), phải reload status trong dialog cha.
   Khi dialog cha đóng, phải reload data ở parent screen (dùng `.then()` sau `showDialog`)
