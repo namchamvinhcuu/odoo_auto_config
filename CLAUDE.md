@@ -136,6 +136,10 @@ lib/
   `'tray'`: đóng cửa sổ = ẩn vào tray, double-click tray icon để mở lại
 - **Events**: click/double-click → show, right-click → menu (Show / Quit)
 - **WindowListener**: `onWindowClose` trong HomeScreen, dùng `windowManager.setPreventClose(true)`
+  Cache `_closeBehavior` trong initState, KHÔNG async đọc file trong onWindowClose
+  `HomeScreen.updateCloseBehavior(value)` sync khi user đổi setting
+- **macOS AppDelegate**: `applicationShouldTerminateAfterLastWindowClosed` PHẢI return `false`
+  Nếu `true` → macOS kill app khi window đóng → tray icon biến mất
 - **macOS**: không cần `setSkipTaskbar`, chỉ `hide()/show()`
 - **Windows/Linux**: `setSkipTaskbar(true/false)` khi hide/show
 - **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)

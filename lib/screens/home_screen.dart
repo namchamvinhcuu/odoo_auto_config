@@ -39,6 +39,11 @@ class HomeScreen extends StatefulWidget {
     _HomeScreenState._instance?._checkDocker();
   }
 
+  /// Update cached close behavior (gọi từ Settings khi user đổi)
+  static void updateCloseBehavior(String value) {
+    _HomeScreenState._instance?._closeBehavior = value;
+  }
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -48,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   int _selectedIndex = 0;
   final List<int> _backHistory = [];
   final List<int> _forwardHistory = [];
+  String _closeBehavior = 'exit';
 
   void _goToTab(int index) {
     if (index != _selectedIndex) {
@@ -84,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     _instance = this;
     windowManager.addListener(this);
     _loadWindowSize();
+    _loadCloseBehavior();
     _checkUpdate();
     _checkDocker();
   }
@@ -195,10 +202,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     super.dispose();
   }
 
+  Future<void> _loadCloseBehavior() async {
+    _closeBehavior = await TrayService.getCloseBehavior();
+  }
+
   @override
   void onWindowClose() async {
-    final behavior = await TrayService.getCloseBehavior();
-    if (behavior == 'tray') {
+    if (_closeBehavior == 'tray') {
       await TrayService.hideToTray();
     } else {
       await TrayService.destroy();

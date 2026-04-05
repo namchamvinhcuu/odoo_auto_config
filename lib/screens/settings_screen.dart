@@ -432,6 +432,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 selected: {value},
                 onSelectionChanged: (v) {
                   TrayService.setCloseBehavior(v.first);
+                  HomeScreen.updateCloseBehavior(v.first);
                   setState(() {});
                 },
               );
