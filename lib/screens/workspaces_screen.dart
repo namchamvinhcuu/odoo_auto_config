@@ -2894,6 +2894,34 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     }
   }
 
+  Future<void> _publishBranch(String branch) async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    final result = await Process.run(
+      'git',
+      ['push', '-u', 'origin', branch],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _switching = false;
+        _message = 'Published $branch to origin';
+        _isError = false;
+      });
+      _loadBranches();
+    } else {
+      setState(() {
+        _switching = false;
+        _message = 'Push failed: ${(result.stderr as String).trim()}';
+        _isError = true;
+      });
+    }
+  }
+
   Future<void> _pullBranch(String branch) async {
     await showDialog(
       context: context,
@@ -3049,7 +3077,37 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                 size: AppIconSize.md,
                 color: Colors.grey.shade500,
               ),
+            if (!isRemote && isCurrent && !_remote.contains(branch))
+              IconButton(
+                onPressed: _switching ? null : () => _publishBranch(branch),
+                icon: const Icon(
+                  Icons.cloud_upload,
+                  size: AppIconSize.md,
+                  color: Colors.green,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
+                tooltip: 'Publish $branch',
+              ),
             if (!isRemote && !isCurrent) ...[
+              if (!_remote.contains(branch))
+                IconButton(
+                  onPressed: _switching ? null : () => _publishBranch(branch),
+                  icon: const Icon(
+                    Icons.cloud_upload,
+                    size: AppIconSize.md,
+                    color: Colors.green,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: AppIconSize.xl,
+                    minHeight: AppIconSize.xl,
+                  ),
+                  tooltip: 'Publish $branch',
+                ),
               IconButton(
                 onPressed: _switching ? null : () => _pullBranch(branch),
                 icon: const Icon(
