@@ -1684,4 +1684,48 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get push => 'Push';
+
+  @override
+  String get publishModules => 'Publish Modules';
+
+  @override
+  String get publishModulesDesc => 'git이 없는 로컬 모듈에 대해 GitHub 저장소 생성';
+
+  @override
+  String get publishModulesNoModules => 'addons/의 모든 모듈에 이미 git이 초기화되어 있습니다';
+
+  @override
+  String get publishModulesNoOrg =>
+      'Git organization이 설정되지 않았습니다. 프로젝트를 편집하여 organization을 먼저 설정해 주세요.';
+
+  @override
+  String get publishModulesNoToken =>
+      'Git 토큰을 찾을 수 없습니다. Settings > Git에서 git 계정을 설정해 주세요.';
+
+  @override
+  String get publishModulesScanning => '로컬 모듈 스캔 중...';
+
+  @override
+  String get publishModulesCreating => '저장소 생성 중...';
+
+  @override
+  String publishModulesSuccess(String name) {
+    return '$name publish 성공';
+  }
+
+  @override
+  String publishModulesFailed(String name, String error) {
+    return '$name publish 실패: $error';
+  }
+
+  @override
+  String get publishModulesSelect => 'Publish할 모듈 선택';
+
+  @override
+  String get publishModulesPublish => 'Publish';
+
+  @override
+  String publishModulesCreatingRepo(String name) {
+    return '저장소 생성 중: $name';
+  }
 }

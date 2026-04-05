@@ -632,11 +632,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         icon: const Icon(Icons.sync),
                         tooltip: context.l10n.gitPull,
                       ),
-                      IconButton(
-                        onPressed: () => _runSelectivePull(proj),
-                        icon: const Icon(Icons.checklist),
-                        tooltip: context.l10n.gitSelectivePull,
-                      ),
+                      // Selective Pull — hidden, use Workspace View instead
+                      // IconButton(
+                      //   onPressed: () => _runSelectivePull(proj),
+                      //   icon: const Icon(Icons.checklist),
+                      //   tooltip: context.l10n.gitSelectivePull,
+                      // ),
                       IconButton(
                         onPressed: () => _runGitCommit(proj),
                         icon: const Icon(Icons.commit),
@@ -815,13 +816,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               iconSize: btnSize,
                               boxSize: btnBox,
                             ),
-                            _gridBtn(
-                              icon: Icons.checklist,
-                              tooltip: context.l10n.gitSelectivePull,
-                              onPressed: () => _runSelectivePull(proj),
-                              iconSize: btnSize,
-                              boxSize: btnBox,
-                            ),
+                            // Selective Pull — hidden, use Workspace View instead
+                            // _gridBtn(
+                            //   icon: Icons.checklist,
+                            //   tooltip: context.l10n.gitSelectivePull,
+                            //   onPressed: () => _runSelectivePull(proj),
+                            //   iconSize: btnSize,
+                            //   boxSize: btnBox,
+                            // ),
                             _gridBtn(
                               icon: Icons.commit,
                               tooltip: context.l10n.gitCommit,
@@ -887,17 +889,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ],
             ),
           ),
-        if (exists)
-          PopupMenuItem(
-            value: 'git_selective_pull',
-            child: Row(
-              children: [
-                const Icon(Icons.checklist, size: AppIconSize.md),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.gitSelectivePull),
-              ],
-            ),
-          ),
+        // Selective Pull — hidden, use Workspace View instead
+        // if (exists)
+        //   PopupMenuItem(
+        //     value: 'git_selective_pull',
+        //     child: Row(
+        //       children: [
+        //         const Icon(Icons.checklist, size: AppIconSize.md),
+        //         const SizedBox(width: AppSpacing.sm),
+        //         Text(context.l10n.gitSelectivePull),
+        //       ],
+        //     ),
+        //   ),
         if (exists)
           PopupMenuItem(
             value: 'git_pull',

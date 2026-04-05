@@ -3123,6 +3123,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Push'**
   String get push;
+
+  /// No description provided for @publishModules.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish Modules'**
+  String get publishModules;
+
+  /// No description provided for @publishModulesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create GitHub repos for local modules without git'**
+  String get publishModulesDesc;
+
+  /// No description provided for @publishModulesNoModules.
+  ///
+  /// In en, this message translates to:
+  /// **'All modules in addons/ already have git initialized'**
+  String get publishModulesNoModules;
+
+  /// No description provided for @publishModulesNoOrg.
+  ///
+  /// In en, this message translates to:
+  /// **'Git organization not configured. Please edit the project and set the organization first.'**
+  String get publishModulesNoOrg;
+
+  /// No description provided for @publishModulesNoToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Git token not found. Please configure a git account in Settings > Git.'**
+  String get publishModulesNoToken;
+
+  /// No description provided for @publishModulesScanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning local modules...'**
+  String get publishModulesScanning;
+
+  /// No description provided for @publishModulesCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating repos...'**
+  String get publishModulesCreating;
+
+  /// No description provided for @publishModulesSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully published {name}'**
+  String publishModulesSuccess(String name);
+
+  /// No description provided for @publishModulesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to publish {name}: {error}'**
+  String publishModulesFailed(String name, String error);
+
+  /// No description provided for @publishModulesSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select modules to publish'**
+  String get publishModulesSelect;
+
+  /// No description provided for @publishModulesPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish'**
+  String get publishModulesPublish;
+
+  /// No description provided for @publishModulesCreatingRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating repo: {name}'**
+  String publishModulesCreatingRepo(String name);
 }
 
 class _AppLocalizationsDelegate
