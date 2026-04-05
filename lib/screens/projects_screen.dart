@@ -488,6 +488,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     );
 
     if (confirmed == true) {
+      // Cleanup nginx config if project has one
+      if (project.hasNginx) {
+        try {
+          final sub = project.nginxSubdomain!;
+          await NginxService.removeNginx(sub);
+        } catch (_) {}
+      }
       if (deleteFiles) {
         try {
           final dir = Directory(project.path);

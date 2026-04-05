@@ -1,9 +1,31 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
 class StorageService {
   static const _configFileName = 'odoo_auto_config.json';
+
+  /// Serialize all read-modify-write operations to prevent race conditions.
+  /// Without this lock, concurrent saves (e.g. saveSettings + saveWorkspaces)
+  /// can overwrite each other's data — causing nginx config, git accounts, etc.
+  /// to be lost.
+  static Future<void> _lock = Future.value();
+
+  static Future<T> _synchronized<T>(Future<T> Function() fn) {
+    final prev = _lock;
+    final completer = Completer<T>();
+    _lock = completer.future.then((_) {}, onError: (_) {});
+    () async {
+      await prev;
+      try {
+        completer.complete(await fn());
+      } catch (e, s) {
+        completer.completeError(e, s);
+      }
+    }();
+    return completer.future;
+  }
 
   static String get _configPath {
     final home = Platform.environment['HOME'] ??
@@ -37,25 +59,35 @@ class StorageService {
   }
 
   static Future<void> saveRegisteredVenvs(
-      List<Map<String, dynamic>> venvs) async {
-    final config = await _readConfig();
-    config['registered_venvs'] = venvs;
-    await _writeConfig(config);
-  }
+      List<Map<String, dynamic>> venvs) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      config['registered_venvs'] = venvs;
+      await _writeConfig(config);
+    });
 
-  static Future<void> addRegisteredVenv(Map<String, dynamic> venv) async {
-    final venvs = await loadRegisteredVenvs();
-    // Avoid duplicates by path
-    venvs.removeWhere((v) => v['path'] == venv['path']);
-    venvs.add(venv);
-    await saveRegisteredVenvs(venvs);
-  }
+  static Future<void> addRegisteredVenv(Map<String, dynamic> venv) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final venvs = (config['registered_venvs'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      venvs.removeWhere((v) => v['path'] == venv['path']);
+      venvs.add(venv);
+      config['registered_venvs'] = venvs;
+      await _writeConfig(config);
+    });
 
-  static Future<void> removeRegisteredVenv(String path) async {
-    final venvs = await loadRegisteredVenvs();
-    venvs.removeWhere((v) => v['path'] == path);
-    await saveRegisteredVenvs(venvs);
-  }
+  static Future<void> removeRegisteredVenv(String path) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final venvs = (config['registered_venvs'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      venvs.removeWhere((v) => v['path'] == path);
+      config['registered_venvs'] = venvs;
+      await _writeConfig(config);
+    });
 
   // ── Profiles ──
 
@@ -65,24 +97,36 @@ class StorageService {
     return list?.cast<Map<String, dynamic>>() ?? [];
   }
 
-  static Future<void> saveProfiles(List<Map<String, dynamic>> profiles) async {
-    final config = await _readConfig();
-    config['profiles'] = profiles;
-    await _writeConfig(config);
-  }
+  static Future<void> saveProfiles(
+      List<Map<String, dynamic>> profiles) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      config['profiles'] = profiles;
+      await _writeConfig(config);
+    });
 
-  static Future<void> addOrUpdateProfile(Map<String, dynamic> profile) async {
-    final profiles = await loadProfiles();
-    profiles.removeWhere((p) => p['id'] == profile['id']);
-    profiles.add(profile);
-    await saveProfiles(profiles);
-  }
+  static Future<void> addOrUpdateProfile(Map<String, dynamic> profile) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final profiles = (config['profiles'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      profiles.removeWhere((p) => p['id'] == profile['id']);
+      profiles.add(profile);
+      config['profiles'] = profiles;
+      await _writeConfig(config);
+    });
 
-  static Future<void> removeProfile(String id) async {
-    final profiles = await loadProfiles();
-    profiles.removeWhere((p) => p['id'] == id);
-    await saveProfiles(profiles);
-  }
+  static Future<void> removeProfile(String id) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final profiles = (config['profiles'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      profiles.removeWhere((p) => p['id'] == id);
+      config['profiles'] = profiles;
+      await _writeConfig(config);
+    });
 
   // ── Projects ──
 
@@ -93,24 +137,35 @@ class StorageService {
   }
 
   static Future<void> saveProjects(
-      List<Map<String, dynamic>> projects) async {
-    final config = await _readConfig();
-    config['projects'] = projects;
-    await _writeConfig(config);
-  }
+      List<Map<String, dynamic>> projects) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      config['projects'] = projects;
+      await _writeConfig(config);
+    });
 
-  static Future<void> addProject(Map<String, dynamic> project) async {
-    final projects = await loadProjects();
-    projects.removeWhere((p) => p['path'] == project['path']);
-    projects.add(project);
-    await saveProjects(projects);
-  }
+  static Future<void> addProject(Map<String, dynamic> project) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final projects = (config['projects'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      projects.removeWhere((p) => p['path'] == project['path']);
+      projects.add(project);
+      config['projects'] = projects;
+      await _writeConfig(config);
+    });
 
-  static Future<void> removeProject(String path) async {
-    final projects = await loadProjects();
-    projects.removeWhere((p) => p['path'] == path);
-    await saveProjects(projects);
-  }
+  static Future<void> removeProject(String path) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final projects = (config['projects'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      projects.removeWhere((p) => p['path'] == path);
+      config['projects'] = projects;
+      await _writeConfig(config);
+    });
 
   // ── Workspaces ──
 
@@ -121,24 +176,35 @@ class StorageService {
   }
 
   static Future<void> saveWorkspaces(
-      List<Map<String, dynamic>> workspaces) async {
-    final config = await _readConfig();
-    config['workspaces'] = workspaces;
-    await _writeConfig(config);
-  }
+      List<Map<String, dynamic>> workspaces) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      config['workspaces'] = workspaces;
+      await _writeConfig(config);
+    });
 
-  static Future<void> addWorkspace(Map<String, dynamic> workspace) async {
-    final workspaces = await loadWorkspaces();
-    workspaces.removeWhere((w) => w['path'] == workspace['path']);
-    workspaces.add(workspace);
-    await saveWorkspaces(workspaces);
-  }
+  static Future<void> addWorkspace(Map<String, dynamic> workspace) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final workspaces = (config['workspaces'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      workspaces.removeWhere((w) => w['path'] == workspace['path']);
+      workspaces.add(workspace);
+      config['workspaces'] = workspaces;
+      await _writeConfig(config);
+    });
 
-  static Future<void> removeWorkspace(String path) async {
-    final workspaces = await loadWorkspaces();
-    workspaces.removeWhere((w) => w['path'] == path);
-    await saveWorkspaces(workspaces);
-  }
+  static Future<void> removeWorkspace(String path) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final workspaces = (config['workspaces'] as List<dynamic>?)
+              ?.cast<Map<String, dynamic>>() ??
+          [];
+      workspaces.removeWhere((w) => w['path'] == path);
+      config['workspaces'] = workspaces;
+      await _writeConfig(config);
+    });
 
   // ── Settings ──
 
@@ -147,11 +213,12 @@ class StorageService {
     return (config['settings'] as Map<String, dynamic>?) ?? {};
   }
 
-  static Future<void> saveSettings(Map<String, dynamic> settings) async {
-    final config = await _readConfig();
-    config['settings'] = settings;
-    await _writeConfig(config);
-  }
+  static Future<void> saveSettings(Map<String, dynamic> settings) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      config['settings'] = settings;
+      await _writeConfig(config);
+    });
 
   /// Check if a port is already used by another project
   static Future<String?> checkPortConflict(

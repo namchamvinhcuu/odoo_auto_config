@@ -8,11 +8,13 @@ import '../models/folder_structure_config.dart';
 import '../models/profile.dart';
 import '../models/project_info.dart';
 import '../services/folder_structure_service.dart';
+import '../services/nginx_service.dart';
 import '../services/platform_service.dart';
 import '../services/storage_service.dart';
 import '../templates/odoo_templates.dart';
 import '../widgets/directory_picker_field.dart';
 import '../widgets/log_output.dart';
+import '../widgets/nginx_setup_dialog.dart';
 
 class QuickCreateDialog extends StatefulWidget {
   const QuickCreateDialog({super.key});
@@ -38,6 +40,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   bool _creating = false;
   bool _done = false;
   String? _portError;
+  ProjectInfo? _createdProject;
 
   @override
   void initState() {
@@ -233,6 +236,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
         _logs.add('[+] Project created and saved!');
         _logs.add('[+] Path: $projectPath');
         _logs.add('[+] HTTP: $httpPort | Longpolling: $lpPort');
+        _createdProject = projectInfo;
         _done = true;
       });
     } on SymlinkPermissionException catch (e) {
@@ -248,6 +252,63 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
       setState(() => _logs.add('[ERROR] $e'));
     } finally {
       if (mounted) setState(() => _creating = false);
+    }
+  }
+
+  Future<void> _setupNginx() async {
+    final proj = _createdProject;
+    if (proj == null) return;
+
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
+      if (mounted) {
+        setState(() {
+          _logs.add(
+            '\x1B[0;31m[-] Nginx not configured. Go to Settings > Nginx first.\x1B[0m',
+          );
+        });
+      }
+      return;
+    }
+
+    final confDir = (nginx['confDir'] ?? '').toString();
+    final existingSubs = await NginxService.getExistingSubdomains(confDir);
+    final usedPorts = await NginxService.getUsedPorts();
+
+    if (!mounted) return;
+    final result = await showDialog<({String subdomain, int? port})>(
+      context: context,
+      builder: (ctx) => NginxSetupDialog(
+        initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
+        domainSuffix: suffix,
+        existingSubdomains: existingSubs,
+        usedPorts: usedPorts,
+      ),
+    );
+    if (result == null) return;
+
+    try {
+      final domain = await NginxService.setupOdoo(
+        subdomain: result.subdomain,
+        httpPort: proj.httpPort,
+        longpollingPort: proj.longpollingPort,
+      );
+      final updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
+      await StorageService.removeProject(proj.path);
+      await StorageService.addProject(updated.toJson());
+      if (mounted) {
+        setState(() {
+          _createdProject = updated;
+          _logs.add('\x1B[0;32m[+] Nginx setup: $domain\x1B[0m');
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _logs.add('\x1B[0;31m[-] Nginx failed: $e\x1B[0m');
+        });
+      }
     }
   }
 
@@ -497,6 +558,15 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                             const SizedBox(width: AppSpacing.xs),
                             Text(context.l10n.done,
                                 style: const TextStyle(color: Colors.green)),
+                            if (_createdProject != null &&
+                                !_createdProject!.hasNginx) ...[
+                              const SizedBox(width: AppSpacing.lg),
+                              FilledButton.tonalIcon(
+                                onPressed: _setupNginx,
+                                icon: const Icon(Icons.dns),
+                                label: const Text('Setup Nginx'),
+                              ),
+                            ],
                           ],
                         ],
                       ),

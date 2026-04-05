@@ -464,6 +464,13 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       ),
     );
     if (confirmed == true) {
+      // Cleanup nginx config if workspace has one
+      if (workspace.hasNginx) {
+        try {
+          final sub = workspace.nginxSubdomain!;
+          await NginxService.removeNginx(sub);
+        } catch (_) {}
+      }
       await StorageService.removeWorkspace(workspace.path);
       await _load();
     }
