@@ -1543,10 +1543,14 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
 class _SimpleGitPullDialog extends StatefulWidget {
   final String projectName;
   final String projectPath;
+  final String? targetBranch; // pull another branch without switching
+  final String? currentBranch; // required when targetBranch is set
 
   const _SimpleGitPullDialog({
     required this.projectName,
     required this.projectPath,
+    this.targetBranch,
+    this.currentBranch,
   });
 
   @override
@@ -1594,40 +1598,128 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
     });
   }
 
-  Future<void> _run() async {
-    setState(() => _running = true);
-    try {
-      final process = await Process.start(
+  Future<ProcessResult> _git(List<String> args) => Process.run(
         'git',
-        ['pull'],
+        args,
         workingDirectory: widget.projectPath,
         runInShell: true,
       );
-      process.stdout
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-            if (mounted) _addLine(line);
-          });
-      process.stderr
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-            if (mounted) _addLine(line);
-          });
-      final exitCode = await process.exitCode;
-      if (!mounted) return;
-      if (exitCode == 0) {
-        _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
+
+  Future<void> _runProcess(List<String> args) async {
+    final process = await Process.start(
+      'git',
+      args,
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    await process.exitCode;
+  }
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    try {
+      if (widget.targetBranch != null) {
+        await _runPullOtherBranch();
       } else {
-        _addLine(
-          '\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m',
-        );
+        await _runPullCurrent();
       }
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
     if (mounted) setState(() => _running = false);
+  }
+
+  Future<void> _runPullCurrent() async {
+    final process = await Process.start(
+      'git',
+      ['pull'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+          if (mounted) _addLine(line);
+        });
+    final exitCode = await process.exitCode;
+    if (!mounted) return;
+    if (exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
+    } else {
+      _addLine(
+        '\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m',
+      );
+    }
+  }
+
+  Future<void> _runPullOtherBranch() async {
+    final target = widget.targetBranch!;
+    final current = widget.currentBranch!;
+
+    // Check for uncommitted changes
+    final status = await _git(['status', '--porcelain']);
+    final hasChanges = (status.stdout as String).trimRight().isNotEmpty;
+
+    // Stash if needed
+    if (hasChanges) {
+      _addLine('\x1B[0;33m[~] Stashing changes...\x1B[0m');
+      final stash =
+          await _git(['stash', 'push', '-m', 'auto-stash for pull $target']);
+      if (stash.exitCode != 0) {
+        _addLine(
+          '\x1B[0;31m[-] Stash failed: ${(stash.stderr as String).trim()}\x1B[0m',
+        );
+        return;
+      }
+    }
+
+    // Checkout target
+    _addLine('\x1B[0;33m[~] Switching to $target...\x1B[0m');
+    final checkout = await _git(['checkout', target]);
+    if (checkout.exitCode != 0) {
+      _addLine(
+        '\x1B[0;31m[-] Checkout failed: ${(checkout.stderr as String).trim()}\x1B[0m',
+      );
+      if (hasChanges) await _git(['stash', 'pop']);
+      return;
+    }
+
+    // Pull
+    _addLine('\x1B[0;33m[~] Pulling $target...\x1B[0m');
+    await _runProcess(['pull']);
+
+    // Switch back
+    _addLine('\x1B[0;33m[~] Switching back to $current...\x1B[0m');
+    await _git(['checkout', current]);
+
+    // Restore stash
+    if (hasChanges) {
+      _addLine('\x1B[0;33m[~] Restoring stash...\x1B[0m');
+      await _git(['stash', 'pop']);
+    }
+
+    if (mounted) {
+      _addLine('\x1B[0;32m[+] Pulled $target successfully\x1B[0m');
+    }
   }
 
   List<TextSpan> _parseAnsi(String line) {
@@ -1671,7 +1763,11 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.gitPullTitle(widget.projectName)),
+      title: Text(
+        widget.targetBranch != null
+            ? 'Pull ${widget.targetBranch} — ${widget.projectName}'
+            : context.l10n.gitPullTitle(widget.projectName),
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -2798,6 +2894,22 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     }
   }
 
+  Future<void> _pullBranch(String branch) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => _SimpleGitPullDialog(
+        projectName: p.basename(widget.projectPath),
+        projectPath: widget.projectPath,
+        targetBranch: branch,
+        currentBranch: _current,
+      ),
+    );
+    if (mounted) {
+      setState(() => _message = null);
+      _loadBranches();
+    }
+  }
+
   Future<void> _checkout(String branch) async {
     setState(() {
       _switching = true;
@@ -2922,6 +3034,20 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                 color: Colors.grey.shade500,
               ),
             if (!isRemote && !isCurrent) ...[
+              IconButton(
+                onPressed: _switching ? null : () => _pullBranch(branch),
+                icon: const Icon(
+                  Icons.download,
+                  size: AppIconSize.md,
+                  color: Colors.teal,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
+                tooltip: 'Pull $branch',
+              ),
               IconButton(
                 onPressed: _switching ? null : () => _mergeBranch(branch),
                 icon: const Icon(
