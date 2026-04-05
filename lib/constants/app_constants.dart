@@ -61,6 +61,24 @@ class AppDialog {
   static const double heightMd = 450;
   static const double heightLg = 700;
   static const double heightXl = 750;
+
+  /// Red X close button for dialog title rows.
+  /// Use in title Row: `[...other widgets, const Spacer(), AppDialog.closeButton(context)]`
+  static Widget closeButton(BuildContext context, {VoidCallback? onClose}) {
+    return IconButton(
+      onPressed: onClose ?? () => Navigator.pop(context),
+      icon: const Icon(Icons.close, color: Colors.white, size: AppIconSize.md),
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.red,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+        padding: EdgeInsets.zero,
+      ),
+      tooltip: 'Close',
+    );
+  }
 }
 
 /// Colors used in log output

@@ -117,7 +117,13 @@ class _VenvScreenState extends State<VenvScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(context.l10n.deleteVenvTitle),
+          title: Row(
+            children: [
+              Text(context.l10n.deleteVenvTitle),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,9 +154,6 @@ class _VenvScreenState extends State<VenvScreen>
             ],
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(context.l10n.cancel)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(
@@ -250,7 +253,13 @@ class _VenvScreenState extends State<VenvScreen>
     final newLabel = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.renameVenv),
+        title: Row(
+          children: [
+            Text(context.l10n.renameVenv),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
@@ -262,9 +271,6 @@ class _VenvScreenState extends State<VenvScreen>
           onSubmitted: (v) => Navigator.pop(ctx, v),
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, controller.text),
               child: Text(context.l10n.save)),
@@ -829,6 +835,8 @@ class _PackageListDialogState extends State<_PackageListDialog> {
           if (!_loading)
             Text(context.l10n.packagesCount(_all.length),
                 style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(width: AppSpacing.sm),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(
@@ -935,11 +943,6 @@ class _PackageListDialogState extends State<_PackageListDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
-      ],
     );
   }
 }
@@ -1013,6 +1016,8 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
           const Icon(Icons.add_box),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(context.l10n.installPackagesTitle(widget.venvName))),
+          AppDialog.closeButton(context,
+              onClose: _installing ? null : () => Navigator.pop(context)),
         ],
       ),
       content: SizedBox(
@@ -1095,11 +1100,6 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-            onPressed: _installing ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
-      ],
     );
   }
 }
@@ -1172,23 +1172,27 @@ class _InstallRequirementsDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.installRequirements),
+      title: Row(
+        children: [
+          Text(context.l10n.installRequirements),
+          const Spacer(),
+          if (_running)
+            const Padding(
+              padding: EdgeInsets.only(right: AppSpacing.sm),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          AppDialog.closeButton(context,
+              onClose: _running ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: 600,
         child: LogOutput(lines: _logs),
       ),
-      actions: [
-        if (_running)
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }

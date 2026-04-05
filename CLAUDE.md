@@ -103,6 +103,10 @@ lib/
 - **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
+- **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
+  Hỗ trợ `onClose:` nullable (disable khi running). KHÔNG dùng footer Close/Cancel button nữa.
+  Close-only dialog: xóa `actions:`, thêm closeButton vào title Row
+  Cancel+Action dialog: xóa Cancel, thêm closeButton vào title Row, giữ action button trong `actions:`
 - **Port conflict detection** - kiểm tra trùng port giữa các Odoo project
 - **Cross-platform** - PlatformService abstract paths; mỗi service có branch cho 3 OS
 - **Responsive layout** - Row cho header (Spacer đẩy nút sang phải), Wrap cho card actions
@@ -298,8 +302,15 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 - **Generated files**: `lib/l10n/app_localizations*.dart` (KHÔNG sửa thủ công)
 - **Extension**: `context.l10n.keyName` qua `lib/l10n/l10n_extension.dart`
 - **Log messages**: giữ nguyên tiếng Anh (technical output)
-- Khi thêm string mới: thêm vào cả 3 file ARB, chạy `fvm flutter gen-l10n`
+- Khi thêm string mới: thêm vào cả 3 file ARB, chạy `fvm flutter gen-l10n`. KHÔNG BAO GIỜ hardcode string user-visible
 - Lưu ý dịch thuật: "Theme Mode" tiếng Việt là "Tùy chỉnh giao diện" (không phải "Chế độ giao diện")
+- **Thuật ngữ Git/tech giữ nguyên English cả 3 ngôn ngữ** — KHÔNG dịch:
+  Pull, Push, Commit, Merge, Branch, Checkout, Stash, Rebase, Cherry-pick,
+  PR, Create Branch, Delete Branch, Force Delete, Clean stale, Publish,
+  Setup Nginx, Docker, PostgreSQL...
+  Developer dùng hàng ngày bất kể ngôn ngữ, dịch ra sẽ gây nhầm lẫn.
+- **Mô tả ngữ cảnh/mục đích** thì dịch theo ngôn ngữ:
+  VD: "Cập nhật {current} với code từ {source}" (VI), "Update {current} with code from {source}" (EN)
 
 ## Lưu ý Cross-Platform
 

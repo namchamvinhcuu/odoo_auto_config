@@ -551,5 +551,114 @@
   "closeBehaviorExit": "Exit app",
   "closeBehaviorTray": "Minimize to system tray",
   "trayShow": "Show",
-  "trayQuit": "Quit"
+  "trayQuit": "Quit",
+
+  "gitBranches": "Git Branches",
+  "gitBranchLocal": "Local",
+  "gitBranchRemote": "Remote",
+  "gitBranchPull": "Pull",
+  "gitBranchCommit": "Commit",
+  "gitBranchPR": "PR",
+  "gitBranchCreate": "Create",
+  "gitBranchCleanStale": "Clean stale",
+  "gitBranchPublish": "Publish {branch}",
+  "@gitBranchPublish": {
+    "placeholders": {
+      "branch": {"type": "String"}
+    }
+  },
+  "gitBranchPullBranch": "Pull {branch}",
+  "@gitBranchPullBranch": {
+    "placeholders": {
+      "branch": {"type": "String"}
+    }
+  },
+  "gitBranchMerge": "Merge",
+  "gitBranchDeleteBranch": "Delete branch",
+  "gitBranchChanged": "{count} changed",
+  "@gitBranchChanged": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "gitBranchBehind": "{count} behind",
+  "@gitBranchBehind": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "gitBranchCreateTitle": "Create Branch",
+  "gitBranchNameLabel": "Branch name",
+  "gitBranchNameHint": "feature/my-feature",
+  "gitBranchDeleteTitle": "Delete Branch",
+  "gitBranchDeleteConfirm": "Delete local branch \"{branch}\"?",
+  "@gitBranchDeleteConfirm": {
+    "placeholders": {
+      "branch": {"type": "String"}
+    }
+  },
+  "gitBranchForceDeleteTitle": "Force Delete?",
+  "gitBranchForceDeleteConfirm": "Branch \"{branch}\" is not fully merged. Force delete?",
+  "@gitBranchForceDeleteConfirm": {
+    "placeholders": {
+      "branch": {"type": "String"}
+    }
+  },
+  "gitBranchForceDelete": "Force Delete",
+  "gitBranchStaleBranches": "Stale Branches",
+  "gitBranchStaleDesc": "These local branches no longer exist on remote:",
+  "gitBranchDeleteCount": "Delete {count} branch(es)",
+  "@gitBranchDeleteCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "gitMergeInto": "Merge {source} into {target}",
+  "@gitMergeInto": {
+    "placeholders": {
+      "source": {"type": "String"},
+      "target": {"type": "String"}
+    }
+  },
+  "gitMergeIntoCurrentDesc": "Update {current} with code from {source}",
+  "@gitMergeIntoCurrentDesc": {
+    "placeholders": {
+      "current": {"type": "String"},
+      "source": {"type": "String"}
+    }
+  },
+  "gitMergeIntoTargetDesc": "Push code from {current} to {target}",
+  "@gitMergeIntoTargetDesc": {
+    "placeholders": {
+      "current": {"type": "String"},
+      "target": {"type": "String"}
+    }
+  },
+
+  "prTitle": "Pull Request — {name}",
+  "@prTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "prGhNotInstalled": "GitHub CLI (gh) is not installed.",
+  "prGhInstallHint": "Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)",
+  "prBase": "Base:",
+  "prTitleLabel": "Title",
+  "prDescriptionLabel": "Description (optional)",
+  "prCreateButton": "Create Pull Request",
+  "prCreated": "Created",
+  "prViewInBrowser": "View in Browser",
+  "prUncommittedTitle": "Uncommitted changes",
+  "prUncommittedDesc": "{count} file(s) not committed.\nThese changes will NOT be included in the PR.\n\nCommit first, or continue anyway?",
+  "@prUncommittedDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "prCommitFirst": "Commit first",
+  "prContinueAnyway": "Continue anyway",
+
+  "setupNginx": "Setup Nginx",
+  "push": "Push"
 }

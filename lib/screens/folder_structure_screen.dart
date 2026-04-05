@@ -70,6 +70,8 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                 Icon(Icons.warning_amber, color: Colors.orange, size: AppIconSize.lg),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.symlinkErrorTitle),
+                const Spacer(),
+                AppDialog.closeButton(ctx),
               ],
             ),
             content: Column(
@@ -98,12 +100,6 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
                 ),
               ],
             ),
-            actions: [
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(context.l10n.close),
-              ),
-            ],
           ),
         );
       }
