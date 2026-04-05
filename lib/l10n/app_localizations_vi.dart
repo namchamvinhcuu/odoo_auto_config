@@ -1010,7 +1010,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dockerStopped => 'Đã dừng';
 
   @override
-  String get startDockerDesktop => 'Khởi động Docker Desktop';
+  String get startDockerDesktop => 'Khởi động Docker';
 
   @override
   String get starting => 'Đang khởi động...';

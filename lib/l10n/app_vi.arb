@@ -330,7 +330,7 @@
   "dockerNotInstalled": "Chưa cài đặt",
   "dockerRunning": "Đang chạy",
   "dockerStopped": "Đã dừng",
-  "startDockerDesktop": "Khởi động Docker Desktop",
+  "startDockerDesktop": "Khởi động Docker",
   "starting": "Đang khởi động...",
   "dockerInstall": "Cài đặt Docker",
   "dockerInstallTitle": "Cài đặt Docker",

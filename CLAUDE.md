@@ -288,6 +288,13 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   - VSCode: `open -a "Visual Studio Code"` (tránh PATH issue)
 - Hosts: `osascript` với `with administrator privileges` (native password dialog)
 - Sau khi copy/rename .app: cần `xattr -cr` (KHÔNG cần codesign, chỉ xattr là đủ)
+- **Docker install**: dialog cho chọn OrbStack (mặc định) hoặc Docker Desktop
+  OrbStack: `brew install --cask orbstack`, Docker Desktop: `brew install --cask docker`
+  Lưu lựa chọn vào settings `dockerRuntime` (`'orbstack'` hoặc `'docker'`)
+- **Start Docker**: `DockerInstallService.startDaemon()` — đọc `dockerRuntime` từ settings
+  Ưu tiên app đã chọn, fallback app còn lại. Mặc định = orbstack
+  Dùng `open -a <AppName>` — KHÔNG check path `/Applications/` (miss nếu cài external drive)
+  Tất cả screens gọi chung `startDaemon()` — 1 chỗ sửa, cả app cập nhật
 
 ### Windows
 - MSIX cần `runFullTrust` capability để Process.run hoạt động

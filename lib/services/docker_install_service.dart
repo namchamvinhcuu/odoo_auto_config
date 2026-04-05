@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'command_runner.dart';
 import 'platform_service.dart';
+import 'storage_service.dart';
 
 class DockerInstallService {
   /// Check if Docker is installed
@@ -54,9 +55,36 @@ class DockerInstallService {
     return null;
   }
 
+  /// Start Docker daemon (cross-platform)
+  /// Trên macOS: đọc `dockerRuntime` từ settings để ưu tiên OrbStack hoặc Docker Desktop
+  static Future<void> startDaemon() async {
+    if (PlatformService.isWindows) {
+      await Process.run(
+        'powershell',
+        ['-Command', 'Start-Process',
+         r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
+        runInShell: true,
+      );
+    } else if (PlatformService.isMacOS) {
+      final settings = await StorageService.loadSettings();
+      final runtime = (settings['dockerRuntime'] ?? 'orbstack').toString();
+      final primary = runtime == 'docker' ? 'Docker' : 'OrbStack';
+      final fallback = runtime == 'docker' ? 'OrbStack' : 'Docker';
+      final result = await Process.run('open', ['-a', primary],
+          runInShell: true);
+      if (result.exitCode != 0) {
+        await Process.run('open', ['-a', fallback], runInShell: true);
+      }
+    } else {
+      await Process.run('systemctl', ['--user', 'start', 'docker-desktop'],
+          runInShell: true);
+    }
+  }
+
   /// Install command for current platform
+  /// [macOsDocker]: 'orbstack' or 'docker' (only used on macOS)
   static ({String executable, List<String> args, String description})
-      installCommand() {
+      installCommand({String macOsDocker = 'docker'}) {
     if (PlatformService.isWindows) {
       return (
         executable: 'winget',
@@ -69,10 +97,11 @@ class DockerInstallService {
         description: 'winget install Docker.DockerDesktop',
       );
     } else if (PlatformService.isMacOS) {
+      final cask = macOsDocker == 'orbstack' ? 'orbstack' : 'docker';
       return (
         executable: 'brew',
-        args: ['install', '--cask', 'docker'],
-        description: 'brew install --cask docker',
+        args: ['install', '--cask', cask],
+        description: 'brew install --cask $cask',
       );
     } else {
       return (
@@ -157,7 +186,8 @@ class DockerInstallService {
   }
 
   /// Install Docker with real-time output
-  static Future<int> install(void Function(String line) onOutput) async {
+  static Future<int> install(void Function(String line) onOutput,
+      {String macOsDocker = 'docker'}) async {
     // Windows: install WSL first if needed
     if (PlatformService.isWindows) {
       final wslOk = await isWslInstalled();
@@ -168,7 +198,7 @@ class DockerInstallService {
       }
     }
 
-    final cmd = installCommand();
+    final cmd = installCommand(macOsDocker: macOsDocker);
     onOutput('[+] Running: ${cmd.description}');
     onOutput('');
 

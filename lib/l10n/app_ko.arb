@@ -330,7 +330,7 @@
   "dockerNotInstalled": "설치되지 않음",
   "dockerRunning": "실행 중",
   "dockerStopped": "중지됨",
-  "startDockerDesktop": "Docker Desktop 시작",
+  "startDockerDesktop": "Docker 시작",
   "starting": "시작 중...",
   "dockerInstall": "Docker 설치",
   "dockerInstallTitle": "Docker 설치",

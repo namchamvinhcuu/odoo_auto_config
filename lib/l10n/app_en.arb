@@ -359,7 +359,7 @@
   "dockerNotInstalled": "Not installed",
   "dockerRunning": "Running",
   "dockerStopped": "Stopped",
-  "startDockerDesktop": "Start Docker Desktop",
+  "startDockerDesktop": "Start Docker",
   "starting": "Starting...",
   "dockerInstall": "Install Docker",
   "dockerInstallTitle": "Install Docker",

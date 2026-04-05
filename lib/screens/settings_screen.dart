@@ -253,18 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _startDockerDesktop() async {
     setState(() => _startingDocker = true);
     try {
-      if (PlatformService.isWindows) {
-        await Process.run(
-          'powershell',
-          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
-          runInShell: true,
-        );
-      } else if (PlatformService.isMacOS) {
-        await Process.run('open', ['-a', 'Docker'], runInShell: true);
-      } else {
-        await Process.run('systemctl', ['--user', 'start', 'docker-desktop'],
-            runInShell: true);
-      }
+      await DockerInstallService.startDaemon();
       // Wait for daemon to become ready (retry up to 30s)
       for (var i = 0; i < 15; i++) {
         await Future.delayed(const Duration(seconds: 2));
@@ -2639,6 +2628,9 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   bool? _wslInstalled;
   final List<String> _logLines = [];
 
+  // macOS: chọn OrbStack hoặc Docker Desktop
+  String _macOsDocker = 'orbstack';
+
   // Start Docker after install
   bool _startingDocker = false;
 
@@ -2667,7 +2659,7 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
     });
     final exitCode = await DockerInstallService.install((line) {
       if (mounted) setState(() => _logLines.add(line));
-    });
+    }, macOsDocker: _macOsDocker);
     if (mounted) {
       // Check if WSL was just installed (needs restart before Docker)
       final wslJustInstalled = _logLines.any((l) => l.contains('RESTART'));
@@ -2676,7 +2668,15 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
         _needsRestart = wslJustInstalled;
         _installed = exitCode == 0 && !wslJustInstalled;
       });
-      if (_installed) widget.onInstalled();
+      if (_installed) {
+        // Lưu lựa chọn Docker runtime (macOS)
+        if (PlatformService.isMacOS) {
+          final settings = await StorageService.loadSettings();
+          settings['dockerRuntime'] = _macOsDocker;
+          await StorageService.saveSettings(settings);
+        }
+        widget.onInstalled();
+      }
     }
   }
 
@@ -2729,7 +2729,34 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
                     status: StatusType.warning,
                   ),
                 ),
-              Text(DockerInstallService.installCommand().description,
+              // macOS: chọn OrbStack hoặc Docker Desktop
+              if (PlatformService.isMacOS && !_installing && !_installed) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _dockerOptionCard(
+                        context,
+                        value: 'orbstack',
+                        title: 'OrbStack',
+                        subtitle: 'Lightweight, fast',
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: _dockerOptionCard(
+                        context,
+                        value: 'docker',
+                        title: 'Docker Desktop',
+                        subtitle: 'Official Docker app',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              Text(DockerInstallService.installCommand(
+                      macOsDocker: _macOsDocker)
+                  .description,
                   style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: AppFontSize.sm,
@@ -2782,20 +2809,53 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
     );
   }
 
+  Widget _dockerOptionCard(
+    BuildContext context, {
+    required String value,
+    required String title,
+    required String subtitle,
+  }) {
+    final selected = _macOsDocker == value;
+    return GestureDetector(
+      onTap: () => setState(() => _macOsDocker = value),
+      child: Card(
+        color: selected
+            ? Theme.of(context).colorScheme.primaryContainer
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Icon(
+                selected ? Icons.check_circle : Icons.circle_outlined,
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            fontSize: AppFontSize.sm, color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _startDocker() async {
     setState(() => _startingDocker = true);
     try {
-      if (PlatformService.isWindows) {
-        await Process.run(
-          'powershell',
-          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
-          runInShell: true,
-        );
-      } else if (PlatformService.isMacOS) {
-        await Process.run('open', ['-a', 'Docker']);
-      } else {
-        await Process.run('pkexec', ['systemctl', 'start', 'docker'], runInShell: true);
-      }
+      await DockerInstallService.startDaemon();
       setState(() {
         _logLines.add('');
         _logLines.add('[+] Docker is starting...');

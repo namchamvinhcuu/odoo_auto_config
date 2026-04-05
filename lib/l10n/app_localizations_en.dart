@@ -1014,7 +1014,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dockerStopped => 'Stopped';
 
   @override
-  String get startDockerDesktop => 'Start Docker Desktop';
+  String get startDockerDesktop => 'Start Docker';
 
   @override
   String get starting => 'Starting...';

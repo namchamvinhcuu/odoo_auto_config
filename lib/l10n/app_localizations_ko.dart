@@ -996,7 +996,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dockerStopped => '중지됨';
 
   @override
-  String get startDockerDesktop => 'Docker Desktop 시작';
+  String get startDockerDesktop => 'Docker 시작';
 
   @override
   String get starting => '시작 중...';

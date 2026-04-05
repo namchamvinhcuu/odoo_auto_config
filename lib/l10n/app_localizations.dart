@@ -1915,7 +1915,7 @@ abstract class AppLocalizations {
   /// No description provided for @startDockerDesktop.
   ///
   /// In en, this message translates to:
-  /// **'Start Docker Desktop'**
+  /// **'Start Docker'**
   String get startDockerDesktop;
 
   /// No description provided for @starting.

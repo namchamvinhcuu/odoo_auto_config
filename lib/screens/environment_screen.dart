@@ -88,18 +88,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
   Future<void> _startDockerDesktop() async {
     setState(() => _startingDocker = true);
     try {
-      if (PlatformService.isWindows) {
-        await Process.run(
-          'powershell',
-          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
-          runInShell: true,
-        );
-      } else if (PlatformService.isMacOS) {
-        await Process.run('open', ['-a', 'Docker'], runInShell: true);
-      } else {
-        await Process.run('systemctl', ['--user', 'start', 'docker-desktop'],
-            runInShell: true);
-      }
+      await DockerInstallService.startDaemon();
       for (var i = 0; i < 15; i++) {
         await Future.delayed(const Duration(seconds: 2));
         if (await DockerInstallService.isRunning()) break;
