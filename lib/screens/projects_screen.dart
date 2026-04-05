@@ -386,12 +386,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.nginxRemove),
+        title: Row(
+          children: [
+            Text(context.l10n.nginxRemove),
+            const Spacer(),
+            AppDialog.closeButton(ctx, onClose: () => Navigator.pop(ctx, false)),
+          ],
+        ),
         content: Text(context.l10n.nginxConfirmRemove(proj.name)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -444,7 +447,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(context.l10n.deleteProjectTitle),
+          title: Row(
+            children: [
+              Text(context.l10n.deleteProjectTitle),
+              const Spacer(),
+              AppDialog.closeButton(ctx, onClose: () => Navigator.pop(ctx, false)),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,9 +484,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ],
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(context.l10n.cancel)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -1252,7 +1258,13 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.importExistingProject),
+      title: Row(
+        children: [
+          Text(context.l10n.importExistingProject),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: SingleChildScrollView(
@@ -1360,9 +1372,6 @@ class _ImportProjectDialogState extends State<_ImportProjectDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed: (_projectPath.isNotEmpty &&
                   _nameController.text.isNotEmpty)
@@ -1719,6 +1728,7 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
               icon: const Icon(Icons.edit),
               tooltip: context.l10n.edit,
             ),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(
@@ -1728,19 +1738,10 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
         ),
       ),
       actions: [
-        if (_editing) ...[
-          TextButton(
-            onPressed: () => setState(() => _editing = false),
-            child: Text(context.l10n.cancel),
-          ),
+        if (_editing)
           FilledButton(
             onPressed: _nameController.text.trim().isNotEmpty ? _saveChanges : null,
             child: Text(context.l10n.save),
-          ),
-        ] else
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.close),
           ),
       ],
     );
@@ -2162,7 +2163,13 @@ class _CreateDbDialogState extends State<_CreateDbDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.createDatabase),
+      title: Row(
+        children: [
+          Text(context.l10n.createDatabase),
+          const Spacer(),
+          AppDialog.closeButton(context, onClose: _creating ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -2220,10 +2227,6 @@ class _CreateDbDialogState extends State<_CreateDbDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _creating ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
         FilledButton.icon(
           onPressed: _creating || _nameController.text.trim().isEmpty ? null : _create,
           icon: _creating
@@ -2377,7 +2380,13 @@ class _GitPullDialogState extends State<_GitPullDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.gitPullTitle(widget.projectName)),
+      title: Row(
+        children: [
+          Text(context.l10n.gitPullTitle(widget.projectName)),
+          const Spacer(),
+          AppDialog.closeButton(context, onClose: _running ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -2431,12 +2440,6 @@ class _GitPullDialogState extends State<_GitPullDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }
@@ -2689,7 +2692,13 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.gitCommitTitle(widget.projectName)),
+      title: Row(
+        children: [
+          Text(context.l10n.gitCommitTitle(widget.projectName)),
+          const Spacer(),
+          AppDialog.closeButton(context, onClose: (_running || _scanning) ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -2855,10 +2864,6 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
                   ? context.l10n.gitCommitAndPush
                   : context.l10n.gitCommitOnly,
             ),
-          ),
-        TextButton(
-          onPressed: (_running || _scanning) ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
         ),
       ],
     );
@@ -2965,7 +2970,13 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.gitSelectivePullTitle(widget.projectName)),
+      title: Row(
+        children: [
+          Text(context.l10n.gitSelectivePullTitle(widget.projectName)),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -3096,10 +3107,6 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
             icon: const Icon(Icons.sync, size: AppIconSize.md),
             label: Text(context.l10n.gitPullSelected),
           ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
       ],
     );
   }
@@ -3248,8 +3255,14 @@ class _SelectivePullLogDialogState extends State<_SelectivePullLogDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.gitSelectivePullTitle(
-          '${widget.repos.length} repos')),
+      title: Row(
+        children: [
+          Text(context.l10n.gitSelectivePullTitle(
+              '${widget.repos.length} repos')),
+          const Spacer(),
+          AppDialog.closeButton(context, onClose: _running ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -3302,12 +3315,6 @@ class _SelectivePullLogDialogState extends State<_SelectivePullLogDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }

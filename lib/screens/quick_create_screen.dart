@@ -321,6 +321,8 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
             Icon(Icons.warning_amber, color: Colors.orange, size: AppIconSize.lg),
             const SizedBox(width: AppSpacing.sm),
             Text(context.l10n.symlinkErrorTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
           ],
         ),
         content: SizedBox(
@@ -355,12 +357,6 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
             ],
           ),
         ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.l10n.close),
-          ),
-        ],
       ),
     );
   }
@@ -400,10 +396,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         Text(context.l10n.quickCreateTitle,
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context, _done),
-                          icon: const Icon(Icons.close),
-                        ),
+                        AppDialog.closeButton(context, onClose: () => Navigator.pop(context, _done)),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -564,7 +557,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                               FilledButton.tonalIcon(
                                 onPressed: _setupNginx,
                                 icon: const Icon(Icons.dns),
-                                label: const Text('Setup Nginx'),
+                                label: Text(context.l10n.setupNginx),
                               ),
                             ],
                           ],

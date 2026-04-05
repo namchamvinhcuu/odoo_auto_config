@@ -2865,6 +2865,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quit'**
   String get trayQuit;
+
+  /// No description provided for @gitBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Branches'**
+  String get gitBranches;
+
+  /// No description provided for @gitBranchLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get gitBranchLocal;
+
+  /// No description provided for @gitBranchRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote'**
+  String get gitBranchRemote;
+
+  /// No description provided for @gitBranchPull.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull'**
+  String get gitBranchPull;
+
+  /// No description provided for @gitBranchCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit'**
+  String get gitBranchCommit;
+
+  /// No description provided for @gitBranchPR.
+  ///
+  /// In en, this message translates to:
+  /// **'PR'**
+  String get gitBranchPR;
+
+  /// No description provided for @gitBranchCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get gitBranchCreate;
+
+  /// No description provided for @gitBranchCleanStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean stale'**
+  String get gitBranchCleanStale;
+
+  /// No description provided for @gitBranchPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish {branch}'**
+  String gitBranchPublish(String branch);
+
+  /// No description provided for @gitBranchPullBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull {branch}'**
+  String gitBranchPullBranch(String branch);
+
+  /// No description provided for @gitBranchMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get gitBranchMerge;
+
+  /// No description provided for @gitBranchDeleteBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete branch'**
+  String get gitBranchDeleteBranch;
+
+  /// No description provided for @gitBranchChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} changed'**
+  String gitBranchChanged(int count);
+
+  /// No description provided for @gitBranchBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} behind'**
+  String gitBranchBehind(int count);
+
+  /// No description provided for @gitBranchCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Branch'**
+  String get gitBranchCreateTitle;
+
+  /// No description provided for @gitBranchNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch name'**
+  String get gitBranchNameLabel;
+
+  /// No description provided for @gitBranchNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'feature/my-feature'**
+  String get gitBranchNameHint;
+
+  /// No description provided for @gitBranchDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Branch'**
+  String get gitBranchDeleteTitle;
+
+  /// No description provided for @gitBranchDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete local branch \"{branch}\"?'**
+  String gitBranchDeleteConfirm(String branch);
+
+  /// No description provided for @gitBranchForceDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Delete?'**
+  String get gitBranchForceDeleteTitle;
+
+  /// No description provided for @gitBranchForceDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch \"{branch}\" is not fully merged. Force delete?'**
+  String gitBranchForceDeleteConfirm(String branch);
+
+  /// No description provided for @gitBranchForceDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Delete'**
+  String get gitBranchForceDelete;
+
+  /// No description provided for @gitBranchStaleBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale Branches'**
+  String get gitBranchStaleBranches;
+
+  /// No description provided for @gitBranchStaleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'These local branches no longer exist on remote:'**
+  String get gitBranchStaleDesc;
+
+  /// No description provided for @gitBranchDeleteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} branch(es)'**
+  String gitBranchDeleteCount(int count);
+
+  /// No description provided for @gitMergeInto.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge {source} into {target}'**
+  String gitMergeInto(String source, String target);
+
+  /// No description provided for @gitMergeIntoCurrentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Update {current} with code from {source}'**
+  String gitMergeIntoCurrentDesc(String current, String source);
+
+  /// No description provided for @gitMergeIntoTargetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Push code from {current} to {target}'**
+  String gitMergeIntoTargetDesc(String current, String target);
+
+  /// No description provided for @prTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull Request — {name}'**
+  String prTitle(String name);
+
+  /// No description provided for @prGhNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub CLI (gh) is not installed.'**
+  String get prGhNotInstalled;
+
+  /// No description provided for @prGhInstallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)'**
+  String get prGhInstallHint;
+
+  /// No description provided for @prBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base:'**
+  String get prBase;
+
+  /// No description provided for @prTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get prTitleLabel;
+
+  /// No description provided for @prDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get prDescriptionLabel;
+
+  /// No description provided for @prCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Pull Request'**
+  String get prCreateButton;
+
+  /// No description provided for @prCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get prCreated;
+
+  /// No description provided for @prViewInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'View in Browser'**
+  String get prViewInBrowser;
+
+  /// No description provided for @prUncommittedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncommitted changes'**
+  String get prUncommittedTitle;
+
+  /// No description provided for @prUncommittedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} file(s) not committed.\nThese changes will NOT be included in the PR.\n\nCommit first, or continue anyway?'**
+  String prUncommittedDesc(int count);
+
+  /// No description provided for @prCommitFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Commit first'**
+  String get prCommitFirst;
+
+  /// No description provided for @prContinueAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get prContinueAnyway;
+
+  /// No description provided for @setupNginx.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup Nginx'**
+  String get setupNginx;
+
+  /// No description provided for @push.
+  ///
+  /// In en, this message translates to:
+  /// **'Push'**
+  String get push;
 }
 
 class _AppLocalizationsDelegate
