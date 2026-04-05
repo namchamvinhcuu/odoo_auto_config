@@ -11,6 +11,7 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - **file_picker** 8.0.0 - chọn thư mục/file (macOS/Linux; Windows dùng native PowerShell dialog)
 - **path** 1.9.0 - xử lý đường dẫn cross-platform
 - **window_manager** 0.5.1 - control window size, min size, center, animation resize
+- **system_tray** 2.0.3 - system tray icon, menu, minimize to tray
 - **msix** 3.16.13 - build MSIX installer cho Windows
 - **flutter_launcher_icons** 0.14.4 - generate app icon đa nền tảng
 
@@ -48,6 +49,7 @@ lib/
 │   ├── theme_service.dart       # Theme mode + accent color (ChangeNotifier)
 │   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
 │   ├── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
+│   ├── tray_service.dart        # System tray: init, show/hide, close behavior setting
 │   └── update_service.dart      # Auto-update: check GitHub releases, download, install
 ├── screens/                     # UI screens (StatefulWidget)
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
@@ -123,6 +125,20 @@ lib/
 - Banner chỉ mất khi Docker daemon thực sự running
 - `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
   (VD: bấm Setup Nginx khi chưa config → tự động chuyển sang Settings > Nginx tab)
+
+## Tính năng System Tray
+- **Package**: `system_tray 2.0.3` — macOS, Windows, Linux
+- **Icon**: `assets/tray_icon.png` (512x512, package tự resize), `.ico` cho Windows
+  `title: ''` — chỉ hiện icon, KHÔNG hiện text cạnh icon
+- **Init**: luôn init khi app khởi động (main.dart), tray icon luôn hiện
+- **Close behavior**: setting trong Settings > Theme tab
+  `'exit'` (mặc định): đóng cửa sổ = thoát app
+  `'tray'`: đóng cửa sổ = ẩn vào tray, double-click tray icon để mở lại
+- **Events**: click/double-click → show, right-click → menu (Show / Quit)
+- **WindowListener**: `onWindowClose` trong HomeScreen, dùng `windowManager.setPreventClose(true)`
+- **macOS**: không cần `setSkipTaskbar`, chỉ `hide()/show()`
+- **Windows/Linux**: `setSkipTaskbar(true/false)` khi hide/show
+- **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
 
 ## Tính năng Auto-Update
 - **Phát hiện version**: Đọc từ `lib/generated/version.dart` (compiled Dart const)

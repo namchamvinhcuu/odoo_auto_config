@@ -14,15 +14,12 @@ class TrayService {
   }) async {
     if (_initialized) return;
 
-    String iconPath;
-    if (Platform.isWindows) {
-      iconPath = 'assets/tray_icon.png';
-    } else {
-      iconPath = 'assets/tray_icon.png';
-    }
+    final iconPath = Platform.isWindows
+        ? 'assets/tray_icon.ico'
+        : 'assets/tray_icon.png';
 
     await _tray.initSystemTray(
-      title: 'Workspace Configuration',
+      title: '',
       iconPath: iconPath,
       toolTip: 'Workspace Configuration',
     );
