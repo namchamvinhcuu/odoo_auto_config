@@ -1493,22 +1493,22 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get workspaceViewPullAll => 'Pull tất cả';
+  String get workspaceViewPullAll => 'Pull All';
 
   @override
-  String get workspaceViewPullSelected => 'Pull đã chọn';
+  String get workspaceViewPullSelected => 'Pull Selected';
 
   @override
   String get workspaceViewCommitPush => 'Commit & Push';
 
   @override
-  String get workspaceViewCommitOnly => 'Chỉ Commit';
+  String get workspaceViewCommitOnly => 'Commit Only';
 
   @override
-  String get workspaceViewSwitchBranch => 'Chuyển nhánh';
+  String get workspaceViewSwitchBranch => 'Switch Branch';
 
   @override
-  String get workspaceViewPushSelected => 'Push đã chọn';
+  String get workspaceViewPushSelected => 'Push Selected';
 
   @override
   String workspaceViewChanged(int count) {
@@ -1557,4 +1557,159 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get trayQuit => 'Thoát';
+
+  @override
+  String get gitBranches => 'Git Branches';
+
+  @override
+  String get gitBranchLocal => 'Local';
+
+  @override
+  String get gitBranchRemote => 'Remote';
+
+  @override
+  String get gitBranchPull => 'Pull';
+
+  @override
+  String get gitBranchCommit => 'Commit';
+
+  @override
+  String get gitBranchPR => 'PR';
+
+  @override
+  String get gitBranchCreate => 'Create';
+
+  @override
+  String get gitBranchCleanStale => 'Clean stale';
+
+  @override
+  String gitBranchPublish(String branch) {
+    return 'Publish $branch';
+  }
+
+  @override
+  String gitBranchPullBranch(String branch) {
+    return 'Pull $branch';
+  }
+
+  @override
+  String get gitBranchMerge => 'Merge';
+
+  @override
+  String get gitBranchDeleteBranch => 'Delete branch';
+
+  @override
+  String gitBranchChanged(int count) {
+    return '$count changed';
+  }
+
+  @override
+  String gitBranchBehind(int count) {
+    return '$count behind';
+  }
+
+  @override
+  String get gitBranchCreateTitle => 'Create Branch';
+
+  @override
+  String get gitBranchNameLabel => 'Branch name';
+
+  @override
+  String get gitBranchNameHint => 'feature/my-feature';
+
+  @override
+  String get gitBranchDeleteTitle => 'Delete Branch';
+
+  @override
+  String gitBranchDeleteConfirm(String branch) {
+    return 'Delete local branch \"$branch\"?';
+  }
+
+  @override
+  String get gitBranchForceDeleteTitle => 'Force Delete?';
+
+  @override
+  String gitBranchForceDeleteConfirm(String branch) {
+    return 'Branch \"$branch\" is not fully merged. Force delete?';
+  }
+
+  @override
+  String get gitBranchForceDelete => 'Force Delete';
+
+  @override
+  String get gitBranchStaleBranches => 'Stale Branches';
+
+  @override
+  String get gitBranchStaleDesc =>
+      'These local branches no longer exist on remote:';
+
+  @override
+  String gitBranchDeleteCount(int count) {
+    return 'Delete $count branch(es)';
+  }
+
+  @override
+  String gitMergeInto(String source, String target) {
+    return 'Merge $source into $target';
+  }
+
+  @override
+  String gitMergeIntoCurrentDesc(String current, String source) {
+    return 'Cập nhật $current với code từ $source';
+  }
+
+  @override
+  String gitMergeIntoTargetDesc(String current, String target) {
+    return 'Đẩy code $current sang $target';
+  }
+
+  @override
+  String prTitle(String name) {
+    return 'Pull Request — $name';
+  }
+
+  @override
+  String get prGhNotInstalled => 'GitHub CLI (gh) is not installed.';
+
+  @override
+  String get prGhInstallHint =>
+      'Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)';
+
+  @override
+  String get prBase => 'Base:';
+
+  @override
+  String get prTitleLabel => 'Title';
+
+  @override
+  String get prDescriptionLabel => 'Description (optional)';
+
+  @override
+  String get prCreateButton => 'Create Pull Request';
+
+  @override
+  String get prCreated => 'Created';
+
+  @override
+  String get prViewInBrowser => 'View in Browser';
+
+  @override
+  String get prUncommittedTitle => 'Uncommitted changes';
+
+  @override
+  String prUncommittedDesc(int count) {
+    return '$count file(s) not committed.\nThese changes will NOT be included in the PR.\n\nCommit first, or continue anyway?';
+  }
+
+  @override
+  String get prCommitFirst => 'Commit first';
+
+  @override
+  String get prContinueAnyway => 'Continue anyway';
+
+  @override
+  String get setupNginx => 'Setup Nginx';
+
+  @override
+  String get push => 'Push';
 }

@@ -616,15 +616,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.nginxKillProcess),
+        title: Row(children: [
+          Text(context.l10n.nginxKillProcess),
+          const Spacer(),
+          AppDialog.closeButton(ctx, onClose: () => Navigator.pop(ctx, false)),
+        ]),
         content: Text(context.l10n.nginxKillConfirm(
             conflict.process ?? 'unknown',
             '${conflict.pid}',
             conflict.port)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -771,7 +772,11 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(context.l10n.nginxDeleteTitle),
+          title: Row(children: [
+            Text(context.l10n.nginxDeleteTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx, onClose: () => Navigator.pop(ctx, false)),
+          ]),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -800,9 +805,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
           actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(context.l10n.cancel)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -1956,7 +1958,11 @@ class _GitAccountDialogState extends State<_GitAccountDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing != null ? 'Edit Account' : 'Add Git Account'),
+      title: Row(children: [
+        Text(widget.existing != null ? 'Edit Account' : 'Add Git Account'),
+        const Spacer(),
+        AppDialog.closeButton(context),
+      ]),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: Column(
@@ -2014,10 +2020,6 @@ class _GitAccountDialogState extends State<_GitAccountDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
         FilledButton(
           onPressed: _canSave ? _save : null,
           child: Text(context.l10n.save),
@@ -2088,7 +2090,12 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.installPythonTitle),
+      title: Row(children: [
+        Text(context.l10n.installPythonTitle),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _installing ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: 520,
         child: Column(
@@ -2140,9 +2147,6 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: _installing ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
         if (_pmAvailable == true)
           FilledButton.icon(
             onPressed:
@@ -2209,7 +2213,12 @@ class _PythonUninstallDialogState extends State<_PythonUninstallDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.uninstallPython),
+      title: Row(children: [
+        Text(context.l10n.uninstallPython),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _uninstalling ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: 520,
         child: Column(
@@ -2239,11 +2248,6 @@ class _PythonUninstallDialogState extends State<_PythonUninstallDialog> {
         ),
       ),
       actions: [
-        if (!_uninstalled)
-          TextButton(
-            onPressed: _uninstalling ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.cancel),
-          ),
         if (_uninstalled)
           FilledButton.icon(
             onPressed: () => Navigator.pop(context),
@@ -2371,7 +2375,12 @@ class _PgSetupDialogState extends State<_PgSetupDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.postgresSetupTitle),
+      title: Row(children: [
+        Text(context.l10n.postgresSetupTitle),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _creating ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: SingleChildScrollView(
@@ -2460,10 +2469,6 @@ class _PgSetupDialogState extends State<_PgSetupDialog> {
         ),
       ),
       actions: [
-        if (!_created)
-          TextButton(
-              onPressed: _creating ? null : () => Navigator.pop(context),
-              child: Text(context.l10n.close)),
         if (!_created)
           FilledButton.icon(
             onPressed: (_creating || !_isValid) ? null : _create,
@@ -2557,7 +2562,12 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.postgresInstallTitle),
+      title: Row(children: [
+        Text(context.l10n.postgresInstallTitle),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _installing ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: 520,
         child: Column(
@@ -2617,10 +2627,6 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
         ),
       ),
       actions: [
-        if (!_installed)
-          TextButton(
-              onPressed: _installing ? null : () => Navigator.pop(context),
-              child: Text(context.l10n.close)),
         if (_pmAvailable == true)
           _installed
               ? FilledButton.icon(
@@ -2730,7 +2736,12 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.dockerInstallTitle),
+      title: Row(children: [
+        Text(context.l10n.dockerInstallTitle),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _installing ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: 520,
         child: Column(
@@ -2805,9 +2816,6 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: _installing ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.close)),
         if (_needsRestart)
           FilledButton.icon(
             onPressed: _restart,
@@ -3017,7 +3025,12 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.nginxInitTitle),
+      title: Row(children: [
+        Text(context.l10n.nginxInitTitle),
+        const Spacer(),
+        AppDialog.closeButton(context,
+            onClose: _creating ? null : () => Navigator.pop(context)),
+      ]),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: Column(
@@ -3137,10 +3150,6 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
         ),
       ),
       actions: [
-        if (!_created)
-          TextButton(
-              onPressed: _creating ? null : () => Navigator.pop(context),
-              child: Text(context.l10n.close)),
         if (_mkcertAvailable == true && !_created)
           FilledButton.icon(
             onPressed: (_creating || !_isValid) ? null : _create,

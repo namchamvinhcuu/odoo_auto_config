@@ -391,13 +391,15 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.nginxRemove),
+        title: Row(
+          children: [
+            Text(context.l10n.nginxRemove),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: Text(context.l10n.nginxConfirmRemove(ws.name)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -448,13 +450,15 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.wsDeleteTitle),
+        title: Row(
+          children: [
+            Text(context.l10n.wsDeleteTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: Text(context.l10n.wsDeleteConfirm(workspace.name)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -1423,8 +1427,14 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        widget.existing != null ? context.l10n.wsEdit : context.l10n.wsImport,
+      title: Row(
+        children: [
+          Text(
+            widget.existing != null ? context.l10n.wsEdit : context.l10n.wsImport,
+          ),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
       ),
       content: SizedBox(
         width: AppDialog.widthMd,
@@ -1525,10 +1535,6 @@ class _ImportWorkspaceDialogState extends State<_ImportWorkspaceDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
         FilledButton(
           onPressed:
               (_workspacePath.isNotEmpty && _nameController.text.isNotEmpty)
@@ -1768,10 +1774,21 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(
-        widget.targetBranch != null
-            ? 'Pull ${widget.targetBranch} — ${widget.projectName}'
-            : context.l10n.gitPullTitle(widget.projectName),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              widget.targetBranch != null
+                  ? 'Pull ${widget.targetBranch} — ${widget.projectName}'
+                  : context.l10n.gitPullTitle(widget.projectName),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
@@ -1829,12 +1846,6 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }
@@ -2119,7 +2130,16 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
         _changedFiles.every((f) => f['selected'] == true);
 
     return AlertDialog(
-      title: Text(context.l10n.gitCommitTitle(widget.projectName)),
+      title: Row(
+        children: [
+          Text(context.l10n.gitCommitTitle(widget.projectName)),
+          const Spacer(),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -2334,12 +2354,6 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }
@@ -2484,17 +2498,17 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
       final proceed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Uncommitted changes'),
+          title: Row(
+            children: [
+              Text(context.l10n.prUncommittedTitle),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
           content: Text(
-            '$uncommitted file(s) not committed.\n'
-            'These changes will NOT be included in the PR.\n\n'
-            'Commit first, or continue anyway?',
+            ctx.l10n.prUncommittedDesc(uncommitted),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
             FilledButton.tonalIcon(
               onPressed: () {
                 Navigator.pop(ctx, false);
@@ -2508,11 +2522,11 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
                 );
               },
               icon: const Icon(Icons.commit),
-              label: const Text('Commit first'),
+              label: Text(ctx.l10n.prCommitFirst),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Continue anyway'),
+              child: Text(ctx.l10n.prContinueAnyway),
             ),
           ],
         ),
@@ -2656,7 +2670,16 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Pull Request — ${widget.projectName}'),
+      title: Row(
+        children: [
+          Text(context.l10n.prTitle(widget.projectName)),
+          const Spacer(),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -2670,15 +2693,13 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
                   const Icon(Icons.warning_amber,
                       color: Colors.orange, size: 48),
                   const SizedBox(height: AppSpacing.md),
-                  const Text(
-                    'GitHub CLI (gh) is not installed.',
-                    style: TextStyle(fontSize: AppFontSize.xl),
+                  Text(
+                    context.l10n.prGhNotInstalled,
+                    style: const TextStyle(fontSize: AppFontSize.xl),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Install: brew install gh (macOS)\n'
-                    '         winget install GitHub.cli (Windows)\n'
-                    '         apt install gh (Linux)',
+                    context.l10n.prGhInstallHint,
                     style: TextStyle(
                       fontFamily: 'monospace',
                       fontSize: AppFontSize.md,
@@ -2691,7 +2712,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
               // Base branch
               Row(
                 children: [
-                  Text('Base: ',
+                  Text(context.l10n.prBase,
                       style: TextStyle(color: Colors.grey.shade400)),
                   const SizedBox(width: AppSpacing.sm),
                   DropdownButton<String>(
@@ -2726,8 +2747,8 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
               // Title
               TextField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
+                decoration: InputDecoration(
+                  labelText: context.l10n.prTitleLabel,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -2737,8 +2758,8 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
               // Body
               TextField(
                 controller: _bodyController,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.prDescriptionLabel,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -2764,14 +2785,14 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
                                 strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.send),
-                    label: const Text('Create Pull Request'),
+                    label: Text(context.l10n.prCreateButton),
                   ),
                   if (_done) ...[
                     const SizedBox(width: AppSpacing.md),
                     const Icon(Icons.check_circle, color: Colors.green),
                     const SizedBox(width: AppSpacing.xs),
-                    const Text('Created',
-                        style: TextStyle(color: Colors.green)),
+                    Text(context.l10n.prCreated,
+                        style: const TextStyle(color: Colors.green)),
                     if (_prUrl != null) ...[
                       const SizedBox(width: AppSpacing.md),
                       FilledButton.tonalIcon(
@@ -2786,7 +2807,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
                         ),
                         icon: const Icon(Icons.open_in_new,
                             size: AppIconSize.md),
-                        label: const Text('View in Browser'),
+                        label: Text(context.l10n.prViewInBrowser),
                       ),
                     ],
                   ],
@@ -2829,12 +2850,6 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }
@@ -3039,13 +3054,19 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Create Branch'),
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchCreateTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Branch name',
-            hintText: 'feature/my-feature',
+          decoration: InputDecoration(
+            labelText: ctx.l10n.gitBranchNameLabel,
+            hintText: ctx.l10n.gitBranchNameHint,
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -3054,16 +3075,12 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
           },
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.l10n.cancel),
-          ),
           FilledButton(
             onPressed: () {
               final v = controller.text.trim();
               if (v.isNotEmpty) Navigator.pop(ctx, v);
             },
-            child: const Text('Create'),
+            child: Text(ctx.l10n.gitBranchCreate),
           ),
         ],
       ),
@@ -3098,17 +3115,19 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Branch'),
-        content: Text('Delete local branch "$branch"?'),
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchDeleteTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
+        content: Text(ctx.l10n.gitBranchDeleteConfirm(branch)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.cancel),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -3135,19 +3154,21 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
         final force = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Force Delete?'),
+            title: Row(
+              children: [
+                Text(ctx.l10n.gitBranchForceDeleteTitle),
+                const Spacer(),
+                AppDialog.closeButton(ctx),
+              ],
+            ),
             content: Text(
-              'Branch "$branch" is not fully merged. Force delete?',
+              ctx.l10n.gitBranchForceDeleteConfirm(branch),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(context.l10n.cancel),
-              ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Force Delete'),
+                child: Text(ctx.l10n.gitBranchForceDelete),
               ),
             ],
           ),
@@ -3189,7 +3210,13 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     final direction = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Merge'),
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchMerge),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -3218,7 +3245,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   ],
                 ),
               ),
-              subtitle: Text('Cập nhật $_current với code từ $branch'),
+              subtitle: Text(ctx.l10n.gitMergeIntoCurrentDesc(_current, branch)),
               onTap: () => Navigator.pop(ctx, 'into_current'),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.mediumBorderRadius,
@@ -3250,7 +3277,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   ],
                 ),
               ),
-              subtitle: Text('Đẩy code $_current sang $branch'),
+              subtitle: Text(ctx.l10n.gitMergeIntoTargetDesc(_current, branch)),
               onTap: () => Navigator.pop(ctx, 'into_target'),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.mediumBorderRadius,
@@ -3258,12 +3285,6 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(context.l10n.cancel),
-          ),
-        ],
       ),
     );
     if (direction == null || !mounted) return;
@@ -3482,7 +3503,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              'Local',
+              context.l10n.gitBranchLocal,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey.shade500,
@@ -3510,7 +3531,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              'Remote',
+              context.l10n.gitBranchRemote,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey.shade500,
@@ -3590,7 +3611,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   minWidth: AppIconSize.xl,
                   minHeight: AppIconSize.xl,
                 ),
-                tooltip: 'Publish $branch',
+                tooltip: context.l10n.gitBranchPublish(branch),
               ),
             if (!isRemote && !isCurrent) ...[
               if (!_remote.contains(branch))
@@ -3606,7 +3627,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                     minWidth: AppIconSize.xl,
                     minHeight: AppIconSize.xl,
                   ),
-                  tooltip: 'Publish $branch',
+                  tooltip: context.l10n.gitBranchPublish(branch),
                 ),
               IconButton(
                 onPressed: _switching ? null : () => _pullBranch(branch),
@@ -3620,7 +3641,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   minWidth: AppIconSize.xl,
                   minHeight: AppIconSize.xl,
                 ),
-                tooltip: 'Pull $branch',
+                tooltip: context.l10n.gitBranchPullBranch(branch),
               ),
               IconButton(
                 onPressed: _switching ? null : () => _mergeBranch(branch),
@@ -3634,7 +3655,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                   minWidth: AppIconSize.xl,
                   minHeight: AppIconSize.xl,
                 ),
-                tooltip: 'Merge',
+                tooltip: context.l10n.gitBranchMerge,
               ),
               if (branch != 'main' && branch != 'master')
                 IconButton(
@@ -3649,7 +3670,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                     minWidth: AppIconSize.xl,
                     minHeight: 24,
                   ),
-                  tooltip: 'Delete branch',
+                  tooltip: context.l10n.gitBranchDeleteBranch,
                 ),
             ],
           ],
@@ -3663,7 +3684,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const Text('Git Branches'),
+          Text(context.l10n.gitBranches),
           if (_current.isNotEmpty) ...[
             const SizedBox(width: AppSpacing.sm),
             Chip(
@@ -3689,9 +3710,11 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
           TextButton.icon(
             onPressed: _switching ? null : _pruneCheck,
             icon: const Icon(Icons.cleaning_services, size: AppIconSize.md),
-            label: const Text('Clean stale'),
+            label: Text(context.l10n.gitBranchCleanStale),
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
           ),
+          const Spacer(),
+          AppDialog.closeButton(context),
         ],
       ),
       content: Builder(
@@ -3723,7 +3746,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                               }
                             },
                       icon: const Icon(Icons.download, size: AppIconSize.md),
-                      label: const Text('Pull'),
+                      label: Text(context.l10n.gitBranchPull),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.tonalIcon(
@@ -3743,7 +3766,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                               }
                             },
                       icon: const Icon(Icons.commit, size: AppIconSize.md),
-                      label: const Text('Commit'),
+                      label: Text(context.l10n.gitBranchCommit),
                     ),
                     if (_current != 'main' &&
                         _current != 'master') ...[
@@ -3768,14 +3791,14 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                               },
                         icon: const Icon(Icons.merge_type,
                             size: AppIconSize.md),
-                        label: const Text('PR'),
+                        label: Text(context.l10n.gitBranchPR),
                       ),
                     ],
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.icon(
                       onPressed: _switching ? null : _createBranch,
                       icon: const Icon(Icons.add, size: AppIconSize.md),
-                      label: const Text('Create'),
+                      label: Text(context.l10n.gitBranchCreate),
                     ),
                   ],
                 ),
@@ -3792,7 +3815,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                             color: Colors.orange,
                           ),
                           label: Text(
-                            '$_changedFiles changed',
+                            context.l10n.gitBranchChanged(_changedFiles),
                             style: const TextStyle(color: Colors.orange),
                           ),
                           backgroundColor: Colors.orange.withValues(alpha: 0.1),
@@ -3808,7 +3831,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                             color: Colors.cyan,
                           ),
                           label: Text(
-                            '$_behindRemote behind',
+                            context.l10n.gitBranchBehind(_behindRemote),
                             style: const TextStyle(color: Colors.cyan),
                           ),
                           backgroundColor: Colors.cyan.withValues(alpha: 0.1),
@@ -3874,12 +3897,6 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
           );
         },
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }
@@ -3906,7 +3923,13 @@ class _PruneDialogState extends State<_PruneDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Stale Branches'),
+      title: Row(
+        children: [
+          Text(context.l10n.gitBranchStaleBranches),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthMd,
         child: Column(
@@ -3914,7 +3937,7 @@ class _PruneDialogState extends State<_PruneDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'These local branches no longer exist on remote:',
+              context.l10n.gitBranchStaleDesc,
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: AppFontSize.md,
@@ -3942,15 +3965,11 @@ class _PruneDialogState extends State<_PruneDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
         if (_selected.isNotEmpty)
           FilledButton(
             onPressed: () => Navigator.pop(context, _selected.toList()),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Delete ${_selected.length} branch(es)'),
+            child: Text(context.l10n.gitBranchDeleteCount(_selected.length)),
           ),
       ],
     );

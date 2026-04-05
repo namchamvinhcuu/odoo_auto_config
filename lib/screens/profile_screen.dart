@@ -60,12 +60,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.deleteProfileTitle),
+        title: Row(
+          children: [
+            Text(context.l10n.deleteProfileTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
         content: Text(context.l10n.deleteProfileConfirm(profile.name)),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.cancel)),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(context.l10n.delete)),
@@ -330,7 +333,13 @@ class _ProfileDialogState extends State<_ProfileDialog> {
     final isEdit = widget.profile != null;
 
     return AlertDialog(
-      title: Text(isEdit ? context.l10n.editProfile : context.l10n.newProfile),
+      title: Row(
+        children: [
+          Text(isEdit ? context.l10n.editProfile : context.l10n.newProfile),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthXl,
         child: SingleChildScrollView(
@@ -563,9 +572,6 @@ class _ProfileDialogState extends State<_ProfileDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed:
               (_nameController.text.isNotEmpty &&
@@ -766,7 +772,14 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.cloneOdooTitle),
+      title: Row(
+        children: [
+          Text(context.l10n.cloneOdooTitle),
+          const Spacer(),
+          AppDialog.closeButton(context,
+              onClose: _cloning ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: 560,
         child: Column(
@@ -848,11 +861,6 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
         ),
       ),
       actions: [
-        if (!_cloned)
-          TextButton(
-            onPressed: _cloning ? null : () => Navigator.pop(context),
-            child: Text(context.l10n.cancel),
-          ),
         if (_cloned)
           FilledButton.icon(
             onPressed: () => Navigator.pop(context),

@@ -281,18 +281,18 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          icon: const Icon(Icons.check_circle, color: Colors.grey,
-              size: AppIconSize.xxl),
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.grey,
+                  size: AppIconSize.xxl),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
           content: Text(
             context.l10n.gitCommitNoChanges,
             textAlign: TextAlign.center,
           ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(context.l10n.close),
-            ),
-          ],
         ),
       );
       return;
@@ -412,11 +412,22 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           Expanded(
             child: Text(context.l10n.workspaceViewTitle(widget.projectName)),
           ),
+          const Spacer(),
           IconButton(
             onPressed: _loadPinnedRepos,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.teal,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+              padding: EdgeInsets.zero,
+            ),
             tooltip: context.l10n.refresh,
           ),
+          const SizedBox(width: AppSpacing.sm),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(
@@ -435,12 +446,6 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 
@@ -707,7 +712,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
               ),
               _repoActionButton(
                 icon: Icons.upload,
-                tooltip: 'Push',
+                tooltip: context.l10n.push,
                 onPressed: repo.aheadCount > 0
                     ? () => _pushSingle(repo)
                     : null,
@@ -795,7 +800,13 @@ class _BranchPickerDialogState extends State<_BranchPickerDialog> {
             .toList();
 
     return AlertDialog(
-      title: Text(context.l10n.workspaceViewSwitchBranch),
+      title: Row(
+        children: [
+          Text(context.l10n.workspaceViewSwitchBranch),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthSm,
         height: AppDialog.heightMd,
@@ -844,10 +855,6 @@ class _BranchPickerDialogState extends State<_BranchPickerDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(context.l10n.cancel),
-        ),
         if (widget.controller.text.trim().isNotEmpty)
           FilledButton(
             onPressed: () =>
@@ -1034,8 +1041,16 @@ class _WorkspaceCommitDialogState extends State<_WorkspaceCommitDialog> {
         !_running && _messageController.text.trim().isNotEmpty;
 
     return AlertDialog(
-      title: Text(context.l10n.gitCommitTitle(
-          '${widget.repos.length} repos')),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(context.l10n.gitCommitTitle(
+                '${widget.repos.length} repos')),
+          ),
+          AppDialog.closeButton(context,
+              onClose: _running ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -1140,10 +1155,6 @@ class _WorkspaceCommitDialogState extends State<_WorkspaceCommitDialog> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
         FilledButton.icon(
           onPressed: canCommit ? _commit : null,
           icon: const Icon(Icons.check, size: AppIconSize.md),
@@ -1355,7 +1366,13 @@ class _GitActionDialogState extends State<_GitActionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.title),
+      title: Row(
+        children: [
+          Expanded(child: Text(widget.title)),
+          AppDialog.closeButton(context,
+              onClose: _running ? null : () => Navigator.pop(context)),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthLg,
         child: Column(
@@ -1408,12 +1425,6 @@ class _GitActionDialogState extends State<_GitActionDialog> {
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
-          child: Text(context.l10n.close),
-        ),
-      ],
     );
   }
 }

@@ -102,7 +102,13 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(context.l10n.nginxSetup),
+      title: Row(
+        children: [
+          Text(context.l10n.nginxSetup),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
       content: SizedBox(
         width: AppDialog.widthSm,
         child: Column(
@@ -151,9 +157,6 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
         ),
       ),
       actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.cancel)),
         FilledButton(
           onPressed: _isValid ? _submit : null,
           child: Text(context.l10n.nginxSetup),
