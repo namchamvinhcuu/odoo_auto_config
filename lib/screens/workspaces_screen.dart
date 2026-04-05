@@ -2586,13 +2586,30 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen((line) {
-          if (mounted) _addLine(line);
+          if (mounted) {
+            _addLine(line);
+            // Capture PR URL from "already exists" error
+            final urlMatch =
+                RegExp(r'https://\S+').firstMatch(line);
+            if (urlMatch != null) {
+              setState(() => _prUrl = urlMatch.group(0));
+            }
+          }
         });
     final prExit = await pr.exitCode;
 
     if (!mounted) return;
     if (prExit == 0) {
       _addLine('\x1B[0;32m[+] Pull request created!\x1B[0m');
+      setState(() {
+        _done = true;
+        _running = false;
+      });
+    } else if (_prUrl != null) {
+      // PR already exists — push succeeded, just show the existing PR
+      _addLine(
+        '\x1B[0;33m[~] PR already exists. New commits have been pushed.\x1B[0m',
+      );
       setState(() {
         _done = true;
         _running = false;
