@@ -2963,7 +2963,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        ..._local.map((b) => _branchTile(b)),
+        ..._buildBranchListWithDivider(_local, isRemote: false),
       ],
     );
   }
@@ -2991,9 +2991,25 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        ..._remote.map((b) => _branchTile(b, isRemote: true)),
+        ..._buildBranchListWithDivider(_remote, isRemote: true),
       ],
     );
+  }
+
+  List<Widget> _buildBranchListWithDivider(
+    List<String> branches, {
+    bool isRemote = false,
+  }) {
+    final mainBranches =
+        branches.where((b) => b == 'main' || b == 'master').toList();
+    final otherBranches =
+        branches.where((b) => b != 'main' && b != 'master').toList();
+    return [
+      ...otherBranches.map((b) => _branchTile(b, isRemote: isRemote)),
+      if (otherBranches.isNotEmpty && mainBranches.isNotEmpty)
+        const Divider(height: AppSpacing.md),
+      ...mainBranches.map((b) => _branchTile(b, isRemote: isRemote)),
+    ];
   }
 
   Widget _branchTile(String branch, {bool isRemote = false}) {
@@ -3130,8 +3146,8 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
               children: [
                 // Action bar
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Spacer(),
                     FilledButton.tonalIcon(
                       onPressed: _switching
                           ? null
