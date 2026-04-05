@@ -706,9 +706,9 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   int _gridCrossAxisCount(double width) {
-    if (width >= 1100) return 5;
-    if (width >= 800) return 4;
-    return 3;
+    if (width >= 1100) return 4;
+    if (width >= 800) return 3;
+    return 2;
   }
 
   Widget _buildGridView() {
@@ -718,7 +718,6 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
         final cellWidth =
             (constraints.maxWidth - (columns - 1) * AppSpacing.sm) / columns;
         final nameSize = cellWidth >= 200 ? AppFontSize.xl : AppFontSize.lg;
-        final typeSize = cellWidth >= 200 ? AppFontSize.md : AppFontSize.sm;
         final btnSize = cellWidth * 0.12;
         final btnBox = cellWidth * 0.18;
 
@@ -749,77 +748,31 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Top row: branch (left) + star (right)
+                        // Top row: type (left) + star (right)
                         Stack(
                           children: [
-                            if (_branches.containsKey(ws.path))
+                            if (ws.type.isNotEmpty)
                               Align(
                                 alignment: Alignment.topLeft,
-                                child: InkWell(
-                                  onTap: () => _switchBranch(ws),
-                                  mouseCursor: SystemMouseCursors.click,
-                                  borderRadius: AppRadius.smallBorderRadius,
-                                  child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.sm,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _branchColor(
-                                          _branches[ws.path]!,
-                                        ).withValues(alpha: 0.15),
-                                        borderRadius:
-                                            AppRadius.smallBorderRadius,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if ((_changedCount[ws.path] ?? 0) >
-                                              0) ...[
-                                            Text(
-                                              '${_changedCount[ws.path]}↑',
-                                              style: const TextStyle(
-                                                fontSize: AppFontSize.xs,
-                                                color: Colors.orange,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: AppSpacing.xs,
-                                            ),
-                                          ],
-                                          if ((_behindCount[ws.path] ?? 0) >
-                                              0) ...[
-                                            Text(
-                                              '${_behindCount[ws.path]}↓',
-                                              style: const TextStyle(
-                                                fontSize: AppFontSize.xs,
-                                                color: Colors.cyan,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: AppSpacing.xs,
-                                            ),
-                                          ],
-                                          Flexible(
-                                            child: Text(
-                                              _branches[ws.path]!,
-                                              style: TextStyle(
-                                                fontSize: AppFontSize.xs,
-                                                fontFamily: 'monospace',
-                                                color: _branchColor(
-                                                  _branches[ws.path]!,
-                                                ),
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.sm,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.15),
+                                    borderRadius: AppRadius.smallBorderRadius,
+                                  ),
+                                  child: Text(
+                                    ws.type,
+                                    style: TextStyle(
+                                      fontSize: AppFontSize.xs,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
                                     ),
                                   ),
                                 ),
+                              ),
                             Align(
                               alignment: Alignment.topRight,
                               child: IconButton(
@@ -845,23 +798,68 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
                           ],
                         ),
                         const Spacer(),
-                        // Project type as accent badge
-                        if (ws.type.isNotEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.xs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.15),
-                              borderRadius: AppRadius.mediumBorderRadius,
-                            ),
-                            child: Text(
-                              ws.type,
-                              style: TextStyle(
-                                fontSize: typeSize,
-                                fontWeight: FontWeight.w600,
-                                color: color,
+                        // Branch badge
+                        if (_branches.containsKey(ws.path)) ...[
+                          InkWell(
+                            onTap: () => _switchBranch(ws),
+                            mouseCursor: SystemMouseCursors.click,
+                            borderRadius: AppRadius.smallBorderRadius,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _branchColor(
+                                  _branches[ws.path]!,
+                                ).withValues(alpha: 0.15),
+                                borderRadius: AppRadius.smallBorderRadius,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if ((_changedCount[ws.path] ?? 0) >
+                                      0) ...[
+                                    Text(
+                                      '${_changedCount[ws.path]}↑',
+                                      style: const TextStyle(
+                                        fontSize: AppFontSize.xs,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
+                                  if ((_behindCount[ws.path] ?? 0) >
+                                      0) ...[
+                                    Text(
+                                      '${_behindCount[ws.path]}↓',
+                                      style: const TextStyle(
+                                        fontSize: AppFontSize.xs,
+                                        color: Colors.cyan,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
+                                  Flexible(
+                                    child: Text(
+                                      _branches[ws.path]!,
+                                      style: TextStyle(
+                                        fontSize: AppFontSize.xs,
+                                        fontFamily: 'monospace',
+                                        color: _branchColor(
+                                          _branches[ws.path]!,
+                                        ),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
