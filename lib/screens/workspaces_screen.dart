@@ -2381,6 +2381,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
   bool _ghInstalled = false;
   String _baseBranch = 'main';
   List<String> _remoteBranches = [];
+  String? _prUrl;
 
   @override
   void initState() {
@@ -2574,7 +2575,12 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen((line) {
-          if (mounted) _addLine(line);
+          if (mounted) {
+            _addLine(line);
+            if (line.startsWith('http')) {
+              setState(() => _prUrl = line.trim());
+            }
+          }
         });
     pr.stderr
         .transform(utf8.decoder)
@@ -2749,6 +2755,23 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
                     const SizedBox(width: AppSpacing.xs),
                     const Text('Created',
                         style: TextStyle(color: Colors.green)),
+                    if (_prUrl != null) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      FilledButton.tonalIcon(
+                        onPressed: () => Process.run(
+                          Platform.isMacOS
+                              ? 'open'
+                              : Platform.isWindows
+                                  ? 'start'
+                                  : 'xdg-open',
+                          [_prUrl!],
+                          runInShell: true,
+                        ),
+                        icon: const Icon(Icons.open_in_new,
+                            size: AppIconSize.md),
+                        label: const Text('View in Browser'),
+                      ),
+                    ],
                   ],
                 ],
               ),
