@@ -2991,6 +2991,26 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                           : () async {
                               await showDialog(
                                 context: context,
+                                builder: (ctx) => _SimpleGitPullDialog(
+                                  projectName: p.basename(widget.projectPath),
+                                  projectPath: widget.projectPath,
+                                ),
+                              );
+                              if (mounted) {
+                                setState(() => _message = null);
+                                _loadBranches();
+                              }
+                            },
+                      icon: const Icon(Icons.download, size: AppIconSize.md),
+                      label: const Text('Pull'),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton.tonalIcon(
+                      onPressed: _switching
+                          ? null
+                          : () async {
+                              await showDialog(
+                                context: context,
                                 builder: (ctx) => _SimpleGitCommitDialog(
                                   projectName: p.basename(widget.projectPath),
                                   projectPath: widget.projectPath,
