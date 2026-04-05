@@ -2574,10 +2574,10 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
       '--title',
       title,
     ];
-    final body = _bodyController.text.trim();
-    if (body.isNotEmpty) {
-      args.addAll(['--body', body]);
-    }
+    final body = _bodyController.text.trim().isNotEmpty
+        ? _bodyController.text.trim()
+        : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
+    args.addAll(['--body', body]);
 
     final pr = await Process.start(
       'gh',
