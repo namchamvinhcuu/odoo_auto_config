@@ -45,8 +45,8 @@ if ($status) {
 }
 
 # Check tag doesn't exist
-git rev-parse "v$Version" 2>$null
-if ($LASTEXITCODE -eq 0) {
+$tagCheck = git tag -l "v$Version" 2>&1
+if ($tagCheck) {
     Write-Error "Error: Tag v$Version already exists."
     exit 1
 }
