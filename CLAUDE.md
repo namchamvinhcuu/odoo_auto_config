@@ -210,10 +210,11 @@ lib/
 - **Git Pull**:
   - Odoo Projects: chạy `git-repositories.sh` (macOS/Linux) hoặc `.ps1` (Windows) — pull hàng loạt repos trong addons/
   - Other Projects: chạy `git pull` trực tiếp (single repo, check .git tồn tại)
-- **Selective Pull** (chỉ Odoo Projects):
+- **Selective Pull** (chỉ Odoo Projects) — **UI đã ẩn** (code giữ nguyên, dùng Workspace View thay thế):
   - Scan `addons/` tìm repos có `.git`, user search + chọn repos cụ thể qua Autocomplete
   - Selection persist vào settings (`selectivePull_<projectPath>`)
   - Nút Clear list + remove từng repo, Pull chạy tuần tự cho repos đã chọn
+  - Ẩn ở 3 nơi: grid card, list view, context menu (comment out, không xóa code)
 - **Git Commit**:
   - Other Projects: `git status --porcelain` → checkbox list files → `git add --` từng file → `git commit` → optional `git push`
   - Odoo Projects: scan `addons/` tìm repos có changes → checkbox list repos → `git add -A` + `git commit` + optional `git push` cho mỗi repo
@@ -241,6 +242,7 @@ lib/
   - Không cho delete main/master
   - Parse branches dùng `%(refname)` (KHÔNG `%(refname:short)`)
 - **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
+  Selective Pull đã ẩn khỏi cả 3 nơi (comment out), dùng Workspace View thay thế
 - **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
   `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
 - **Parse git status**: Dùng `substring(0,2)` cho status + `substring(3)` cho filename.
@@ -408,6 +410,10 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 - **Mỗi repo hiện**: tên module, branch (color coded), changed files count, ahead/behind, nút Pull/Push/Remove
 - **Selection**: ban đầu deselect all, user select repos nào → persist cho lần sau
   Add repo mới → sort A-Z. Remove repo → xóa khỏi cả pin list và selection
+- **Lazy loading repos**: Lần mở dialog đầu tiên chỉ load batch 8 repos (`_kBatchSize`),
+  scroll gần cuối (200px) → tự động load batch tiếp (`_onScroll` + `_loadNextBatch`).
+  Nút Refresh (`_loadPinnedRepos(loadAll: true)`) load tất cả repos cùng lúc.
+  Mỗi `_RepoInfo` có flag `loaded` — repo chưa loaded hiện `CircularProgressIndicator` thay vì status.
 - **Batch actions toolbar** (dùng `Wrap` để tự xuống dòng):
   - **Pull Selected**: pull tất cả repos đã select
   - **Git Commit**: kiểm tra repos có thay đổi →
@@ -415,6 +421,11 @@ File: `lib/screens/odoo_workspace_dialog.dart`
     Có → mở `_WorkspaceCommitDialog` riêng (danh sách repos + changed count, message, push after commit, log)
   - **Switch Branch**: dialog chọn branch gộp unique từ tất cả repos, hoặc nhập tên tạo branch mới
     Thử checkout existing → checkout -b từ origin → checkout -b mới
+  - **Publish Modules** (`_PublishModulesDialog`): scan addons/ tìm module chưa có `.git`,
+    checkbox chọn modules → tạo GitHub repo private trong org, tự tạo `.gitignore`/`README.md` nếu thiếu,
+    git init → add → commit → push. Đọc org/token từ `git-repositories.sh`/`.ps1`.
+    Handle: repo đã tồn tại (422), remote đã có (set-url), thiếu org/token (hiện lỗi).
+    Sau đóng dialog → reload workspace view.
 - **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
 - **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
 - **Grid columns** (projects_screen + workspaces_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
@@ -425,7 +436,6 @@ File: `lib/screens/odoo_workspace_dialog.dart`
   UI: click branch → hiện danh sách commits (`git log --oneline <current>..<target>`) → checkbox chọn → cherry-pick tuần tự
   Dùng `git cherry-pick <hash>`, hiện dialog log output, xử lý conflict
 - **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
-- **Lazy loading**: cho nhiều repos (hiện load tất cả cùng lúc)
 - **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
 - **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
 

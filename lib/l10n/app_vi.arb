@@ -563,5 +563,18 @@
   "prContinueAnyway": "Continue anyway",
 
   "setupNginx": "Setup Nginx",
-  "push": "Push"
+  "push": "Push",
+
+  "publishModules": "Publish Modules",
+  "publishModulesDesc": "Tạo GitHub repo cho các module local chưa có git",
+  "publishModulesNoModules": "Tất cả module trong addons/ đã có git",
+  "publishModulesNoOrg": "Chưa cấu hình git organization. Vui lòng chỉnh sửa project và thiết lập organization trước.",
+  "publishModulesNoToken": "Không tìm thấy git token. Vui lòng cấu hình git account trong Settings > Git.",
+  "publishModulesScanning": "Đang quét module local...",
+  "publishModulesCreating": "Đang tạo repo...",
+  "publishModulesSuccess": "Đã publish thành công {name}",
+  "publishModulesFailed": "Publish {name} thất bại: {error}",
+  "publishModulesSelect": "Chọn module để publish",
+  "publishModulesPublish": "Publish",
+  "publishModulesCreatingRepo": "Đang tạo repo: {name}"
 }

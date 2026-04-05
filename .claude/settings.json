@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(echo \"EXIT: $?\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Read(//Volumes/Data/Workspace/Projects/Polish-Tax/polish-tax-odoo/addons/polish_tax_standard/**)"
     ]
   }
 }

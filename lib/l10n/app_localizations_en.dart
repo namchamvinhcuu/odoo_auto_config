@@ -1716,4 +1716,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get push => 'Push';
+
+  @override
+  String get publishModules => 'Publish Modules';
+
+  @override
+  String get publishModulesDesc =>
+      'Create GitHub repos for local modules without git';
+
+  @override
+  String get publishModulesNoModules =>
+      'All modules in addons/ already have git initialized';
+
+  @override
+  String get publishModulesNoOrg =>
+      'Git organization not configured. Please edit the project and set the organization first.';
+
+  @override
+  String get publishModulesNoToken =>
+      'Git token not found. Please configure a git account in Settings > Git.';
+
+  @override
+  String get publishModulesScanning => 'Scanning local modules...';
+
+  @override
+  String get publishModulesCreating => 'Creating repos...';
+
+  @override
+  String publishModulesSuccess(String name) {
+    return 'Successfully published $name';
+  }
+
+  @override
+  String publishModulesFailed(String name, String error) {
+    return 'Failed to publish $name: $error';
+  }
+
+  @override
+  String get publishModulesSelect => 'Select modules to publish';
+
+  @override
+  String get publishModulesPublish => 'Publish';
+
+  @override
+  String publishModulesCreatingRepo(String name) {
+    return 'Creating repo: $name';
+  }
 }

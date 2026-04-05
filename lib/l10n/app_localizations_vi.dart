@@ -1712,4 +1712,49 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get push => 'Push';
+
+  @override
+  String get publishModules => 'Publish Modules';
+
+  @override
+  String get publishModulesDesc =>
+      'Tạo GitHub repo cho các module local chưa có git';
+
+  @override
+  String get publishModulesNoModules => 'Tất cả module trong addons/ đã có git';
+
+  @override
+  String get publishModulesNoOrg =>
+      'Chưa cấu hình git organization. Vui lòng chỉnh sửa project và thiết lập organization trước.';
+
+  @override
+  String get publishModulesNoToken =>
+      'Không tìm thấy git token. Vui lòng cấu hình git account trong Settings > Git.';
+
+  @override
+  String get publishModulesScanning => 'Đang quét module local...';
+
+  @override
+  String get publishModulesCreating => 'Đang tạo repo...';
+
+  @override
+  String publishModulesSuccess(String name) {
+    return 'Đã publish thành công $name';
+  }
+
+  @override
+  String publishModulesFailed(String name, String error) {
+    return 'Publish $name thất bại: $error';
+  }
+
+  @override
+  String get publishModulesSelect => 'Chọn module để publish';
+
+  @override
+  String get publishModulesPublish => 'Publish';
+
+  @override
+  String publishModulesCreatingRepo(String name) {
+    return 'Đang tạo repo: $name';
+  }
 }

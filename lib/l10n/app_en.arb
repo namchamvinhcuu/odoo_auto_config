@@ -660,5 +660,21 @@
   "prContinueAnyway": "Continue anyway",
 
   "setupNginx": "Setup Nginx",
-  "push": "Push"
+  "push": "Push",
+
+  "publishModules": "Publish Modules",
+  "publishModulesDesc": "Create GitHub repos for local modules without git",
+  "publishModulesNoModules": "All modules in addons/ already have git initialized",
+  "publishModulesNoOrg": "Git organization not configured. Please edit the project and set the organization first.",
+  "publishModulesNoToken": "Git token not found. Please configure a git account in Settings > Git.",
+  "publishModulesScanning": "Scanning local modules...",
+  "publishModulesCreating": "Creating repos...",
+  "publishModulesSuccess": "Successfully published {name}",
+  "@publishModulesSuccess": { "placeholders": { "name": { "type": "String" } } },
+  "publishModulesFailed": "Failed to publish {name}: {error}",
+  "@publishModulesFailed": { "placeholders": { "name": { "type": "String" }, "error": { "type": "String" } } },
+  "publishModulesSelect": "Select modules to publish",
+  "publishModulesPublish": "Publish",
+  "publishModulesCreatingRepo": "Creating repo: {name}",
+  "@publishModulesCreatingRepo": { "placeholders": { "name": { "type": "String" } } }
 }
