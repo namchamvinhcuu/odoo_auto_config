@@ -371,6 +371,10 @@ File: `lib/screens/odoo_workspace_dialog.dart`
   `RichText` là render-level widget, không tham gia `SelectionArea`
 - **`SingleChildScrollView` + `Column`** thay `ListView.builder` cho text selection
 - **`GestureDetector`** wrap cả Checkbox + label để click label cũng toggle
+- **Output-log luôn mở dialog riêng** — KHÔNG nhúng inline. Dùng `_GitActionDialog` pattern:
+  auto-run khi mở, `LinearProgressIndicator`, `SelectionArea` + `Text.rich` cho copy text,
+  ANSI color parsing, auto-scroll, Close disabled khi running
+- **SnackBar bị chìm sau dialog** — dùng dialog thông báo thay SnackBar khi context đang có dialog mở
 
 ### Git operations
 - **Parse `git status --porcelain`**: dùng `.trimRight()` KHÔNG `.trim()` — sẽ xóa space đầu dòng đầu = mất status char
@@ -391,6 +395,9 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 ### Code quality
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
+- **`StorageService.saveSettings` PHẢI load trước rồi merge** — KHÔNG BAO GIỜ ghi đè toàn bộ settings
+  Pattern đúng: `final settings = await StorageService.loadSettings(); settings['key'] = value; await StorageService.saveSettings(settings);`
+  Bug đã xảy ra: ThemeService ghi đè toàn bộ settings → mất nginx config, git accounts, workspace repos
 - Khi edit workspace/project: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
 - **Dialog reload**: Khi dialog con đóng (VD: Commit dialog đóng → quay lại Branches dialog), phải reload status trong dialog cha.
   Khi dialog cha đóng, phải reload data ở parent screen (dùng `.then()` sau `showDialog`)

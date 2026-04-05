@@ -55,9 +55,9 @@ class ThemeService extends ChangeNotifier {
   }
 
   Future<void> _save() async {
-    await StorageService.saveSettings({
-      'themeMode': _themeMode.name,
-      'seedColor': _seedColor.toARGB32(),
-    });
+    final settings = await StorageService.loadSettings();
+    settings['themeMode'] = _themeMode.name;
+    settings['seedColor'] = _seedColor.toARGB32();
+    await StorageService.saveSettings(settings);
   }
 }

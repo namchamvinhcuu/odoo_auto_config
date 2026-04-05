@@ -2874,21 +2874,9 @@ class _SelectivePullDialog extends StatefulWidget {
 }
 
 class _SelectivePullDialogState extends State<_SelectivePullDialog> {
-  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
-  static const _ansiColors = <int, Color>{
-    31: Color(0xFFCD3131),
-    32: Color(0xFF0DBC79),
-    33: Color(0xFFE5E510),
-    34: Color(0xFF2472C8),
-    90: Color(0xFF666666),
-  };
-
   List<String> _allRepos = [];
   List<String> _selectedRepos = [];
-  final _scrollController = ScrollController();
-  final List<String> _logLines = [];
   bool _loading = true;
-  bool _running = false;
 
   // Persist key for this project
   String get _storageKey => 'selectivePull_${widget.projectPath}';
@@ -2897,12 +2885,6 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
   void initState() {
     super.initState();
     _scanRepos();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   Future<void> _scanRepos() async {
@@ -2962,90 +2944,15 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
     _saveSelection();
   }
 
-  void _addLine(String line) {
-    if (line.contains('\r')) line = line.split('\r').last;
-    if (line.trim().isEmpty) return;
-    setState(() => _logLines.add(line));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-  }
-
-  Future<void> _pull() async {
-    setState(() {
-      _running = true;
-      _logLines.clear();
-    });
-
-    for (final repo in _selectedRepos) {
-      final repoPath = p.join(widget.projectPath, 'addons', repo);
-      _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
-
-      try {
-        final process = await Process.start(
-          'git', ['pull'],
-          workingDirectory: repoPath,
-          runInShell: true,
-        );
-        process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-          if (mounted) _addLine(line);
-        });
-        process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-          if (mounted) _addLine(line);
-        });
-        final exitCode = await process.exitCode;
-        if (!mounted) return;
-        if (exitCode == 0) {
-          _addLine('\x1B[0;32m[+] $repo done\x1B[0m');
-        } else {
-          _addLine('\x1B[0;31m[-] $repo failed (exit $exitCode)\x1B[0m');
-        }
-      } catch (e) {
-        if (mounted) _addLine('\x1B[0;31m[-] $repo: $e\x1B[0m');
-      }
-    }
-
-    if (mounted) {
-      _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
-      setState(() => _running = false);
-    }
-  }
-
-  List<TextSpan> _parseAnsi(String line) {
-    final spans = <TextSpan>[];
-    final defaultColor = Colors.grey.shade300;
-    var currentColor = defaultColor;
-    var lastEnd = 0;
-    for (final match in _ansiRegex.allMatches(line)) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-            text: line.substring(lastEnd, match.start),
-            style: TextStyle(color: currentColor)));
-      }
-      final code = match.group(0)!;
-      final params = code.substring(2, code.length - 1).split(';');
-      for (final param in params) {
-        final n = int.tryParse(param) ?? 0;
-        if (n == 0) {
-          currentColor = defaultColor;
-        } else if (_ansiColors.containsKey(n)) {
-          currentColor = _ansiColors[n]!;
-        }
-      }
-      lastEnd = match.end;
-    }
-    if (lastEnd < line.length) {
-      spans.add(TextSpan(
-          text: line.substring(lastEnd),
-          style: TextStyle(color: currentColor)));
-    }
-    return spans;
+  void _pull() {
+    if (_selectedRepos.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _SelectivePullLogDialog(
+        projectPath: widget.projectPath,
+        repos: List.from(_selectedRepos),
+      ),
+    );
   }
 
   @override
@@ -3130,7 +3037,7 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
                   const Spacer(),
                   if (_selectedRepos.isNotEmpty)
                     TextButton.icon(
-                      onPressed: _running ? null : _clearAll,
+                      onPressed: _clearAll,
                       icon: const Icon(Icons.clear_all, size: AppIconSize.md),
                       label: Text(context.l10n.gitClearList),
                     ),
@@ -3165,66 +3072,230 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
                                 style: const TextStyle(fontFamily: 'monospace', fontSize: AppFontSize.md)),
                             trailing: IconButton(
                               icon: const Icon(Icons.close, size: AppIconSize.md),
-                              onPressed: _running ? null : () => _removeRepo(repo),
+                              onPressed: () => _removeRepo(repo),
                             ),
                           );
                         },
                       ),
               ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Log output
-              if (_logLines.isNotEmpty || _running) ...[
-                if (_running)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.md),
-                    child: LinearProgressIndicator(),
-                  ),
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppLogColors.terminalBg,
-                    borderRadius: AppRadius.mediumBorderRadius,
-                    border: Border.all(color: Colors.grey.shade700),
-                  ),
-                  child: SelectionArea(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final line in _logLines)
-                              Text.rich(
-                                TextSpan(
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: AppFontSize.md,
-                                  ),
-                                  children: _parseAnsi(line),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ],
         ),
       ),
       actions: [
-        if (_selectedRepos.isNotEmpty && !_running)
+        if (_selectedRepos.isNotEmpty)
           FilledButton.icon(
             onPressed: _pull,
             icon: const Icon(Icons.sync, size: AppIconSize.md),
             label: Text(context.l10n.gitPullSelected),
           ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.l10n.close),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Selective Pull Log Dialog ──
+
+class _SelectivePullLogDialog extends StatefulWidget {
+  final String projectPath;
+  final List<String> repos;
+
+  const _SelectivePullLogDialog({
+    required this.projectPath,
+    required this.repos,
+  });
+
+  @override
+  State<_SelectivePullLogDialog> createState() =>
+      _SelectivePullLogDialogState();
+}
+
+class _SelectivePullLogDialogState extends State<_SelectivePullLogDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    30: Color(0xFF000000),
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    35: Color(0xFFBC3FBC),
+    36: Color(0xFF11A8CD),
+    37: Color(0xFFE5E5E5),
+    90: Color(0xFF666666),
+    91: Color(0xFFF14C4C),
+    92: Color(0xFF23D18B),
+    93: Color(0xFFF5F543),
+    94: Color(0xFF3B8EEA),
+    95: Color(0xFFD670D6),
+    96: Color(0xFF29B8DB),
+    97: Color(0xFFFFFFFF),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    for (final repo in widget.repos) {
+      final repoPath = p.join(widget.projectPath, 'addons', repo);
+      _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
+      try {
+        final process = await Process.start(
+          'git', ['pull'],
+          workingDirectory: repoPath,
+          runInShell: true,
+        );
+        final stdout = process.stdout
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) { if (mounted) _addLine(line); });
+        final stderr = process.stderr
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) { if (mounted) _addLine(line); });
+        await process.exitCode;
+        await stdout.cancel();
+        await stderr.cancel();
+        final exitCode = await process.exitCode;
+        if (!mounted) return;
+        if (exitCode == 0) {
+          _addLine('\x1B[0;32m[+] $repo done\x1B[0m');
+        } else {
+          _addLine('\x1B[0;31m[-] $repo failed (exit $exitCode)\x1B[0m');
+        }
+      } catch (e) {
+        if (mounted) _addLine('\x1B[0;31m[-] $repo: $e\x1B[0m');
+      }
+    }
+    if (mounted) {
+      _addLine('\x1B[0;32m[+] Done!\x1B[0m');
+      setState(() => _running = false);
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.l10n.gitSelectivePullTitle(
+          '${widget.repos.length} repos')),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: LinearProgressIndicator(),
+              ),
+            Container(
+              height: 350,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppLogColors.terminalBg,
+                borderRadius: AppRadius.mediumBorderRadius,
+                border: Border.all(color: Colors.grey.shade700),
+              ),
+              child: _logLines.isEmpty
+                  ? Center(
+                      child: Text(
+                        context.l10n.noOutputYet,
+                        style: const TextStyle(
+                            color: Colors.grey, fontFamily: 'monospace'),
+                      ),
+                    )
+                  : SelectionArea(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final line in _logLines)
+                                Text.rich(
+                                  TextSpan(children: _parseAnsi(line)),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
         TextButton(
           onPressed: _running ? null : () => Navigator.pop(context),
           child: Text(context.l10n.close),

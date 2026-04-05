@@ -38,38 +38,15 @@ class OdooWorkspaceDialog extends StatefulWidget {
 }
 
 class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
-  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
-  static const _ansiColors = <int, Color>{
-    30: Color(0xFF000000),
-    31: Color(0xFFCD3131),
-    32: Color(0xFF0DBC79),
-    33: Color(0xFFE5E510),
-    34: Color(0xFF2472C8),
-    35: Color(0xFFBC3FBC),
-    36: Color(0xFF11A8CD),
-    37: Color(0xFFE5E5E5),
-    90: Color(0xFF666666),
-    91: Color(0xFFF14C4C),
-    92: Color(0xFF23D18B),
-    93: Color(0xFFF5F543),
-    94: Color(0xFF3B8EEA),
-    95: Color(0xFFD670D6),
-    96: Color(0xFF29B8DB),
-    97: Color(0xFFFFFFFF),
-  };
-
   /// All repo names found in addons/ (for search/add)
   List<String> _allRepoNames = [];
 
   /// Pinned repos (persisted, shown in main list)
   final List<_RepoInfo> _repos = [];
 
-  final List<String> _logLines = [];
-  final _scrollController = ScrollController();
   final _addRepoController = TextEditingController();
   final _addRepoFocusNode = FocusNode();
   bool _scanning = true;
-  bool _running = false;
 
   String get _storageKey => 'workspaceRepos_${widget.projectPath}';
   String get _selectionKey => 'workspaceSelected_${widget.projectPath}';
@@ -82,25 +59,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _addRepoController.dispose();
     _addRepoFocusNode.dispose();
     super.dispose();
-  }
-
-  void _addLine(String line) {
-    if (line.contains('\r')) line = line.split('\r').last;
-    if (line.trim().isEmpty) return;
-    setState(() => _logLines.add(line));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   // ── Data loading ──
@@ -159,7 +120,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         await Future.wait(_repos.map(_loadRepoStatus));
       }
     } catch (e) {
-      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+      // Error scanning repos — ignore silently
     }
     if (mounted) setState(() => _scanning = false);
   }
@@ -293,40 +254,22 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
 
   // ── Batch actions ──
 
-  Future<void> _pullSelected() async {
+  void _pullSelected() {
     final selected = _repos.where((r) => r.selected).toList();
     if (selected.isEmpty) return;
-    setState(() => _running = true);
-    for (final repo in selected) {
-      _addLine('\x1B[0;34m[*] Pulling ${repo.name}...\x1B[0m');
-      final process = await Process.start(
-        'git',
-        ['pull'],
-        workingDirectory: repo.path,
-        runInShell: true,
-      );
-      process.stdout
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        if (mounted) _addLine(line);
-      });
-      process.stderr
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .listen((line) {
-        if (mounted) _addLine(line);
-      });
-      final exitCode = await process.exitCode;
-      if (exitCode == 0) {
-        _addLine('\x1B[0;32m[+] ${repo.name}: done\x1B[0m');
-      } else {
-        _addLine(
-            '\x1B[0;31m[-] ${repo.name}: failed (exit $exitCode)\x1B[0m');
-      }
-      await _loadRepoStatus(repo);
-    }
-    if (mounted) setState(() => _running = false);
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title: context.l10n.workspaceViewPullSelected,
+        repos: selected,
+        action: 'pull',
+        onDone: () {
+          for (final repo in selected) {
+            _loadRepoStatus(repo);
+          }
+        },
+      ),
+    );
   }
 
   void _openCommitDialog() {
@@ -409,146 +352,48 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
 
     final selected = _repos.where((r) => r.selected).toList();
     if (selected.isEmpty) return;
-    setState(() => _running = true);
-    for (final repo in selected) {
-      _addLine(
-          '\x1B[0;34m[*] Switching ${repo.name} to $branch...\x1B[0m');
-      // Try checkout existing branch first
-      var result = await Process.run(
-        'git',
-        ['checkout', branch],
-        workingDirectory: repo.path,
-        runInShell: true,
-      );
-      if (result.exitCode != 0) {
-        // Try creating new branch from remote
-        result = await Process.run(
-          'git',
-          ['checkout', '-b', branch, 'origin/$branch'],
-          workingDirectory: repo.path,
-          runInShell: true,
-        );
-      }
-      if (result.exitCode != 0) {
-        // Create new local branch
-        result = await Process.run(
-          'git',
-          ['checkout', '-b', branch],
-          workingDirectory: repo.path,
-          runInShell: true,
-        );
-      }
-      if (result.exitCode == 0) {
-        _addLine(
-            '\x1B[0;32m[+] ${repo.name}: switched to $branch\x1B[0m');
-      } else {
-        final err = (result.stderr as String).trim();
-        _addLine('\x1B[0;31m[-] ${repo.name}: failed — $err\x1B[0m');
-      }
-      await _loadRepoStatus(repo);
-    }
-    if (mounted) setState(() => _running = false);
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title: '${context.l10n.workspaceViewSwitchBranch} → $branch',
+        repos: selected,
+        action: 'switch',
+        branch: branch,
+        onDone: () {
+          for (final repo in selected) {
+            _loadRepoStatus(repo);
+          }
+        },
+      ),
+    );
   }
 
   // ── Per-repo actions ──
 
-  Future<void> _pullSingle(_RepoInfo repo) async {
-    setState(() => _running = true);
-    _addLine('\x1B[0;34m[*] Pulling ${repo.name}...\x1B[0m');
-    final process = await Process.start(
-      'git',
-      ['pull'],
-      workingDirectory: repo.path,
-      runInShell: true,
+  void _pullSingle(_RepoInfo repo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title: '${context.l10n.gitPull} — ${repo.name}',
+        repos: [repo],
+        action: 'pull',
+        onDone: () => _loadRepoStatus(repo),
+      ),
     );
-    process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) {
-      if (mounted) _addLine(line);
-    });
-    process.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) {
-      if (mounted) _addLine(line);
-    });
-    final exitCode = await process.exitCode;
-    if (exitCode == 0) {
-      _addLine('\x1B[0;32m[+] ${repo.name}: done\x1B[0m');
-    } else {
-      _addLine(
-          '\x1B[0;31m[-] ${repo.name}: failed (exit $exitCode)\x1B[0m');
-    }
-    await _loadRepoStatus(repo);
-    if (mounted) setState(() => _running = false);
   }
 
-  Future<void> _pushSingle(_RepoInfo repo) async {
-    setState(() => _running = true);
-    _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
-    final process = await Process.start(
-      'git',
-      ['push'],
-      workingDirectory: repo.path,
-      runInShell: true,
+  void _pushSingle(_RepoInfo repo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title: 'Push — ${repo.name}',
+        repos: [repo],
+        action: 'push',
+        onDone: () => _loadRepoStatus(repo),
+      ),
     );
-    process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) {
-      if (mounted) _addLine(line);
-    });
-    process.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) {
-      if (mounted) _addLine(line);
-    });
-    final exitCode = await process.exitCode;
-    if (exitCode == 0) {
-      _addLine('\x1B[0;32m[+] ${repo.name}: pushed\x1B[0m');
-    } else {
-      _addLine('\x1B[0;31m[-] ${repo.name}: push failed\x1B[0m');
-    }
-    await _loadRepoStatus(repo);
-    if (mounted) setState(() => _running = false);
-  }
-
-  // ── ANSI parsing ──
-
-  List<TextSpan> _parseAnsi(String line) {
-    final spans = <TextSpan>[];
-    final defaultColor = Colors.grey.shade300;
-    var currentColor = defaultColor;
-    var lastEnd = 0;
-
-    for (final match in _ansiRegex.allMatches(line)) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: line.substring(lastEnd, match.start),
-          style: TextStyle(color: currentColor),
-        ));
-      }
-      final code = match.group(0)!;
-      final params = code.substring(2, code.length - 1).split(';');
-      for (final param in params) {
-        final n = int.tryParse(param) ?? 0;
-        if (n == 0) {
-          currentColor = defaultColor;
-        } else if (_ansiColors.containsKey(n)) {
-          currentColor = _ansiColors[n]!;
-        }
-      }
-      lastEnd = match.end;
-    }
-    if (lastEnd < line.length) {
-      spans.add(TextSpan(
-        text: line.substring(lastEnd),
-        style: TextStyle(color: currentColor),
-      ));
-    }
-    return spans;
   }
 
   // ── Build ──
@@ -568,7 +413,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             child: Text(context.l10n.workspaceViewTitle(widget.projectName)),
           ),
           IconButton(
-            onPressed: _running ? null : _loadPinnedRepos,
+            onPressed: _loadPinnedRepos,
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.refresh,
           ),
@@ -587,17 +432,12 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             const SizedBox(height: AppSpacing.sm),
             // Pinned repo list
             Expanded(child: _buildRepoList()),
-            // Log output
-            if (_logLines.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _buildLogOutput(),
-            ],
           ],
         ),
       ),
       actions: [
         TextButton(
-          onPressed: _running ? null : () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           child: Text(context.l10n.close),
         ),
       ],
@@ -716,7 +556,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       children: [
         // Select all / deselect
         TextButton.icon(
-          onPressed: _running || _repos.isEmpty
+          onPressed: _repos.isEmpty
               ? null
               : () => _toggleAll(_selectedCount < _repos.length),
           icon: Icon(
@@ -733,17 +573,17 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         ),
         // Batch actions
         FilledButton.tonalIcon(
-          onPressed: _running || !hasSelection ? null : _pullSelected,
+          onPressed: hasSelection ? _pullSelected : null,
           icon: const Icon(Icons.sync, size: AppIconSize.md),
           label: Text(context.l10n.workspaceViewPullSelected),
         ),
         FilledButton.tonalIcon(
-          onPressed: _running || !hasSelection ? null : _openCommitDialog,
+          onPressed: hasSelection ? _openCommitDialog : null,
           icon: const Icon(Icons.commit, size: AppIconSize.md),
           label: Text(context.l10n.gitCommit),
         ),
         FilledButton.tonalIcon(
-          onPressed: _running || !hasSelection ? null : _switchBranchAll,
+          onPressed: hasSelection ? _switchBranchAll : null,
           icon: const Icon(Icons.account_tree, size: AppIconSize.md),
           label: Text(context.l10n.workspaceViewSwitchBranch),
         ),
@@ -787,12 +627,10 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     return Card(
         margin: const EdgeInsets.only(bottom: AppSpacing.xs),
         child: InkWell(
-          onTap: _running
-              ? null
-              : () {
-                  setState(() => repo.selected = !repo.selected);
-                  _saveSelection();
-                },
+          onTap: () {
+                setState(() => repo.selected = !repo.selected);
+                _saveSelection();
+              },
           borderRadius: AppRadius.mediumBorderRadius,
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -804,9 +642,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
               // Checkbox
               Checkbox(
                 value: repo.selected,
-                onChanged: _running
-                    ? null
-                    : (v) {
+                onChanged: (v) {
                         setState(() => repo.selected = v ?? false);
                         _saveSelection();
                       },
@@ -920,7 +756,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     VoidCallback? onPressed,
   }) {
     return IconButton(
-      onPressed: _running ? null : onPressed,
+      onPressed: onPressed,
       icon: Icon(icon, size: AppIconSize.lg),
       tooltip: tooltip,
       padding: const EdgeInsets.all(AppSpacing.xs),
@@ -928,39 +764,6 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
-  Widget _buildLogOutput() {
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppLogColors.terminalBg,
-        borderRadius: AppRadius.mediumBorderRadius,
-        border: Border.all(color: Colors.grey.shade700),
-      ),
-      child: SelectionArea(
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          padding: EdgeInsets.all(AppSpacing.md),
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final line in _logLines)
-                  Text.rich(
-                    TextSpan(children: _parseAnsi(line)),
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: AppFontSize.sm,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ── Branch Picker Dialog ──
@@ -1349,6 +1152,266 @@ class _WorkspaceCommitDialogState extends State<_WorkspaceCommitDialog> {
                 ? context.l10n.workspaceViewCommitPush
                 : context.l10n.workspaceViewCommitOnly,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Git Action Dialog (Pull / Push / Switch Branch) ──
+
+class _GitActionDialog extends StatefulWidget {
+  final String title;
+  final List<_RepoInfo> repos;
+
+  /// 'pull', 'push', or 'switch'
+  final String action;
+  final String? branch;
+  final VoidCallback onDone;
+
+  const _GitActionDialog({
+    required this.title,
+    required this.repos,
+    required this.action,
+    this.branch,
+    required this.onDone,
+  });
+
+  @override
+  State<_GitActionDialog> createState() => _GitActionDialogState();
+}
+
+class _GitActionDialogState extends State<_GitActionDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    30: Color(0xFF000000),
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    35: Color(0xFFBC3FBC),
+    36: Color(0xFF11A8CD),
+    37: Color(0xFFE5E5E5),
+    90: Color(0xFF666666),
+    91: Color(0xFFF14C4C),
+    92: Color(0xFF23D18B),
+    93: Color(0xFFF5F543),
+    94: Color(0xFF3B8EEA),
+    95: Color(0xFFD670D6),
+    96: Color(0xFF29B8DB),
+    97: Color(0xFFFFFFFF),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    for (final repo in widget.repos) {
+      switch (widget.action) {
+        case 'pull':
+          await _pullRepo(repo);
+        case 'push':
+          await _pushRepo(repo);
+        case 'switch':
+          await _switchRepo(repo, widget.branch!);
+      }
+    }
+    widget.onDone();
+    if (mounted) setState(() => _running = false);
+  }
+
+  Future<void> _pullRepo(_RepoInfo repo) async {
+    _addLine('\x1B[0;34m[*] Pulling ${repo.name}...\x1B[0m');
+    final process = await Process.start(
+      'git', ['pull'],
+      workingDirectory: repo.path, runInShell: true,
+    );
+    await _listenProcess(process);
+    final exitCode = await process.exitCode;
+    if (exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${repo.name}: done\x1B[0m');
+    } else {
+      _addLine('\x1B[0;31m[-] ${repo.name}: failed (exit $exitCode)\x1B[0m');
+    }
+  }
+
+  Future<void> _pushRepo(_RepoInfo repo) async {
+    _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
+    final process = await Process.start(
+      'git', ['push'],
+      workingDirectory: repo.path, runInShell: true,
+    );
+    await _listenProcess(process);
+    final exitCode = await process.exitCode;
+    if (exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${repo.name}: pushed\x1B[0m');
+    } else {
+      _addLine('\x1B[0;31m[-] ${repo.name}: push failed\x1B[0m');
+    }
+  }
+
+  Future<void> _switchRepo(_RepoInfo repo, String branch) async {
+    _addLine('\x1B[0;34m[*] Switching ${repo.name} to $branch...\x1B[0m');
+    var result = await Process.run(
+      'git', ['checkout', branch],
+      workingDirectory: repo.path, runInShell: true,
+    );
+    if (result.exitCode != 0) {
+      result = await Process.run(
+        'git', ['checkout', '-b', branch, 'origin/$branch'],
+        workingDirectory: repo.path, runInShell: true,
+      );
+    }
+    if (result.exitCode != 0) {
+      result = await Process.run(
+        'git', ['checkout', '-b', branch],
+        workingDirectory: repo.path, runInShell: true,
+      );
+    }
+    if (result.exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${repo.name}: switched to $branch\x1B[0m');
+    } else {
+      final err = (result.stderr as String).trim();
+      _addLine('\x1B[0;31m[-] ${repo.name}: failed — $err\x1B[0m');
+    }
+  }
+
+  Future<void> _listenProcess(Process process) async {
+    final stdout = process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) { if (mounted) _addLine(line); });
+    final stderr = process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) { if (mounted) _addLine(line); });
+    await process.exitCode;
+    await stdout.cancel();
+    await stderr.cancel();
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                child: LinearProgressIndicator(),
+              ),
+            Container(
+              height: 350,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppLogColors.terminalBg,
+                borderRadius: AppRadius.mediumBorderRadius,
+                border: Border.all(color: Colors.grey.shade700),
+              ),
+              child: _logLines.isEmpty
+                  ? Center(
+                      child: Text(
+                        context.l10n.noOutputYet,
+                        style: const TextStyle(
+                            color: Colors.grey, fontFamily: 'monospace'),
+                      ),
+                    )
+                  : SelectionArea(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(AppSpacing.md),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final line in _logLines)
+                                Text.rich(
+                                  TextSpan(children: _parseAnsi(line)),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.sm,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _running ? null : () => Navigator.pop(context),
+          child: Text(context.l10n.close),
         ),
       ],
     );

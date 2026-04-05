@@ -34,6 +34,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
   List<PythonInfo>? _pythonResults;
   bool _hasNginxConfig = false;
   bool? _vscodeInstalled;
+  bool _startingDocker = false;
 
   @override
   void initState() {
@@ -82,6 +83,30 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _startDockerDesktop() async {
+    setState(() => _startingDocker = true);
+    try {
+      if (PlatformService.isWindows) {
+        await Process.run(
+          'powershell',
+          ['-Command', 'Start-Process', r'"C:\Program Files\Docker\Docker\Docker Desktop.exe"'],
+          runInShell: true,
+        );
+      } else if (PlatformService.isMacOS) {
+        await Process.run('open', ['-a', 'Docker'], runInShell: true);
+      } else {
+        await Process.run('systemctl', ['--user', 'start', 'docker-desktop'],
+            runInShell: true);
+      }
+      for (var i = 0; i < 15; i++) {
+        await Future.delayed(const Duration(seconds: 2));
+        if (await DockerInstallService.isRunning()) break;
+      }
+    } catch (_) {}
+    await _checkAll();
+    if (mounted) setState(() => _startingDocker = false);
   }
 
   Future<void> _autoSetup() async {
@@ -214,13 +239,22 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
             ? (
                 label: _dockerRunning == true
                     ? context.l10n.dockerRunning
-                    : context.l10n.dockerStopped,
+                    : _startingDocker
+                        ? context.l10n.starting
+                        : context.l10n.dockerStopped,
                 ok: _dockerRunning == true,
               )
             : null,
         required_: true,
-        onAction: () =>
-            HomeScreen.navigateToSettings(settingsTab: 1), // Docker tab
+        onAction: _dockerInstalled == true && _dockerRunning != true
+            ? _startDockerDesktop
+            : () => HomeScreen.navigateToSettings(settingsTab: 1),
+        actionLabel: _dockerInstalled == true && _dockerRunning != true
+            ? context.l10n.startDockerDesktop
+            : null,
+        actionIcon: _dockerInstalled == true && _dockerRunning != true
+            ? Icons.play_arrow
+            : null,
       ),
       _EnvItem(
         icon: Icons.code,
@@ -418,15 +452,17 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
                 const SizedBox(width: AppSpacing.sm),
                 _chip(item.extraChip!.label, item.extraChip!.ok),
               ],
-              if (!isOk) ...[
+              if (!isOk || item.actionLabel != null) ...[
                 const SizedBox(width: AppSpacing.sm),
                 FilledButton.tonalIcon(
                   onPressed: item.onAction,
                   icon: Icon(
-                      item.required_ ? Icons.download : Icons.settings),
-                  label: Text(item.required_
-                      ? context.l10n.install
-                      : context.l10n.edit),
+                      item.actionIcon ??
+                      (item.required_ ? Icons.download : Icons.settings)),
+                  label: Text(item.actionLabel ??
+                      (item.required_
+                          ? context.l10n.install
+                          : context.l10n.edit)),
                 ),
               ],
             ],
@@ -474,6 +510,8 @@ class _EnvItem {
   final ({String label, bool ok})? extraChip;
   final bool required_;
   final VoidCallback onAction;
+  final String? actionLabel;
+  final IconData? actionIcon;
 
   const _EnvItem({
     required this.icon,
@@ -485,6 +523,8 @@ class _EnvItem {
     this.extraChip,
     required this.required_,
     required this.onAction,
+    this.actionLabel,
+    this.actionIcon,
   });
 }
 
