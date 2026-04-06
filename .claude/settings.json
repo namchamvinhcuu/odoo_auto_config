@@ -3,7 +3,16 @@
     "allow": [
       "Bash(echo \"EXIT: $?\")",
       "Read(//tmp/**)",
-      "Read(//Volumes/Data/Workspace/Projects/Polish-Tax/polish-tax-odoo/addons/polish_tax_standard/**)"
+      "Read(//Volumes/Data/Workspace/Projects/Polish-Tax/polish-tax-odoo/addons/polish_tax_standard/**)",
+      "Bash(mv /tmp/venv_clean.dart lib/screens/venv_screen.dart)",
+      "Bash(cp /tmp/venv_clean.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/venv_screen.dart)",
+      "Bash(mv /tmp/settings_truncated.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/settings/settings_screen.dart)",
+      "Bash(cp /tmp/settings_truncated.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/settings/settings_screen.dart)",
+      "Bash(mv /tmp/projects_screen_trimmed.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/projects/projects_screen.dart)",
+      "Bash(git mv:*)"
+    ],
+    "additionalDirectories": [
+      "/Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens"
     ]
   }
 }

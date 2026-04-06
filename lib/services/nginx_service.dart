@@ -324,9 +324,9 @@ class NginxService {
   }
 
   static Future<void> saveSettings(Map<String, dynamic> nginx) async {
-    final settings = await StorageService.loadSettings();
-    settings['nginx'] = nginx;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['nginx'] = nginx;
+    });
   }
 
   /// Ensure domain suffix starts with a dot

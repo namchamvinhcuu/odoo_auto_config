@@ -7,7 +7,7 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 
 ## Tech Stack
 - **Flutter** SDK ^3.9.2 (FVM managed)
-- **Provider** 6.1.0 - state management (ThemeService, LocaleService)
+- **flutter_riverpod** 2.6.1 - state management (Notifier/AsyncNotifier, tách business logic khỏi UI)
 - **file_picker** 8.0.0 - chọn thư mục/file (macOS/Linux; Windows dùng native PowerShell dialog)
 - **path** 1.9.0 - xử lý đường dẫn cross-platform
 - **window_manager** 0.5.1 - control window size, min size, center, animation resize
@@ -50,24 +50,87 @@ lib/
 │   ├── locale_service.dart      # Locale persistence + Provider (ChangeNotifier)
 │   ├── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 │   ├── tray_service.dart        # System tray: init, show/hide, close behavior setting
-│   └── update_service.dart      # Auto-update: check GitHub releases, download, install
-├── screens/                     # UI screens (StatefulWidget)
+│   ├── update_service.dart      # Auto-update: check GitHub releases, download, install
+│   └── git_branch_service.dart  # Shared git branch operations (switch, create, delete, publish, clean stale)
+├── screens/                     # UI screens — mỗi screen 1 thư mục, dialog tách file riêng
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
-│   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
-│   ├── workspaces_screen.dart   # Other Projects: list/grid, favourite, auto-detect type, nginx
-│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile + Setup Nginx sau tạo + tạo .vscode/settings.json
-│   ├── profile_screen.dart      # CRUD profiles
-│   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
+│   ├── odoo_projects/           # Odoo Projects screen
+│   │   ├── odoo_projects_screen.dart  # (class OdooProjectsScreen) ConsumerStatefulWidget
+│   │   ├── odoo_project_list_view.dart  # StatelessWidget — list card layout
+│   │   ├── odoo_project_grid_view.dart  # StatelessWidget — grid card + context menu
+│   │   ├── import_project_dialog.dart
+│   │   ├── project_info_dialog.dart   # Info + Edit + Nginx + Database gộp 1 dialog
+│   │   ├── create_db_dialog.dart
+│   │   ├── git_pull_dialog.dart
+│   │   ├── git_commit_dialog.dart     # + RepoStatus data class
+│   │   ├── selective_pull_dialog.dart
+│   │   └── selective_pull_log_dialog.dart
+│   ├── other_projects/          # Other Projects screen (was workspaces_screen)
+│   │   ├── other_projects_screen.dart # (class OtherProjectsScreen) ConsumerStatefulWidget
+│   │   ├── other_project_list_view.dart  # StatelessWidget — list card layout
+│   │   ├── other_project_grid_view.dart  # StatelessWidget — grid card + context menu
+│   │   ├── import_workspace_dialog.dart
+│   │   ├── simple_git_pull_dialog.dart
+│   │   ├── simple_git_commit_dialog.dart
+│   │   ├── create_pr_dialog.dart
+│   │   ├── switch_branch_dialog.dart  # ~1057 dòng, cần tách tiếp (phase 2)
+│   │   └── prune_dialog.dart
+│   ├── odoo_workspace/          # Workspace View: dashboard quản lý repos trong addons/
+│   │   ├── odoo_workspace_dialog.dart # Dialog chính (class OdooWorkspaceDialog)
+│   │   ├── repo_info.dart             # RepoInfo data class (dùng chung bởi tất cả dialog)
+│   │   ├── repo_branch_dialog.dart    # ~1023 dòng, cần tách tiếp (phase 2)
+│   │   ├── repo_git_pull_dialog.dart
+│   │   ├── repo_commit_dialog.dart
+│   │   ├── repo_create_pr_dialog.dart
+│   │   ├── repo_prune_dialog.dart
+│   │   ├── branch_picker_dialog.dart
+│   │   ├── workspace_commit_dialog.dart
+│   │   ├── git_action_dialog.dart
+│   │   └── publish_modules_dialog.dart
+│   ├── profile/                 # CRUD profiles
+│   │   ├── profile_screen.dart
+│   │   ├── profile_dialog.dart
+│   │   └── clone_odoo_dialog.dart
+│   ├── settings/                # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
+│   │   ├── settings_screen.dart       # Shell (~73 dòng) — TabBar + 6 tab widgets
+│   │   ├── theme_tab.dart             # ConsumerWidget — language, theme mode, accent color
+│   │   ├── docker_tab.dart            # ConsumerWidget — docker status, install/start
+│   │   ├── python_tab.dart            # ConsumerStatefulWidget — python check + venv (sub-tabs)
+│   │   ├── postgres_tab.dart          # ConsumerWidget — client tools, server status
+│   │   ├── nginx_tab.dart             # ConsumerStatefulWidget — config, port check
+│   │   ├── git_tab.dart               # ConsumerWidget — git accounts CRUD
+│   │   ├── git_account_dialog.dart
+│   │   ├── python_install_dialog.dart
+│   │   ├── python_uninstall_dialog.dart
+│   │   ├── pg_setup_dialog.dart
+│   │   ├── postgres_install_dialog.dart
+│   │   ├── docker_install_dialog.dart
+│   │   └── nginx_init_dialog.dart
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
+│   ├── venv/                    # Dialogs tách từ venv_screen
+│   │   ├── package_list_dialog.dart
+│   │   ├── pip_install_dialog.dart
+│   │   └── install_requirements_dialog.dart
+│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile
+│   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
 │   ├── vscode_config_screen.dart # Sinh debug config (ẩn khỏi menu, code giữ nguyên)
 │   ├── folder_structure_screen.dart # Tạo folder structure độc lập
-│   ├── odoo_workspace_dialog.dart # Workspace View: dashboard quản lý repos trong addons/
-│   └── settings_screen.dart     # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
+│   └── environment_screen.dart  # Environment check screen
+├── providers/                   # Riverpod state management (business logic tách khỏi UI)
+│   ├── theme_provider.dart      # ThemeState + ThemeNotifier (Notifier, sync)
+│   ├── locale_provider.dart     # LocaleNotifier (Notifier, sync)
+│   ├── profile_provider.dart    # ProfileState + ProfileNotifier (AsyncNotifier)
+│   ├── environment_provider.dart # EnvironmentState + EnvironmentNotifier (Notifier)
+│   ├── odoo_projects_provider.dart # OdooProjectsState + OdooProjectsNotifier (AsyncNotifier)
+│   ├── other_projects_provider.dart # OtherProjectsState + OtherProjectsNotifier (AsyncNotifier)
+│   ├── docker_status_provider.dart  # DockerStatus + DockerStatusNotifier (Notifier, auto-check+nginx)
+│   └── update_provider.dart     # UpdateState + UpdateNotifier (Notifier, auto-check)
 ├── widgets/                     # Reusable components
 │   ├── status_card.dart         # Card hiển thị trạng thái
 │   ├── directory_picker_field.dart # Text field + browse button
 │   ├── log_output.dart          # Real-time log với color coding + SelectionArea
-│   └── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
+│   ├── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
+│   └── ansi_parser.dart         # Shared ANSI escape code parser cho terminal log output
 └── templates/
     ├── odoo_templates.dart      # Sinh odoo.conf, README.md, .vscode/settings.json, git-repositories.sh/.ps1
     ├── nginx_templates.dart     # Sinh nginx conf (odoo/generic), nginx.conf, docker-compose.yml
@@ -75,10 +138,10 @@ lib/
 ```
 
 ## Navigation (4 tabs)
-1. **Odoo Projects** - projects_screen.dart (icon: folder_special)
-2. **Other Projects** - workspaces_screen.dart (icon: workspaces)
-3. **Profiles** - profile_screen.dart (icon: person)
-4. **Settings** - settings_screen.dart (icon: settings)
+1. **Odoo Projects** - odoo_projects/odoo_projects_screen.dart (class OdooProjectsScreen, icon: folder_special)
+2. **Other Projects** - other_projects/other_projects_screen.dart (class OtherProjectsScreen, icon: workspaces)
+3. **Profiles** - profile/profile_screen.dart (icon: person)
+4. **Settings** - settings/settings_screen.dart (icon: settings)
    - Tab 0 **Theme**: ngôn ngữ, theme mode, accent color, preview
    - Tab 1 **Docker**: trạng thái + cài đặt
    - Tab 2 **Python**: Python installations + cài đặt + Venv Manager (nhúng VenvScreen)
@@ -99,7 +162,9 @@ lib/
 ## Các pattern chính
 - **Immutable models** với `fromJson()`/`toJson()` + `copyWith()` (nullable field dùng `Function()`)
 - **Stateless services** - static methods, không giữ state
-- **Provider** chỉ cho ThemeService, LocaleService (ChangeNotifier)
+- **Riverpod** — state management: `Notifier` cho sync state (theme, locale), `AsyncNotifier` cho async data (profiles, projects...)
+  `ConsumerWidget` cho stateless screens, `ConsumerStatefulWidget` cho screens cần UI controllers (TabController, TextEditingController...)
+  Business logic trong `lib/providers/`, UI chỉ watch state + dispatch actions. KHÔNG dùng `StateNotifier` (legacy)
 - **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
@@ -446,8 +511,15 @@ File: `lib/screens/odoo_workspace_dialog.dart`
     Sau đóng dialog → reload workspace view.
 - **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
 - **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
-- **Grid columns** (projects_screen + workspaces_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
-- **Grid card layout** (workspaces): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
+- **Grid columns** (odoo_projects_screen + other_projects_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
+- **Grid card layout** (other_projects): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
+
+### Refactoring — Đã hoàn thành
+Branch: `refactor/core-clean-structure`
+- Phase 1: tách dialog ra file riêng, rename projects→odoo_projects, workspaces→other_projects
+- Phase 2: Riverpod migration — 8 providers, tất cả screens dùng ConsumerWidget/ConsumerStatefulWidget
+- Phase 3: tách settings tabs (6 tab files), ANSI shared utility, GitBranchService, list/grid view widgets
+- Kết quả: không còn file code nào > 1000 dòng (trừ l10n generated)
 
 ### Roadmap — Chưa triển khai
 - **Cherry-pick**: Chọn 1 hoặc nhiều commits cụ thể từ branch khác để copy vào branch hiện tại
@@ -499,11 +571,11 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 ### Code quality
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
-- **`StorageService.saveSettings` PHẢI load trước rồi merge** — KHÔNG BAO GIỜ ghi đè toàn bộ settings
-  Pattern đúng: `final settings = await StorageService.loadSettings(); settings['key'] = value; await StorageService.saveSettings(settings);`
-  Bug đã xảy ra: ThemeService ghi đè toàn bộ settings → mất nginx config, git accounts, workspace repos
+- **`StorageService.updateSettings()` — LUÔN dùng cho write settings** — atomic read-modify-write trong `_synchronized` lock
+  Pattern đúng: `await StorageService.updateSettings((settings) { settings['key'] = value; });`
+  KHÔNG BAO GIỜ dùng pattern cũ `loadSettings → modify → saveSettings` (race condition: 2 provider cùng load → cái sau ghi đè mất data cái trước)
+  `loadSettings()` chỉ dùng cho read-only (startup, load preferences)
 - **`StorageService` có `_synchronized` lock** — serialize tất cả write operations để tránh race condition
-  Nếu 2 save chạy đồng thời (VD: saveSettings + saveWorkspaces), operation sau đọc config cũ → ghi đè mất data
   Tất cả save/add/remove methods đều wrap trong `_synchronized`, read-modify-write trong cùng 1 lock
 - **Xóa project/workspace phải cleanup nginx** — nếu `hasNginx` thì gọi `NginxService.removeNginx(sub)` trước khi xóa
   Wrap try-catch để không block việc xóa nếu nginx cleanup fail
