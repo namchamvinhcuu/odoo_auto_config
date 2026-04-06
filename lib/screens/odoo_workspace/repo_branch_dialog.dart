@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../l10n/l10n_extension.dart';
+import '../../services/git_branch_service.dart';
 import 'repo_git_pull_dialog.dart';
 import 'repo_commit_dialog.dart';
 import 'repo_create_pr_dialog.dart';
@@ -49,71 +49,20 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
 
   Future<void> _loadBranches() async {
     setState(() => _loading = true);
-    final result = await Process.run(
-      'git',
-      ['branch', '-a', '--format=%(refname)'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
-    if (result.exitCode != 0 || !mounted) {
-      setState(() => _loading = false);
-      return;
-    }
-
-    final localBranches = <String>{};
-    final remoteBranches = <String>{};
-    for (final ref in (result.stdout as String)
-        .split('\n')
-        .map((b) => b.trim())
-        .where((b) => b.isNotEmpty)) {
-      if (ref.contains('HEAD')) continue;
-      if (ref.startsWith('refs/heads/')) {
-        localBranches.add(ref.substring('refs/heads/'.length));
-      } else if (ref.startsWith('refs/remotes/origin/')) {
-        remoteBranches.add(ref.substring('refs/remotes/origin/'.length));
-      }
-    }
-
-    int changed = 0;
-    final statusResult = await Process.run(
-      'git',
-      ['status', '--porcelain'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
-    if (statusResult.exitCode == 0) {
-      changed = (statusResult.stdout as String)
-          .trimRight()
-          .split('\n')
-          .where((l) => l.isNotEmpty)
-          .length;
-    }
-
-    int behind = 0;
-    final behindResult = await Process.run(
-      'git',
-      ['rev-list', '--count', 'HEAD..@{upstream}'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
-    if (behindResult.exitCode == 0) {
-      behind = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
-    }
-
-    if (mounted) {
-      setState(() {
-        _local = localBranches.toList()
-          ..sort((a, b) {
-            if (a == _current) return -1;
-            if (b == _current) return 1;
-            return a.compareTo(b);
-          });
-        _remote = remoteBranches.toList()..sort();
-        _changedFiles = changed;
-        _behindRemote = behind;
-        _loading = false;
-      });
-    }
+    final result = await GitBranchService.loadBranches(widget.repoPath);
+    if (!mounted) return;
+    setState(() {
+      _local = result.local
+        ..sort((a, b) {
+          if (a == _current) return -1;
+          if (b == _current) return 1;
+          return a.compareTo(b);
+        });
+      _remote = result.remote..sort();
+      _changedFiles = result.changedFiles;
+      _behindRemote = result.behindRemote;
+      _loading = false;
+    });
   }
 
   Future<void> _checkout(String branch) async {
@@ -121,18 +70,14 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
       _switching = true;
       _message = null;
     });
-    final result = await Process.run(
-      'git',
-      ['checkout', branch],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
+    final result =
+        await GitBranchService.switchBranch(widget.repoPath, branch);
     if (!mounted) return;
-    if (result.exitCode == 0) {
+    if (result.success) {
       setState(() {
         _current = branch;
         _switching = false;
-        _message = 'Switched to $branch';
+        _message = result.output;
         _isError = false;
       });
       widget.onChanged(branch);
@@ -140,7 +85,7 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
     } else {
       setState(() {
         _switching = false;
-        _message = (result.stderr as String).trim();
+        _message = result.output;
         _isError = true;
       });
     }
@@ -185,24 +130,20 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
     controller.dispose();
     if (name == null || !mounted) return;
 
-    final result = await Process.run(
-      'git',
-      ['checkout', '-b', name],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
+    final result =
+        await GitBranchService.createBranch(widget.repoPath, name);
     if (!mounted) return;
-    if (result.exitCode == 0) {
+    if (result.success) {
       setState(() {
         _current = name;
-        _message = 'Created and switched to $name';
+        _message = result.output;
         _isError = false;
       });
       widget.onChanged(name);
       _loadBranches();
     } else {
       setState(() {
-        _message = (result.stderr as String).trim();
+        _message = result.output;
         _isError = true;
       });
     }
@@ -231,22 +172,17 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
     );
     if (confirmed != true || !mounted) return;
 
-    final result = await Process.run(
-      'git',
-      ['branch', '-d', branch],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
+    final result =
+        await GitBranchService.deleteBranch(widget.repoPath, branch);
     if (!mounted) return;
-    if (result.exitCode == 0) {
+    if (result.success) {
       setState(() {
-        _message = 'Deleted branch $branch';
+        _message = result.output;
         _isError = false;
       });
       _loadBranches();
     } else {
-      final stderr = (result.stderr as String).trim();
-      if (stderr.contains('not fully merged')) {
+      if (GitBranchService.isNotFullyMergedError(result.output)) {
         if (!mounted) return;
         final force = await AppDialog.show<bool>(
           context: context,
@@ -269,30 +205,22 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
           ),
         );
         if (force == true && mounted) {
-          final forceResult = await Process.run(
-            'git',
-            ['branch', '-D', branch],
-            workingDirectory: widget.repoPath,
-            runInShell: true,
+          final forceResult = await GitBranchService.deleteBranch(
+            widget.repoPath,
+            branch,
+            force: true,
           );
           if (mounted) {
-            if (forceResult.exitCode == 0) {
-              setState(() {
-                _message = 'Force deleted branch $branch';
-                _isError = false;
-              });
-              _loadBranches();
-            } else {
-              setState(() {
-                _message = (forceResult.stderr as String).trim();
-                _isError = true;
-              });
-            }
+            setState(() {
+              _message = forceResult.output;
+              _isError = !forceResult.success;
+            });
+            if (forceResult.success) _loadBranches();
           }
         }
       } else {
         setState(() {
-          _message = stderr;
+          _message = result.output;
           _isError = true;
         });
       }
@@ -304,27 +232,15 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
       _switching = true;
       _message = null;
     });
-    final result = await Process.run(
-      'git',
-      ['push', '-u', 'origin', branch],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
+    final result =
+        await GitBranchService.publishBranch(widget.repoPath, branch);
     if (!mounted) return;
-    if (result.exitCode == 0) {
-      setState(() {
-        _switching = false;
-        _message = 'Published $branch to origin';
-        _isError = false;
-      });
-      _loadBranches();
-    } else {
-      setState(() {
-        _switching = false;
-        _message = 'Push failed: ${(result.stderr as String).trim()}';
-        _isError = true;
-      });
-    }
+    setState(() {
+      _switching = false;
+      _message = result.output;
+      _isError = !result.success;
+    });
+    if (result.success) _loadBranches();
   }
 
   Future<void> _pullBranch(String branch) async {
@@ -426,101 +342,29 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
     });
 
     try {
+      final MergeResult result;
       if (direction == 'into_current') {
-        final result = await Process.run(
-          'git',
-          ['merge', branch],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
+        result = await GitBranchService.mergeIntoCurrent(
+          widget.repoPath,
+          branch,
+          _current,
         );
-        if (!mounted) return;
-        if (result.exitCode == 0) {
-          final push = await Process.run(
-            'git',
-            ['push'],
-            workingDirectory: widget.repoPath,
-            runInShell: true,
-          );
-          setState(() {
-            _switching = false;
-            _message = push.exitCode == 0
-                ? 'Merged $branch into $_current and pushed'
-                : 'Merged $branch into $_current (push failed: ${(push.stderr as String).trim()})';
-            _isError = push.exitCode != 0;
-          });
-        } else {
-          setState(() {
-            _switching = false;
-            _message = (result.stderr as String).trim().isNotEmpty
-                ? (result.stderr as String).trim()
-                : (result.stdout as String).trim();
-            _isError = true;
-          });
-        }
       } else {
-        final savedCurrent = _current;
-        var result = await Process.run(
-          'git',
-          ['checkout', branch],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
+        result = await GitBranchService.mergeIntoTarget(
+          widget.repoPath,
+          _current,
+          branch,
         );
-        if (result.exitCode != 0) {
-          if (mounted) {
-            setState(() {
-              _switching = false;
-              _message =
-                  'Checkout $branch failed: ${(result.stderr as String).trim()}';
-              _isError = true;
-            });
-          }
-          return;
-        }
-        result = await Process.run(
-          'git',
-          ['merge', savedCurrent],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
-        );
-        if (result.exitCode != 0) {
-          if (mounted) {
-            setState(() {
-              _current = branch;
-              _switching = false;
-              _message =
-                  'Merge failed: ${(result.stderr as String).trim().isNotEmpty ? (result.stderr as String).trim() : (result.stdout as String).trim()}';
-              _isError = true;
-            });
-          }
-          widget.onChanged(branch);
-          _loadBranches();
-          return;
-        }
-        final push = await Process.run(
-          'git',
-          ['push'],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
-        );
-        await Process.run(
-          'git',
-          ['checkout', savedCurrent],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
-        );
-        if (mounted) {
-          setState(() {
-            _current = savedCurrent;
-            _switching = false;
-            _message = push.exitCode == 0
-                ? 'Merged $savedCurrent into $branch and pushed'
-                : 'Merged $savedCurrent into $branch (push failed: ${(push.stderr as String).trim()})';
-            _isError = push.exitCode != 0;
-          });
-          widget.onChanged(savedCurrent);
-          _loadBranches();
-        }
       }
+      if (!mounted) return;
+      setState(() {
+        _current = result.currentBranch;
+        _switching = false;
+        _message = result.output;
+        _isError = !result.success;
+      });
+      widget.onChanged(result.currentBranch);
+      if (direction == 'into_target') _loadBranches();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -537,39 +381,16 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
       _switching = true;
       _message = null;
     });
-    await Process.run(
-      'git',
-      ['fetch', '--prune'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
-    );
-    final result = await Process.run(
-      'git',
-      ['branch', '-vv'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+    final result = await GitBranchService.cleanStaleBranches(
+      widget.repoPath,
+      currentBranch: _current,
     );
     if (!mounted) return;
 
-    final gone = <String>[];
-    for (final line in (result.stdout as String).split('\n')) {
-      if (line.contains(': gone]')) {
-        final branch = line
-            .trim()
-            .split(RegExp(r'\s+'))
-            .first
-            .replaceFirst('*', '')
-            .trim();
-        if (branch.isNotEmpty && branch != _current) {
-          gone.add(branch);
-        }
-      }
-    }
-
-    if (gone.isEmpty) {
+    if (result.staleBranches.isEmpty) {
       setState(() {
         _switching = false;
-        _message = 'All local branches are up to date with remote';
+        _message = result.output;
         _isError = false;
       });
       return;
@@ -580,36 +401,23 @@ class _RepoBranchDialogState extends State<RepoBranchDialog> {
     if (!mounted) return;
     final toDelete = await AppDialog.show<List<String>>(
       context: context,
-      builder: (ctx) => RepoPruneDialog(branches: gone),
+      builder: (ctx) => RepoPruneDialog(branches: result.staleBranches),
     );
     if (toDelete == null || toDelete.isEmpty || !mounted) return;
 
-    final deleted = <String>[];
-    final failed = <String>[];
-    for (final branch in toDelete) {
-      final del = await Process.run(
-        'git',
-        ['branch', '-D', branch],
-        workingDirectory: widget.repoPath,
-        runInShell: true,
-      );
-      if (del.exitCode == 0) {
-        deleted.add(branch);
-      } else {
-        failed.add(branch);
-      }
-    }
-
+    final deleteResult =
+        await GitBranchService.deleteBranches(widget.repoPath, toDelete);
     if (mounted) {
       setState(() {
-        if (deleted.isNotEmpty) {
-          _message = 'Deleted: ${deleted.join(', ')}';
+        if (deleteResult.deleted.isNotEmpty) {
+          _message = 'Deleted: ${deleteResult.deleted.join(', ')}';
           _isError = false;
         }
-        if (failed.isNotEmpty) {
+        if (deleteResult.failed.isNotEmpty) {
           _message =
-              '${_message ?? ''}${_message != null ? '\n' : ''}Failed: ${failed.join(', ')}';
-          _isError = failed.isNotEmpty && deleted.isEmpty;
+              '${_message ?? ''}${_message != null ? '\n' : ''}Failed: ${deleteResult.failed.join(', ')}';
+          _isError = deleteResult.failed.isNotEmpty &&
+              deleteResult.deleted.isEmpty;
         }
       });
       _loadBranches();

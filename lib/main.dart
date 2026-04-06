@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'l10n/app_localizations.dart';
+import 'providers/locale_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/odoo_projects_provider.dart';
 import 'screens/home_screen.dart';
-import 'screens/odoo_projects/odoo_projects_screen.dart';
-import 'services/locale_service.dart';
 import 'services/storage_service.dart';
-import 'services/theme_service.dart';
 import 'services/tray_service.dart';
 
 void main() async {
@@ -43,42 +43,39 @@ void main() async {
   await windowManager.setPreventClose(true);
   await windowManager.show();
 
-  final themeService = ThemeService();
-  final localeService = LocaleService();
+  // Pre-load preferences before runApp
+  final container = ProviderContainer();
   await Future.wait([
-    themeService.load(),
-    localeService.load(),
-    OdooProjectsScreen.loadViewPreference(),
+    container.read(themeProvider.notifier).load(),
+    container.read(localeProvider.notifier).load(),
+    container.read(odooProjectsProvider.future),
   ]);
 
   // Init system tray
   await TrayService.init(showLabel: 'Show', quitLabel: 'Quit');
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: themeService),
-        ChangeNotifierProvider.value(value: localeService),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const OdooAutoConfigApp(),
     ),
   );
 }
 
-class OdooAutoConfigApp extends StatelessWidget {
+class OdooAutoConfigApp extends ConsumerWidget {
   const OdooAutoConfigApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = context.watch<ThemeService>();
-    final localeService = context.watch<LocaleService>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(themeProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp(
       title: 'Workspace Configuration',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: localeService.locale,
+      locale: locale,
       theme: _buildTheme(theme.seedColor, Brightness.light),
       darkTheme: _buildTheme(theme.seedColor, Brightness.dark),
       themeMode: theme.themeMode,

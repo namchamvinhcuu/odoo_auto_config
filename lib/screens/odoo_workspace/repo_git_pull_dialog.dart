@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../constants/app_constants.dart';
 import '../../l10n/l10n_extension.dart';
+import '../../widgets/ansi_parser.dart';
 
 // ── Repo Git Pull Dialog ──
 
@@ -25,15 +26,6 @@ class RepoGitPullDialog extends StatefulWidget {
 }
 
 class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
-  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
-  static const _ansiColors = <int, Color>{
-    31: Color(0xFFCD3131),
-    32: Color(0xFF0DBC79),
-    33: Color(0xFFE5E510),
-    34: Color(0xFF2472C8),
-    90: Color(0xFF666666),
-  };
-
   final List<String> _logLines = [];
   final _scrollController = ScrollController();
   bool _running = false;
@@ -183,39 +175,6 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
     }
   }
 
-  List<TextSpan> _parseAnsi(String line) {
-    final spans = <TextSpan>[];
-    final defaultColor = Colors.grey.shade300;
-    var currentColor = defaultColor;
-    var lastEnd = 0;
-    for (final match in _ansiRegex.allMatches(line)) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: line.substring(lastEnd, match.start),
-          style: TextStyle(color: currentColor),
-        ));
-      }
-      final code = match.group(0)!;
-      final params = code.substring(2, code.length - 1).split(';');
-      for (final param in params) {
-        final n = int.tryParse(param) ?? 0;
-        if (n == 0) {
-          currentColor = defaultColor;
-        } else if (_ansiColors.containsKey(n)) {
-          currentColor = _ansiColors[n]!;
-        }
-      }
-      lastEnd = match.end;
-    }
-    if (lastEnd < line.length) {
-      spans.add(TextSpan(
-        text: line.substring(lastEnd),
-        style: TextStyle(color: currentColor),
-      ));
-    }
-    return spans;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -275,7 +234,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
                                       fontFamily: 'monospace',
                                       fontSize: AppFontSize.md,
                                     ),
-                                    children: _parseAnsi(line),
+                                    children: AnsiParser.parse(line),
                                   ),
                                 ),
                             ],

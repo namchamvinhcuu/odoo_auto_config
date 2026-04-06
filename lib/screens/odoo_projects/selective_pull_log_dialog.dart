@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../constants/app_constants.dart';
 import '../../l10n/l10n_extension.dart';
+import '../../widgets/ansi_parser.dart';
 
 class SelectivePullLogDialog extends StatefulWidget {
   final String projectPath;
@@ -21,26 +22,6 @@ class SelectivePullLogDialog extends StatefulWidget {
 }
 
 class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
-  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
-  static const _ansiColors = <int, Color>{
-    30: Color(0xFF000000),
-    31: Color(0xFFCD3131),
-    32: Color(0xFF0DBC79),
-    33: Color(0xFFE5E510),
-    34: Color(0xFF2472C8),
-    35: Color(0xFFBC3FBC),
-    36: Color(0xFF11A8CD),
-    37: Color(0xFFE5E5E5),
-    90: Color(0xFF666666),
-    91: Color(0xFFF14C4C),
-    92: Color(0xFF23D18B),
-    93: Color(0xFFF5F543),
-    94: Color(0xFF3B8EEA),
-    95: Color(0xFFD670D6),
-    96: Color(0xFF29B8DB),
-    97: Color(0xFFFFFFFF),
-  };
-
   final List<String> _logLines = [];
   final _scrollController = ScrollController();
   bool _running = false;
@@ -111,39 +92,6 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
     }
   }
 
-  List<TextSpan> _parseAnsi(String line) {
-    final spans = <TextSpan>[];
-    final defaultColor = Colors.grey.shade300;
-    var currentColor = defaultColor;
-    var lastEnd = 0;
-    for (final match in _ansiRegex.allMatches(line)) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: line.substring(lastEnd, match.start),
-          style: TextStyle(color: currentColor),
-        ));
-      }
-      final code = match.group(0)!;
-      final params = code.substring(2, code.length - 1).split(';');
-      for (final param in params) {
-        final n = int.tryParse(param) ?? 0;
-        if (n == 0) {
-          currentColor = defaultColor;
-        } else if (_ansiColors.containsKey(n)) {
-          currentColor = _ansiColors[n]!;
-        }
-      }
-      lastEnd = match.end;
-    }
-    if (lastEnd < line.length) {
-      spans.add(TextSpan(
-        text: line.substring(lastEnd),
-        style: TextStyle(color: currentColor),
-      ));
-    }
-    return spans;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -192,7 +140,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
                             children: [
                               for (final line in _logLines)
                                 Text.rich(
-                                  TextSpan(children: _parseAnsi(line)),
+                                  TextSpan(children: AnsiParser.parse(line)),
                                   style: const TextStyle(
                                     fontFamily: 'monospace',
                                     fontSize: AppFontSize.sm,
