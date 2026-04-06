@@ -283,6 +283,81 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     return 'mkcert'; // fallback: rely on PATH
   }
 
+  static Future<String> get ghPath async {
+    if (isMacOS) {
+      final candidates = [
+        '/opt/homebrew/bin/gh',
+        '/usr/local/bin/gh',
+      ];
+      for (final path in candidates) {
+        if (await File(path).exists()) return path;
+      }
+    } else if (isLinux) {
+      final candidates = [
+        '/usr/bin/gh',
+        '/usr/local/bin/gh',
+        '/snap/bin/gh',
+      ];
+      for (final path in candidates) {
+        if (await File(path).exists()) return path;
+      }
+    }
+    return 'gh';
+  }
+
+  static Future<bool> isGhInstalled() async {
+    try {
+      final gh = await ghPath;
+      final result = await Process.run(gh, ['--version'], runInShell: true);
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Install GitHub CLI (gh) via brew/winget/apt.
+  /// Returns exit code (0 = success).
+  static Future<int> installGh(void Function(String) log) async {
+    final String cmd;
+    final List<String> args;
+
+    if (isMacOS) {
+      cmd = '/opt/homebrew/bin/brew';
+      args = ['install', 'gh'];
+      // Fallback if homebrew is in /usr/local
+      if (!await File(cmd).exists()) {
+        final altBrew = '/usr/local/bin/brew';
+        if (await File(altBrew).exists()) {
+          log('[+] Installing gh via brew...');
+          final result = await Process.run(altBrew, args, runInShell: true);
+          log(result.stdout.toString());
+          if (result.exitCode != 0) log(result.stderr.toString());
+          return result.exitCode;
+        }
+      }
+    } else if (isWindows) {
+      cmd = 'winget';
+      args = ['install', '--id', 'GitHub.cli', '-e', '--accept-source-agreements'];
+    } else {
+      // Linux
+      cmd = 'pkexec';
+      args = ['apt', 'install', '-y', 'gh'];
+    }
+
+    log('[+] Installing gh...');
+    try {
+      final result = await Process.run(cmd, args, runInShell: true);
+      final output = result.stdout.toString().trim();
+      final error = result.stderr.toString().trim();
+      if (output.isNotEmpty) log(output);
+      if (result.exitCode != 0 && error.isNotEmpty) log('[ERROR] $error');
+      return result.exitCode;
+    } catch (e) {
+      log('[ERROR] $e');
+      return 1;
+    }
+  }
+
   /// Check if VSCode is installed
   static Future<bool> isVscodeInstalled() async {
     try {

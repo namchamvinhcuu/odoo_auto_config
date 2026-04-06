@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-import '../generated/version.dart';
+import 'package:odoo_auto_config/generated/version.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -100,7 +100,7 @@ class UpdateService {
 
       // Make executable on Linux
       if (Platform.isLinux && fileName.endsWith('.AppImage')) {
-        await Process.run('chmod', ['+x', filePath]);
+        await Process.run('chmod', ['+x', filePath], runInShell: true);
       }
 
       return filePath;
@@ -132,7 +132,7 @@ class UpdateService {
     final appImagePath = Platform.environment['APPIMAGE'];
     if (appImagePath == null || appImagePath.isEmpty) {
       // Not running as AppImage - just open file manager to downloaded file
-      await Process.run('xdg-open', [p.dirname(newAppImage)]);
+      await Process.run('xdg-open', [p.dirname(newAppImage)], runInShell: true);
       return false;
     }
 
@@ -149,11 +149,11 @@ rm "$newAppImage"
 exec "$appImagePath" &
 rm "\$0"
 ''');
-    await Process.run('chmod', ['+x', scriptPath]);
+    await Process.run('chmod', ['+x', scriptPath], runInShell: true);
 
     // Run script in background with current PID
     await Process.start('bash', [scriptPath, '$pid'],
-        mode: ProcessStartMode.detached);
+        runInShell: true, mode: ProcessStartMode.detached);
 
     // Exit app so script can replace the file
     exit(0);
@@ -215,7 +215,7 @@ rm -f "\$0"
     await Process.run('chmod', ['+x', scriptPath], runInShell: true);
 
     await Process.start('/bin/bash', [scriptPath, '$pid'],
-        mode: ProcessStartMode.detached);
+        runInShell: true, mode: ProcessStartMode.detached);
 
     exit(0);
   }

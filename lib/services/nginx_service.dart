@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import '../models/command_result.dart';
-import '../templates/nginx_templates.dart';
+import 'package:odoo_auto_config/models/command_result.dart';
+import 'package:odoo_auto_config/templates/nginx_templates.dart';
 import 'command_runner.dart';
 import 'platform_service.dart';
 import 'storage_service.dart';
@@ -324,9 +324,9 @@ class NginxService {
   }
 
   static Future<void> saveSettings(Map<String, dynamic> nginx) async {
-    final settings = await StorageService.loadSettings();
-    settings['nginx'] = nginx;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['nginx'] = nginx;
+    });
   }
 
   /// Ensure domain suffix starts with a dot

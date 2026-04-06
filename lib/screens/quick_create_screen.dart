@@ -2,19 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../models/folder_structure_config.dart';
-import '../models/profile.dart';
-import '../models/project_info.dart';
-import '../services/folder_structure_service.dart';
-import '../services/nginx_service.dart';
-import '../services/platform_service.dart';
-import '../services/storage_service.dart';
-import '../templates/odoo_templates.dart';
-import '../widgets/directory_picker_field.dart';
-import '../widgets/log_output.dart';
-import '../widgets/nginx_setup_dialog.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/folder_structure_config.dart';
+import 'package:odoo_auto_config/models/profile.dart';
+import 'package:odoo_auto_config/models/project_info.dart';
+import 'package:odoo_auto_config/services/folder_structure_service.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
+import 'package:odoo_auto_config/templates/odoo_templates.dart';
+import 'package:odoo_auto_config/widgets/directory_picker_field.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 
 class QuickCreateDialog extends StatefulWidget {
   const QuickCreateDialog({super.key});
@@ -281,7 +281,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await showDialog<({String subdomain, int? port})>(
+    final result = await AppDialog.show<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
@@ -317,7 +317,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   }
 
   void _showSymlinkErrorDialog(String message) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -400,7 +400,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         Text(context.l10n.quickCreateTitle,
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
-                        AppDialog.closeButton(context, onClose: () => Navigator.pop(context, _done)),
+                        AppDialog.closeButton(context, enabled: !_creating, onClose: () => Navigator.pop(context, _done)),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),

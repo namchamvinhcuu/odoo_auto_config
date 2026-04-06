@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'command_runner.dart';
 import 'platform_service.dart';
 import 'storage_service.dart';
-import '../templates/postgres_templates.dart';
+import 'package:odoo_auto_config/templates/postgres_templates.dart';
 
 /// Represents a detected PostgreSQL server instance
 class PgServerInfo {
@@ -189,9 +189,9 @@ class PostgresService {
   }
 
   static Future<void> saveSettings(Map<String, dynamic> pg) async {
-    final settings = await StorageService.loadSettings();
-    settings['postgres'] = pg;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['postgres'] = pg;
+    });
   }
 
   // ── Server Detection ──

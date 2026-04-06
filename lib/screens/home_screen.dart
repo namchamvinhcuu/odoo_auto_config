@@ -1,31 +1,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../services/docker_install_service.dart';
-import '../services/nginx_service.dart';
-import '../services/platform_service.dart';
-import '../services/storage_service.dart';
-import '../generated/version.dart';
-import '../services/tray_service.dart';
-import '../services/update_service.dart';
-import 'workspaces_screen.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/generated/version.dart';
+import 'package:odoo_auto_config/providers/docker_status_provider.dart';
+import 'package:odoo_auto_config/providers/theme_provider.dart';
+import 'package:odoo_auto_config/providers/update_provider.dart';
+import 'package:odoo_auto_config/services/tray_service.dart';
+import 'package:odoo_auto_config/services/update_service.dart';
+import 'other_projects/other_projects_screen.dart';
 import 'environment_screen.dart';
-import 'projects_screen.dart';
-import 'profile_screen.dart';
-import 'settings_screen.dart';
+import 'odoo_projects/odoo_projects_screen.dart';
+import 'profile/profile_screen.dart';
+import 'settings/settings_screen.dart';
 
-enum WindowSize {
-  small(Size(800, 600)),
-  medium(Size(1100, 750)),
-  large(Size(1400, 900));
-
-  final Size size;
-  const WindowSize(this.size);
-}
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   /// Navigate to Settings tab, optionally to a specific sub-tab
@@ -36,24 +27,24 @@ class HomeScreen extends StatefulWidget {
 
   /// Re-check Docker status and update banner
   static void recheckDocker() {
-    _HomeScreenState._instance?._checkDocker();
+    _HomeScreenState._instance?._recheckViaProvider();
   }
 
-  /// Update cached close behavior (gọi từ Settings khi user đổi)
+  /// Update cached close behavior — no longer needed, reads from themeProvider
   static void updateCloseBehavior(String value) {
-    _HomeScreenState._instance?._closeBehavior = value;
+    // Kept for backward compatibility — provider is now source of truth
   }
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WindowListener {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   static _HomeScreenState? _instance;
   int _selectedIndex = 0;
   final List<int> _backHistory = [];
   final List<int> _forwardHistory = [];
-  String _closeBehavior = 'exit';
+  String get _closeBehavior => ref.read(themeProvider).closeBehavior;
 
   void _goToTab(int index) {
     if (index != _selectedIndex) {
@@ -74,78 +65,26 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     _backHistory.add(_selectedIndex);
     setState(() => _selectedIndex = _forwardHistory.removeLast());
   }
-  WindowSize _windowSize = WindowSize.large;
-
-  // Docker status
-  bool? _dockerInstalled;
-  bool? _dockerRunning;
-
-  // Update status
-  UpdateInfo? _updateInfo;
-  bool _updating = false;
+  void _recheckViaProvider() {
+    ref.read(dockerStatusProvider.notifier).check();
+  }
 
   @override
   void initState() {
     super.initState();
     _instance = this;
     windowManager.addListener(this);
-    _loadWindowSize();
-    _loadCloseBehavior();
-    _checkUpdate();
-    _checkDocker();
+    // Docker check and update check are auto-triggered by providers in build()
   }
 
-  Future<void> _loadWindowSize() async {
-    final settings = await StorageService.loadSettings();
-    final saved = settings['windowSize'] as String?;
-    if (saved != null && mounted) {
-      final ws = WindowSize.values.firstWhere(
-        (w) => w.name == saved,
-        orElse: () => WindowSize.large,
-      );
-      setState(() => _windowSize = ws);
-    }
-  }
 
-  Future<void> _saveWindowSize(WindowSize ws) async {
-    final settings = await StorageService.loadSettings();
-    settings['windowSize'] = ws.name;
-    await StorageService.saveSettings(settings);
-  }
-
-  Future<void> _checkDocker() async {
-    // Retry up to 3 times with delay - docker daemon may not be ready yet after login
-    for (var attempt = 0; attempt < 3; attempt++) {
-      final installed = await DockerInstallService.isInstalled();
-      final running = installed ? await DockerInstallService.isRunning() : false;
-
-      if (mounted) {
-        setState(() {
-          _dockerInstalled = installed;
-          _dockerRunning = running;
-        });
-      }
-
-      if (!installed || running) break;
-
-      // Docker installed but daemon not ready - wait and retry
-      if (attempt < 2) {
-        await Future.delayed(const Duration(seconds: 5));
-        if (!mounted) return;
-      }
-    }
-
-    // Auto-start nginx container if docker is running
-    if (_dockerInstalled == true && _dockerRunning == true) {
-      await _autoStartNginx();
-    }
-  }
-
-  Future<void> _checkUpdate({bool showUpToDate = false}) async {
+  Future<void> _checkUpdateWithSnackBar() async {
     final info = await UpdateService.checkForUpdate();
-    if (info != null && info.hasUpdate && mounted) {
-      setState(() => _updateInfo = info);
-    } else if (showUpToDate && mounted) {
+    if (info != null && info.hasUpdate) {
+      // Provider will pick it up via its own check; but we can also set it
+      // No need — provider already has it. Just in case it missed:
+      ref.read(updateProvider.notifier).checkForUpdate();
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('v$appVersion — up to date')),
       );
@@ -153,48 +92,18 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future<void> _performUpdate() async {
-    final info = _updateInfo;
-    if (info == null || info.downloadUrl == null || info.assetName == null) {
-      return;
-    }
-    setState(() => _updating = true);
-    final path = await UpdateService.download(info.downloadUrl!, info.assetName!);
-    if (path == null) {
-      if (mounted) {
-        setState(() => _updating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.updateDownloadFailed)),
-        );
-      }
-      return;
-    }
-    final installed = await UpdateService.install(path);
-    if (!installed && mounted) {
-      // Cleanup downloaded file on failure
-      try { File(path).deleteSync(); } catch (_) {}
-      setState(() => _updating = false);
+    final success = await ref.read(updateProvider.notifier).performUpdate();
+    if (!success && mounted) {
+      final updateState = ref.read(updateProvider);
+      final message = updateState.info?.downloadUrl == null
+          ? context.l10n.updateDownloadFailed
+          : context.l10n.updateInstallFailed;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.updateInstallFailed)),
+        SnackBar(content: Text(message)),
       );
     }
   }
 
-  Future<void> _autoStartNginx() async {
-    final nginx = await NginxService.loadSettings();
-    final container = (nginx['containerName'] ?? '').toString();
-    if (container.isEmpty) return;
-
-    final running = await NginxService.isDockerContainerRunning(container);
-    if (running) return;
-
-    // Container exists but stopped - try to start it
-    try {
-      final docker = await PlatformService.dockerPath;
-      await Process.run(docker, ['start', container], runInShell: true);
-    } catch (_) {}
-  }
-
-  @override
   @override
   void dispose() {
     windowManager.removeListener(this);
@@ -202,9 +111,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     super.dispose();
   }
 
-  Future<void> _loadCloseBehavior() async {
-    _closeBehavior = await TrayService.getCloseBehavior();
-  }
 
   @override
   void onWindowClose() async {
@@ -241,8 +147,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   bool _isMinimizing = false;
 
   static const _screens = <Widget>[
-    ProjectsScreen(),
-    WorkspacesScreen(),
+    OdooProjectsScreen(),
+    OtherProjectsScreen(),
     ProfileScreen(),
     EnvironmentScreen(),
     SettingsScreen(),
@@ -251,7 +157,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   bool _resizing = false;
 
   Future<void> _setWindowSize(WindowSize ws) async {
-    if (_resizing || ws == _windowSize) return;
+    final currentWs = ref.read(themeProvider).windowSize;
+    if (_resizing || ws == currentWs) return;
     _resizing = true;
 
     final currentSize = await windowManager.getSize();
@@ -272,9 +179,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       await Future.delayed(stepDuration);
     }
 
-    setState(() => _windowSize = ws);
     _resizing = false;
-    _saveWindowSize(ws);
+    ref.read(themeProvider.notifier).setWindowSize(ws);
   }
 
   String _windowSizeLabel(WindowSize ws) {
@@ -301,9 +207,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    final dockerBanner = _dockerInstalled == false
+    final dockerStatus = ref.watch(dockerStatusProvider);
+    final updateState = ref.watch(updateProvider);
+
+    final dockerBanner = dockerStatus.installed == false
         ? context.l10n.dockerNotInstalledBanner
-        : (_dockerInstalled == true && _dockerRunning == false)
+        : (dockerStatus.installed == true && dockerStatus.running == false)
             ? context.l10n.dockerNotRunningBanner
             : null;
 
@@ -319,16 +228,16 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       child: Scaffold(
       body: Column(
         children: [
-          if (_updateInfo != null && _updateInfo!.hasUpdate)
+          if (updateState.hasUpdate)
             MaterialBanner(
               content: Text(
                 context.l10n.updateAvailable(
-                    _updateInfo!.currentVersion, _updateInfo!.latestVersion),
+                    updateState.info!.currentVersion, updateState.info!.latestVersion),
               ),
               leading: const Icon(Icons.system_update, color: Colors.blue),
               backgroundColor: Colors.blue.withValues(alpha: 0.1),
               actions: [
-                if (_updating)
+                if (updateState.updating)
                   const Padding(
                     padding: EdgeInsets.all(AppSpacing.sm),
                     child: SizedBox(
@@ -343,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                     child: Text(context.l10n.updateNow),
                   ),
                 TextButton(
-                  onPressed: () => setState(() => _updateInfo = null),
+                  onPressed: () => ref.read(updateProvider.notifier).dismiss(),
                   child: Text(context.l10n.dismiss),
                 ),
               ],
@@ -352,10 +261,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             MaterialBanner(
               content: Text(dockerBanner),
               leading: Icon(Icons.sailing,
-                  color: _dockerInstalled == false
+                  color: dockerStatus.installed == false
                       ? Colors.red
                       : Colors.orange),
-              backgroundColor: _dockerInstalled == false
+              backgroundColor: dockerStatus.installed == false
                   ? Colors.red.withValues(alpha: 0.1)
                   : Colors.orange.withValues(alpha: 0.1),
               actions: [
@@ -406,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                               tooltip: _windowSizeTooltip(ws),
                             ))
                         .toList(),
-                    selected: {_windowSize},
+                    selected: {ref.watch(themeProvider).windowSize},
                     onSelectionChanged: (s) => _setWindowSize(s.first),
                     showSelectedIcon: false,
                     style: ButtonStyle(
@@ -474,9 +383,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       TextButton.icon(
-                        onPressed: _updating
+                        onPressed: updateState.updating
                             ? null
-                            : () => _checkUpdate(showUpToDate: true),
+                            : () => _checkUpdateWithSnackBar(),
                         icon: const Icon(Icons.system_update,
                             size: AppIconSize.lg),
                         label: const Text('Check Update'),

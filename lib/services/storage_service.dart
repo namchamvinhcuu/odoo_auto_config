@@ -220,6 +220,20 @@ class StorageService {
       await _writeConfig(config);
     });
 
+  /// Atomic read-modify-write for settings. Prevents race conditions when
+  /// multiple providers update different keys concurrently.
+  /// The [update] callback receives the current settings and should modify
+  /// the map in-place (add/change keys).
+  static Future<void> updateSettings(
+      void Function(Map<String, dynamic> settings) update) =>
+    _synchronized(() async {
+      final config = await _readConfig();
+      final settings = (config['settings'] as Map<String, dynamic>?) ?? {};
+      update(settings);
+      config['settings'] = settings;
+      await _writeConfig(config);
+    });
+
   /// Check if a port is already used by another project
   static Future<String?> checkPortConflict(
       int httpPort, int longpollingPort, String? excludePath) async {

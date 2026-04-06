@@ -1,14 +1,14 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../models/python_info.dart';
-import '../services/docker_install_service.dart';
-import '../services/python_checker_service.dart';
-import '../services/python_install_service.dart';
-import '../services/platform_service.dart';
-import '../widgets/log_output.dart';
-import '../widgets/status_card.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/python_info.dart';
+import 'package:odoo_auto_config/services/docker_install_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/python_checker_service.dart';
+import 'package:odoo_auto_config/services/python_install_service.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/status_card.dart';
 
 class PythonCheckScreen extends StatefulWidget {
   const PythonCheckScreen({super.key});
@@ -76,7 +76,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   }
 
   void _showDockerInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (context) => _DockerInstallDialog(onInstalled: () => _scan()),
     );
@@ -130,7 +130,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   }
 
   void _showInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (context) => _PythonInstallDialog(
         installedVersions:
