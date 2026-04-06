@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/models/python_info.dart';
 import 'package:odoo_auto_config/models/venv_config.dart';
 import 'package:odoo_auto_config/models/venv_info.dart';
+import 'package:odoo_auto_config/providers/venv_provider.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/python_checker_service.dart';
-import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/services/venv_service.dart';
 import 'package:odoo_auto_config/widgets/directory_picker_field.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
@@ -17,14 +18,14 @@ import 'venv/install_requirements_dialog.dart';
 import 'venv/package_list_dialog.dart';
 import 'venv/pip_install_dialog.dart';
 
-class VenvScreen extends StatefulWidget {
+class VenvScreen extends ConsumerStatefulWidget {
   const VenvScreen({super.key});
 
   @override
-  State<VenvScreen> createState() => _VenvScreenState();
+  ConsumerState<VenvScreen> createState() => _VenvScreenState();
 }
 
-class _VenvScreenState extends State<VenvScreen>
+class _VenvScreenState extends ConsumerState<VenvScreen>
     with SingleTickerProviderStateMixin {
   final _checker = PythonCheckerService();
   final _venvService = VenvService();
@@ -44,16 +45,11 @@ class _VenvScreenState extends State<VenvScreen>
   List<VenvInfo> _foundVenvs = [];
   bool _scanning = false;
 
-  // Registered venvs
-  List<VenvInfo> _registeredVenvs = [];
-  bool _loadingRegistered = false;
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadPythons();
-    _loadRegisteredVenvs();
   }
 
   Future<void> _loadPythons() async {
@@ -68,43 +64,8 @@ class _VenvScreenState extends State<VenvScreen>
     });
   }
 
-  Future<void> _loadRegisteredVenvs() async {
-    if (!mounted) return;
-    setState(() => _loadingRegistered = true);
-    final saved = await StorageService.loadRegisteredVenvs();
-    final List<VenvInfo> venvs = [];
-    for (final json in saved) {
-      final info = VenvInfo.fromJson(json);
-      // Re-inspect to get fresh python/pip version
-      final inspected = await _venvService.inspectVenv(info.path);
-      if (inspected != null) {
-        venvs.add(VenvInfo(
-          path: inspected.path,
-          pythonVersion: inspected.pythonVersion,
-          pipVersion: inspected.pipVersion,
-          isValid: inspected.isValid,
-          label: info.label,
-        ));
-      } else {
-        venvs.add(VenvInfo(
-          path: info.path,
-          pythonVersion: info.pythonVersion,
-          pipVersion: info.pipVersion,
-          isValid: false,
-          label: info.label,
-        ));
-      }
-    }
-    if (!mounted) return;
-    setState(() {
-      _registeredVenvs = venvs;
-      _loadingRegistered = false;
-    });
-  }
-
   Future<void> _registerVenv(VenvInfo venv) async {
-    await StorageService.addRegisteredVenv(venv.toJson());
-    await _loadRegisteredVenvs();
+    await ref.read(venvProvider.notifier).register(venv);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.registeredVenv(venv.name))),
@@ -189,8 +150,7 @@ class _VenvScreenState extends State<VenvScreen>
           }
         }
       }
-      await StorageService.removeRegisteredVenv(venv.path);
-      await _loadRegisteredVenvs();
+      await ref.read(venvProvider.notifier).remove(venv.path);
     }
   }
 
@@ -287,8 +247,7 @@ class _VenvScreenState extends State<VenvScreen>
         isValid: venv.isValid,
         label: newLabel,
       );
-      await StorageService.addRegisteredVenv(updated.toJson());
-      await _loadRegisteredVenvs();
+      await ref.read(venvProvider.notifier).updateVenv(updated);
     }
   }
 
@@ -358,14 +317,13 @@ class _VenvScreenState extends State<VenvScreen>
     final results = await _venvService.scanForVenvs(_scanDir);
 
     // Auto-register all found venvs
+    final registeredVenvs =
+        ref.read(venvProvider).valueOrNull?.registeredVenvs ?? [];
     for (final venv in results) {
-      if (venv.isValid && !_registeredVenvs.any((v) => v.path == venv.path)) {
-        await StorageService.addRegisteredVenv(venv.toJson());
+      if (venv.isValid && !registeredVenvs.any((v) => v.path == venv.path)) {
+        await ref.read(venvProvider.notifier).register(venv);
       }
     }
-
-    // Reload registered list
-    await _loadRegisteredVenvs();
 
     setState(() {
       _foundVenvs = results;
@@ -424,7 +382,12 @@ class _VenvScreenState extends State<VenvScreen>
 
   // ── Tab 1: Registered venvs ──
   Widget _buildRegisteredTab() {
-    if (_loadingRegistered) {
+    final venvAsync = ref.watch(venvProvider);
+    final isLoading = venvAsync.isLoading;
+    final registeredVenvs =
+        venvAsync.valueOrNull?.registeredVenvs ?? [];
+
+    if (isLoading && registeredVenvs.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -442,14 +405,14 @@ class _VenvScreenState extends State<VenvScreen>
               ),
             ),
             IconButton.filled(
-              onPressed: _loadRegisteredVenvs,
+              onPressed: () => ref.read(venvProvider.notifier).reload(),
               icon: const Icon(Icons.refresh),
               tooltip: context.l10n.refresh,
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        if (_registeredVenvs.isEmpty)
+        if (registeredVenvs.isEmpty)
           Expanded(
             child: Center(
               child: StatusCard(
@@ -462,9 +425,9 @@ class _VenvScreenState extends State<VenvScreen>
         else
           Expanded(
             child: ListView.builder(
-              itemCount: _registeredVenvs.length,
+              itemCount: registeredVenvs.length,
               itemBuilder: (context, index) => _buildVenvCard(
-                _registeredVenvs[index],
+                registeredVenvs[index],
                 showRegister: false,
                 showRemove: true,
               ),
@@ -557,8 +520,10 @@ class _VenvScreenState extends State<VenvScreen>
     bool showRegister = false,
     bool showRemove = false,
   }) {
+    final registeredVenvs =
+        ref.watch(venvProvider).valueOrNull?.registeredVenvs ?? [];
     final isAlreadyRegistered =
-        _registeredVenvs.any((v) => v.path == venv.path);
+        registeredVenvs.any((v) => v.path == venv.path);
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),

@@ -6,8 +6,8 @@ import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/generated/version.dart';
 import 'package:odoo_auto_config/providers/docker_status_provider.dart';
+import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/providers/update_provider.dart';
-import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:odoo_auto_config/services/update_service.dart';
 import 'other_projects/other_projects_screen.dart';
@@ -15,15 +15,6 @@ import 'environment_screen.dart';
 import 'odoo_projects/odoo_projects_screen.dart';
 import 'profile/profile_screen.dart';
 import 'settings/settings_screen.dart';
-
-enum WindowSize {
-  small(Size(800, 600)),
-  medium(Size(1100, 750)),
-  large(Size(1400, 900));
-
-  final Size size;
-  const WindowSize(this.size);
-}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -39,9 +30,9 @@ class HomeScreen extends ConsumerStatefulWidget {
     _HomeScreenState._instance?._recheckViaProvider();
   }
 
-  /// Update cached close behavior (gọi từ Settings khi user đổi)
+  /// Update cached close behavior — no longer needed, reads from themeProvider
   static void updateCloseBehavior(String value) {
-    _HomeScreenState._instance?._closeBehavior = value;
+    // Kept for backward compatibility — provider is now source of truth
   }
 
   @override
@@ -53,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   int _selectedIndex = 0;
   final List<int> _backHistory = [];
   final List<int> _forwardHistory = [];
-  String _closeBehavior = 'exit';
+  String get _closeBehavior => ref.read(themeProvider).closeBehavior;
 
   void _goToTab(int index) {
     if (index != _selectedIndex) {
@@ -74,8 +65,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     _backHistory.add(_selectedIndex);
     setState(() => _selectedIndex = _forwardHistory.removeLast());
   }
-  WindowSize _windowSize = WindowSize.large;
-
   void _recheckViaProvider() {
     ref.read(dockerStatusProvider.notifier).check();
   }
@@ -85,28 +74,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     super.initState();
     _instance = this;
     windowManager.addListener(this);
-    _loadWindowSize();
-    _loadCloseBehavior();
     // Docker check and update check are auto-triggered by providers in build()
   }
 
-  Future<void> _loadWindowSize() async {
-    final settings = await StorageService.loadSettings();
-    final saved = settings['windowSize'] as String?;
-    if (saved != null && mounted) {
-      final ws = WindowSize.values.firstWhere(
-        (w) => w.name == saved,
-        orElse: () => WindowSize.large,
-      );
-      setState(() => _windowSize = ws);
-    }
-  }
-
-  Future<void> _saveWindowSize(WindowSize ws) async {
-    await StorageService.updateSettings((settings) {
-      settings['windowSize'] = ws.name;
-    });
-  }
 
   Future<void> _checkUpdateWithSnackBar() async {
     final info = await UpdateService.checkForUpdate();
@@ -141,9 +111,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     super.dispose();
   }
 
-  Future<void> _loadCloseBehavior() async {
-    _closeBehavior = await TrayService.getCloseBehavior();
-  }
 
   @override
   void onWindowClose() async {
@@ -190,7 +157,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   bool _resizing = false;
 
   Future<void> _setWindowSize(WindowSize ws) async {
-    if (_resizing || ws == _windowSize) return;
+    final currentWs = ref.read(themeProvider).windowSize;
+    if (_resizing || ws == currentWs) return;
     _resizing = true;
 
     final currentSize = await windowManager.getSize();
@@ -211,9 +179,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
       await Future.delayed(stepDuration);
     }
 
-    setState(() => _windowSize = ws);
     _resizing = false;
-    _saveWindowSize(ws);
+    ref.read(themeProvider.notifier).setWindowSize(ws);
   }
 
   String _windowSizeLabel(WindowSize ws) {
@@ -348,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                               tooltip: _windowSizeTooltip(ws),
                             ))
                         .toList(),
-                    selected: {_windowSize},
+                    selected: {ref.watch(themeProvider).windowSize},
                     onSelectionChanged: (s) => _setWindowSize(s.first),
                     showSelectedIcon: false,
                     style: ButtonStyle(

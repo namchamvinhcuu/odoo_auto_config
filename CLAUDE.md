@@ -117,12 +117,14 @@ lib/
 │   ├── folder_structure_screen.dart # Tạo folder structure độc lập
 │   └── environment_screen.dart  # Environment check screen
 ├── providers/                   # Riverpod state management (business logic tách khỏi UI)
-│   ├── theme_provider.dart      # ThemeState + ThemeNotifier (Notifier, sync)
-│   ├── locale_provider.dart     # LocaleNotifier (Notifier, sync)
+│   ├── theme_provider.dart      # ThemeState + ThemeNotifier (Notifier) — theme, locale, closeBehavior, windowSize
+│   ├── locale_provider.dart     # LocaleNotifier (Notifier)
 │   ├── profile_provider.dart    # ProfileState + ProfileNotifier (AsyncNotifier)
 │   ├── environment_provider.dart # EnvironmentState + EnvironmentNotifier (Notifier)
-│   ├── odoo_projects_provider.dart # OdooProjectsState + OdooProjectsNotifier (AsyncNotifier)
-│   ├── other_projects_provider.dart # OtherProjectsState + OtherProjectsNotifier (AsyncNotifier)
+│   ├── odoo_projects_provider.dart # OdooProjectsState + OdooProjectsNotifier (AsyncNotifier, CRUD+gridView)
+│   ├── other_projects_provider.dart # OtherProjectsState + OtherProjectsNotifier (AsyncNotifier, CRUD+branches)
+│   ├── settings_provider.dart   # SettingsState + SettingsNotifier (Notifier, scan environment+git accounts)
+│   ├── venv_provider.dart       # VenvState + VenvNotifier (AsyncNotifier, CRUD venvs)
 │   ├── docker_status_provider.dart  # DockerStatus + DockerStatusNotifier (Notifier, auto-check+nginx)
 │   └── update_provider.dart     # UpdateState + UpdateNotifier (Notifier, auto-check)
 ├── widgets/                     # Reusable components

@@ -8,7 +8,6 @@ import 'package:odoo_auto_config/providers/locale_provider.dart';
 import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
-import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/services/tray_service.dart';
 
 void main() async {
@@ -30,18 +29,8 @@ void main() async {
   await windowManager.ensureInitialized();
   const minSize = Size(800, 600);
 
-  // Load saved window size (default: large for first launch)
-  final settings = await StorageService.loadSettings();
-  final savedSize = settings['windowSize'] as String?;
-  final windowSize = WindowSize.values.firstWhere(
-    (ws) => ws.name == savedSize,
-    orElse: () => WindowSize.large,
-  );
   await windowManager.setMinimumSize(minSize);
-  await windowManager.setSize(windowSize.size);
-  await windowManager.center();
   await windowManager.setPreventClose(true);
-  await windowManager.show();
 
   // Pre-load preferences before runApp
   final container = ProviderContainer();
@@ -50,6 +39,12 @@ void main() async {
     container.read(localeProvider.notifier).load(),
     container.read(odooProjectsProvider.future),
   ]);
+
+  // Set window size from loaded preferences
+  final windowSize = container.read(themeProvider).windowSize;
+  await windowManager.setSize(windowSize.size);
+  await windowManager.center();
+  await windowManager.show();
 
   // Init system tray
   await TrayService.init(showLabel: 'Show', quitLabel: 'Quit');

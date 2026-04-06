@@ -77,6 +77,13 @@ class OdooProjectsNotifier extends AsyncNotifier<OdooProjectsState> {
     await reload();
   }
 
+  /// Replace a project (remove old by path, add updated). Used for nginx, edit, etc.
+  Future<void> updateProject(ProjectInfo old, ProjectInfo updated) async {
+    await StorageService.removeProject(old.path);
+    await StorageService.addProject(updated.toJson());
+    await reload();
+  }
+
   Future<void> toggleFavourite(ProjectInfo project) async {
     final updated = project.copyWith(favourite: !project.favourite);
     await StorageService.removeProject(project.path);

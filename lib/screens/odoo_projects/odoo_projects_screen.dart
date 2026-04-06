@@ -8,7 +8,6 @@ import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
-import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
@@ -280,14 +279,12 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
       );
       await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
     }
-    await StorageService.removeProject(proj.path);
-    await StorageService.addProject(updated.toJson());
+    await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.nginxLinked('$selected$dotSuffix'))),
       );
     }
-    ref.read(odooProjectsProvider.notifier).reload();
   }
 
   Future<void> _setupNginx(ProjectInfo proj) async {
@@ -323,14 +320,12 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
       );
       // Save subdomain to project
       final updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
-      await StorageService.removeProject(proj.path);
-      await StorageService.addProject(updated.toJson());
+      await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.nginxSetupSuccess(domain))),
         );
       }
-      ref.read(odooProjectsProvider.notifier).reload();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -373,8 +368,7 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
       await NginxService.removeNginx(sub);
       // Clear subdomain from project
       final updated = proj.copyWith(nginxSubdomain: () => null);
-      await StorageService.removeProject(proj.path);
-      await StorageService.addProject(updated.toJson());
+      await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -382,7 +376,6 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
                   context.l10n.nginxRemoveSuccess('$sub$dotSuffix'))),
         );
       }
-      ref.read(odooProjectsProvider.notifier).reload();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -527,8 +520,7 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
         domainSuffix: dotSuffix,
         onDbChanged: (dbName) async {
           final updated = proj.copyWith(dbName: () => dbName);
-          await StorageService.addProject(updated.toJson());
-          ref.read(odooProjectsProvider.notifier).reload();
+          await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
         },
         onSaved: (updated) async {
           final full = updated.copyWith(
@@ -539,8 +531,7 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
             dbName: proj.dbName != null ? () => proj.dbName : null,
           );
 
-          await StorageService.removeProject(proj.path);
-          await StorageService.addProject(full.toJson());
+          await ref.read(odooProjectsProvider.notifier).updateProject(proj, full);
 
           if (proj.httpPort != updated.httpPort ||
               proj.longpollingPort != updated.longpollingPort) {
@@ -549,8 +540,6 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
               await _updateNginxConf(proj.nginxSubdomain!, updated.httpPort, updated.longpollingPort);
             }
           }
-
-          ref.read(odooProjectsProvider.notifier).reload();
         },
         onNginxSetup: (p) async {
           Navigator.pop(ctx);

@@ -2,19 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
+enum WindowSize {
+  small(Size(800, 600)),
+  medium(Size(1100, 750)),
+  large(Size(1400, 900));
+
+  final Size size;
+  const WindowSize(this.size);
+}
+
 class ThemeState {
   final ThemeMode themeMode;
   final Color seedColor;
+  final String closeBehavior;
+  final WindowSize windowSize;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
     this.seedColor = const Color(0xFF714B67),
+    this.closeBehavior = 'exit',
+    this.windowSize = WindowSize.large,
   });
 
-  ThemeState copyWith({ThemeMode? themeMode, Color? seedColor}) {
+  ThemeState copyWith({
+    ThemeMode? themeMode,
+    Color? seedColor,
+    String? closeBehavior,
+    WindowSize? windowSize,
+  }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
       seedColor: seedColor ?? this.seedColor,
+      closeBehavior: closeBehavior ?? this.closeBehavior,
+      windowSize: windowSize ?? this.windowSize,
     );
   }
 }
@@ -42,6 +62,8 @@ class ThemeNotifier extends Notifier<ThemeState> {
     final settings = await StorageService.loadSettings();
     final mode = settings['themeMode'] as String?;
     final colorValue = settings['seedColor'] as int?;
+    final behavior = (settings['closeBehavior'] ?? 'exit').toString();
+    final savedSize = settings['windowSize'] as String?;
 
     state = ThemeState(
       themeMode: mode != null
@@ -50,7 +72,15 @@ class ThemeNotifier extends Notifier<ThemeState> {
               orElse: () => ThemeMode.system,
             )
           : ThemeMode.system,
-      seedColor: colorValue != null ? Color(colorValue) : const Color(0xFF714B67),
+      seedColor:
+          colorValue != null ? Color(colorValue) : const Color(0xFF714B67),
+      closeBehavior: behavior,
+      windowSize: savedSize != null
+          ? WindowSize.values.firstWhere(
+              (w) => w.name == savedSize,
+              orElse: () => WindowSize.large,
+            )
+          : WindowSize.large,
     );
   }
 
@@ -62,6 +92,20 @@ class ThemeNotifier extends Notifier<ThemeState> {
   Future<void> setSeedColor(Color color) async {
     state = state.copyWith(seedColor: color);
     await _save();
+  }
+
+  Future<void> setCloseBehavior(String value) async {
+    state = state.copyWith(closeBehavior: value);
+    await StorageService.updateSettings((settings) {
+      settings['closeBehavior'] = value;
+    });
+  }
+
+  Future<void> setWindowSize(WindowSize ws) async {
+    state = state.copyWith(windowSize: ws);
+    await StorageService.updateSettings((settings) {
+      settings['windowSize'] = ws.name;
+    });
   }
 
   Future<void> _save() async {
