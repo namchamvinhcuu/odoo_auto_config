@@ -55,7 +55,7 @@ lib/
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
 │   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
 │   ├── workspaces_screen.dart   # Other Projects: list/grid, favourite, auto-detect type, nginx
-│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile + Setup Nginx sau tạo
+│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile + Setup Nginx sau tạo + tạo .vscode/settings.json
 │   ├── profile_screen.dart      # CRUD profiles
 │   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
@@ -69,7 +69,7 @@ lib/
 │   ├── log_output.dart          # Real-time log với color coding + SelectionArea
 │   └── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
 └── templates/
-    ├── odoo_templates.dart      # Sinh odoo.conf, README.md, git-repositories.sh/.ps1
+    ├── odoo_templates.dart      # Sinh odoo.conf, README.md, .vscode/settings.json, git-repositories.sh/.ps1
     ├── nginx_templates.dart     # Sinh nginx conf (odoo/generic), nginx.conf, docker-compose.yml
     └── postgres_templates.dart  # Sinh docker-compose.yml, .env, postgresql.conf cho PostgreSQL Docker
 ```
@@ -398,6 +398,9 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   Không còn nút Edit riêng. `_ImportProjectDialog` chỉ dùng cho import
 - **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
   (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
+- **VSCode settings.json**: Quick Create tự động tạo `.vscode/settings.json` cùng `launch.json`
+  Template trong `OdooTemplates.vscodeSettings()`. Nội dung: `python.analysis.extraPaths` (../odoo, ../odoo/addons, ../addons),
+  `files.exclude` (*.pyc, __pycache__, .venv), `files.watcherInclude`, `python.languageServer: "None"`
 
 ## Tính năng Odoo Workspace View
 Dialog chuyên biệt quản lý **pinned repos** trong `addons/` của 1 Odoo project.
