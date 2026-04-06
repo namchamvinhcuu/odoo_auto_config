@@ -2776,6 +2776,12 @@ abstract class AppLocalizations {
   /// **'Switch Branch'**
   String get workspaceViewSwitchBranch;
 
+  /// No description provided for @workspaceViewPublishBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish Branch'**
+  String get workspaceViewPublishBranch;
+
   /// No description provided for @workspaceViewPushSelected.
   ///
   /// In en, this message translates to:

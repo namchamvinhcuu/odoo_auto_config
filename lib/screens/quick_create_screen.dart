@@ -190,6 +190,10 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
       );
       setState(() => _logs.add('[+] Written: $launchPath'));
 
+      final settingsPath = p.join(vscodePath, 'settings.json');
+      await File(settingsPath).writeAsString(OdooTemplates.vscodeSettings());
+      setState(() => _logs.add('[+] Written: $settingsPath'));
+
       final readmePath = p.join(projectPath, 'README.md');
       await File(readmePath).writeAsString(
         OdooTemplates.readme(

@@ -6,7 +6,15 @@
       "Bash(\"c:/Users/Nam/Workspace/nam-custom/odoo_auto_config/build/windows/x64/runner/Release/WorkspaceConfiguration.exe\")",
       "Bash(sudo apt:*)",
       "Bash(bash /home/namchamvinhcuu/Workspaces/nam-projects/odoo_auto_config/linux-build.sh)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh auth:*)",
+      "Bash(git credential-manager:*)",
+      "Bash(git config:*)",
+      "Read(//home/namchamvinhcuu/**)"
+    ],
+    "additionalDirectories": [
+      "/home/namchamvinhcuu"
     ]
   }
 }

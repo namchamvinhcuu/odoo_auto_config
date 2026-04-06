@@ -14,6 +14,7 @@ class _RepoInfo {
   int changedFiles = 0;
   int aheadCount = 0;
   int behindCount = 0;
+  bool hasUpstream = true;
   bool selected = false;
   bool loaded = false;
 
@@ -206,6 +207,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     if (aheadResult.exitCode == 0) {
       repo.aheadCount =
           int.tryParse((aheadResult.stdout as String).trim()) ?? 0;
+      repo.hasUpstream = true;
+    } else {
+      repo.hasUpstream = false;
     }
 
     // Behind
@@ -351,6 +355,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
+  // ignore: unused_element — hidden feature, kept for future use
   Future<void> _switchBranchAll() async {
     final controller = TextEditingController();
     // Collect all unique branches across pinned repos
@@ -431,6 +436,54 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         repos: [repo],
         action: 'push',
         onDone: () => _loadRepoStatus(repo),
+      ),
+    );
+  }
+
+  void _openRepoBranchDialog(_RepoInfo repo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _RepoBranchDialog(
+        repoName: repo.name,
+        repoPath: repo.path,
+        currentBranch: repo.branch,
+        branchColor: _branchColor,
+        onChanged: (branch) {
+          repo.branch = branch;
+          if (mounted) setState(() {});
+        },
+      ),
+    ).then((_) => _loadRepoStatus(repo));
+  }
+
+  void _publishSingle(_RepoInfo repo) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title:
+            '${context.l10n.gitBranchPublish(repo.branch)} — ${repo.name}',
+        repos: [repo],
+        action: 'publish',
+        onDone: () => _loadRepoStatus(repo),
+      ),
+    );
+  }
+
+  void _publishSelected() {
+    final selected =
+        _repos.where((r) => r.selected && !r.hasUpstream).toList();
+    if (selected.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => _GitActionDialog(
+        title: context.l10n.workspaceViewPublishBranch,
+        repos: selected,
+        action: 'publish',
+        onDone: () {
+          for (final repo in selected) {
+            _loadRepoStatus(repo);
+          }
+        },
       ),
     );
   }
@@ -635,11 +688,18 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           icon: const Icon(Icons.commit, size: AppIconSize.md),
           label: Text(context.l10n.gitCommit),
         ),
-        FilledButton.tonalIcon(
-          onPressed: hasSelection ? _switchBranchAll : null,
-          icon: const Icon(Icons.account_tree, size: AppIconSize.md),
-          label: Text(context.l10n.workspaceViewSwitchBranch),
-        ),
+        // Switch Branch All — hidden (code kept for future use)
+        // FilledButton.tonalIcon(
+        //   onPressed: hasSelection ? _switchBranchAll : null,
+        //   icon: const Icon(Icons.account_tree, size: AppIconSize.md),
+        //   label: Text(context.l10n.workspaceViewSwitchBranch),
+        // ),
+        if (_repos.any((r) => r.selected && !r.hasUpstream))
+          FilledButton.tonalIcon(
+            onPressed: _publishSelected,
+            icon: const Icon(Icons.cloud_upload, size: AppIconSize.md),
+            label: Text(context.l10n.workspaceViewPublishBranch),
+          ),
         FilledButton.tonalIcon(
           onPressed: _openPublishDialog,
           icon: const Icon(Icons.cloud_upload, size: AppIconSize.md),
@@ -736,24 +796,29 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               else ...[
-                // Branch chip
+                // Branch chip (clickable → open branch dialog)
                 if (repo.branch.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xs,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          _branchColor(repo.branch).withValues(alpha: 0.15),
-                      borderRadius: AppRadius.smallBorderRadius,
-                    ),
-                    child: Text(
-                      repo.branch,
-                      style: TextStyle(
-                        fontSize: AppFontSize.md,
-                        fontFamily: 'monospace',
-                        color: _branchColor(repo.branch),
+                  InkWell(
+                    onTap: () => _openRepoBranchDialog(repo),
+                    mouseCursor: SystemMouseCursors.click,
+                    borderRadius: AppRadius.smallBorderRadius,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _branchColor(repo.branch)
+                            .withValues(alpha: 0.15),
+                        borderRadius: AppRadius.smallBorderRadius,
+                      ),
+                      child: Text(
+                        repo.branch,
+                        style: TextStyle(
+                          fontSize: AppFontSize.md,
+                          fontFamily: 'monospace',
+                          color: _branchColor(repo.branch),
+                        ),
                       ),
                     ),
                   ),
@@ -781,13 +846,21 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                   tooltip: context.l10n.gitPull,
                   onPressed: () => _pullSingle(repo),
                 ),
-                _repoActionButton(
-                  icon: Icons.upload,
-                  tooltip: context.l10n.push,
-                  onPressed: repo.aheadCount > 0
-                      ? () => _pushSingle(repo)
-                      : null,
-                ),
+                if (!repo.hasUpstream)
+                  _repoActionButton(
+                    icon: Icons.cloud_upload,
+                    tooltip: context.l10n.gitBranchPublish(repo.branch),
+                    color: Colors.green,
+                    onPressed: () => _publishSingle(repo),
+                  )
+                else
+                  _repoActionButton(
+                    icon: Icons.upload,
+                    tooltip: context.l10n.push,
+                    onPressed: repo.aheadCount > 0
+                        ? () => _pushSingle(repo)
+                        : null,
+                  ),
               ],
               // Remove from workspace (always visible)
               _repoActionButton(
@@ -831,16 +904,2362 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     required IconData icon,
     required String tooltip,
     VoidCallback? onPressed,
+    Color? color,
   }) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: AppIconSize.lg),
+      icon: Icon(icon, size: AppIconSize.lg, color: onPressed != null ? color : null),
       tooltip: tooltip,
       padding: const EdgeInsets.all(AppSpacing.xs),
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
     );
   }
 
+}
+
+// ── Repo Branch Dialog (full git management per repo) ──
+
+class _RepoBranchDialog extends StatefulWidget {
+  final String repoName;
+  final String repoPath;
+  final String currentBranch;
+  final Color Function(String) branchColor;
+  final void Function(String branch) onChanged;
+
+  const _RepoBranchDialog({
+    required this.repoName,
+    required this.repoPath,
+    required this.currentBranch,
+    required this.branchColor,
+    required this.onChanged,
+  });
+
+  @override
+  State<_RepoBranchDialog> createState() => _RepoBranchDialogState();
+}
+
+class _RepoBranchDialogState extends State<_RepoBranchDialog> {
+  List<String> _local = [];
+  List<String> _remote = [];
+  String _current = '';
+  bool _loading = true;
+  bool _switching = false;
+  String? _message;
+  bool _isError = false;
+  int _changedFiles = 0;
+  int _behindRemote = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.currentBranch;
+    _loadBranches();
+  }
+
+  Future<void> _loadBranches() async {
+    setState(() => _loading = true);
+    final result = await Process.run(
+      'git',
+      ['branch', '-a', '--format=%(refname)'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (result.exitCode != 0 || !mounted) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    final localBranches = <String>{};
+    final remoteBranches = <String>{};
+    for (final ref in (result.stdout as String)
+        .split('\n')
+        .map((b) => b.trim())
+        .where((b) => b.isNotEmpty)) {
+      if (ref.contains('HEAD')) continue;
+      if (ref.startsWith('refs/heads/')) {
+        localBranches.add(ref.substring('refs/heads/'.length));
+      } else if (ref.startsWith('refs/remotes/origin/')) {
+        remoteBranches.add(ref.substring('refs/remotes/origin/'.length));
+      }
+    }
+
+    int changed = 0;
+    final statusResult = await Process.run(
+      'git',
+      ['status', '--porcelain'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (statusResult.exitCode == 0) {
+      changed = (statusResult.stdout as String)
+          .trimRight()
+          .split('\n')
+          .where((l) => l.isNotEmpty)
+          .length;
+    }
+
+    int behind = 0;
+    final behindResult = await Process.run(
+      'git',
+      ['rev-list', '--count', 'HEAD..@{upstream}'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (behindResult.exitCode == 0) {
+      behind = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
+    }
+
+    if (mounted) {
+      setState(() {
+        _local = localBranches.toList()
+          ..sort((a, b) {
+            if (a == _current) return -1;
+            if (b == _current) return 1;
+            return a.compareTo(b);
+          });
+        _remote = remoteBranches.toList()..sort();
+        _changedFiles = changed;
+        _behindRemote = behind;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _checkout(String branch) async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    final result = await Process.run(
+      'git',
+      ['checkout', branch],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _current = branch;
+        _switching = false;
+        _message = 'Switched to $branch';
+        _isError = false;
+      });
+      widget.onChanged(branch);
+      _loadBranches();
+    } else {
+      setState(() {
+        _switching = false;
+        _message = (result.stderr as String).trim();
+        _isError = true;
+      });
+    }
+  }
+
+  Future<void> _createBranch() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchCreateTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: ctx.l10n.gitBranchNameLabel,
+            hintText: ctx.l10n.gitBranchNameHint,
+            border: const OutlineInputBorder(),
+            isDense: true,
+          ),
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) Navigator.pop(ctx, v.trim());
+          },
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              final v = controller.text.trim();
+              if (v.isNotEmpty) Navigator.pop(ctx, v);
+            },
+            child: Text(ctx.l10n.gitBranchCreate),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || !mounted) return;
+
+    final result = await Process.run(
+      'git',
+      ['checkout', '-b', name],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _current = name;
+        _message = 'Created and switched to $name';
+        _isError = false;
+      });
+      widget.onChanged(name);
+      _loadBranches();
+    } else {
+      setState(() {
+        _message = (result.stderr as String).trim();
+        _isError = true;
+      });
+    }
+  }
+
+  Future<void> _deleteBranch(String branch) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchDeleteTitle),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
+        content: Text(ctx.l10n.gitBranchDeleteConfirm(branch)),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(ctx.l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final result = await Process.run(
+      'git',
+      ['branch', '-d', branch],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _message = 'Deleted branch $branch';
+        _isError = false;
+      });
+      _loadBranches();
+    } else {
+      final stderr = (result.stderr as String).trim();
+      if (stderr.contains('not fully merged')) {
+        if (!mounted) return;
+        final force = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Row(
+              children: [
+                Text(ctx.l10n.gitBranchForceDeleteTitle),
+                const Spacer(),
+                AppDialog.closeButton(ctx),
+              ],
+            ),
+            content: Text(ctx.l10n.gitBranchForceDeleteConfirm(branch)),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(ctx.l10n.gitBranchForceDelete),
+              ),
+            ],
+          ),
+        );
+        if (force == true && mounted) {
+          final forceResult = await Process.run(
+            'git',
+            ['branch', '-D', branch],
+            workingDirectory: widget.repoPath,
+            runInShell: true,
+          );
+          if (mounted) {
+            if (forceResult.exitCode == 0) {
+              setState(() {
+                _message = 'Force deleted branch $branch';
+                _isError = false;
+              });
+              _loadBranches();
+            } else {
+              setState(() {
+                _message = (forceResult.stderr as String).trim();
+                _isError = true;
+              });
+            }
+          }
+        }
+      } else {
+        setState(() {
+          _message = stderr;
+          _isError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _publishBranch(String branch) async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    final result = await Process.run(
+      'git',
+      ['push', '-u', 'origin', branch],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+    if (result.exitCode == 0) {
+      setState(() {
+        _switching = false;
+        _message = 'Published $branch to origin';
+        _isError = false;
+      });
+      _loadBranches();
+    } else {
+      setState(() {
+        _switching = false;
+        _message = 'Push failed: ${(result.stderr as String).trim()}';
+        _isError = true;
+      });
+    }
+  }
+
+  Future<void> _pullBranch(String branch) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => _RepoGitPullDialog(
+        repoName: widget.repoName,
+        repoPath: widget.repoPath,
+        targetBranch: branch,
+        currentBranch: _current,
+      ),
+    );
+    if (mounted) {
+      setState(() => _message = null);
+      _loadBranches();
+    }
+  }
+
+  Future<void> _mergeBranch(String branch) async {
+    final direction = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Text(ctx.l10n.gitBranchMerge),
+            const Spacer(),
+            AppDialog.closeButton(ctx),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.arrow_back, color: Colors.blue),
+              title: Text.rich(TextSpan(children: [
+                const TextSpan(text: 'Merge '),
+                TextSpan(
+                  text: branch,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const TextSpan(text: ' into '),
+                TextSpan(
+                  text: _current,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ])),
+              subtitle: Text(
+                ctx.l10n.gitMergeIntoCurrentDesc(_current, branch),
+              ),
+              onTap: () => Navigator.pop(ctx, 'into_current'),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.mediumBorderRadius,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ListTile(
+              leading: const Icon(Icons.arrow_forward, color: Colors.green),
+              title: Text.rich(TextSpan(children: [
+                const TextSpan(text: 'Merge '),
+                TextSpan(
+                  text: _current,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const TextSpan(text: ' into '),
+                TextSpan(
+                  text: branch,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ])),
+              subtitle: Text(
+                ctx.l10n.gitMergeIntoTargetDesc(_current, branch),
+              ),
+              onTap: () => Navigator.pop(ctx, 'into_target'),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppRadius.mediumBorderRadius,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (direction == null || !mounted) return;
+
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+
+    try {
+      if (direction == 'into_current') {
+        final result = await Process.run(
+          'git',
+          ['merge', branch],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        if (!mounted) return;
+        if (result.exitCode == 0) {
+          final push = await Process.run(
+            'git',
+            ['push'],
+            workingDirectory: widget.repoPath,
+            runInShell: true,
+          );
+          setState(() {
+            _switching = false;
+            _message = push.exitCode == 0
+                ? 'Merged $branch into $_current and pushed'
+                : 'Merged $branch into $_current (push failed: ${(push.stderr as String).trim()})';
+            _isError = push.exitCode != 0;
+          });
+        } else {
+          setState(() {
+            _switching = false;
+            _message = (result.stderr as String).trim().isNotEmpty
+                ? (result.stderr as String).trim()
+                : (result.stdout as String).trim();
+            _isError = true;
+          });
+        }
+      } else {
+        final savedCurrent = _current;
+        var result = await Process.run(
+          'git',
+          ['checkout', branch],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        if (result.exitCode != 0) {
+          if (mounted) {
+            setState(() {
+              _switching = false;
+              _message =
+                  'Checkout $branch failed: ${(result.stderr as String).trim()}';
+              _isError = true;
+            });
+          }
+          return;
+        }
+        result = await Process.run(
+          'git',
+          ['merge', savedCurrent],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        if (result.exitCode != 0) {
+          if (mounted) {
+            setState(() {
+              _current = branch;
+              _switching = false;
+              _message =
+                  'Merge failed: ${(result.stderr as String).trim().isNotEmpty ? (result.stderr as String).trim() : (result.stdout as String).trim()}';
+              _isError = true;
+            });
+          }
+          widget.onChanged(branch);
+          _loadBranches();
+          return;
+        }
+        final push = await Process.run(
+          'git',
+          ['push'],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        await Process.run(
+          'git',
+          ['checkout', savedCurrent],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        if (mounted) {
+          setState(() {
+            _current = savedCurrent;
+            _switching = false;
+            _message = push.exitCode == 0
+                ? 'Merged $savedCurrent into $branch and pushed'
+                : 'Merged $savedCurrent into $branch (push failed: ${(push.stderr as String).trim()})';
+            _isError = push.exitCode != 0;
+          });
+          widget.onChanged(savedCurrent);
+          _loadBranches();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _switching = false;
+          _message = e.toString();
+          _isError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _pruneCheck() async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    await Process.run(
+      'git',
+      ['fetch', '--prune'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    final result = await Process.run(
+      'git',
+      ['branch', '-vv'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (!mounted) return;
+
+    final gone = <String>[];
+    for (final line in (result.stdout as String).split('\n')) {
+      if (line.contains(': gone]')) {
+        final branch = line
+            .trim()
+            .split(RegExp(r'\s+'))
+            .first
+            .replaceFirst('*', '')
+            .trim();
+        if (branch.isNotEmpty && branch != _current) {
+          gone.add(branch);
+        }
+      }
+    }
+
+    if (gone.isEmpty) {
+      setState(() {
+        _switching = false;
+        _message = 'All local branches are up to date with remote';
+        _isError = false;
+      });
+      return;
+    }
+
+    setState(() => _switching = false);
+
+    if (!mounted) return;
+    final toDelete = await showDialog<List<String>>(
+      context: context,
+      builder: (ctx) => _RepoPruneDialog(branches: gone),
+    );
+    if (toDelete == null || toDelete.isEmpty || !mounted) return;
+
+    final deleted = <String>[];
+    final failed = <String>[];
+    for (final branch in toDelete) {
+      final del = await Process.run(
+        'git',
+        ['branch', '-D', branch],
+        workingDirectory: widget.repoPath,
+        runInShell: true,
+      );
+      if (del.exitCode == 0) {
+        deleted.add(branch);
+      } else {
+        failed.add(branch);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        if (deleted.isNotEmpty) {
+          _message = 'Deleted: ${deleted.join(', ')}';
+          _isError = false;
+        }
+        if (failed.isNotEmpty) {
+          _message =
+              '${_message ?? ''}${_message != null ? '\n' : ''}Failed: ${failed.join(', ')}';
+          _isError = failed.isNotEmpty && deleted.isEmpty;
+        }
+      });
+      _loadBranches();
+    }
+  }
+
+  // ── Build ──
+
+  List<Widget> _buildBranchListWithDivider(
+    List<String> branches, {
+    bool isRemote = false,
+  }) {
+    final mainBranches =
+        branches.where((b) => b == 'main' || b == 'master').toList();
+    final otherBranches =
+        branches.where((b) => b != 'main' && b != 'master').toList();
+    return [
+      ...otherBranches.map((b) => _branchTile(b, isRemote: isRemote)),
+      if (otherBranches.isNotEmpty && mainBranches.isNotEmpty)
+        const Divider(height: AppSpacing.md),
+      ...mainBranches.map((b) => _branchTile(b, isRemote: isRemote)),
+    ];
+  }
+
+  Widget _branchTile(String branch, {bool isRemote = false}) {
+    final isCurrent = !isRemote && branch == _current;
+    final canTap = !isCurrent && !_switching;
+    return InkWell(
+      onTap: canTap ? () => _checkout(branch) : null,
+      mouseCursor:
+          canTap ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      borderRadius: AppRadius.smallBorderRadius,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isCurrent ? Icons.check_circle : Icons.circle_outlined,
+              size: AppIconSize.lg,
+              color: isCurrent ? widget.branchColor(branch) : Colors.grey,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                branch,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: AppFontSize.xl,
+                  fontWeight: isCurrent ? FontWeight.bold : null,
+                  color: isCurrent ? widget.branchColor(branch) : null,
+                ),
+              ),
+            ),
+            if (isRemote)
+              Icon(
+                Icons.cloud_outlined,
+                size: AppIconSize.md,
+                color: Colors.grey.shade500,
+              ),
+            if (!isRemote && isCurrent && !_remote.contains(branch))
+              IconButton(
+                onPressed: _switching ? null : () => _publishBranch(branch),
+                icon: const Icon(
+                  Icons.cloud_upload,
+                  size: AppIconSize.md,
+                  color: Colors.green,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
+                tooltip: context.l10n.gitBranchPublish(branch),
+              ),
+            if (!isRemote && !isCurrent) ...[
+              if (!_remote.contains(branch))
+                IconButton(
+                  onPressed:
+                      _switching ? null : () => _publishBranch(branch),
+                  icon: const Icon(
+                    Icons.cloud_upload,
+                    size: AppIconSize.md,
+                    color: Colors.green,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: AppIconSize.xl,
+                    minHeight: AppIconSize.xl,
+                  ),
+                  tooltip: context.l10n.gitBranchPublish(branch),
+                ),
+              IconButton(
+                onPressed: _switching ? null : () => _pullBranch(branch),
+                icon: const Icon(
+                  Icons.download,
+                  size: AppIconSize.md,
+                  color: Colors.teal,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
+                tooltip: context.l10n.gitBranchPullBranch(branch),
+              ),
+              IconButton(
+                onPressed: _switching ? null : () => _mergeBranch(branch),
+                icon: const Icon(
+                  Icons.merge,
+                  size: AppIconSize.md,
+                  color: Colors.blue,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppIconSize.xl,
+                  minHeight: AppIconSize.xl,
+                ),
+                tooltip: context.l10n.gitBranchMerge,
+              ),
+              if (branch != 'main' && branch != 'master')
+                IconButton(
+                  onPressed:
+                      _switching ? null : () => _deleteBranch(branch),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: AppIconSize.md,
+                    color: Colors.red,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: AppIconSize.xl,
+                    minHeight: 24,
+                  ),
+                  tooltip: context.l10n.gitBranchDeleteBranch,
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.account_tree,
+                size: AppIconSize.md, color: Colors.grey.shade500),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              context.l10n.gitBranchLocal,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ..._buildBranchListWithDivider(_local, isRemote: false),
+      ],
+    );
+  }
+
+  Widget _buildRemoteColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.cloud_outlined,
+                size: AppIconSize.md, color: Colors.grey.shade500),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              context.l10n.gitBranchRemote,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ..._buildBranchListWithDivider(_remote, isRemote: true),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Text('${context.l10n.gitBranches} — ${widget.repoName}'),
+          if (_current.isNotEmpty) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Chip(
+              avatar: Icon(
+                Icons.check_circle,
+                size: AppIconSize.md,
+                color: widget.branchColor(_current),
+              ),
+              label: Text(
+                _current,
+                style: TextStyle(
+                  color: widget.branchColor(_current),
+                  fontFamily: 'monospace',
+                  fontSize: AppFontSize.md,
+                ),
+              ),
+              backgroundColor:
+                  widget.branchColor(_current).withValues(alpha: 0.1),
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+          const SizedBox(width: AppSpacing.sm),
+          TextButton.icon(
+            onPressed: _switching ? null : _pruneCheck,
+            icon: const Icon(Icons.cleaning_services, size: AppIconSize.md),
+            label: Text(context.l10n.gitBranchCleanStale),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+          ),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
+      content: Builder(
+        builder: (context) {
+          final isWide = MediaQuery.of(context).size.width > 900;
+          return SizedBox(
+            width: isWide ? AppDialog.widthLg : AppDialog.widthMd,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Action bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: _switching
+                          ? null
+                          : () async {
+                              await showDialog(
+                                context: context,
+                                builder: (ctx) => _RepoGitPullDialog(
+                                  repoName: widget.repoName,
+                                  repoPath: widget.repoPath,
+                                ),
+                              );
+                              if (mounted) {
+                                setState(() => _message = null);
+                                _loadBranches();
+                              }
+                            },
+                      icon:
+                          const Icon(Icons.download, size: AppIconSize.md),
+                      label: Text(context.l10n.gitBranchPull),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton.tonalIcon(
+                      onPressed: _switching
+                          ? null
+                          : () async {
+                              await showDialog(
+                                context: context,
+                                builder: (ctx) => _RepoCommitDialog(
+                                  repoName: widget.repoName,
+                                  repoPath: widget.repoPath,
+                                ),
+                              );
+                              if (mounted) {
+                                setState(() => _message = null);
+                                _loadBranches();
+                              }
+                            },
+                      icon: const Icon(Icons.commit, size: AppIconSize.md),
+                      label: Text(context.l10n.gitBranchCommit),
+                    ),
+                    if (_current != 'main' && _current != 'master') ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.tonalIcon(
+                        onPressed: _switching
+                            ? null
+                            : () async {
+                                await showDialog(
+                                  context: context,
+                                  builder: (ctx) => _RepoCreatePRDialog(
+                                    repoName: widget.repoName,
+                                    repoPath: widget.repoPath,
+                                    currentBranch: _current,
+                                  ),
+                                );
+                                if (mounted) {
+                                  setState(() => _message = null);
+                                  _loadBranches();
+                                }
+                              },
+                        icon: const Icon(Icons.merge_type,
+                            size: AppIconSize.md),
+                        label: Text(context.l10n.gitBranchPR),
+                      ),
+                    ],
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton.icon(
+                      onPressed: _switching ? null : _createBranch,
+                      icon: const Icon(Icons.add, size: AppIconSize.md),
+                      label: Text(context.l10n.gitBranchCreate),
+                    ),
+                  ],
+                ),
+                // Status info
+                if (!_loading &&
+                    (_changedFiles > 0 || _behindRemote > 0)) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      if (_changedFiles > 0)
+                        Chip(
+                          avatar: const Icon(Icons.edit_note,
+                              size: AppIconSize.md, color: Colors.orange),
+                          label: Text(
+                            context.l10n.gitBranchChanged(_changedFiles),
+                            style: const TextStyle(color: Colors.orange),
+                          ),
+                          backgroundColor:
+                              Colors.orange.withValues(alpha: 0.1),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      if (_changedFiles > 0 && _behindRemote > 0)
+                        const SizedBox(width: AppSpacing.sm),
+                      if (_behindRemote > 0)
+                        Chip(
+                          avatar: const Icon(Icons.arrow_downward,
+                              size: AppIconSize.md, color: Colors.cyan),
+                          label: Text(
+                            context.l10n.gitBranchBehind(_behindRemote),
+                            style: const TextStyle(color: Colors.cyan),
+                          ),
+                          backgroundColor:
+                              Colors.cyan.withValues(alpha: 0.1),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                if (_loading)
+                  const Center(child: CircularProgressIndicator())
+                else if (_switching)
+                  const Center(child: CircularProgressIndicator())
+                else if (isWide)
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildLocalColumn()),
+                        if (_remote.isNotEmpty) ...[
+                          const VerticalDivider(width: AppSpacing.xxl),
+                          Expanded(child: _buildRemoteColumn()),
+                        ],
+                      ],
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLocalColumn(),
+                      if (_remote.isNotEmpty) ...[
+                        const Divider(height: AppSpacing.xxl),
+                        _buildRemoteColumn(),
+                      ],
+                    ],
+                  ),
+                if (_message != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color:
+                          (_isError ? Colors.red : Colors.green).withValues(
+                        alpha: 0.1,
+                      ),
+                      borderRadius: AppRadius.smallBorderRadius,
+                    ),
+                    child: Text(
+                      _message!,
+                      style: TextStyle(
+                        color: _isError ? Colors.red : Colors.green,
+                        fontFamily: 'monospace',
+                        fontSize: AppFontSize.md,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Repo Git Pull Dialog ──
+
+class _RepoGitPullDialog extends StatefulWidget {
+  final String repoName;
+  final String repoPath;
+  final String? targetBranch;
+  final String? currentBranch;
+
+  const _RepoGitPullDialog({
+    required this.repoName,
+    required this.repoPath,
+    this.targetBranch,
+    this.currentBranch,
+  });
+
+  @override
+  State<_RepoGitPullDialog> createState() => _RepoGitPullDialogState();
+}
+
+class _RepoGitPullDialogState extends State<_RepoGitPullDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<ProcessResult> _git(List<String> args) => Process.run(
+        'git',
+        args,
+        workingDirectory: widget.repoPath,
+        runInShell: true,
+      );
+
+  Future<void> _runProcess(List<String> args) async {
+    final process = await Process.start(
+      'git',
+      args,
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    await process.exitCode;
+  }
+
+  Future<void> _run() async {
+    setState(() => _running = true);
+    try {
+      if (widget.targetBranch != null) {
+        await _runPullOtherBranch();
+      } else {
+        await _runPullCurrent();
+      }
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) setState(() => _running = false);
+  }
+
+  Future<void> _runPullCurrent() async {
+    final process = await Process.start(
+      'git',
+      ['pull'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    process.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    process.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    final exitCode = await process.exitCode;
+    if (!mounted) return;
+    if (exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
+    } else {
+      _addLine(
+        '\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m',
+      );
+    }
+  }
+
+  Future<void> _runPullOtherBranch() async {
+    final target = widget.targetBranch!;
+    final current = widget.currentBranch!;
+
+    final status = await _git(['status', '--porcelain']);
+    final hasChanges = (status.stdout as String).trimRight().isNotEmpty;
+
+    if (hasChanges) {
+      _addLine('\x1B[0;33m[~] Stashing changes...\x1B[0m');
+      final stash =
+          await _git(['stash', 'push', '-m', 'auto-stash for pull $target']);
+      if (stash.exitCode != 0) {
+        _addLine(
+          '\x1B[0;31m[-] Stash failed: ${(stash.stderr as String).trim()}\x1B[0m',
+        );
+        return;
+      }
+    }
+
+    _addLine('\x1B[0;33m[~] Switching to $target...\x1B[0m');
+    final checkout = await _git(['checkout', target]);
+    if (checkout.exitCode != 0) {
+      _addLine(
+        '\x1B[0;31m[-] Checkout failed: ${(checkout.stderr as String).trim()}\x1B[0m',
+      );
+      if (hasChanges) await _git(['stash', 'pop']);
+      return;
+    }
+
+    _addLine('\x1B[0;33m[~] Pulling $target...\x1B[0m');
+    await _runProcess(['pull']);
+
+    _addLine('\x1B[0;33m[~] Switching back to $current...\x1B[0m');
+    await _git(['checkout', current]);
+
+    if (hasChanges) {
+      _addLine('\x1B[0;33m[~] Restoring stash...\x1B[0m');
+      await _git(['stash', 'pop']);
+    }
+
+    if (mounted) {
+      _addLine('\x1B[0;32m[+] Pulled $target successfully\x1B[0m');
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              widget.targetBranch != null
+                  ? 'Pull ${widget.targetBranch} — ${widget.repoName}'
+                  : context.l10n.gitPullTitle(widget.repoName),
+            ),
+          ),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              ),
+            Container(
+              height: 250,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppLogColors.terminalBg,
+                borderRadius: AppRadius.mediumBorderRadius,
+                border: Border.all(color: Colors.grey.shade700),
+              ),
+              child: _logLines.isEmpty
+                  ? Center(
+                      child: Text(
+                        context.l10n.noOutputYet,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    )
+                  : SelectionArea(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final line in _logLines)
+                                Text.rich(
+                                  TextSpan(
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: AppFontSize.md,
+                                    ),
+                                    children: _parseAnsi(line),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Repo Commit Dialog ──
+
+class _RepoCommitDialog extends StatefulWidget {
+  final String repoName;
+  final String repoPath;
+
+  const _RepoCommitDialog({
+    required this.repoName,
+    required this.repoPath,
+  });
+
+  @override
+  State<_RepoCommitDialog> createState() => _RepoCommitDialogState();
+}
+
+class _RepoCommitDialogState extends State<_RepoCommitDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  final _messageController = TextEditingController();
+  bool _running = false;
+  bool _loading = true;
+  bool _pushAfterCommit = true;
+  List<Map<String, dynamic>> _changedFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _loadStatus() async {
+    setState(() => _loading = true);
+    try {
+      final result = await Process.run(
+        'git',
+        ['status', '--porcelain'],
+        workingDirectory: widget.repoPath,
+        runInShell: true,
+      );
+      if (!mounted) return;
+      final output = (result.stdout as String).trimRight();
+      if (output.isEmpty) {
+        setState(() {
+          _changedFiles = [];
+          _loading = false;
+        });
+        return;
+      }
+      final files = <Map<String, dynamic>>[];
+      for (final line in output.split('\n')) {
+        if (line.length < 4) continue;
+        final status = line.substring(0, 2).trim();
+        var file = line.substring(3);
+        if (status.isEmpty || file.isEmpty) continue;
+        if (file.contains(' -> ')) file = file.split(' -> ').last;
+        files.add({'status': status, 'file': file, 'selected': true});
+      }
+      setState(() {
+        _changedFiles = files;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        _addLine('\x1B[0;31m[-] $e\x1B[0m');
+      }
+    }
+  }
+
+  int get _selectedCount =>
+      _changedFiles.where((f) => f['selected'] == true).length;
+
+  bool get _canCommit =>
+      !_running &&
+      !_loading &&
+      _selectedCount > 0 &&
+      _messageController.text.trim().isNotEmpty;
+
+  Future<void> _commit() async {
+    setState(() => _running = true);
+
+    final selectedFiles =
+        _changedFiles.where((f) => f['selected'] == true).toList();
+    final filePaths =
+        selectedFiles.map((f) => f['file'] as String).toList();
+    final message = _messageController.text.trim();
+
+    try {
+      _addLine(
+          '\x1B[0;34m> git add (${filePaths.length} files)\x1B[0m');
+      for (final file in filePaths) {
+        final addResult = await Process.run(
+          'git',
+          ['add', '--', file],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        if (addResult.exitCode != 0) {
+          _addLine('\x1B[0;31m[-] git add failed for: $file\x1B[0m');
+          if (mounted) setState(() => _running = false);
+          return;
+        }
+      }
+
+      _addLine('\x1B[0;34m> git commit -m "$message"\x1B[0m');
+      final commitProcess = await Process.start(
+        'git',
+        ['commit', '-m', message],
+        workingDirectory: widget.repoPath,
+        runInShell: true,
+      );
+      commitProcess.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (mounted) _addLine(line);
+      });
+      commitProcess.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+        if (mounted) _addLine(line);
+      });
+      final commitExit = await commitProcess.exitCode;
+      if (!mounted) return;
+
+      if (commitExit != 0) {
+        _addLine(
+          '\x1B[0;31m[-] ${context.l10n.gitCommitFailed(commitExit)}\x1B[0m',
+        );
+        setState(() => _running = false);
+        return;
+      }
+      _addLine('\x1B[0;32m[+] ${context.l10n.gitCommitDone}\x1B[0m');
+
+      if (_pushAfterCommit) {
+        _addLine('\x1B[0;34m> git push\x1B[0m');
+        final pushProcess = await Process.start(
+          'git',
+          ['push'],
+          workingDirectory: widget.repoPath,
+          runInShell: true,
+        );
+        pushProcess.stdout
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) {
+          if (mounted) _addLine(line);
+        });
+        pushProcess.stderr
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen((line) {
+          if (mounted) _addLine(line);
+        });
+        final pushExit = await pushProcess.exitCode;
+        if (!mounted) return;
+        if (pushExit == 0) {
+          _addLine('\x1B[0;32m[+] Push done\x1B[0m');
+        } else {
+          _addLine(
+              '\x1B[0;31m[-] Push failed (exit $pushExit)\x1B[0m');
+        }
+      }
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) {
+      setState(() => _running = false);
+      await _loadStatus();
+    }
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'M':
+        return const Color(0xFFE5E510);
+      case 'A':
+        return const Color(0xFF0DBC79);
+      case 'D':
+        return const Color(0xFFCD3131);
+      case '??':
+        return Colors.grey;
+      case 'R':
+        return const Color(0xFF2472C8);
+      default:
+        return Colors.grey.shade300;
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allSelected = _changedFiles.isNotEmpty &&
+        _changedFiles.every((f) => f['selected'] == true);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          Text(context.l10n.gitCommitTitle(widget.repoName)),
+          const Spacer(),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              )
+            else if (_changedFiles.isEmpty && _logLines.isEmpty) ...[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Center(
+                  child: Text(
+                    context.l10n.gitCommitNoChanges,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+              ),
+            ] else ...[
+              if (_changedFiles.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Text(
+                      context.l10n.gitStagedFiles(_selectedCount),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _running
+                          ? null
+                          : () {
+                              setState(() {
+                                final newVal = !allSelected;
+                                for (final f in _changedFiles) {
+                                  f['selected'] = newVal;
+                                }
+                              });
+                            },
+                      icon: Icon(
+                        allSelected ? Icons.deselect : Icons.select_all,
+                        size: AppIconSize.md,
+                      ),
+                      label: Text(
+                        allSelected
+                            ? context.l10n.gitDeselectAll
+                            : context.l10n.gitSelectAll,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade600),
+                    borderRadius: AppRadius.mediumBorderRadius,
+                  ),
+                  child: ListView.builder(
+                    itemCount: _changedFiles.length,
+                    itemBuilder: (ctx, i) {
+                      final f = _changedFiles[i];
+                      final status = f['status'] as String;
+                      final file = f['file'] as String;
+                      final selected = f['selected'] as bool;
+                      return CheckboxListTile(
+                        dense: true,
+                        value: selected,
+                        onChanged: _running
+                            ? null
+                            : (v) => setState(
+                                () => _changedFiles[i]['selected'] = v!),
+                        title: Text.rich(TextSpan(children: [
+                          TextSpan(
+                            text: '$status  ',
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.bold,
+                              color: _statusColor(status),
+                              fontSize: AppFontSize.md,
+                            ),
+                          ),
+                          TextSpan(
+                            text: file,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: AppFontSize.md,
+                            ),
+                          ),
+                        ])),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.gitCommitMessage,
+                    hintText: context.l10n.gitCommitMessageHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  maxLines: 8,
+                  minLines: 3,
+                  enabled: !_running,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _running
+                          ? null
+                          : () => setState(
+                              () => _pushAfterCommit = !_pushAfterCommit),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _pushAfterCommit,
+                            onChanged: _running
+                                ? null
+                                : (v) => setState(
+                                    () => _pushAfterCommit = v ?? false),
+                          ),
+                          Text(context.l10n.gitPushAfterCommit),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: _canCommit ? _commit : null,
+                      icon:
+                          const Icon(Icons.check, size: AppIconSize.md),
+                      label: Text(
+                        _pushAfterCommit
+                            ? context.l10n.gitCommitAndPush
+                            : context.l10n.gitCommitOnly,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              if (_logLines.isNotEmpty || _running)
+                Container(
+                  height: 180,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppLogColors.terminalBg,
+                    borderRadius: AppRadius.mediumBorderRadius,
+                    border: Border.all(color: Colors.grey.shade700),
+                  ),
+                  child: _logLines.isEmpty
+                      ? Center(
+                          child: Text(
+                            context.l10n.noOutputYet,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        )
+                      : SelectionArea(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            padding:
+                                const EdgeInsets.all(AppSpacing.md),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  for (final line in _logLines)
+                                    Text.rich(
+                                      TextSpan(
+                                        style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: AppFontSize.md,
+                                        ),
+                                        children: _parseAnsi(line),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+            ],
+            if (_running)
+              const Padding(
+                padding: EdgeInsets.only(top: AppSpacing.md),
+                child: LinearProgressIndicator(),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Repo Create PR Dialog ──
+
+class _RepoCreatePRDialog extends StatefulWidget {
+  final String repoName;
+  final String repoPath;
+  final String currentBranch;
+
+  const _RepoCreatePRDialog({
+    required this.repoName,
+    required this.repoPath,
+    required this.currentBranch,
+  });
+
+  @override
+  State<_RepoCreatePRDialog> createState() => _RepoCreatePRDialogState();
+}
+
+class _RepoCreatePRDialogState extends State<_RepoCreatePRDialog> {
+  static final _ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+  static const _ansiColors = <int, Color>{
+    31: Color(0xFFCD3131),
+    32: Color(0xFF0DBC79),
+    33: Color(0xFFE5E510),
+    34: Color(0xFF2472C8),
+    90: Color(0xFF666666),
+  };
+
+  final List<String> _logLines = [];
+  final _scrollController = ScrollController();
+  final _titleController = TextEditingController();
+  final _bodyController = TextEditingController();
+  bool _running = false;
+  bool _done = false;
+  bool _loading = true;
+  bool _ghInstalled = false;
+  String _baseBranch = 'main';
+  List<String> _remoteBranches = [];
+  String? _prUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.text = widget.currentBranch;
+    _checkGh();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _titleController.dispose();
+    _bodyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkGh() async {
+    final result = await Process.run(
+      'gh',
+      ['--version'],
+      runInShell: true,
+    );
+    final installed = result.exitCode == 0;
+
+    List<String> branches = [];
+    final brResult = await Process.run(
+      'git',
+      ['branch', '-r', '--format=%(refname:short)'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    if (brResult.exitCode == 0) {
+      branches = (brResult.stdout as String)
+          .split('\n')
+          .map((b) => b.trim().replaceFirst('origin/', ''))
+          .where((b) => b.isNotEmpty && !b.contains('HEAD'))
+          .toSet()
+          .toList()
+        ..sort();
+    }
+
+    String base = 'main';
+    if (branches.contains('main')) {
+      base = 'main';
+    } else if (branches.contains('master')) {
+      base = 'master';
+    } else if (branches.contains('dev')) {
+      base = 'dev';
+    }
+
+    if (mounted) {
+      setState(() {
+        _ghInstalled = installed;
+        _remoteBranches = branches;
+        _baseBranch = base;
+        _loading = false;
+      });
+    }
+  }
+
+  void _addLine(String line) {
+    if (line.contains('\r')) line = line.split('\r').last;
+    if (line.trim().isEmpty) return;
+    setState(() => _logLines.add(line));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _createPR() async {
+    final title = _titleController.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() => _running = true);
+
+    // Check uncommitted changes
+    final status = await Process.run(
+      'git',
+      ['status', '--porcelain'],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    final uncommitted = (status.stdout as String)
+        .trimRight()
+        .split('\n')
+        .where((l) => l.isNotEmpty)
+        .length;
+
+    if (uncommitted > 0 && mounted) {
+      setState(() => _running = false);
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Row(
+            children: [
+              Text(context.l10n.prUncommittedTitle),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
+          content: Text(ctx.l10n.prUncommittedDesc(uncommitted)),
+          actions: [
+            FilledButton.tonalIcon(
+              onPressed: () {
+                Navigator.pop(ctx, false);
+                showDialog(
+                  context: context,
+                  builder: (c) => _RepoCommitDialog(
+                    repoName: widget.repoName,
+                    repoPath: widget.repoPath,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.commit),
+              label: Text(ctx.l10n.prCommitFirst),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(ctx.l10n.prContinueAnyway),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+      setState(() => _running = true);
+    }
+
+    // Push first
+    _addLine(
+        '\x1B[0;33m[~] Pushing ${widget.currentBranch} to origin...\x1B[0m');
+    final push = await Process.start(
+      'git',
+      ['push', '-u', 'origin', widget.currentBranch],
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    push.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    push.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) _addLine(line);
+    });
+    final pushExit = await push.exitCode;
+    if (pushExit != 0) {
+      if (mounted) {
+        _addLine('\x1B[0;31m[-] Push failed\x1B[0m');
+        setState(() => _running = false);
+      }
+      return;
+    }
+
+    // Create PR
+    _addLine('\x1B[0;33m[~] Creating pull request...\x1B[0m');
+    final args = [
+      'pr',
+      'create',
+      '--base',
+      _baseBranch,
+      '--title',
+      title,
+    ];
+    final body = _bodyController.text.trim().isNotEmpty
+        ? _bodyController.text.trim()
+        : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
+    args.addAll(['--body', body]);
+
+    final pr = await Process.start(
+      'gh',
+      args,
+      workingDirectory: widget.repoPath,
+      runInShell: true,
+    );
+    pr.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) {
+        _addLine(line);
+        if (line.startsWith('http')) {
+          setState(() => _prUrl = line.trim());
+        }
+      }
+    });
+    pr.stderr
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen((line) {
+      if (mounted) {
+        _addLine(line);
+        final urlMatch = RegExp(r'https://\S+').firstMatch(line);
+        if (urlMatch != null) {
+          setState(() => _prUrl = urlMatch.group(0));
+        }
+      }
+    });
+    final prExit = await pr.exitCode;
+
+    if (!mounted) return;
+    if (prExit == 0) {
+      _addLine('\x1B[0;32m[+] Pull request created!\x1B[0m');
+      setState(() {
+        _done = true;
+        _running = false;
+      });
+    } else if (_prUrl != null) {
+      _addLine(
+        '\x1B[0;33m[~] PR already exists. New commits have been pushed.\x1B[0m',
+      );
+      setState(() {
+        _done = true;
+        _running = false;
+      });
+    } else {
+      _addLine('\x1B[0;31m[-] Failed to create pull request\x1B[0m');
+      setState(() => _running = false);
+    }
+  }
+
+  List<TextSpan> _parseAnsi(String line) {
+    final spans = <TextSpan>[];
+    final defaultColor = Colors.grey.shade300;
+    var currentColor = defaultColor;
+    var lastEnd = 0;
+    for (final match in _ansiRegex.allMatches(line)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: line.substring(lastEnd, match.start),
+          style: TextStyle(color: currentColor),
+        ));
+      }
+      final code = match.group(0)!;
+      final params = code.substring(2, code.length - 1).split(';');
+      for (final param in params) {
+        final n = int.tryParse(param) ?? 0;
+        if (n == 0) {
+          currentColor = defaultColor;
+        } else if (_ansiColors.containsKey(n)) {
+          currentColor = _ansiColors[n]!;
+        }
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < line.length) {
+      spans.add(TextSpan(
+        text: line.substring(lastEnd),
+        style: TextStyle(color: currentColor),
+      ));
+    }
+    return spans;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Text(context.l10n.prTitle(widget.repoName)),
+          const Spacer(),
+          AppDialog.closeButton(
+            context,
+            onClose: _running ? null : () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: AppDialog.widthLg,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (!_ghInstalled)
+              Column(
+                children: [
+                  const Icon(Icons.warning_amber,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    context.l10n.prGhNotInstalled,
+                    style: const TextStyle(fontSize: AppFontSize.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.l10n.prGhInstallHint,
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: AppFontSize.md,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              Row(
+                children: [
+                  Text(context.l10n.prBase,
+                      style: TextStyle(color: Colors.grey.shade400)),
+                  const SizedBox(width: AppSpacing.sm),
+                  DropdownButton<String>(
+                    value: _remoteBranches.contains(_baseBranch)
+                        ? _baseBranch
+                        : _remoteBranches.firstOrNull,
+                    isDense: true,
+                    items: _remoteBranches
+                        .map((b) => DropdownMenuItem(
+                              value: b,
+                              child: Text(b),
+                            ))
+                        .toList(),
+                    onChanged: _running
+                        ? null
+                        : (v) {
+                            if (v != null) setState(() => _baseBranch = v);
+                          },
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Icon(Icons.arrow_back,
+                      size: AppIconSize.md,
+                      color: Colors.grey.shade500),
+                  const SizedBox(width: AppSpacing.sm),
+                  Chip(
+                    label: Text(widget.currentBranch,
+                        style:
+                            const TextStyle(fontFamily: 'monospace')),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.prTitleLabel,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                enabled: !_running && !_done,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: _bodyController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.prDescriptionLabel,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                minLines: 2,
+                maxLines: 5,
+                enabled: !_running && !_done,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  FilledButton.icon(
+                    onPressed: (_running ||
+                            _done ||
+                            _titleController.text.trim().isEmpty)
+                        ? null
+                        : _createPR,
+                    icon: _running
+                        ? const SizedBox(
+                            width: AppIconSize.md,
+                            height: AppIconSize.md,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.send),
+                    label: Text(context.l10n.prCreateButton),
+                  ),
+                  if (_done) ...[
+                    const SizedBox(width: AppSpacing.md),
+                    const Icon(Icons.check_circle,
+                        color: Colors.green),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(context.l10n.prCreated,
+                        style:
+                            const TextStyle(color: Colors.green)),
+                    if (_prUrl != null) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      FilledButton.tonalIcon(
+                        onPressed: () => Process.run(
+                          Platform.isMacOS
+                              ? 'open'
+                              : Platform.isWindows
+                                  ? 'start'
+                                  : 'xdg-open',
+                          [_prUrl!],
+                          runInShell: true,
+                        ),
+                        icon: const Icon(Icons.open_in_new,
+                            size: AppIconSize.md),
+                        label: Text(context.l10n.prViewInBrowser),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ],
+            if (_logLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                height: 180,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppLogColors.terminalBg,
+                  borderRadius: AppRadius.mediumBorderRadius,
+                  border: Border.all(color: Colors.grey.shade700),
+                ),
+                child: SelectionArea(
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _logLines
+                          .map((line) => Text.rich(
+                                TextSpan(
+                                  children: _parseAnsi(line),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: AppFontSize.md,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Repo Prune Dialog ──
+
+class _RepoPruneDialog extends StatefulWidget {
+  final List<String> branches;
+  const _RepoPruneDialog({required this.branches});
+
+  @override
+  State<_RepoPruneDialog> createState() => _RepoPruneDialogState();
+}
+
+class _RepoPruneDialogState extends State<_RepoPruneDialog> {
+  late final Set<String> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.branches.toSet();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          Text(context.l10n.gitBranchStaleBranches),
+          const Spacer(),
+          AppDialog.closeButton(context),
+        ],
+      ),
+      content: SizedBox(
+        width: AppDialog.widthMd,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.gitBranchStaleDesc,
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: AppFontSize.md,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ...widget.branches.map(
+              (b) => CheckboxListTile(
+                value: _selected.contains(b),
+                onChanged: (v) {
+                  setState(() {
+                    if (v == true) {
+                      _selected.add(b);
+                    } else {
+                      _selected.remove(b);
+                    }
+                  });
+                },
+                title:
+                    Text(b, style: const TextStyle(fontFamily: 'monospace')),
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (_selected.isNotEmpty)
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _selected.toList()),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child:
+                Text(context.l10n.gitBranchDeleteCount(_selected.length)),
+          ),
+      ],
+    );
+  }
 }
 
 // ── Branch Picker Dialog ──
@@ -1326,6 +3745,8 @@ class _GitActionDialogState extends State<_GitActionDialog> {
           await _pushRepo(repo);
         case 'switch':
           await _switchRepo(repo, widget.branch!);
+        case 'publish':
+          await _publishRepo(repo);
       }
     }
     widget.onDone();
@@ -1359,6 +3780,24 @@ class _GitActionDialogState extends State<_GitActionDialog> {
       _addLine('\x1B[0;32m[+] ${repo.name}: pushed\x1B[0m');
     } else {
       _addLine('\x1B[0;31m[-] ${repo.name}: push failed\x1B[0m');
+    }
+  }
+
+  Future<void> _publishRepo(_RepoInfo repo) async {
+    _addLine(
+        '\x1B[0;36m[>] Publishing ${repo.name} (${repo.branch})...\x1B[0m');
+    final process = await Process.start(
+      'git',
+      ['push', '-u', 'origin', repo.branch],
+      workingDirectory: repo.path,
+      runInShell: true,
+    );
+    await _listenProcess(process);
+    final exitCode = await process.exitCode;
+    if (exitCode == 0) {
+      _addLine('\x1B[0;32m[+] ${repo.name}: published\x1B[0m');
+    } else {
+      _addLine('\x1B[0;31m[-] ${repo.name}: publish failed\x1B[0m');
     }
   }
 
