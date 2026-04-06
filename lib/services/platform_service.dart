@@ -292,7 +292,19 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
       for (final path in candidates) {
         if (await File(path).exists()) return path;
       }
-    } else if (isLinux) {
+    } else if (isWindows) {
+      final localAppData = Platform.environment['LOCALAPPDATA'] ?? '';
+      final programFiles = Platform.environment['ProgramFiles'] ?? r'C:\Program Files';
+      final candidates = [
+        '$localAppData\\Microsoft\\WinGet\\Links\\gh.exe',
+        '$programFiles\\GitHub CLI\\gh.exe',
+        '$localAppData\\Programs\\gh\\bin\\gh.exe',
+      ];
+      for (final path in candidates) {
+        if (await File(path).exists()) return path;
+      }
+    } else {
+      // Linux
       final candidates = [
         '/usr/bin/gh',
         '/usr/local/bin/gh',
