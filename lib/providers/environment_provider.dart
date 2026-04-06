@@ -76,7 +76,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
 
   @override
   EnvironmentState build() {
-    checkAll();
+    Future.microtask(() => checkAll());
     return const EnvironmentState(loading: true);
   }
 
@@ -115,8 +115,13 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
         vscodeInstalled: vsOk,
         hasNginxConfig: (nginx['confDir'] ?? '').toString().isNotEmpty,
       );
-    } catch (_) {
-      state = state.copyWith(loading: false);
+    } catch (e) {
+      state = state.copyWith(
+        loading: false,
+        gitInstalled: state.gitInstalled ?? false,
+        dockerInstalled: state.dockerInstalled ?? false,
+        vscodeInstalled: state.vscodeInstalled ?? false,
+      );
     }
   }
 

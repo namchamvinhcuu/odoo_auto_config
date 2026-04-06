@@ -92,7 +92,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   @override
   SettingsState build() {
-    scanEnvironment();
+    Future.microtask(() => scanEnvironment());
     return const SettingsState(pythonLoading: true);
   }
 
@@ -127,8 +127,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
       HomeScreen.recheckDocker();
       // Server detection runs separately - don't block main scan
       scanPgServers();
-    } catch (_) {
-      state = state.copyWith(pythonLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        pythonLoading: false,
+        dockerInstalled: state.dockerInstalled ?? false,
+        pgInstalled: state.pgInstalled ?? false,
+      );
     }
   }
 

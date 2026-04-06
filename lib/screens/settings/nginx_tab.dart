@@ -52,6 +52,10 @@ class _NginxTabState extends ConsumerState<NginxTab> {
     _domainSuffixController.text = (nginx['domainSuffix'] ?? '').toString();
     _containerNameController.text =
         (nginx['containerName'] ?? 'nginx').toString();
+    if (mounted) {
+      setState(() {}); // rebuild to update _hasNginxConfig
+      if (_hasNginxConfig) _checkPorts();
+    }
   }
 
   Future<void> _saveNginxSettings() async {

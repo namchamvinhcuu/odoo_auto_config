@@ -16,7 +16,7 @@ class DockerStatus {
 class DockerStatusNotifier extends Notifier<DockerStatus> {
   @override
   DockerStatus build() {
-    check();
+    Future.microtask(() => check());
     return const DockerStatus();
   }
 

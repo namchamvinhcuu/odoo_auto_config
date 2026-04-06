@@ -169,6 +169,16 @@ lib/
 - **Riverpod** — state management: `Notifier` cho sync state (theme, locale), `AsyncNotifier` cho async data (profiles, projects...)
   `ConsumerWidget` cho stateless screens, `ConsumerStatefulWidget` cho screens cần UI controllers (TabController, TextEditingController...)
   Business logic trong `lib/providers/`, UI chỉ watch state + dispatch actions. KHÔNG dùng `StateNotifier` (legacy)
+  **QUAN TRỌNG**: Trong `Notifier.build()`, KHÔNG gọi async method trực tiếp (sẽ crash "uninitialized provider").
+  Phải dùng `Future.microtask(() => asyncMethod())` để schedule sau khi build() return:
+  ```dart
+  @override
+  MyState build() {
+    Future.microtask(() => loadData()); // ĐÚNG
+    // loadData(); // SAI — state chưa sẵn sàng
+    return const MyState();
+  }
+  ```
 - **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert

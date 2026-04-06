@@ -37,9 +37,10 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
   @override
   Future<OtherProjectsState> build() async {
     final workspaces = await _loadWorkspaces();
-    // Fire branch loading in background
-    _loadBranches(workspaces);
-    return OtherProjectsState(workspaces: workspaces);
+    final initialState = OtherProjectsState(workspaces: workspaces);
+    // Schedule branch loading after state is set
+    Future.microtask(() => _loadBranches(workspaces));
+    return initialState;
   }
 
   Future<List<WorkspaceInfo>> _loadWorkspaces() async {

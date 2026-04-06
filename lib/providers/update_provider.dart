@@ -14,7 +14,7 @@ class UpdateState {
 class UpdateNotifier extends Notifier<UpdateState> {
   @override
   UpdateState build() {
-    checkForUpdate();
+    Future.microtask(() => checkForUpdate());
     return const UpdateState();
   }
 
