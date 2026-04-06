@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'simple_git_commit_dialog.dart';
 
@@ -54,8 +55,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
   Future<void> _checkGh() async {
     // Check gh CLI installed
+    final gh = await PlatformService.ghPath;
     final result = await Process.run(
-      'gh',
+      gh,
       ['--version'],
       runInShell: true,
     );
@@ -219,8 +221,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
+    final gh = await PlatformService.ghPath;
     final pr = await Process.start(
-      'gh',
+      gh,
       args,
       workingDirectory: widget.projectPath,
       runInShell: true,

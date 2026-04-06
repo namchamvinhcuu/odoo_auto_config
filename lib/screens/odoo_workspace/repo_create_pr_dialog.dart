@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'repo_commit_dialog.dart';
 
@@ -53,8 +54,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   }
 
   Future<void> _checkGh() async {
+    final gh = await PlatformService.ghPath;
     final result = await Process.run(
-      'gh',
+      gh,
       ['--version'],
       runInShell: true,
     );
@@ -214,8 +216,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
+    final gh = await PlatformService.ghPath;
     final pr = await Process.start(
-      'gh',
+      gh,
       args,
       workingDirectory: widget.repoPath,
       runInShell: true,

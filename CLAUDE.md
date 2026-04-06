@@ -214,6 +214,7 @@ lib/
 - Nếu Docker không cài hoặc daemon chưa chạy → hiện MaterialBanner (không tự tắt) với nút "Go to Settings"
 - Nếu Docker running + nginx container stopped → tự động `docker start <container>`
 - Banner chỉ mất khi Docker daemon thực sự running
+- Check GitHub CLI (gh) installed → nếu chưa có → tự động install (brew/winget/apt)
 - `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
   (VD: bấm Setup Nginx khi chưa config → tự động chuyển sang Settings > Nginx tab)
 
@@ -440,7 +441,7 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   ```
 - window_manager cần **full restart** (không hot reload) khi thêm mới
 - App icon cần `flutter clean` + rebuild sau khi thay đổi
-- External binaries PHẢI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
+- External binaries PHẢI resolve qua PlatformService (dockerPath, ghPath, mkcertPath, pythonCandidates, ...)
 - **KHÔNG BAO GIỜ hardcode separator `/` hoặc `\` khi nối đường dẫn local file system**
   Luôn dùng `p.join()` từ `package:path/path.dart` (import as `p`)
   VD: `p.join(baseDir, 'conf.d')` thay vì `'$baseDir/conf.d'`

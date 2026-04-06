@@ -18,6 +18,7 @@ class EnvironmentState {
   final List<PythonInfo>? pythonResults;
   final bool hasNginxConfig;
   final bool? vscodeInstalled;
+  final bool? ghInstalled;
   final bool startingDocker;
   final bool autoInstalling;
   final List<String> autoLog;
@@ -32,6 +33,7 @@ class EnvironmentState {
     this.pythonResults,
     this.hasNginxConfig = false,
     this.vscodeInstalled,
+    this.ghInstalled,
     this.startingDocker = false,
     this.autoInstalling = false,
     this.autoLog = const [],
@@ -47,6 +49,7 @@ class EnvironmentState {
     List<PythonInfo>? pythonResults,
     bool? hasNginxConfig,
     bool? vscodeInstalled,
+    bool? ghInstalled,
     bool? startingDocker,
     bool? autoInstalling,
     List<String>? autoLog,
@@ -61,6 +64,7 @@ class EnvironmentState {
       pythonResults: pythonResults ?? this.pythonResults,
       hasNginxConfig: hasNginxConfig ?? this.hasNginxConfig,
       vscodeInstalled: vscodeInstalled ?? this.vscodeInstalled,
+      ghInstalled: ghInstalled ?? this.ghInstalled,
       startingDocker: startingDocker ?? this.startingDocker,
       autoInstalling: autoInstalling ?? this.autoInstalling,
       autoLog: autoLog ?? this.autoLog,
@@ -90,6 +94,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
         _pythonChecker.detectAll(),
         PlatformService.isVscodeInstalled(),
         NginxService.loadSettings(),
+        PlatformService.isGhInstalled(),
       ]);
 
       final gitOk = results[0] as bool;
@@ -98,11 +103,18 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
       final pyResults = results[3] as List<PythonInfo>;
       final vsOk = results[4] as bool;
       final nginx = results[5] as Map<String, dynamic>;
+      final ghOk = results[6] as bool;
 
       final dockerRunning =
           dockerOk ? await DockerInstallService.isRunning() : false;
       final dockerVer =
           dockerOk ? await DockerInstallService.getVersion() : null;
+
+      // Auto-install gh if missing
+      if (!ghOk) {
+        await PlatformService.installGh((_) {});
+      }
+      final ghFinal = ghOk || await PlatformService.isGhInstalled();
 
       state = state.copyWith(
         loading: false,
@@ -113,6 +125,7 @@ class EnvironmentNotifier extends Notifier<EnvironmentState> {
         dockerVersion: dockerVer,
         pythonResults: pyResults,
         vscodeInstalled: vsOk,
+        ghInstalled: ghFinal,
         hasNginxConfig: (nginx['confDir'] ?? '').toString().isNotEmpty,
       );
     } catch (e) {
