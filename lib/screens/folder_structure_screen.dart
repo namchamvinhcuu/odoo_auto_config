@@ -62,7 +62,7 @@ class _FolderStructureScreenState extends State<FolderStructureScreen> {
           _logs.add('[ERROR] $e');
           _generating = false;
         });
-        showDialog(
+        AppDialog.show(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Row(

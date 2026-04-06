@@ -62,14 +62,33 @@ class AppDialog {
   static const double heightLg = 700;
   static const double heightXl = 750;
 
+  /// Show a dialog that cannot be dismissed by tapping outside or pressing ESC.
+  /// Use this instead of [showDialog] for all app dialogs.
+  static Future<T?> show<T>({
+    required BuildContext context,
+    required Widget Function(BuildContext) builder,
+  }) {
+    return showDialog<T>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: builder(ctx),
+      ),
+    );
+  }
+
   /// Red X close button for dialog title rows.
   /// Use in title Row: `[...other widgets, const Spacer(), AppDialog.closeButton(context)]`
-  static Widget closeButton(BuildContext context, {VoidCallback? onClose}) {
+  /// Set [enabled] to false to disable close (e.g. while process is running).
+  static Widget closeButton(BuildContext context,
+      {VoidCallback? onClose, bool enabled = true}) {
     return IconButton(
-      onPressed: onClose ?? () => Navigator.pop(context),
+      onPressed:
+          enabled ? (onClose ?? () => Navigator.pop(context)) : null,
       icon: const Icon(Icons.close, color: Colors.white, size: AppIconSize.md),
       style: IconButton.styleFrom(
-        backgroundColor: Colors.red,
+        backgroundColor: enabled ? Colors.red : Colors.grey,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),

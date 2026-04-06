@@ -281,7 +281,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await showDialog<({String subdomain, int? port})>(
+    final result = await AppDialog.show<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
@@ -317,7 +317,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
   }
 
   void _showSymlinkErrorDialog(String message) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -400,7 +400,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         Text(context.l10n.quickCreateTitle,
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
-                        AppDialog.closeButton(context, onClose: () => Navigator.pop(context, _done)),
+                        AppDialog.closeButton(context, enabled: !_creating, onClose: () => Navigator.pop(context, _done)),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),

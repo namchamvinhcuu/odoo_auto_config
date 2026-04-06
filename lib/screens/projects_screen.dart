@@ -82,7 +82,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _quickCreate() async {
-    final created = await showDialog<bool>(
+    final created = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => const QuickCreateDialog(),
     );
@@ -92,7 +92,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Future<void> _importProject() async {
-    final result = await showDialog<ProjectInfo>(
+    final result = await AppDialog.show<ProjectInfo>(
       context: context,
       builder: (ctx) => const _ImportProjectDialog(),
     );
@@ -148,7 +148,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final installed = await PlatformService.isVscodeInstalled();
     if (!installed) {
       if (!mounted) return;
-      showDialog(
+      AppDialog.show(
         context: context,
         builder: (ctx) => const VscodeInstallDialog(),
       );
@@ -184,7 +184,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       );
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitPullDialog(
         projectName: project.name,
@@ -201,7 +201,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       );
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitCommitDialog(
         projectName: project.name,
@@ -217,7 +217,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       );
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => OdooWorkspaceDialog(
         projectName: project.name,
@@ -234,7 +234,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       );
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _SelectivePullDialog(
         projectName: project.name,
@@ -289,7 +289,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
 
     if (!mounted) return;
-    final selected = await showDialog<String>(
+    final selected = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(context.l10n.nginxLink),
@@ -342,7 +342,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await showDialog<({String subdomain, int? port})>(
+    final result = await AppDialog.show<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
@@ -383,7 +383,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Future<void> _removeNginx(ProjectInfo proj) async {
     final subdomain = NginxService.sanitizeSubdomain(proj.name);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -443,7 +443,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _remove(ProjectInfo project) async {
     bool deleteFiles = false;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -975,7 +975,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final domain = proj.hasNginx ? '${proj.nginxSubdomain}$dotSuffix' : null;
 
     if (!mounted) return;
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _ProjectInfoDialog(
         project: proj,
@@ -1591,7 +1591,7 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
 
 
   void _showCreateDbDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _CreateDbDialog(
         defaultName: _dbNameController.text,
@@ -1622,7 +1622,7 @@ class _ProjectInfoDialogState extends State<_ProjectInfoDialog> {
       return;
     }
     if (!mounted) return;
-    final selected = await showDialog<String>(
+    final selected = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('Select Database'),
@@ -2170,7 +2170,7 @@ class _CreateDbDialogState extends State<_CreateDbDialog> {
         children: [
           Text(context.l10n.createDatabase),
           const Spacer(),
-          AppDialog.closeButton(context, onClose: _creating ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_creating),
         ],
       ),
       content: SizedBox(
@@ -2387,7 +2387,7 @@ class _GitPullDialogState extends State<_GitPullDialog> {
         children: [
           Text(context.l10n.gitPullTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(context, onClose: _running ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -2699,7 +2699,7 @@ class _GitCommitDialogState extends State<_GitCommitDialog> {
         children: [
           Text(context.l10n.gitCommitTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(context, onClose: (_running || _scanning) ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running && !_scanning),
         ],
       ),
       content: SizedBox(
@@ -2961,7 +2961,7 @@ class _SelectivePullDialogState extends State<_SelectivePullDialog> {
 
   void _pull() {
     if (_selectedRepos.isEmpty) return;
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _SelectivePullLogDialog(
         projectPath: widget.projectPath,
@@ -3263,7 +3263,7 @@ class _SelectivePullLogDialogState extends State<_SelectivePullLogDialog> {
           Text(context.l10n.gitSelectivePullTitle(
               '${widget.repos.length} repos')),
           const Spacer(),
-          AppDialog.closeButton(context, onClose: _running ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(

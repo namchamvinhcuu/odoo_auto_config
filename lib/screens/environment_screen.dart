@@ -175,9 +175,8 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
   }
 
   void _showRestartDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
-      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.restart_alt, size: 48, color: Colors.orange),
         title: Text(context.l10n.envRestartRequired),
@@ -275,7 +274,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
         description: context.l10n.envVscodeDesc,
         installed: _vscodeInstalled,
         required_: false,
-        onAction: () => showDialog(
+        onAction: () => AppDialog.show(
           context: context,
           builder: (_) => const VscodeInstallDialog(),
         ).then((_) => _checkAll()),
@@ -477,7 +476,7 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     required String subtitle,
     required Future<int> Function(void Function(String)) install,
   }) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _InstallDialog(
         title: title,

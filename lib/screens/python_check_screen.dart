@@ -76,7 +76,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   }
 
   void _showDockerInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (context) => _DockerInstallDialog(onInstalled: () => _scan()),
     );
@@ -130,7 +130,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
   }
 
   void _showInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (context) => _PythonInstallDialog(
         installedVersions:

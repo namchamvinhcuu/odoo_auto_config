@@ -112,7 +112,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   void _switchBranch(WorkspaceInfo ws) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _SwitchBranchDialog(
         projectPath: ws.path,
@@ -159,7 +159,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       _workspaces.map((w) => w.type).where((t) => t.isNotEmpty).toSet();
 
   Future<void> _importWorkspace() async {
-    final result = await showDialog<WorkspaceInfo>(
+    final result = await AppDialog.show<WorkspaceInfo>(
       context: context,
       builder: (ctx) => const _ImportWorkspaceDialog(),
     );
@@ -170,7 +170,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   Future<void> _editWorkspace(WorkspaceInfo workspace) async {
-    final result = await showDialog<WorkspaceInfo>(
+    final result = await AppDialog.show<WorkspaceInfo>(
       context: context,
       builder: (ctx) => _ImportWorkspaceDialog(existing: workspace),
     );
@@ -231,7 +231,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   void _showVscodeInstallDialog() {
-    showDialog(context: context, builder: (ctx) => const VscodeInstallDialog());
+    AppDialog.show(context: context, builder: (ctx) => const VscodeInstallDialog());
   }
 
   void _runGitPull(WorkspaceInfo ws) {
@@ -243,7 +243,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       ).showSnackBar(SnackBar(content: Text(context.l10n.gitPullNotARepo)));
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) =>
           _SimpleGitPullDialog(projectName: ws.name, projectPath: ws.path),
@@ -262,7 +262,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
       ).showSnackBar(SnackBar(content: Text(context.l10n.gitPullNotARepo)));
       return;
     }
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) =>
           _SimpleGitCommitDialog(projectName: ws.name, projectPath: ws.path),
@@ -288,7 +288,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
 
     if (!mounted) return;
-    final selected = await showDialog<String>(
+    final selected = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(context.l10n.nginxLink),
@@ -333,7 +333,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await showDialog<({String subdomain, int? port})>(
+    final result = await AppDialog.show<({String subdomain, int? port})>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(ws.name),
@@ -388,7 +388,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
 
   Future<void> _removeNginx(WorkspaceInfo ws) async {
     final subdomain = NginxService.sanitizeSubdomain(ws.name);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -447,7 +447,7 @@ class _WorkspacesScreenState extends State<WorkspacesScreen> {
   }
 
   Future<void> _remove(WorkspaceInfo workspace) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -1784,10 +1784,7 @@ class _SimpleGitPullDialogState extends State<_SimpleGitPullDialog> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -2134,10 +2131,7 @@ class _SimpleGitCommitDialogState extends State<_SimpleGitCommitDialog> {
         children: [
           Text(context.l10n.gitCommitTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -2495,7 +2489,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
 
     if (uncommitted > 0 && mounted) {
       setState(() => _running = false);
-      final proceed = await showDialog<bool>(
+      final proceed = await AppDialog.show<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Row(
@@ -2513,7 +2507,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
               onPressed: () {
                 Navigator.pop(ctx, false);
                 // Open commit dialog
-                showDialog(
+                AppDialog.show(
                   context: context,
                   builder: (c) => _SimpleGitCommitDialog(
                     projectName: widget.projectName,
@@ -2674,10 +2668,7 @@ class _CreatePRDialogState extends State<_CreatePRDialog> {
         children: [
           Text(context.l10n.prTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -3011,7 +3002,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
     setState(() => _switching = false);
 
     if (!mounted) return;
-    final toDelete = await showDialog<List<String>>(
+    final toDelete = await AppDialog.show<List<String>>(
       context: context,
       builder: (ctx) => _PruneDialog(branches: gone),
     );
@@ -3051,7 +3042,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
 
   Future<void> _createBranch() async {
     final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -3112,7 +3103,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
   }
 
   Future<void> _deleteBranch(String branch) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -3151,7 +3142,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
       // Try force delete if not merged
       final stderr = (result.stderr as String).trim();
       if (stderr.contains('not fully merged')) {
-        final force = await showDialog<bool>(
+        final force = await AppDialog.show<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Row(
@@ -3207,7 +3198,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
   Future<void> _mergeBranch(String branch) async {
     // branch = target branch (not current)
     // Ask merge direction
-    final direction = await showDialog<String>(
+    final direction = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -3444,7 +3435,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
   }
 
   Future<void> _pullBranch(String branch) async {
-    await showDialog(
+    await AppDialog.show(
       context: context,
       builder: (ctx) => _SimpleGitPullDialog(
         projectName: p.basename(widget.projectPath),
@@ -3714,7 +3705,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
           ),
           const Spacer(),
-          AppDialog.closeButton(context),
+          AppDialog.closeButton(context, enabled: !_switching),
         ],
       ),
       content: Builder(
@@ -3733,7 +3724,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                       onPressed: _switching
                           ? null
                           : () async {
-                              await showDialog(
+                              await AppDialog.show(
                                 context: context,
                                 builder: (ctx) => _SimpleGitPullDialog(
                                   projectName: p.basename(widget.projectPath),
@@ -3753,7 +3744,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                       onPressed: _switching
                           ? null
                           : () async {
-                              await showDialog(
+                              await AppDialog.show(
                                 context: context,
                                 builder: (ctx) => _SimpleGitCommitDialog(
                                   projectName: p.basename(widget.projectPath),
@@ -3775,7 +3766,7 @@ class _SwitchBranchDialogState extends State<_SwitchBranchDialog> {
                         onPressed: _switching
                             ? null
                             : () async {
-                                await showDialog(
+                                await AppDialog.show(
                                   context: context,
                                   builder: (ctx) => _CreatePRDialog(
                                     projectName:

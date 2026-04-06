@@ -43,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _createOrEdit([Profile? existing]) async {
-    final result = await showDialog<Profile>(
+    final result = await AppDialog.show<Profile>(
       context: context,
       builder: (ctx) => _ProfileDialog(
         profile: existing,
@@ -57,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _delete(Profile profile) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -269,7 +269,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
   }
 
   void _showCloneOdooDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _CloneOdooDialog(
         version: _odooVersion,
@@ -776,8 +776,7 @@ class _CloneOdooDialogState extends State<_CloneOdooDialog> {
         children: [
           Text(context.l10n.cloneOdooTitle),
           const Spacer(),
-          AppDialog.closeButton(context,
-              onClose: _cloning ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_cloning),
         ],
       ),
       content: SizedBox(

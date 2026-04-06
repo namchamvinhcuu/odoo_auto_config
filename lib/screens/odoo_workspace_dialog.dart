@@ -300,7 +300,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   void _pullSelected() {
     final selected = _repos.where((r) => r.selected).toList();
     if (selected.isEmpty) return;
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title: context.l10n.workspaceViewPullSelected,
@@ -321,7 +321,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         .toList();
 
     if (reposWithChanges.isEmpty) {
-      showDialog(
+      AppDialog.show(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Row(
@@ -341,7 +341,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       return;
     }
 
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _WorkspaceCommitDialog(
         repos: reposWithChanges,
@@ -383,7 +383,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     final sortedBranches = allBranches.toList()..sort();
 
     if (!mounted) return;
-    final branch = await showDialog<String>(
+    final branch = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => _BranchPickerDialog(
         branches: sortedBranches,
@@ -398,7 +398,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     if (selected.isEmpty) return;
 
     if (!mounted) return;
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title: '${context.l10n.workspaceViewSwitchBranch} → $branch',
@@ -417,7 +417,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   // ── Per-repo actions ──
 
   void _pullSingle(_RepoInfo repo) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title: '${context.l10n.gitPull} — ${repo.name}',
@@ -429,7 +429,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _pushSingle(_RepoInfo repo) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title: 'Push — ${repo.name}',
@@ -441,7 +441,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _openRepoBranchDialog(_RepoInfo repo) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _RepoBranchDialog(
         repoName: repo.name,
@@ -457,7 +457,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _publishSingle(_RepoInfo repo) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title:
@@ -473,7 +473,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     final selected =
         _repos.where((r) => r.selected && !r.hasUpstream).toList();
     if (selected.isEmpty) return;
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitActionDialog(
         title: context.l10n.workspaceViewPublishBranch,
@@ -519,7 +519,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             tooltip: context.l10n.refresh,
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context),
+          AppDialog.closeButton(context, enabled: !_scanning),
         ],
       ),
       content: SizedBox(
@@ -645,7 +645,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _openPublishDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _PublishModulesDialog(
         projectPath: widget.projectPath,
@@ -1057,7 +1057,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
 
   Future<void> _createBranch() async {
     final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -1118,7 +1118,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
   }
 
   Future<void> _deleteBranch(String branch) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -1157,7 +1157,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
       final stderr = (result.stderr as String).trim();
       if (stderr.contains('not fully merged')) {
         if (!mounted) return;
-        final force = await showDialog<bool>(
+        final force = await AppDialog.show<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Row(
@@ -1237,7 +1237,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
   }
 
   Future<void> _pullBranch(String branch) async {
-    await showDialog(
+    await AppDialog.show(
       context: context,
       builder: (ctx) => _RepoGitPullDialog(
         repoName: widget.repoName,
@@ -1253,7 +1253,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
   }
 
   Future<void> _mergeBranch(String branch) async {
-    final direction = await showDialog<String>(
+    final direction = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -1487,7 +1487,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
     setState(() => _switching = false);
 
     if (!mounted) return;
-    final toDelete = await showDialog<List<String>>(
+    final toDelete = await AppDialog.show<List<String>>(
       context: context,
       builder: (ctx) => _RepoPruneDialog(branches: gone),
     );
@@ -1749,7 +1749,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
           ),
           const Spacer(),
-          AppDialog.closeButton(context),
+          AppDialog.closeButton(context, enabled: !_switching),
         ],
       ),
       content: Builder(
@@ -1768,7 +1768,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
                       onPressed: _switching
                           ? null
                           : () async {
-                              await showDialog(
+                              await AppDialog.show(
                                 context: context,
                                 builder: (ctx) => _RepoGitPullDialog(
                                   repoName: widget.repoName,
@@ -1789,7 +1789,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
                       onPressed: _switching
                           ? null
                           : () async {
-                              await showDialog(
+                              await AppDialog.show(
                                 context: context,
                                 builder: (ctx) => _RepoCommitDialog(
                                   repoName: widget.repoName,
@@ -1810,7 +1810,7 @@ class _RepoBranchDialogState extends State<_RepoBranchDialog> {
                         onPressed: _switching
                             ? null
                             : () async {
-                                await showDialog(
+                                await AppDialog.show(
                                   context: context,
                                   builder: (ctx) => _RepoCreatePRDialog(
                                     repoName: widget.repoName,
@@ -2154,10 +2154,7 @@ class _RepoGitPullDialogState extends State<_RepoGitPullDialog> {
                   : context.l10n.gitPullTitle(widget.repoName),
             ),
           ),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -2484,10 +2481,7 @@ class _RepoCommitDialogState extends State<_RepoCommitDialog> {
         children: [
           Text(context.l10n.gitCommitTitle(widget.repoName)),
           const Spacer(),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -2831,7 +2825,7 @@ class _RepoCreatePRDialogState extends State<_RepoCreatePRDialog> {
 
     if (uncommitted > 0 && mounted) {
       setState(() => _running = false);
-      final proceed = await showDialog<bool>(
+      final proceed = await AppDialog.show<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Row(
@@ -2846,7 +2840,7 @@ class _RepoCreatePRDialogState extends State<_RepoCreatePRDialog> {
             FilledButton.tonalIcon(
               onPressed: () {
                 Navigator.pop(ctx, false);
-                showDialog(
+                AppDialog.show(
                   context: context,
                   builder: (c) => _RepoCommitDialog(
                     repoName: widget.repoName,
@@ -3005,10 +2999,7 @@ class _RepoCreatePRDialogState extends State<_RepoCreatePRDialog> {
         children: [
           Text(context.l10n.prTitle(widget.repoName)),
           const Spacer(),
-          AppDialog.closeButton(
-            context,
-            onClose: _running ? null : () => Navigator.pop(context),
-          ),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -3538,8 +3529,7 @@ class _WorkspaceCommitDialogState extends State<_WorkspaceCommitDialog> {
             child: Text(context.l10n.gitCommitTitle(
                 '${widget.repos.length} repos')),
           ),
-          AppDialog.closeButton(context,
-              onClose: _running ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -3880,8 +3870,7 @@ class _GitActionDialogState extends State<_GitActionDialog> {
       title: Row(
         children: [
           Expanded(child: Text(widget.title)),
-          AppDialog.closeButton(context,
-              onClose: _running ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(
@@ -4410,7 +4399,7 @@ class _PublishModulesDialogState extends State<_PublishModulesDialog> {
             child: Text(context.l10n.publishModules),
           ),
           const Spacer(),
-          AppDialog.closeButton(context, onClose: _publishing ? null : null),
+          AppDialog.closeButton(context, enabled: !_publishing),
         ],
       ),
       content: SizedBox(

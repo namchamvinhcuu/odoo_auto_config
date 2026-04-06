@@ -103,10 +103,16 @@ lib/
 - **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
+- **AppDialog.show()** - LUÔN dùng `AppDialog.show()` thay `showDialog()` cho mọi dialog trong app.
+  Tự động wrap `barrierDismissible: false` + `PopScope(canPop: false)` → không đóng bằng click ngoài hoặc ESC.
+  Sửa 1 chỗ (`app_constants.dart`) áp dụng cho tất cả dialog.
 - **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
-  Hỗ trợ `onClose:` nullable (disable khi running). KHÔNG dùng footer Close/Cancel button nữa.
+  Hỗ trợ `enabled:` (default true) — khi `false`: button xám, không bấm được (dùng khi process đang chạy).
+  Hỗ trợ `onClose:` để custom close behavior (VD: return value khi pop).
+  KHÔNG dùng footer Close/Cancel button nữa.
   Close-only dialog: xóa `actions:`, thêm closeButton vào title Row
   Cancel+Action dialog: xóa Cancel, thêm closeButton vào title Row, giữ action button trong `actions:`
+  Dialog có process: `AppDialog.closeButton(context, enabled: !_running)` để chặn đóng giữa chừng
 - **Port conflict detection** - kiểm tra trùng port giữa các Odoo project
 - **Cross-platform** - PlatformService abstract paths; mỗi service có branch cho 3 OS
 - **Responsive layout** - Row cho header (Spacer đẩy nút sang phải), Wrap cho card actions
@@ -469,6 +475,10 @@ File: `lib/screens/odoo_workspace_dialog.dart`
   auto-run khi mở, `LinearProgressIndicator`, `SelectionArea` + `Text.rich` cho copy text,
   ANSI color parsing, auto-scroll, Close disabled khi running
 - **SnackBar bị chìm sau dialog** — dùng dialog thông báo thay SnackBar khi context đang có dialog mở
+- **KHÔNG dùng `showDialog()` trực tiếp** — luôn dùng `AppDialog.show()` để đảm bảo tất cả dialog
+  không đóng bằng click ngoài, ESC, và có thể thay đổi behavior tập trung tại 1 chỗ
+- **Close button process dialog** — dùng `enabled: !_running` thay vì `onClose: _running ? null : ...`
+  Pattern cũ bị bug: khi `onClose: null`, fallback default `Navigator.pop` → vẫn cho đóng
 
 ### Git operations
 - **Parse `git status --porcelain`**: dùng `.trimRight()` KHÔNG `.trim()` — sẽ xóa space đầu dòng đầu = mất status char

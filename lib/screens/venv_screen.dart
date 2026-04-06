@@ -113,7 +113,7 @@ class _VenvScreenState extends State<VenvScreen>
   Future<void> _deleteVenv(VenvInfo venv) async {
     bool deleteFiles = false;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -193,14 +193,14 @@ class _VenvScreenState extends State<VenvScreen>
   }
 
   Future<void> _showPackages(VenvInfo venv) async {
-    await showDialog(
+    await AppDialog.show(
       context: context,
       builder: (ctx) => _PackageListDialog(venvPath: venv.path),
     );
   }
 
   Future<void> _pipInstallPackage(VenvInfo venv) async {
-    await showDialog(
+    await AppDialog.show(
       context: context,
       builder: (ctx) => _PipInstallDialog(venvPath: venv.path, venvName: venv.name),
     );
@@ -237,9 +237,8 @@ class _VenvScreenState extends State<VenvScreen>
 
     if (!mounted) return;
 
-    showDialog(
+    AppDialog.show(
       context: context,
-      barrierDismissible: false,
       builder: (ctx) => _InstallRequirementsDialog(
         venvPath: venv.path,
         requirementsFile: reqFile!,
@@ -250,7 +249,7 @@ class _VenvScreenState extends State<VenvScreen>
 
   Future<void> _renameVenv(VenvInfo venv) async {
     final controller = TextEditingController(text: venv.label);
-    final newLabel = await showDialog<String>(
+    final newLabel = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
@@ -1016,8 +1015,7 @@ class _PipInstallDialogState extends State<_PipInstallDialog> {
           const Icon(Icons.add_box),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(context.l10n.installPackagesTitle(widget.venvName))),
-          AppDialog.closeButton(context,
-              onClose: _installing ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_installing),
         ],
       ),
       content: SizedBox(
@@ -1185,8 +1183,7 @@ class _InstallRequirementsDialogState
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
-          AppDialog.closeButton(context,
-              onClose: _running ? null : () => Navigator.pop(context)),
+          AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
       content: SizedBox(

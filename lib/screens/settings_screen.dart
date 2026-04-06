@@ -224,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showPythonInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _PythonInstallDialog(
         installedVersions:
@@ -235,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showInitNginxDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _NginxInitDialog(
         onCreated: (confDir, domain) {
@@ -268,9 +268,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showDockerInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
-      barrierDismissible: false,
       builder: (ctx) =>
           _DockerInstallDialog(onInstalled: () => _scanEnvironment()),
     );
@@ -589,7 +588,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final parts = info.version.split('.');
     final majorMinor = parts.length >= 2 ? '${parts[0]}.${parts[1]}' : info.version;
 
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _PythonUninstallDialog(
         version: majorMinor,
@@ -613,7 +612,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   Future<void> _killProcess(
       ({int port, String? process, int? pid, String source}) conflict) async {
     if (conflict.pid == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(children: [
@@ -768,7 +767,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ? p.dirname(confDir)
         : confDir;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -1335,7 +1334,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   // ── Tab: PostgreSQL ──
 
   void _showPostgresInstallDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _PostgresInstallDialog(
         onInstalled: () => _scanEnvironment(),
@@ -1344,7 +1343,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showPgSetupDialog() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _PgSetupDialog(
         onCreated: () {
@@ -1741,7 +1740,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _addGitAccount() {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitAccountDialog(),
     ).then((result) {
@@ -1756,7 +1755,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _editGitAccount(int index) {
-    showDialog(
+    AppDialog.show(
       context: context,
       builder: (ctx) => _GitAccountDialog(existing: _gitAccounts[index]),
     ).then((result) {
@@ -2093,8 +2092,7 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
       title: Row(children: [
         Text(context.l10n.installPythonTitle),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _installing ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_installing),
       ]),
       content: SizedBox(
         width: 520,
@@ -2216,8 +2214,7 @@ class _PythonUninstallDialogState extends State<_PythonUninstallDialog> {
       title: Row(children: [
         Text(context.l10n.uninstallPython),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _uninstalling ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_uninstalling),
       ]),
       content: SizedBox(
         width: 520,
@@ -2378,8 +2375,7 @@ class _PgSetupDialogState extends State<_PgSetupDialog> {
       title: Row(children: [
         Text(context.l10n.postgresSetupTitle),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _creating ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_creating),
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,
@@ -2565,8 +2561,7 @@ class _PostgresInstallDialogState extends State<_PostgresInstallDialog> {
       title: Row(children: [
         Text(context.l10n.postgresInstallTitle),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _installing ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_installing),
       ]),
       content: SizedBox(
         width: 520,
@@ -2739,8 +2734,7 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
       title: Row(children: [
         Text(context.l10n.dockerInstallTitle),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _installing ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_installing),
       ]),
       content: SizedBox(
         width: 520,
@@ -3028,8 +3022,7 @@ class _NginxInitDialogState extends State<_NginxInitDialog> {
       title: Row(children: [
         Text(context.l10n.nginxInitTitle),
         const Spacer(),
-        AppDialog.closeButton(context,
-            onClose: _creating ? null : () => Navigator.pop(context)),
+        AppDialog.closeButton(context, enabled: !_creating),
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,
