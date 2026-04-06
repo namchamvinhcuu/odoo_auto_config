@@ -65,10 +65,10 @@ class ThemeNotifier extends Notifier<ThemeState> {
   }
 
   Future<void> _save() async {
-    final settings = await StorageService.loadSettings();
-    settings['themeMode'] = state.themeMode.name;
-    settings['seedColor'] = state.seedColor.toARGB32();
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['themeMode'] = state.themeMode.name;
+      settings['seedColor'] = state.seedColor.toARGB32();
+    });
   }
 }
 

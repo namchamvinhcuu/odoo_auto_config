@@ -571,11 +571,11 @@ Branch: `refactor/core-clean-structure`
 ### Code quality
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
-- **`StorageService.saveSettings` PHẢI load trước rồi merge** — KHÔNG BAO GIỜ ghi đè toàn bộ settings
-  Pattern đúng: `final settings = await StorageService.loadSettings(); settings['key'] = value; await StorageService.saveSettings(settings);`
-  Bug đã xảy ra: ThemeService ghi đè toàn bộ settings → mất nginx config, git accounts, workspace repos
+- **`StorageService.updateSettings()` — LUÔN dùng cho write settings** — atomic read-modify-write trong `_synchronized` lock
+  Pattern đúng: `await StorageService.updateSettings((settings) { settings['key'] = value; });`
+  KHÔNG BAO GIỜ dùng pattern cũ `loadSettings → modify → saveSettings` (race condition: 2 provider cùng load → cái sau ghi đè mất data cái trước)
+  `loadSettings()` chỉ dùng cho read-only (startup, load preferences)
 - **`StorageService` có `_synchronized` lock** — serialize tất cả write operations để tránh race condition
-  Nếu 2 save chạy đồng thời (VD: saveSettings + saveWorkspaces), operation sau đọc config cũ → ghi đè mất data
   Tất cả save/add/remove methods đều wrap trong `_synchronized`, read-modify-write trong cùng 1 lock
 - **Xóa project/workspace phải cleanup nginx** — nếu `hasNginx` thì gọi `NginxService.removeNginx(sub)` trước khi xóa
   Wrap try-catch để không block việc xóa nếu nginx cleanup fail

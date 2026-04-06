@@ -189,9 +189,9 @@ class PostgresService {
   }
 
   static Future<void> saveSettings(Map<String, dynamic> pg) async {
-    final settings = await StorageService.loadSettings();
-    settings['postgres'] = pg;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['postgres'] = pg;
+    });
   }
 
   // ── Server Detection ──

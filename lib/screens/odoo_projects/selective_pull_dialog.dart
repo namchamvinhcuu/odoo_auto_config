@@ -70,9 +70,9 @@ class _SelectivePullDialogState extends State<SelectivePullDialog> {
   }
 
   Future<void> _saveSelection() async {
-    final settings = await StorageService.loadSettings();
-    settings[_storageKey] = _selectedRepos;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings[_storageKey] = _selectedRepos;
+    });
   }
 
   void _addRepo(String repo) {

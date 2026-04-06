@@ -79,9 +79,9 @@ class TrayService {
 
   /// Lưu setting close behavior
   static Future<void> setCloseBehavior(String value) async {
-    final settings = await StorageService.loadSettings();
-    settings['closeBehavior'] = value;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['closeBehavior'] = value;
+    });
   }
 
   static Future<void> destroy() async {

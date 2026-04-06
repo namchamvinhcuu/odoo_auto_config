@@ -68,9 +68,9 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
       if (_installed) {
         // Lưu lựa chọn Docker runtime (macOS)
         if (PlatformService.isMacOS) {
-          final settings = await StorageService.loadSettings();
-          settings['dockerRuntime'] = _macOsDocker;
-          await StorageService.saveSettings(settings);
+          await StorageService.updateSettings((settings) {
+            settings['dockerRuntime'] = _macOsDocker;
+          });
         }
         widget.onInstalled();
       }

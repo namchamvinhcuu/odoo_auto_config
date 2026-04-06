@@ -28,9 +28,9 @@ class LocaleNotifier extends Notifier<Locale?> {
 
   Future<void> setLocale(Locale? locale) async {
     state = locale;
-    final settings = await StorageService.loadSettings();
-    settings['locale'] = locale?.languageCode ?? '';
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['locale'] = locale?.languageCode ?? '';
+    });
   }
 }
 

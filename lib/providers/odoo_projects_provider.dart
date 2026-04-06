@@ -89,9 +89,9 @@ class OdooProjectsNotifier extends AsyncNotifier<OdooProjectsState> {
     if (current == null) return;
     final newGrid = !current.gridView;
     state = AsyncData(current.copyWith(gridView: newGrid));
-    final settings = await StorageService.loadSettings();
-    settings['gridView'] = newGrid;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['gridView'] = newGrid;
+    });
   }
 }
 

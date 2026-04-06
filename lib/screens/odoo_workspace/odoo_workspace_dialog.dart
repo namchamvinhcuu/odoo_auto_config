@@ -219,18 +219,18 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   // ── Pin / Unpin ──
 
   Future<void> _savePinnedList() async {
-    final settings = await StorageService.loadSettings();
-    settings[_storageKey] = _repos.map((r) => r.name).toList();
-    settings[_selectionKey] =
-        _repos.where((r) => r.selected).map((r) => r.name).toList();
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings[_storageKey] = _repos.map((r) => r.name).toList();
+      settings[_selectionKey] =
+          _repos.where((r) => r.selected).map((r) => r.name).toList();
+    });
   }
 
   Future<void> _saveSelection() async {
-    final settings = await StorageService.loadSettings();
-    settings[_selectionKey] =
-        _repos.where((r) => r.selected).map((r) => r.name).toList();
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings[_selectionKey] =
+          _repos.where((r) => r.selected).map((r) => r.name).toList();
+    });
   }
 
   Future<void> _addRepo(String name) async {

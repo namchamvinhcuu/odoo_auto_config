@@ -103,9 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   }
 
   Future<void> _saveWindowSize(WindowSize ws) async {
-    final settings = await StorageService.loadSettings();
-    settings['windowSize'] = ws.name;
-    await StorageService.saveSettings(settings);
+    await StorageService.updateSettings((settings) {
+      settings['windowSize'] = ws.name;
+    });
   }
 
   Future<void> _checkUpdateWithSnackBar() async {

@@ -182,15 +182,18 @@ class SettingsNotifier extends Notifier<SettingsState> {
   }
 
   Future<void> _saveGitAccounts() async {
-    final settings = await StorageService.loadSettings();
-    settings['gitAccounts'] = state.gitAccounts;
-    settings['defaultGitAccount'] = state.defaultGitAccount ?? '';
+    final accounts = state.gitAccounts;
+    final defaultAccount = state.defaultGitAccount ?? '';
     // Backward compatibility: save default account token to gitToken
-    final def = state.gitAccounts
+    final def = accounts
         .where((a) => a['name'] == state.defaultGitAccount)
         .firstOrNull;
-    settings['gitToken'] = def?['token'] ?? '';
-    await StorageService.saveSettings(settings);
+    final token = def?['token'] ?? '';
+    await StorageService.updateSettings((settings) {
+      settings['gitAccounts'] = accounts;
+      settings['defaultGitAccount'] = defaultAccount;
+      settings['gitToken'] = token;
+    });
   }
 
   void addGitAccount(Map<String, dynamic> account) {
