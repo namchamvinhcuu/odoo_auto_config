@@ -79,11 +79,11 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     final url = 'https://${proj.nginxSubdomain}$dotSuffix';
     try {
       if (Platform.isMacOS) {
-        await Process.run('open', [url]);
+        await Process.run('open', [url], runInShell: true);
       } else if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'start', url]);
+        await Process.run('cmd', ['/c', 'start', url], runInShell: true);
       } else {
-        await Process.run('xdg-open', [url]);
+        await Process.run('xdg-open', [url], runInShell: true);
       }
     } catch (_) {}
   }
@@ -91,11 +91,11 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
   Future<void> _openInFileManager(String path) async {
     try {
       if (Platform.isMacOS) {
-        await Process.run('open', [path]);
+        await Process.run('open', [path], runInShell: true);
       } else if (Platform.isWindows) {
-        await Process.run('explorer', [path]);
+        await Process.run('explorer', [path], runInShell: true);
       } else {
-        await Process.run('xdg-open', [path]);
+        await Process.run('xdg-open', [path], runInShell: true);
       }
     } catch (_) {
       if (mounted) {
@@ -118,11 +118,11 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     }
     try {
       if (Platform.isMacOS) {
-        await Process.run('open', ['-a', 'Visual Studio Code', path]);
+        await Process.run('open', ['-a', 'Visual Studio Code', path], runInShell: true);
       } else if (Platform.isWindows) {
         await Process.run('cmd', ['/c', 'code', path], runInShell: true);
       } else {
-        await Process.run('code', [path]);
+        await Process.run('code', [path], runInShell: true);
       }
     } catch (_) {
       if (mounted) {

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import '../models/workspace_info.dart';
 import '../services/nginx_service.dart';
 import '../services/storage_service.dart';
@@ -66,7 +67,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
   Future<void> loadBranchStatus(String path) async {
     final current = state.valueOrNull;
     if (current == null) return;
-    if (!Directory('$path/.git').existsSync()) return;
+    if (!Directory(p.join(path, '.git')).existsSync()) return;
 
     final branches = Map<String, String>.from(current.branches);
     final changed = Map<String, int>.from(current.changedCount);

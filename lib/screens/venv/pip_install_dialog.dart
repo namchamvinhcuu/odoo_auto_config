@@ -38,7 +38,8 @@ class _PipInstallDialogState extends State<PipInstallDialog> {
 
     final pip = PlatformService.venvPip(widget.venvPath);
     final args = input.split(RegExp(r'\s+'));
-    final result = await Process.run(pip, ['install', ...args]);
+    final result =
+        await Process.run(pip, ['install', ...args], runInShell: true);
 
     if (!mounted) return;
 

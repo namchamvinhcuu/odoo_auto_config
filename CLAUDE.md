@@ -398,8 +398,30 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 - Test trên release build (DMG) trước khi xác nhận tính năng hoạt động
 - KHÔNG dùng hardcode `'docker'`, `'mkcert'`, ... mà phải qua PlatformService
 
-### Tất cả OS
-- Process.run PHẢI dùng `runInShell: true` (AOT mode)
+### Tất cả OS — VÔ CÙNG QUAN TRỌNG
+- **Process.run / Process.start PHẢI có `runInShell: true`** (AOT mode)
+  Không có → fail im lặng trên release build cả 3 OS. Debug mode có thể chạy bình thường → dễ bỏ sót
+  **SAU MỖI REFACTOR**: chạy audit script kiểm tra toàn bộ codebase:
+  ```bash
+  python3 -c "
+  import re, glob
+  files = glob.glob('lib/**/*.dart', recursive=True)
+  for f in files:
+      with open(f) as fh:
+          lines = fh.readlines()
+      i = 0
+      while i < len(lines):
+          line = lines[i]
+          if 'Process.run(' in line or 'Process.start(' in line:
+              call = line; j = i + 1
+              pc = line.count('(') - line.count(')')
+              while pc > 0 and j < len(lines):
+                  call += lines[j]; pc += lines[j].count('(') - lines[j].count(')'); j += 1
+              if 'runInShell' not in call:
+                  print(f'{f}:{i+1}: {line.strip()[:80]}')
+          i += 1
+  "
+  ```
 - window_manager cần **full restart** (không hot reload) khi thêm mới
 - App icon cần `flutter clean` + rebuild sau khi thay đổi
 - External binaries PHẢI resolve qua PlatformService (dockerPath, pythonCandidates, ...)
@@ -410,6 +432,8 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   CHỈ NGOẠI LỆ: paths bên trong Docker container (nginx conf, docker-compose volumes) luôn dùng `/` vì container là Linux
 - **Process output (winget/brew/apt)**: dùng `utf8.decoder` thay vì `SystemEncoding().decoder`
   Dùng `CommandRunner.cleanLine()` để strip ANSI codes, spinner chars, và progress bars
+- **StorageService.updateSettings()** — LUÔN dùng cho write settings (atomic trong _synchronized lock)
+  KHÔNG dùng pattern cũ `loadSettings → modify → saveSettings` (race condition giữa các provider)
 
 ### macOS
 - App Sandbox PHẢI tắt trong cả DebugProfile và Release entitlements
@@ -568,9 +592,11 @@ Branch: `refactor/core-clean-structure`
 - **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
 - **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
 
-### Code quality
+### Code quality & Cross-platform
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
+- **SAU MỖI REFACTOR / TẠO FILE MỚI**: chạy audit `runInShell` + path separator cho TOÀN BỘ codebase
+  Bug thực tế: refactor lớn tạo 19 Process calls thiếu runInShell — debug chạy OK nhưng release build fail im lặng
 - **`StorageService.updateSettings()` — LUÔN dùng cho write settings** — atomic read-modify-write trong `_synchronized` lock
   Pattern đúng: `await StorageService.updateSettings((settings) { settings['key'] = value; });`
   KHÔNG BAO GIỜ dùng pattern cũ `loadSettings → modify → saveSettings` (race condition: 2 provider cùng load → cái sau ghi đè mất data cái trước)

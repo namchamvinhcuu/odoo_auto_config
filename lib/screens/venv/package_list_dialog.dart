@@ -41,7 +41,8 @@ class _PackageListDialogState extends State<PackageListDialog> {
 
     final pip = PlatformService.venvPip(widget.venvPath);
     try {
-      final result = await Process.run(pip, ['list', '--format=json']);
+      final result =
+          await Process.run(pip, ['list', '--format=json'], runInShell: true);
       if (result.exitCode == 0) {
         final list = (jsonDecode(result.stdout.toString()) as List<dynamic>)
             .map((e) => PkgInfo(
