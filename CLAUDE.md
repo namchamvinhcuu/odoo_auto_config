@@ -51,18 +51,60 @@ lib/
 │   ├── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 │   ├── tray_service.dart        # System tray: init, show/hide, close behavior setting
 │   └── update_service.dart      # Auto-update: check GitHub releases, download, install
-├── screens/                     # UI screens (StatefulWidget)
+├── screens/                     # UI screens — mỗi screen 1 thư mục, dialog tách file riêng
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
-│   ├── projects_screen.dart     # Odoo Projects: list/grid, favourite, CRUD, nginx setup/link/remove
-│   ├── workspaces_screen.dart   # Other Projects: list/grid, favourite, auto-detect type, nginx
-│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile + Setup Nginx sau tạo + tạo .vscode/settings.json
-│   ├── profile_screen.dart      # CRUD profiles
-│   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
+│   ├── odoo_projects/           # Odoo Projects screen
+│   │   ├── odoo_projects_screen.dart  # (class OdooProjectsScreen) list/grid, favourite, CRUD, nginx
+│   │   ├── import_project_dialog.dart
+│   │   ├── project_info_dialog.dart   # Info + Edit + Nginx + Database gộp 1 dialog
+│   │   ├── create_db_dialog.dart
+│   │   ├── git_pull_dialog.dart
+│   │   ├── git_commit_dialog.dart     # + RepoStatus data class
+│   │   ├── selective_pull_dialog.dart
+│   │   └── selective_pull_log_dialog.dart
+│   ├── other_projects/          # Other Projects screen (was workspaces_screen)
+│   │   ├── other_projects_screen.dart # (class OtherProjectsScreen) list/grid, favourite, auto-detect type
+│   │   ├── import_workspace_dialog.dart
+│   │   ├── simple_git_pull_dialog.dart
+│   │   ├── simple_git_commit_dialog.dart
+│   │   ├── create_pr_dialog.dart
+│   │   ├── switch_branch_dialog.dart  # ~1057 dòng, cần tách tiếp (phase 2)
+│   │   └── prune_dialog.dart
+│   ├── odoo_workspace/          # Workspace View: dashboard quản lý repos trong addons/
+│   │   ├── odoo_workspace_dialog.dart # Dialog chính (class OdooWorkspaceDialog)
+│   │   ├── repo_info.dart             # RepoInfo data class (dùng chung bởi tất cả dialog)
+│   │   ├── repo_branch_dialog.dart    # ~1023 dòng, cần tách tiếp (phase 2)
+│   │   ├── repo_git_pull_dialog.dart
+│   │   ├── repo_commit_dialog.dart
+│   │   ├── repo_create_pr_dialog.dart
+│   │   ├── repo_prune_dialog.dart
+│   │   ├── branch_picker_dialog.dart
+│   │   ├── workspace_commit_dialog.dart
+│   │   ├── git_action_dialog.dart
+│   │   └── publish_modules_dialog.dart
+│   ├── profile/                 # CRUD profiles
+│   │   ├── profile_screen.dart
+│   │   ├── profile_dialog.dart
+│   │   └── clone_odoo_dialog.dart
+│   ├── settings/                # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
+│   │   ├── settings_screen.dart       # ~1910 dòng, cần tách tabs (phase 2)
+│   │   ├── git_account_dialog.dart
+│   │   ├── python_install_dialog.dart
+│   │   ├── python_uninstall_dialog.dart
+│   │   ├── pg_setup_dialog.dart
+│   │   ├── postgres_install_dialog.dart
+│   │   ├── docker_install_dialog.dart
+│   │   └── nginx_init_dialog.dart
 │   ├── venv_screen.dart         # 3 tabs: list/scan/create venv (nhúng trong Settings > Python)
+│   ├── venv/                    # Dialogs tách từ venv_screen
+│   │   ├── package_list_dialog.dart
+│   │   ├── pip_install_dialog.dart
+│   │   └── install_requirements_dialog.dart
+│   ├── quick_create_screen.dart # Dialog tạo Odoo project nhanh từ profile
+│   ├── python_check_screen.dart # (ẩn khỏi menu, code giữ nguyên)
 │   ├── vscode_config_screen.dart # Sinh debug config (ẩn khỏi menu, code giữ nguyên)
 │   ├── folder_structure_screen.dart # Tạo folder structure độc lập
-│   ├── odoo_workspace_dialog.dart # Workspace View: dashboard quản lý repos trong addons/
-│   └── settings_screen.dart     # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
+│   └── environment_screen.dart  # Environment check screen
 ├── widgets/                     # Reusable components
 │   ├── status_card.dart         # Card hiển thị trạng thái
 │   ├── directory_picker_field.dart # Text field + browse button
@@ -75,10 +117,10 @@ lib/
 ```
 
 ## Navigation (4 tabs)
-1. **Odoo Projects** - projects_screen.dart (icon: folder_special)
-2. **Other Projects** - workspaces_screen.dart (icon: workspaces)
-3. **Profiles** - profile_screen.dart (icon: person)
-4. **Settings** - settings_screen.dart (icon: settings)
+1. **Odoo Projects** - odoo_projects/odoo_projects_screen.dart (class OdooProjectsScreen, icon: folder_special)
+2. **Other Projects** - other_projects/other_projects_screen.dart (class OtherProjectsScreen, icon: workspaces)
+3. **Profiles** - profile/profile_screen.dart (icon: person)
+4. **Settings** - settings/settings_screen.dart (icon: settings)
    - Tab 0 **Theme**: ngôn ngữ, theme mode, accent color, preview
    - Tab 1 **Docker**: trạng thái + cài đặt
    - Tab 2 **Python**: Python installations + cài đặt + Venv Manager (nhúng VenvScreen)
@@ -446,8 +488,18 @@ File: `lib/screens/odoo_workspace_dialog.dart`
     Sau đóng dialog → reload workspace view.
 - **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
 - **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
-- **Grid columns** (projects_screen + workspaces_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
-- **Grid card layout** (workspaces): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
+- **Grid columns** (odoo_projects_screen + other_projects_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
+- **Grid card layout** (other_projects): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
+
+### Refactoring Phase 2 — Cần tiếp tục
+Branch: `refactor/core-clean-structure`
+Phase 1 đã hoàn thành: tách tất cả dialog ra file riêng, rename projects→odoo_projects, workspaces→other_projects.
+Phase 2 cần làm:
+- **settings_screen.dart (~1910 dòng)**: tách 6 tab builders ra file riêng (theme_tab.dart, docker_tab.dart, python_tab.dart, postgres_tab.dart, nginx_tab.dart, git_tab.dart)
+- **switch_branch_dialog.dart (~1057 dòng)** trong other_projects/: tách thành selection + execution
+- **repo_branch_dialog.dart (~1023 dòng)** trong odoo_workspace/: tách thành selection + actions
+- **ANSI color parsing** (`_ansiRegex`, `_ansiColors`, `_parseAnsi`): hiện duplicate trong nhiều file → tạo shared utility `lib/widgets/ansi_log_output.dart`
+- **venv_screen.dart (752 dòng)**: có thể tách 3 tab builders nếu cần
 
 ### Roadmap — Chưa triển khai
 - **Cherry-pick**: Chọn 1 hoặc nhiều commits cụ thể từ branch khác để copy vào branch hiện tại

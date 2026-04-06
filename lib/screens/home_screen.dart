@@ -10,11 +10,11 @@ import '../services/storage_service.dart';
 import '../generated/version.dart';
 import '../services/tray_service.dart';
 import '../services/update_service.dart';
-import 'workspaces_screen.dart';
+import 'other_projects/other_projects_screen.dart';
 import 'environment_screen.dart';
-import 'projects_screen.dart';
-import 'profile_screen.dart';
-import 'settings_screen.dart';
+import 'odoo_projects/odoo_projects_screen.dart';
+import 'profile/profile_screen.dart';
+import 'settings/settings_screen.dart';
 
 enum WindowSize {
   small(Size(800, 600)),
@@ -241,8 +241,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   bool _isMinimizing = false;
 
   static const _screens = <Widget>[
-    ProjectsScreen(),
-    WorkspacesScreen(),
+    OdooProjectsScreen(),
+    OtherProjectsScreen(),
     ProfileScreen(),
     EnvironmentScreen(),
     SettingsScreen(),
