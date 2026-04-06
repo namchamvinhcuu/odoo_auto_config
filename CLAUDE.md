@@ -407,7 +407,13 @@ File: `lib/screens/odoo_workspace_dialog.dart`
   Storage key: `workspaceRepos_<projectPath>` (danh sách pin), `workspaceSelected_<projectPath>` (selection)
 - **Search dropdown**: `RawAutocomplete` — click/focus hiện toàn bộ repos chưa pin, gõ để lọc
   Có nút dropdown arrow + counter `3 / 30`. Giữ focus sau khi add để tiếp tục thêm
-- **Mỗi repo hiện**: tên module, branch (color coded), changed files count, ahead/behind, nút Pull/Push/Remove
+- **Mỗi repo hiện**: tên module, branch (color coded, clickable → mở branch dialog), changed files count, ahead/behind, nút Pull/Publish hoặc Push/Remove
+- **`_RepoInfo.hasUpstream`**: detect qua `git rev-list @{upstream}..HEAD` — nếu fail → `hasUpstream = false`
+  Repo không có upstream hiện nút Publish (cloud_upload xanh lá) thay vì Push
+- **Per-repo Branch Dialog** (`_RepoBranchDialog`): click branch chip → mở dialog đầy đủ giống `_SwitchBranchDialog` bên Other Projects
+  Tính năng: Switch, Create, Delete, Publish, Pull branch khác, Merge, Commit, PR, Clean stale
+  Sub-dialogs: `_RepoGitPullDialog`, `_RepoCommitDialog`, `_RepoCreatePRDialog`, `_RepoPruneDialog`
+  Sau đóng dialog → reload repo status
 - **Selection**: ban đầu deselect all, user select repos nào → persist cho lần sau
   Add repo mới → sort A-Z. Remove repo → xóa khỏi cả pin list và selection
 - **Lazy loading repos**: Lần mở dialog đầu tiên chỉ load batch 8 repos (`_kBatchSize`),
@@ -419,8 +425,11 @@ File: `lib/screens/odoo_workspace_dialog.dart`
   - **Git Commit**: kiểm tra repos có thay đổi →
     Không có → hiện dialog thông báo "No changes to commit"
     Có → mở `_WorkspaceCommitDialog` riêng (danh sách repos + changed count, message, push after commit, log)
-  - **Switch Branch**: dialog chọn branch gộp unique từ tất cả repos, hoặc nhập tên tạo branch mới
+  - **Switch Branch** — **ẨN** (comment out, code giữ nguyên `_switchBranchAll` + `_BranchPickerDialog`):
+    dialog chọn branch gộp unique từ tất cả repos, hoặc nhập tên tạo branch mới
     Thử checkout existing → checkout -b từ origin → checkout -b mới
+    Lý do ẩn: chưa có nhu cầu dùng, dùng per-repo branch dialog thay thế
+  - **Publish Branch**: hiện khi có selected repos chưa có upstream → batch `git push -u origin`
   - **Publish Modules** (`_PublishModulesDialog`): scan addons/ tìm module chưa có `.git`,
     checkbox chọn modules → tạo GitHub repo private trong org, tự tạo `.gitignore`/`README.md` nếu thiếu,
     git init → add → commit → push. Đọc org/token từ `git-repositories.sh`/`.ps1`.

@@ -1480,6 +1480,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get workspaceViewSwitchBranch => 'Switch Branch';
 
   @override
+  String get workspaceViewPublishBranch => 'Publish Branch';
+
+  @override
   String get workspaceViewPushSelected => 'Push Selected';
 
   @override

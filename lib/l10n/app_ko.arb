@@ -502,6 +502,7 @@
   "workspaceViewCommitPush": "Commit & Push",
   "workspaceViewCommitOnly": "Commit Only",
   "workspaceViewSwitchBranch": "Switch Branch",
+  "workspaceViewPublishBranch": "Publish Branch",
   "workspaceViewPushSelected": "Push Selected",
   "workspaceViewChanged": "{count}개 변경",
   "workspaceViewBehind": "{count}개 뒤처짐",
