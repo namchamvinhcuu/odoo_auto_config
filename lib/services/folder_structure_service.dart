@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import '../models/folder_structure_config.dart';
+import 'package:odoo_auto_config/models/folder_structure_config.dart';
 
 /// Exception thrown when symlink creation fails due to permissions.
 class SymlinkPermissionException implements Exception {

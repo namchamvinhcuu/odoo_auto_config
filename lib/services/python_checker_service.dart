@@ -1,5 +1,5 @@
 import 'dart:io';
-import '../models/python_info.dart';
+import 'package:odoo_auto_config/models/python_info.dart';
 import 'platform_service.dart';
 
 class PythonCheckerService {

@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../models/venv_info.dart';
-import '../services/storage_service.dart';
-import '../services/platform_service.dart';
-import '../services/vscode_config_service.dart';
-import '../widgets/directory_picker_field.dart';
-import '../widgets/log_output.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/venv_info.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
+import 'package:odoo_auto_config/services/vscode_config_service.dart';
+import 'package:odoo_auto_config/widgets/directory_picker_field.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class VscodeConfigScreen extends StatefulWidget {
   const VscodeConfigScreen({super.key});

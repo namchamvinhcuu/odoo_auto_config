@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/update_service.dart';
+import 'package:odoo_auto_config/services/update_service.dart';
 
 class UpdateState {
   final UpdateInfo? info;

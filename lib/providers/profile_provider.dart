@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/profile.dart';
-import '../models/venv_info.dart';
-import '../services/storage_service.dart';
+import 'package:odoo_auto_config/models/profile.dart';
+import 'package:odoo_auto_config/models/venv_info.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 
 class ProfileState {
   final List<Profile> profiles;

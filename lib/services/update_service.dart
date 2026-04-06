@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
-import '../generated/version.dart';
+import 'package:odoo_auto_config/generated/version.dart';
 
 class UpdateInfo {
   final String latestVersion;

@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
-import '../models/workspace_info.dart';
-import '../services/nginx_service.dart';
-import '../services/storage_service.dart';
+import 'package:odoo_auto_config/models/workspace_info.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 
 class OtherProjectsState {
   final List<WorkspaceInfo> workspaces;

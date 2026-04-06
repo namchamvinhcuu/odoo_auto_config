@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import '../models/command_result.dart';
-import '../templates/nginx_templates.dart';
+import 'package:odoo_auto_config/models/command_result.dart';
+import 'package:odoo_auto_config/templates/nginx_templates.dart';
 import 'command_runner.dart';
 import 'platform_service.dart';
 import 'storage_service.dart';

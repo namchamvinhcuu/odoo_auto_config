@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import 'l10n/app_localizations.dart';
-import 'providers/locale_provider.dart';
-import 'providers/theme_provider.dart';
-import 'providers/odoo_projects_provider.dart';
-import 'screens/home_screen.dart';
-import 'services/storage_service.dart';
-import 'services/tray_service.dart';
+import 'package:odoo_auto_config/l10n/app_localizations.dart';
+import 'package:odoo_auto_config/providers/locale_provider.dart';
+import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
+import 'package:odoo_auto_config/providers/theme_provider.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
+import 'package:odoo_auto_config/services/tray_service.dart';
 
 void main() async {
   // Log uncaught Flutter errors to stderr so we can see crashes

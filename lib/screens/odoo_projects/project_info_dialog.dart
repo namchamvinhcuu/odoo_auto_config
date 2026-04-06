@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import '../../constants/app_constants.dart';
-import '../../models/project_info.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../services/platform_service.dart';
-import '../../services/postgres_service.dart';
-import '../../services/storage_service.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/models/project_info.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/postgres_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'create_db_dialog.dart';
 
 class ProjectInfoDialog extends StatefulWidget {

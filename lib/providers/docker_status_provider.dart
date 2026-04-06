@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/docker_install_service.dart';
-import '../services/nginx_service.dart';
-import '../services/platform_service.dart';
+import 'package:odoo_auto_config/services/docker_install_service.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 
 class DockerStatus {
   final bool? installed;

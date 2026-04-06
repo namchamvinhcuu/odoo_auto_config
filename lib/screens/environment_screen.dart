@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../providers/environment_provider.dart';
-import '../services/git_service.dart';
-import '../services/platform_service.dart';
-import '../widgets/log_output.dart';
-import '../widgets/vscode_install_dialog.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/providers/environment_provider.dart';
+import 'package:odoo_auto_config/services/git_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'home_screen.dart';
 
 class EnvironmentScreen extends ConsumerWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/project_info.dart';
-import '../services/nginx_service.dart';
-import '../services/storage_service.dart';
+import 'package:odoo_auto_config/models/project_info.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 
 class OdooProjectsState {
   final List<ProjectInfo> projects;

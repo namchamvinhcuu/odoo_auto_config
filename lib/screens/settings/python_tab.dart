@@ -1,13 +1,13 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../models/python_info.dart';
-import '../../providers/settings_provider.dart';
-import '../../services/platform_service.dart';
-import '../../widgets/status_card.dart';
-import '../venv_screen.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/python_info.dart';
+import 'package:odoo_auto_config/providers/settings_provider.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/widgets/status_card.dart';
+import 'package:odoo_auto_config/screens/venv_screen.dart';
 import 'python_install_dialog.dart';
 import 'python_uninstall_dialog.dart';
 

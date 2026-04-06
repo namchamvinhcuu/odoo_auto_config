@@ -1,5 +1,5 @@
 import 'dart:io';
-import '../models/command_result.dart';
+import 'package:odoo_auto_config/models/command_result.dart';
 
 class CommandRunner {
   /// Regex to strip ANSI/VT100 escape sequences from terminal output

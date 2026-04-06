@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../models/profile.dart';
-import '../../providers/profile_provider.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/profile.dart';
+import 'package:odoo_auto_config/providers/profile_provider.dart';
 import 'profile_dialog.dart';
 
 class ProfileScreen extends ConsumerWidget {

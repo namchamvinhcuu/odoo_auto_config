@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/python_info.dart';
-import '../screens/home_screen.dart';
-import '../services/docker_install_service.dart';
-import '../services/postgres_service.dart';
-import '../services/python_checker_service.dart';
-import '../services/storage_service.dart';
+import 'package:odoo_auto_config/models/python_info.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/services/docker_install_service.dart';
+import 'package:odoo_auto_config/services/postgres_service.dart';
+import 'package:odoo_auto_config/services/python_checker_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 
 class SettingsState {
   // Python

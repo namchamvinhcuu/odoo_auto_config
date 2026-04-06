@@ -1,12 +1,12 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../services/nginx_service.dart';
-import '../../services/platform_service.dart';
-import '../../widgets/log_output.dart';
-import '../../widgets/status_card.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/status_card.dart';
 
 class NginxInitDialog extends StatefulWidget {
   final void Function(String confDir, String domain) onCreated;

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../providers/locale_provider.dart';
-import '../../providers/theme_provider.dart';
-import '../../services/tray_service.dart';
-import '../home_screen.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/providers/locale_provider.dart';
+import 'package:odoo_auto_config/providers/theme_provider.dart';
+import 'package:odoo_auto_config/services/tray_service.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
 
 class ThemeTab extends ConsumerWidget {
   const ThemeTab({super.key});

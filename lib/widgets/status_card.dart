@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
 
 enum StatusType { success, error, warning, loading, info }
 

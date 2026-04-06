@@ -160,6 +160,10 @@ lib/
 > Python Check và VSCode Config **ẩn khỏi menu** nhưng code giữ nguyên.
 
 ## Các pattern chính
+- **Package imports** — LUÔN dùng `package:odoo_auto_config/` thay vì relative `../`
+  VD: `import 'package:odoo_auto_config/providers/theme_provider.dart'` thay vì `import '../../providers/theme_provider.dart'`
+  Chỉ dùng relative cho sibling files cùng thư mục (VD: `import 'docker_tab.dart'`)
+  KHÔNG dùng barrel files — import chính xác file cần dùng
 - **Immutable models** với `fromJson()`/`toJson()` + `copyWith()` (nullable field dùng `Function()`)
 - **Stateless services** - static methods, không giữ state
 - **Riverpod** — state management: `Notifier` cho sync state (theme, locale), `AsyncNotifier` cho async data (profiles, projects...)

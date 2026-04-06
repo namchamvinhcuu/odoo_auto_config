@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../services/nginx_service.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
 
 class NginxSetupDialog extends StatefulWidget {
   final String initialSubdomain;

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../services/git_branch_service.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_branch_service.dart';
 import 'create_pr_dialog.dart';
 import 'prune_dialog.dart';
 import 'simple_git_commit_dialog.dart';

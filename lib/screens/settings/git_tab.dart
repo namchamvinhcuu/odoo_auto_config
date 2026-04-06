@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../providers/settings_provider.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/providers/settings_provider.dart';
 import 'git_account_dialog.dart';
 
 class GitTab extends ConsumerWidget {

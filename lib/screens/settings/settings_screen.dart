@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'docker_tab.dart';
 import 'git_tab.dart';
 import 'nginx_tab.dart';

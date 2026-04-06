@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../constants/app_constants.dart';
-import '../l10n/l10n_extension.dart';
-import '../models/folder_structure_config.dart';
-import '../services/folder_structure_service.dart';
-import '../widgets/directory_picker_field.dart';
-import '../widgets/log_output.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/models/folder_structure_config.dart';
+import 'package:odoo_auto_config/services/folder_structure_service.dart';
+import 'package:odoo_auto_config/widgets/directory_picker_field.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class FolderStructureScreen extends StatefulWidget {
   const FolderStructureScreen({super.key});

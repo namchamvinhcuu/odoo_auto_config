@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../services/platform_service.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 
 class PkgInfo {
   final String name;

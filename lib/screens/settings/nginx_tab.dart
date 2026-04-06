@@ -3,10 +3,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../constants/app_constants.dart';
-import '../../l10n/l10n_extension.dart';
-import '../../services/nginx_service.dart';
-import '../../services/platform_service.dart';
+import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 import 'nginx_init_dialog.dart';
 
 class NginxTab extends ConsumerStatefulWidget {

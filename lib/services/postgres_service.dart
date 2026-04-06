@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'command_runner.dart';
 import 'platform_service.dart';
 import 'storage_service.dart';
-import '../templates/postgres_templates.dart';
+import 'package:odoo_auto_config/templates/postgres_templates.dart';
 
 /// Represents a detected PostgreSQL server instance
 class PgServerInfo {
