@@ -3094,6 +3094,12 @@ abstract class AppLocalizations {
   /// **'View in Browser'**
   String get prViewInBrowser;
 
+  /// No description provided for @gitViewOnGithub.
+  ///
+  /// In en, this message translates to:
+  /// **'View on GitHub'**
+  String get gitViewOnGithub;
+
   /// No description provided for @prUncommittedTitle.
   ///
   /// In en, this message translates to:

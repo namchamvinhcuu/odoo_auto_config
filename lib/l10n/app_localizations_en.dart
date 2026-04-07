@@ -1701,6 +1701,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get prViewInBrowser => 'View in Browser';
 
   @override
+  String get gitViewOnGithub => 'View on GitHub';
+
+  @override
   String get prUncommittedTitle => 'Uncommitted changes';
 
   @override

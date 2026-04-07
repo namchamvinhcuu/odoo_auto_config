@@ -558,6 +558,7 @@
   "prCreateButton": "Create Pull Request",
   "prCreated": "Created",
   "prViewInBrowser": "View in Browser",
+  "gitViewOnGithub": "View on GitHub",
   "prUncommittedTitle": "Uncommitted changes",
   "prUncommittedDesc": "{count} file(s) not committed.\nThese changes will NOT be included in the PR.\n\nCommit first, or continue anyway?",
   "prCommitFirst": "Commit first",

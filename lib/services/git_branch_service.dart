@@ -369,4 +369,37 @@ class GitBranchService {
       currentBranch: currentBranch,
     );
   }
+
+  /// Get the HTTPS URL for the remote origin of a git repository.
+  /// Returns `null` if no remote is configured or parsing fails.
+  static Future<String?> getRemoteUrl(String workingDir) async {
+    final result = await Process.run(
+      'git',
+      ['remote', 'get-url', 'origin'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    if (result.exitCode != 0) return null;
+    var url = (result.stdout as String).trim();
+    if (url.isEmpty) return null;
+    // Convert SSH to HTTPS: git@github.com:org/repo.git → https://github.com/org/repo
+    if (url.startsWith('git@')) {
+      url = url.replaceFirst('git@', 'https://').replaceFirst(':', '/');
+    }
+    // Remove trailing .git
+    if (url.endsWith('.git')) {
+      url = url.substring(0, url.length - 4);
+    }
+    return url;
+  }
+
+  /// Open a URL in the default browser (cross-platform).
+  static Future<void> openInBrowser(String url) async {
+    final cmd = Platform.isMacOS
+        ? 'open'
+        : Platform.isWindows
+            ? 'start'
+            : 'xdg-open';
+    await Process.run(cmd, [url], runInShell: true);
+  }
 }
