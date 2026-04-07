@@ -62,7 +62,7 @@ class AppDialog {
   static const double heightLg = 700;
   static const double heightXl = 750;
 
-  /// Show a dialog that cannot be dismissed by tapping outside or pressing ESC.
+  /// Show a draggable dialog that cannot be dismissed by tapping outside or pressing ESC.
   /// Use this instead of [showDialog] for all app dialogs.
   static Future<T?> show<T>({
     required BuildContext context,
@@ -73,7 +73,7 @@ class AppDialog {
       barrierDismissible: false,
       builder: (ctx) => PopScope(
         canPop: false,
-        child: builder(ctx),
+        child: _DraggableDialog(child: builder(ctx)),
       ),
     );
   }
@@ -111,4 +111,30 @@ class AppLogColors {
 /// NavigationRail constants
 class AppNav {
   static const double minExtendedWidth = 220;
+}
+
+/// Wrapper that makes any dialog draggable by its title bar area.
+class _DraggableDialog extends StatefulWidget {
+  final Widget child;
+  const _DraggableDialog({required this.child});
+
+  @override
+  State<_DraggableDialog> createState() => _DraggableDialogState();
+}
+
+class _DraggableDialogState extends State<_DraggableDialog> {
+  Offset _offset = Offset.zero;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: _offset,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() => _offset += details.delta);
+        },
+        child: widget.child,
+      ),
+    );
+  }
 }
