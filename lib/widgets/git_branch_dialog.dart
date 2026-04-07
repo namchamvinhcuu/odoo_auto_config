@@ -701,7 +701,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: _switching
+                      onPressed: (_switching ||
+                              _loading ||
+                              _behindRemote == 0)
                           ? null
                           : () async {
                               await AppDialog.show(
@@ -721,7 +723,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.tonalIcon(
-                      onPressed: _switching
+                      onPressed: (_switching ||
+                              _loading ||
+                              _changedFiles == 0)
                           ? null
                           : () async {
                               await AppDialog.show(

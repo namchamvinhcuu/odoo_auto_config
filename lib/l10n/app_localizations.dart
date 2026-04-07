@@ -3100,6 +3100,18 @@ abstract class AppLocalizations {
   /// **'View on GitHub'**
   String get gitViewOnGithub;
 
+  /// No description provided for @prNoChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no changes.'**
+  String get prNoChanges;
+
+  /// No description provided for @prNoChangesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'{base} is up to date with all commits from {current}.'**
+  String prNoChangesDesc(String base, String current);
+
   /// No description provided for @prUncommittedTitle.
   ///
   /// In en, this message translates to:
