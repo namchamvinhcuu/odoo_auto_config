@@ -316,12 +316,14 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
         final newToken = (_selectedGitAccount?['token'] ?? '').toString();
         final newOrg = _gitOrgController.text.trim();
         if (newToken.isNotEmpty) {
-          content = content.replaceFirst(
-              RegExp(r'(TOKEN\s*=\s*)"[^"]*"'), '\$1"$newToken"');
+          content = content.replaceFirstMapped(
+              RegExp(r'(TOKEN\s*=\s*)"[^"]*"'),
+              (m) => '${m[1]}"$newToken"');
         }
         if (newOrg.isNotEmpty) {
-          content = content.replaceFirst(
-              RegExp(r'(ORG_NAME\s*=\s*)"[^"]*"'), '\$1"$newOrg"');
+          content = content.replaceFirstMapped(
+              RegExp(r'(ORG_NAME\s*=\s*)"[^"]*"'),
+              (m) => '${m[1]}"$newOrg"');
         }
         await file.writeAsString(content);
       }
