@@ -1669,6 +1669,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get prViewInBrowser => 'View in Browser';
 
   @override
+  String get gitViewOnGithub => 'View on GitHub';
+
+  @override
+  String get prNoChanges => 'There are no changes.';
+
+  @override
+  String prNoChangesDesc(String base, String current) {
+    return '$base is up to date with all commits from $current.';
+  }
+
+  @override
   String get prUncommittedTitle => 'Uncommitted changes';
 
   @override

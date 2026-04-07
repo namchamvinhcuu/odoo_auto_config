@@ -34,6 +34,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
   bool _done = false;
   bool _loading = true;
   bool _ghInstalled = false;
+  bool _noChanges = false;
   String _baseBranch = 'main';
   List<String> _remoteBranches = [];
   String? _prUrl;
@@ -74,8 +75,10 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     if (brResult.exitCode == 0) {
       branches = (brResult.stdout as String)
           .split('\n')
-          .map((b) => b.trim().replaceFirst('origin/', ''))
-          .where((b) => b.isNotEmpty && !b.contains('HEAD'))
+          .map((b) => b.trim())
+          .where((b) => b.startsWith('origin/') && !b.contains('HEAD'))
+          .map((b) => b.replaceFirst('origin/', ''))
+          .where((b) => b != widget.currentBranch)
           .toSet()
           .toList()
         ..sort();
@@ -91,14 +94,36 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
       base = 'dev';
     }
 
+    // Check diff before showing form
+    final noChanges = await _checkDiffFor(base);
+
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
         _remoteBranches = branches;
         _baseBranch = base;
+        _noChanges = noChanges;
         _loading = false;
       });
     }
+  }
+
+  Future<bool> _checkDiffFor(String base) async {
+    await Process.run(
+      'git',
+      ['fetch', 'origin', base, '--quiet'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    if (!mounted) return false;
+    final result = await Process.run(
+      'git',
+      ['rev-list', '--count', 'origin/$base..HEAD'],
+      workingDirectory: widget.projectPath,
+      runInShell: true,
+    );
+    final count = int.tryParse((result.stdout as String).trim()) ?? 0;
+    return count == 0;
   }
 
   void _addLine(String line) {
@@ -333,10 +358,16 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
                               child: Text(b),
                             ))
                         .toList(),
-                    onChanged: _running
+                    onChanged: (_running || _done)
                         ? null
-                        : (v) {
-                            if (v != null) setState(() => _baseBranch = v);
+                        : (v) async {
+                            if (v != null) {
+                              setState(() => _baseBranch = v);
+                              final noChanges = await _checkDiffFor(v);
+                              if (mounted) {
+                                setState(() => _noChanges = noChanges);
+                              }
+                            }
                           },
                   ),
                   const SizedBox(width: AppSpacing.md),
@@ -350,76 +381,101 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              // Title
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.prTitleLabel,
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                enabled: !_running && !_done,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Body
-              TextField(
-                controller: _bodyController,
-                decoration: InputDecoration(
-                  labelText: context.l10n.prDescriptionLabel,
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                minLines: 2,
-                maxLines: 5,
-                enabled: !_running && !_done,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              // Create button
-              Row(
-                children: [
-                  FilledButton.icon(
-                    onPressed: (_running ||
-                            _done ||
-                            _titleController.text.trim().isEmpty)
-                        ? null
-                        : _createPR,
-                    icon: _running
-                        ? const SizedBox(
-                            width: AppIconSize.md,
-                            height: AppIconSize.md,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Icon(Icons.send),
-                    label: Text(context.l10n.prCreateButton),
+              if (_noChanges && !_done) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Icon(Icons.merge_type,
+                    size: 48, color: Colors.grey.shade500),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  context.l10n.prNoChanges,
+                  style: TextStyle(
+                    fontSize: AppFontSize.xl,
+                    color: Colors.grey.shade400,
                   ),
-                  if (_done) ...[
-                    const SizedBox(width: AppSpacing.md),
-                    const Icon(Icons.check_circle, color: Colors.green),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(context.l10n.prCreated,
-                        style: const TextStyle(color: Colors.green)),
-                    if (_prUrl != null) ...[
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  context.l10n.prNoChangesDesc(
+                      _baseBranch, widget.currentBranch),
+                  style: TextStyle(
+                    fontSize: AppFontSize.md,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              if (!_noChanges || _done) ...[
+                const SizedBox(height: AppSpacing.md),
+                // Title
+                TextField(
+                  controller: _titleController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.prTitleLabel,
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  enabled: !_running && !_done,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // Body
+                TextField(
+                  controller: _bodyController,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.prDescriptionLabel,
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  minLines: 2,
+                  maxLines: 5,
+                  enabled: !_running && !_done,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // Create button
+                Row(
+                  children: [
+                    FilledButton.icon(
+                      onPressed: (_running ||
+                              _done ||
+                              _titleController.text.trim().isEmpty)
+                          ? null
+                          : _createPR,
+                      icon: _running
+                          ? const SizedBox(
+                              width: AppIconSize.md,
+                              height: AppIconSize.md,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.send),
+                      label: Text(context.l10n.prCreateButton),
+                    ),
+                    if (_done) ...[
                       const SizedBox(width: AppSpacing.md),
-                      FilledButton.tonalIcon(
-                        onPressed: () => Process.run(
-                          Platform.isMacOS
-                              ? 'open'
-                              : Platform.isWindows
-                                  ? 'start'
-                                  : 'xdg-open',
-                          [_prUrl!],
-                          runInShell: true,
+                      const Icon(Icons.check_circle, color: Colors.green),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(context.l10n.prCreated,
+                          style: const TextStyle(color: Colors.green)),
+                      if (_prUrl != null) ...[
+                        const SizedBox(width: AppSpacing.md),
+                        FilledButton.tonalIcon(
+                          onPressed: () => Process.run(
+                            Platform.isMacOS
+                                ? 'open'
+                                : Platform.isWindows
+                                    ? 'start'
+                                    : 'xdg-open',
+                            [_prUrl!],
+                            runInShell: true,
+                          ),
+                          icon: const Icon(Icons.open_in_new,
+                              size: AppIconSize.md),
+                          label: Text(context.l10n.prViewInBrowser),
                         ),
-                        icon: const Icon(Icons.open_in_new,
-                            size: AppIconSize.md),
-                        label: Text(context.l10n.prViewInBrowser),
-                      ),
+                      ],
                     ],
                   ],
-                ],
-              ),
+                ),
+              ],
             ],
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
