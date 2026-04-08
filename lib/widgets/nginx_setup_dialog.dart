@@ -3,12 +3,17 @@ import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 
+/// Result from NginxSetupDialog.
+/// [isLink] = true means user chose to link an existing conf (no new conf created).
+/// [isLink] = false means user wants to create a new nginx conf.
+typedef NginxSetupResult = ({String subdomain, int? port, bool isLink});
+
 class NginxSetupDialog extends StatefulWidget {
   final String initialSubdomain;
   final String domainSuffix;
   final int? initialPort;
   final bool showPort;
-  /// Existing subdomain conf names (without .conf), for conflict check
+  /// Existing subdomain conf names (without .conf), for conflict check & link
   final Set<String> existingSubdomains;
   /// Ports already proxied: port -> project name
   final Map<int, String> usedPorts;
@@ -96,7 +101,17 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
     final port = widget.showPort
         ? int.tryParse(_portController.text.trim())
         : null;
-    Navigator.pop(context, (subdomain: subdomain, port: port));
+    Navigator.pop(
+      context,
+      (subdomain: subdomain, port: port, isLink: false),
+    );
+  }
+
+  void _linkExisting(String subdomain) {
+    Navigator.pop(
+      context,
+      (subdomain: subdomain, port: null as int?, isLink: true),
+    );
   }
 
   @override
@@ -153,6 +168,35 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
                     : Colors.red,
               ),
             ),
+            if (widget.existingSubdomains.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              const Divider(),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                context.l10n.nginxLink,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ...(widget.existingSubdomains.toList()..sort()).map(
+                (sub) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: InkWell(
+                    onTap: () => _linkExisting(sub),
+                    mouseCursor: SystemMouseCursors.click,
+                    borderRadius: AppRadius.smallBorderRadius,
+                    child: ListTile(
+                      leading: const Icon(Icons.dns, color: Colors.green),
+                      title: Text(sub),
+                      subtitle: Text('$sub${widget.domainSuffix}'),
+                      dense: true,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppRadius.smallBorderRadius,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

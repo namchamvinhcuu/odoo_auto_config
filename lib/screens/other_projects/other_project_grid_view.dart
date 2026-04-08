@@ -17,7 +17,6 @@ class OtherProjectGridView extends StatelessWidget {
     required this.onOpenInFileManager,
     required this.onEdit,
     required this.onSetupNginx,
-    required this.onLinkNginx,
     required this.onRemoveNginx,
     required this.onRemove,
     required this.onSwitchBranch,
@@ -34,7 +33,6 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
   final ValueChanged<WorkspaceInfo> onEdit;
   final ValueChanged<WorkspaceInfo> onSetupNginx;
-  final ValueChanged<WorkspaceInfo> onLinkNginx;
   final ValueChanged<WorkspaceInfo> onRemoveNginx;
   final ValueChanged<WorkspaceInfo> onRemove;
   final ValueChanged<WorkspaceInfo> onSwitchBranch;
@@ -349,7 +347,7 @@ class OtherProjectGridView extends StatelessWidget {
               ],
             ),
           )
-        else ...[
+        else
           PopupMenuItem(
             value: 'nginx_setup',
             child: Row(
@@ -360,17 +358,6 @@ class OtherProjectGridView extends StatelessWidget {
               ],
             ),
           ),
-          PopupMenuItem(
-            value: 'nginx_link',
-            child: Row(
-              children: [
-                const Icon(Icons.link, size: AppIconSize.md),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.nginxLink),
-              ],
-            ),
-          ),
-        ],
         PopupMenuItem(
           value: 'edit',
           child: Row(
@@ -410,8 +397,6 @@ class OtherProjectGridView extends StatelessWidget {
         onOpenInFileManager(ws);
       case 'nginx_setup':
         onSetupNginx(ws);
-      case 'nginx_link':
-        onLinkNginx(ws);
       case 'nginx_remove':
         onRemoveNginx(ws);
       case 'edit':

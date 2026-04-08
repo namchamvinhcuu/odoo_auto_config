@@ -17,7 +17,6 @@ class ProjectInfoDialog extends StatefulWidget {
   final void Function(String dbName) onDbChanged;
   final Future<void> Function(ProjectInfo updated) onSaved;
   final Future<void> Function(ProjectInfo proj) onNginxSetup;
-  final Future<void> Function(ProjectInfo proj) onNginxLink;
   final Future<void> Function(ProjectInfo proj) onNginxRemove;
 
   const ProjectInfoDialog({
@@ -28,7 +27,6 @@ class ProjectInfoDialog extends StatefulWidget {
     required this.onDbChanged,
     required this.onSaved,
     required this.onNginxSetup,
-    required this.onNginxLink,
     required this.onNginxRemove,
   });
 
@@ -424,24 +422,10 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
             style: FilledButton.styleFrom(foregroundColor: Colors.red),
           ),
         ] else
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () => widget.onNginxSetup(proj),
-                  icon: const Icon(Icons.add, size: AppIconSize.md),
-                  label: Text(context.l10n.nginxSetup),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: FilledButton.tonalIcon(
-                  onPressed: () => widget.onNginxLink(proj),
-                  icon: const Icon(Icons.link, size: AppIconSize.md),
-                  label: Text(context.l10n.nginxLink),
-                ),
-              ),
-            ],
+          FilledButton.icon(
+            onPressed: () => widget.onNginxSetup(proj),
+            icon: const Icon(Icons.add, size: AppIconSize.md),
+            label: Text(context.l10n.nginxSetup),
           ),
 
         // Database actions

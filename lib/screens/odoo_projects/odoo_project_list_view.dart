@@ -79,18 +79,6 @@ class OdooProjectListView extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
-                    if (proj.description.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      Flexible(
-                        child: Chip(
-                          label: Text(proj.description,
-                              overflow: TextOverflow.ellipsis),
-                          avatar: const Icon(Icons.description,
-                              size: AppIconSize.md),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -147,6 +135,15 @@ class OdooProjectListView extends StatelessWidget {
                       ),
                     ],
                     const Spacer(),
+                    if (proj.description.isNotEmpty)
+                      Text(
+                        proj.description,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: AppFontSize.sm,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     IconButton(
                       onPressed: () => onRemove(proj),
                       icon: const Icon(Icons.delete),
