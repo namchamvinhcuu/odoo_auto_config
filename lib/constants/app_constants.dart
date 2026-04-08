@@ -138,5 +138,3 @@ class _DraggableDialogState extends State<_DraggableDialog> {
     );
   }
 }
-
-// test

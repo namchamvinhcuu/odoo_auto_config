@@ -196,7 +196,10 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
     if (mounted) {
-      setState(() => _running = false);
+      setState(() {
+        _running = false;
+        _logLines.clear();
+      });
       await _loadStatus();
     }
   }

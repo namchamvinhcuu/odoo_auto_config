@@ -185,7 +185,14 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         _addLine('\x1B[0;32m[+] ${repo.name}: ${context.l10n.gitCommitDone}\x1B[0m');
       }
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() {
+        _running = false;
+        _logLines.clear();
+        _repos.clear();
+      });
+      await _scanRepos();
+    }
   }
 
   void _toggleAll(bool select) {
