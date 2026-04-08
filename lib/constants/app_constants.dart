@@ -100,6 +100,30 @@ class AppDialog {
   }
 }
 
+/// Icons for git/action buttons — consistent across all views
+class GitActionIcons {
+  static const IconData pull = Icons.download;
+  static const IconData commit = Icons.commit;
+  static const IconData push = Icons.commit;
+  static const IconData pr = Icons.merge;
+  static const IconData prBar = Icons.merge_type;
+  static const IconData publish = Icons.cloud_upload;
+  static const IconData delete = Icons.delete_outline;
+  static const IconData branch = Icons.account_tree;
+  static const IconData refresh = Icons.refresh;
+}
+
+/// Colors for git/action buttons — consistent across all views
+class GitActionColors {
+  static const Color pull = Colors.blue;
+  static const Color commit = Colors.orange;
+  static const Color push = Colors.orange;
+  static const Color pr = Colors.purpleAccent;
+  static const Color publish = Colors.green;
+  static const Color delete = Colors.red;
+  static const Color refresh = Colors.teal;
+}
+
 /// Colors used in log output
 class AppLogColors {
   static const Color success = Colors.greenAccent;

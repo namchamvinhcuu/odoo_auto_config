@@ -239,7 +239,7 @@ class _SelectivePullDialogState extends State<SelectivePullDialog> {
         if (_selectedRepos.isNotEmpty)
           FilledButton.icon(
             onPressed: _pull,
-            icon: const Icon(Icons.download, size: AppIconSize.md),
+            icon: const Icon(GitActionIcons.pull, size: AppIconSize.md),
             label: Text(context.l10n.gitPullSelected),
           ),
       ],
