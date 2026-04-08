@@ -248,6 +248,28 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
         children: [
           Text(context.l10n.gitCommitTitle(widget.repoName)),
           const Spacer(),
+          IconButton(
+            onPressed: (_running || _loading)
+                ? null
+                : () {
+                    setState(() {
+                      _done = false;
+                      _logLines.clear();
+                    });
+                    _loadStatus();
+                  },
+            icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
+            tooltip: context.l10n.refresh,
+            style: IconButton.styleFrom(
+              backgroundColor: (_running || _loading) ? Colors.grey : GitActionColors.refresh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           AppDialog.closeButton(context, enabled: !_running),
         ],
       ),
