@@ -28,6 +28,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
   final _scrollController = ScrollController();
   final List<String> _logLines = [];
   bool _running = false;
+  bool _done = false;
   bool _pushAfterCommit = true;
 
   @override
@@ -119,13 +120,18 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       _addLine('\x1B[0;32m[+] ${repo.name}: committed\x1B[0m');
     }
     widget.onDone();
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() {
+        _running = false;
+        _done = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final canCommit =
-        !_running && _messageController.text.trim().isNotEmpty;
+        !_running && !_done && _messageController.text.trim().isNotEmpty;
 
     return AlertDialog(
       title: Row(
@@ -181,18 +187,23 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
               ),
               onChanged: (_) => setState(() {}),
               autofocus: true,
+              enabled: !_running && !_done,
             ),
             const SizedBox(height: AppSpacing.sm),
             // Push after commit
             GestureDetector(
-              onTap: () =>
-                  setState(() => _pushAfterCommit = !_pushAfterCommit),
+              onTap: (_running || _done)
+                  ? null
+                  : () =>
+                      setState(() => _pushAfterCommit = !_pushAfterCommit),
               child: Row(
                 children: [
                   Checkbox(
                     value: _pushAfterCommit,
-                    onChanged: (v) =>
-                        setState(() => _pushAfterCommit = v ?? true),
+                    onChanged: (_running || _done)
+                        ? null
+                        : (v) =>
+                            setState(() => _pushAfterCommit = v ?? true),
                     visualDensity: VisualDensity.compact,
                   ),
                   Text(

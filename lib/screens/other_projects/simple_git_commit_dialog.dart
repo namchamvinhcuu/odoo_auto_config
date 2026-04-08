@@ -27,6 +27,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
   final _messageController = TextEditingController();
   bool _running = false;
   bool _loading = true;
+  bool _done = false;
   bool _pushAfterCommit = true;
 
   /// Each entry: {'status': 'M', 'file': 'path/to/file', 'selected': true}
@@ -112,6 +113,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
   bool get _canCommit =>
       !_running &&
       !_loading &&
+      !_done &&
       _selectedCount > 0 &&
       _messageController.text.trim().isNotEmpty;
 
@@ -211,9 +213,8 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
     if (mounted) {
       setState(() {
         _running = false;
-        _logLines.clear();
+        _done = true;
       });
-      await _loadStatus();
     }
   }
 
@@ -280,7 +281,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: _running
+                      onPressed: (_running || _done)
                           ? null
                           : () {
                               setState(() {
@@ -319,7 +320,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                       return CheckboxListTile(
                         dense: true,
                         value: selected,
-                        onChanged: _running
+                        onChanged: (_running || _done)
                             ? null
                             : (v) => setState(
                                 () => _changedFiles[i]['selected'] = v!,
@@ -364,7 +365,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                   ),
                   maxLines: 8,
                   minLines: 3,
-                  enabled: !_running,
+                  enabled: !_running && !_done,
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -373,7 +374,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: _running
+                      onTap: (_running || _done)
                           ? null
                           : () => setState(
                               () => _pushAfterCommit = !_pushAfterCommit,
@@ -382,7 +383,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                         children: [
                           Checkbox(
                             value: _pushAfterCommit,
-                            onChanged: _running
+                            onChanged: (_running || _done)
                                 ? null
                                 : (v) => setState(
                                     () => _pushAfterCommit = v ?? false,

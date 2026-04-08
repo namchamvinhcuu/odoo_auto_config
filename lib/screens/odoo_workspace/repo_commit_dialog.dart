@@ -27,6 +27,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
   final _messageController = TextEditingController();
   bool _running = false;
   bool _loading = true;
+  bool _done = false;
   bool _pushAfterCommit = true;
   List<Map<String, dynamic>> _changedFiles = [];
 
@@ -103,6 +104,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
   bool get _canCommit =>
       !_running &&
       !_loading &&
+      !_done &&
       _selectedCount > 0 &&
       _messageController.text.trim().isNotEmpty;
 
@@ -198,9 +200,8 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
     if (mounted) {
       setState(() {
         _running = false;
-        _logLines.clear();
+        _done = true;
       });
-      await _loadStatus();
     }
   }
 
@@ -266,7 +267,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
                     ),
                     const Spacer(),
                     TextButton.icon(
-                      onPressed: _running
+                      onPressed: (_running || _done)
                           ? null
                           : () {
                               setState(() {
@@ -305,7 +306,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
                       return CheckboxListTile(
                         dense: true,
                         value: selected,
-                        onChanged: _running
+                        onChanged: (_running || _done)
                             ? null
                             : (v) => setState(
                                 () => _changedFiles[i]['selected'] = v!),
@@ -343,14 +344,14 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
                   ),
                   maxLines: 8,
                   minLines: 3,
-                  enabled: !_running,
+                  enabled: !_running && !_done,
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     GestureDetector(
-                      onTap: _running
+                      onTap: (_running || _done)
                           ? null
                           : () => setState(
                               () => _pushAfterCommit = !_pushAfterCommit),
@@ -358,7 +359,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
                         children: [
                           Checkbox(
                             value: _pushAfterCommit,
-                            onChanged: _running
+                            onChanged: (_running || _done)
                                 ? null
                                 : (v) => setState(
                                     () => _pushAfterCommit = v ?? false),
