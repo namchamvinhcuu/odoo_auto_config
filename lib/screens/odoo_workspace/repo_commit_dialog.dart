@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
+import 'repo_create_pr_dialog.dart';
 
 // ── Repo Commit Dialog ──
 
@@ -29,7 +30,11 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
   bool _loading = true;
   bool _done = false;
   bool _pushAfterCommit = true;
+  String _currentBranch = '';
   List<Map<String, dynamic>> _changedFiles = [];
+
+  bool get _isMainBranch =>
+      _currentBranch == 'main' || _currentBranch == 'master';
 
   @override
   void initState() {
@@ -62,6 +67,17 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
   Future<void> _loadStatus() async {
     setState(() => _loading = true);
     try {
+      // Detect current branch
+      final branchResult = await Process.run(
+        'git',
+        ['branch', '--show-current'],
+        workingDirectory: widget.repoPath,
+        runInShell: true,
+      );
+      if (mounted && branchResult.exitCode == 0) {
+        _currentBranch = (branchResult.stdout as String).trim();
+      }
+
       final result = await Process.run(
         'git',
         ['status', '--porcelain'],
@@ -434,6 +450,32 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
               const Padding(
                 padding: EdgeInsets.only(top: AppSpacing.md),
                 child: LinearProgressIndicator(),
+              ),
+
+            // Create PR button after successful commit (non-main branch)
+            if (_done && !_isMainBranch)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      AppDialog.show(
+                        context: context,
+                        builder: (ctx) => RepoCreatePRDialog(
+                          repoName: widget.repoName,
+                          repoPath: widget.repoPath,
+                          currentBranch: _currentBranch,
+                        ),
+                      );
+                    },
+                    icon: const Icon(GitActionIcons.pr, size: AppIconSize.md),
+                    label: const Text('Create PR'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: GitActionColors.pr,
+                    ),
+                  ),
+                ),
               ),
           ],
         ),

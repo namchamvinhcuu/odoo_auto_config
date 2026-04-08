@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
+import 'create_pr_dialog.dart';
 
 class SimpleGitCommitDialog extends StatefulWidget {
   final String projectName;
@@ -29,9 +30,13 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
   bool _loading = true;
   bool _done = false;
   bool _pushAfterCommit = true;
+  String _currentBranch = '';
 
   /// Each entry: {'status': 'M', 'file': 'path/to/file', 'selected': true}
   List<Map<String, dynamic>> _changedFiles = [];
+
+  bool get _isMainBranch =>
+      _currentBranch == 'main' || _currentBranch == 'master';
 
   @override
   void initState() {
@@ -64,6 +69,17 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
   Future<void> _loadStatus() async {
     setState(() => _loading = true);
     try {
+      // Detect current branch
+      final branchResult = await Process.run(
+        'git',
+        ['branch', '--show-current'],
+        workingDirectory: widget.projectPath,
+        runInShell: true,
+      );
+      if (mounted && branchResult.exitCode == 0) {
+        _currentBranch = (branchResult.stdout as String).trim();
+      }
+
       final result = await Process.run(
         'git',
         ['status', '--porcelain'],
@@ -459,6 +475,32 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
               const Padding(
                 padding: EdgeInsets.only(top: AppSpacing.md),
                 child: LinearProgressIndicator(),
+              ),
+
+            // Create PR button after successful commit (non-main branch)
+            if (_done && !_isMainBranch)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      AppDialog.show(
+                        context: context,
+                        builder: (ctx) => CreatePRDialog(
+                          projectName: widget.projectName,
+                          projectPath: widget.projectPath,
+                          currentBranch: _currentBranch,
+                        ),
+                      );
+                    },
+                    icon: const Icon(GitActionIcons.pr, size: AppIconSize.md),
+                    label: const Text('Create PR'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: GitActionColors.pr,
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
