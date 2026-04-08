@@ -71,21 +71,21 @@ class AppDialog {
     return showDialog<T>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: _DraggableDialog(child: builder(ctx)),
-      ),
+      builder: (ctx) =>
+          PopScope(canPop: false, child: _DraggableDialog(child: builder(ctx))),
     );
   }
 
   /// Red X close button for dialog title rows.
   /// Use in title Row: `[...other widgets, const Spacer(), AppDialog.closeButton(context)]`
   /// Set [enabled] to false to disable close (e.g. while process is running).
-  static Widget closeButton(BuildContext context,
-      {VoidCallback? onClose, bool enabled = true}) {
+  static Widget closeButton(
+    BuildContext context, {
+    VoidCallback? onClose,
+    bool enabled = true,
+  }) {
     return IconButton(
-      onPressed:
-          enabled ? (onClose ?? () => Navigator.pop(context)) : null,
+      onPressed: enabled ? (onClose ?? () => Navigator.pop(context)) : null,
       icon: const Icon(Icons.close, color: Colors.white, size: AppIconSize.md),
       style: IconButton.styleFrom(
         backgroundColor: enabled ? Colors.red : Colors.grey,
@@ -138,3 +138,5 @@ class _DraggableDialogState extends State<_DraggableDialog> {
     );
   }
 }
+
+// test
