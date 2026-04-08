@@ -164,6 +164,7 @@ class OdooProjectGridView extends StatelessWidget {
                                     onPressed: () => onShowInfo(proj),
                                     iconSize: btnSize,
                                     boxSize: btnBox,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                   if (proj.hasNginx)
                                     _gridBtn(
@@ -172,6 +173,7 @@ class OdooProjectGridView extends StatelessWidget {
                                       onPressed: () => onOpenInBrowser(proj),
                                       iconSize: btnSize,
                                       boxSize: btnBox,
+                                      color: Theme.of(context).colorScheme.tertiary,
                                     ),
                                   if (exists) ...[
                                     _gridBtn(
@@ -180,6 +182,7 @@ class OdooProjectGridView extends StatelessWidget {
                                       onPressed: () => onOpenWorkspace(proj),
                                       iconSize: btnSize,
                                       boxSize: btnBox,
+                                      color: Theme.of(context).colorScheme.secondary,
                                     ),
                                     // Selective Pull — hidden, use Workspace View instead
                                     // _gridBtn(
