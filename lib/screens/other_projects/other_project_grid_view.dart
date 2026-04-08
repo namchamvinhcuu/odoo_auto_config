@@ -221,18 +221,20 @@ class OtherProjectGridView extends StatelessWidget {
                             spacing: AppSpacing.lg,
                             children: [
                               _gridBtn(
-                                icon: Icons.sync,
+                                icon: GitActionIcons.pull,
                                 tooltip: context.l10n.gitPull,
                                 onPressed: () => onGitPull(ws),
                                 iconSize: btnSize,
                                 boxSize: btnBox,
+                                color: GitActionColors.pull,
                               ),
                               _gridBtn(
-                                icon: Icons.commit,
+                                icon: GitActionIcons.commit,
                                 tooltip: context.l10n.gitCommit,
                                 onPressed: () => onGitCommit(ws),
                                 iconSize: btnSize,
                                 boxSize: btnBox,
+                                color: GitActionColors.commit,
                               ),
                               _gridBtn(
                                 icon: Icons.folder_open,
@@ -293,7 +295,7 @@ class OtherProjectGridView extends StatelessWidget {
             value: 'git_pull',
             child: Row(
               children: [
-                const Icon(Icons.sync, size: AppIconSize.md),
+                const Icon(GitActionIcons.pull, size: AppIconSize.md, color: GitActionColors.pull),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.gitPull),
               ],
@@ -304,7 +306,7 @@ class OtherProjectGridView extends StatelessWidget {
             value: 'git_commit',
             child: Row(
               children: [
-                const Icon(Icons.commit, size: AppIconSize.md),
+                const Icon(GitActionIcons.commit, size: AppIconSize.md, color: GitActionColors.commit),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.gitCommit),
               ],
@@ -425,10 +427,11 @@ class OtherProjectGridView extends StatelessWidget {
     required VoidCallback onPressed,
     required double iconSize,
     required double boxSize,
+    Color? color,
   }) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: iconSize),
+      icon: Icon(icon, size: iconSize, color: color),
       tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,

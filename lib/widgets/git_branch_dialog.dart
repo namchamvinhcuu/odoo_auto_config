@@ -509,9 +509,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
               IconButton(
                 onPressed: _switching ? null : () => _publishBranch(branch),
                 icon: const Icon(
-                  Icons.cloud_upload,
+                  GitActionIcons.publish,
                   size: AppIconSize.md,
-                  color: Colors.green,
+                  color: GitActionColors.publish,
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
@@ -525,9 +525,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                 IconButton(
                   onPressed: _switching ? null : () => _publishBranch(branch),
                   icon: const Icon(
-                    Icons.cloud_upload,
+                    GitActionIcons.publish,
                     size: AppIconSize.md,
-                    color: Colors.green,
+                    color: GitActionColors.publish,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -539,9 +539,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
               IconButton(
                 onPressed: _switching ? null : () => _pullBranch(branch),
                 icon: const Icon(
-                  Icons.download,
+                  GitActionIcons.pull,
                   size: AppIconSize.md,
-                  color: Colors.teal,
+                  color: GitActionColors.pull,
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
@@ -553,9 +553,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
               IconButton(
                 onPressed: _switching ? null : () => _mergeBranch(branch),
                 icon: const Icon(
-                  Icons.merge,
+                  GitActionIcons.pr,
                   size: AppIconSize.md,
-                  color: Colors.blue,
+                  color: GitActionColors.pr,
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(
@@ -568,9 +568,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                 IconButton(
                   onPressed: _switching ? null : () => _deleteBranch(branch),
                   icon: const Icon(
-                    Icons.delete_outline,
+                    GitActionIcons.delete,
                     size: AppIconSize.md,
-                    color: Colors.red,
+                    color: GitActionColors.delete,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -685,6 +685,25 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             label: Text(context.l10n.gitViewOnGithub),
           ),
           const Spacer(),
+          IconButton(
+            onPressed: (_switching || _loading)
+                ? null
+                : () {
+                    setState(() => _message = null);
+                    _loadBranches();
+                  },
+            icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
+            tooltip: context.l10n.refresh,
+            style: IconButton.styleFrom(
+              backgroundColor: (_switching || _loading) ? Colors.grey : GitActionColors.refresh,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           AppDialog.closeButton(context, enabled: !_switching),
         ],
       ),
@@ -718,8 +737,11 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                                 _loadBranches();
                               }
                             },
-                      icon: const Icon(Icons.download, size: AppIconSize.md),
+                      icon: const Icon(GitActionIcons.pull, size: AppIconSize.md),
                       label: Text(context.l10n.gitBranchPull),
+                      style: FilledButton.styleFrom(
+                        foregroundColor: GitActionColors.pull,
+                      ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.tonalIcon(
@@ -740,8 +762,11 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                                 _loadBranches();
                               }
                             },
-                      icon: const Icon(Icons.commit, size: AppIconSize.md),
+                      icon: const Icon(GitActionIcons.commit, size: AppIconSize.md),
                       label: Text(context.l10n.gitBranchCommit),
+                      style: FilledButton.styleFrom(
+                        foregroundColor: GitActionColors.commit,
+                      ),
                     ),
                     if (_current != 'main' && _current != 'master') ...[
                       const SizedBox(width: AppSpacing.sm),
@@ -762,9 +787,12 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                                   _loadBranches();
                                 }
                               },
-                        icon: const Icon(Icons.merge_type,
+                        icon: const Icon(GitActionIcons.prBar,
                             size: AppIconSize.md),
                         label: Text(context.l10n.gitBranchPR),
+                        style: FilledButton.styleFrom(
+                          foregroundColor: GitActionColors.pr,
+                        ),
                       ),
                     ],
                     const SizedBox(width: AppSpacing.sm),

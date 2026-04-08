@@ -51,7 +51,7 @@ lib/
 │   ├── platform_service.dart    # Platform abstraction (paths, executables, native dialogs)
 │   ├── tray_service.dart        # System tray: init, show/hide, close behavior setting
 │   ├── update_service.dart      # Auto-update: check GitHub releases, download, install
-│   └── git_branch_service.dart  # Shared git branch operations (switch, create, delete, publish, clean stale)
+│   └── git_branch_service.dart  # Shared git branch operations (switch, create, delete, publish, clean stale, getRemoteUrl, openInBrowser)
 ├── screens/                     # UI screens — mỗi screen 1 thư mục, dialog tách file riêng
 │   ├── home_screen.dart         # NavigationRail (4 tab) + window size selector (S/M/L) + animation
 │   ├── odoo_projects/           # Odoo Projects screen
@@ -73,12 +73,12 @@ lib/
 │   │   ├── simple_git_pull_dialog.dart
 │   │   ├── simple_git_commit_dialog.dart
 │   │   ├── create_pr_dialog.dart
-│   │   ├── switch_branch_dialog.dart  # ~1057 dòng, cần tách tiếp (phase 2)
+│   │   ├── switch_branch_dialog.dart  # Thin wrapper → GitBranchDialog (lib/widgets/)
 │   │   └── prune_dialog.dart
 │   ├── odoo_workspace/          # Workspace View: dashboard quản lý repos trong addons/
 │   │   ├── odoo_workspace_dialog.dart # Dialog chính (class OdooWorkspaceDialog)
 │   │   ├── repo_info.dart             # RepoInfo data class (dùng chung bởi tất cả dialog)
-│   │   ├── repo_branch_dialog.dart    # ~1023 dòng, cần tách tiếp (phase 2)
+│   │   ├── repo_branch_dialog.dart    # Thin wrapper → GitBranchDialog (lib/widgets/)
 │   │   ├── repo_git_pull_dialog.dart
 │   │   ├── repo_commit_dialog.dart
 │   │   ├── repo_create_pr_dialog.dart
@@ -132,6 +132,7 @@ lib/
 │   ├── directory_picker_field.dart # Text field + browse button
 │   ├── log_output.dart          # Real-time log với color coding + SelectionArea
 │   ├── nginx_setup_dialog.dart  # Dialog setup nginx (subdomain, port, validation)
+│   ├── git_branch_dialog.dart   # Shared Git Branches dialog (dùng chung cho Other Projects + Odoo Workspace)
 │   └── ansi_parser.dart         # Shared ANSI escape code parser cho terminal log output
 └── templates/
     ├── odoo_templates.dart      # Sinh odoo.conf, README.md, .vscode/settings.json, git-repositories.sh/.ps1
@@ -186,6 +187,7 @@ lib/
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
 - **AppDialog.show()** - LUÔN dùng `AppDialog.show()` thay `showDialog()` cho mọi dialog trong app.
   Tự động wrap `barrierDismissible: false` + `PopScope(canPop: false)` → không đóng bằng click ngoài hoặc ESC.
+  Tự động wrap `_DraggableDialog` → tất cả dialog có thể kéo di chuyển bằng drag.
   Sửa 1 chỗ (`app_constants.dart`) áp dụng cho tất cả dialog.
 - **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
   Hỗ trợ `enabled:` (default true) — khi `false`: button xám, không bấm được (dùng khi process đang chạy).
@@ -312,13 +314,19 @@ lib/
   - Tạo tự động khi Quick Create Odoo project
   - Token đọc từ Git account (dropdown chọn account), org nhập khi tạo project
   - Edit project (Info dialog > Edit): dropdown chọn account + sửa org, save vào file script
-- **Git Branches Dialog** (Other Projects — `_SwitchBranchDialog`):
+- **Git Branches Dialog** — shared `GitBranchDialog` (`lib/widgets/git_branch_dialog.dart`):
+  - Dùng chung cho cả Other Projects (`SwitchBranchDialog` wrapper) và Odoo Workspace (`RepoBranchDialog` wrapper)
+  - Sub-dialogs inject qua builder callbacks: `pullDialogBuilder`, `commitDialogBuilder`, `prDialogBuilder`, `pruneDialogBuilder`
   - Stateful dialog 2 cột: Local + Remote, click branch để switch
-  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit, Pull, PR, Publish
-  - **Action bar** (giữa dialog): Pull, Commit, PR (ẩn khi trên main/master), + Create
+  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit, Pull, PR, Publish, View on GitHub
+  - **Action bar** (giữa dialog): Pull (disable khi không có remote), Commit (disable khi không có changes), PR (ẩn khi trên main/master), + Create
+  - **View on GitHub**: button trên title bar, `GitBranchService.getRemoteUrl()` (SSH→HTTPS conversion) + `openInBrowser()`
   - **Pull branch khác** (icon trên mỗi branch tile): stash → checkout target → pull → checkout back → stash pop, mở dialog log
   - **Publish branch**: `git push -u origin <branch>`, hiện khi branch chưa có remote, tự ẩn sau publish
-  - **Create PR** (`_CreatePRDialog`): check `gh` CLI, chọn base branch, nhập title/body, auto push trước
+  - **Create PR** (`CreatePRDialog` / `RepoCreatePRDialog`): check `gh` CLI, chọn base branch, nhập title/body, auto push trước
+    Proactive diff check: `git fetch origin <base>` + `git rev-list --count origin/<base>..HEAD` khi mở dialog + khi đổi base
+    Nếu no changes → hiện inline "There are no changes" UI, ẩn form title/body/create
+    Dropdown base branch: filter `origin/` prefix đúng cách, lọc current branch ra khỏi list
     Detect PR đã tồn tại (URL từ stderr) → hiện "PR already exists. New commits have been pushed."
     Check uncommitted changes → cảnh báo + cho commit trước hoặc continue
     Nút "View in Browser" mở PR URL (cross-platform: open/start/xdg-open)
@@ -525,9 +533,8 @@ File: `lib/screens/odoo_workspace_dialog.dart`
 - **Mỗi repo hiện**: tên module, branch (color coded, clickable → mở branch dialog), changed files count, ahead/behind, nút Pull/Publish hoặc Push/Remove
 - **`_RepoInfo.hasUpstream`**: detect qua `git rev-list @{upstream}..HEAD` — nếu fail → `hasUpstream = false`
   Repo không có upstream hiện nút Publish (cloud_upload xanh lá) thay vì Push
-- **Per-repo Branch Dialog** (`_RepoBranchDialog`): click branch chip → mở dialog đầy đủ giống `_SwitchBranchDialog` bên Other Projects
-  Tính năng: Switch, Create, Delete, Publish, Pull branch khác, Merge, Commit, PR, Clean stale
-  Sub-dialogs: `_RepoGitPullDialog`, `_RepoCommitDialog`, `_RepoCreatePRDialog`, `_RepoPruneDialog`
+- **Per-repo Branch Dialog** (`RepoBranchDialog`): thin wrapper → shared `GitBranchDialog`
+  Inject `RepoGitPullDialog`, `RepoCommitDialog`, `RepoCreatePRDialog`, `RepoPruneDialog`
   Sau đóng dialog → reload repo status
 - **Selection**: ban đầu deselect all, user select repos nào → persist cho lần sau
   Add repo mới → sort A-Z. Remove repo → xóa khỏi cả pin list và selection
@@ -570,6 +577,9 @@ Branch: `refactor/core-clean-structure`
 - **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
 - **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
 
+## Quy tắc làm việc
+- **Sau mỗi task hoàn thành**: LUÔN tóm tắt những gì đã thay đổi + liệt kê danh sách đầy đủ các file đã sửa
+
 ## Lessons Learned — KHÔNG lặp lại các lỗi này
 
 ### UI / Layout
@@ -610,6 +620,8 @@ Branch: `refactor/core-clean-structure`
 - **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
 
 ### Code quality & Cross-platform
+- **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
+  LUÔN dùng `replaceFirstMapped(regex, (m) => '${m[1]}...')` khi cần preserve captured groups
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
   KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
 - **SAU MỖI REFACTOR / TẠO FILE MỚI**: chạy audit `runInShell` + path separator cho TOÀN BỘ codebase

@@ -190,11 +190,12 @@ class OdooProjectGridView extends StatelessWidget {
                                     //   boxSize: btnBox,
                                     // ),
                                     _gridBtn(
-                                      icon: Icons.commit,
+                                      icon: GitActionIcons.commit,
                                       tooltip: context.l10n.gitCommit,
                                       onPressed: () => onGitCommit(proj),
                                       iconSize: btnSize,
                                       boxSize: btnBox,
+                                      color: GitActionColors.commit,
                                     ),
                                   ],
                                 ],
@@ -271,7 +272,7 @@ class OdooProjectGridView extends StatelessWidget {
             value: 'git_pull',
             child: Row(
               children: [
-                const Icon(Icons.sync, size: AppIconSize.md),
+                const Icon(GitActionIcons.pull, size: AppIconSize.md, color: GitActionColors.pull),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.gitPull),
               ],
@@ -282,7 +283,7 @@ class OdooProjectGridView extends StatelessWidget {
             value: 'git_commit',
             child: Row(
               children: [
-                const Icon(Icons.commit, size: AppIconSize.md),
+                const Icon(GitActionIcons.commit, size: AppIconSize.md, color: GitActionColors.commit),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.gitCommit),
               ],
@@ -339,10 +340,11 @@ class OdooProjectGridView extends StatelessWidget {
     required VoidCallback onPressed,
     required double iconSize,
     required double boxSize,
+    Color? color,
   }) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: iconSize),
+      icon: Icon(icon, size: iconSize, color: color),
       tooltip: tooltip,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,

@@ -62,7 +62,7 @@ class AppDialog {
   static const double heightLg = 700;
   static const double heightXl = 750;
 
-  /// Show a dialog that cannot be dismissed by tapping outside or pressing ESC.
+  /// Show a draggable dialog that cannot be dismissed by tapping outside or pressing ESC.
   /// Use this instead of [showDialog] for all app dialogs.
   static Future<T?> show<T>({
     required BuildContext context,
@@ -71,21 +71,21 @@ class AppDialog {
     return showDialog<T>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: builder(ctx),
-      ),
+      builder: (ctx) =>
+          PopScope(canPop: false, child: _DraggableDialog(child: builder(ctx))),
     );
   }
 
   /// Red X close button for dialog title rows.
   /// Use in title Row: `[...other widgets, const Spacer(), AppDialog.closeButton(context)]`
   /// Set [enabled] to false to disable close (e.g. while process is running).
-  static Widget closeButton(BuildContext context,
-      {VoidCallback? onClose, bool enabled = true}) {
+  static Widget closeButton(
+    BuildContext context, {
+    VoidCallback? onClose,
+    bool enabled = true,
+  }) {
     return IconButton(
-      onPressed:
-          enabled ? (onClose ?? () => Navigator.pop(context)) : null,
+      onPressed: enabled ? (onClose ?? () => Navigator.pop(context)) : null,
       icon: const Icon(Icons.close, color: Colors.white, size: AppIconSize.md),
       style: IconButton.styleFrom(
         backgroundColor: enabled ? Colors.red : Colors.grey,
@@ -100,6 +100,30 @@ class AppDialog {
   }
 }
 
+/// Icons for git/action buttons — consistent across all views
+class GitActionIcons {
+  static const IconData pull = Icons.download;
+  static const IconData commit = Icons.commit;
+  static const IconData push = Icons.commit;
+  static const IconData pr = Icons.merge;
+  static const IconData prBar = Icons.merge_type;
+  static const IconData publish = Icons.cloud_upload;
+  static const IconData delete = Icons.delete_outline;
+  static const IconData branch = Icons.account_tree;
+  static const IconData refresh = Icons.refresh;
+}
+
+/// Colors for git/action buttons — consistent across all views
+class GitActionColors {
+  static const Color pull = Colors.blue;
+  static const Color commit = Colors.orange;
+  static const Color push = Colors.orange;
+  static const Color pr = Colors.purpleAccent;
+  static const Color publish = Colors.green;
+  static const Color delete = Colors.red;
+  static const Color refresh = Colors.teal;
+}
+
 /// Colors used in log output
 class AppLogColors {
   static const Color success = Colors.greenAccent;
@@ -111,4 +135,30 @@ class AppLogColors {
 /// NavigationRail constants
 class AppNav {
   static const double minExtendedWidth = 220;
+}
+
+/// Wrapper that makes any dialog draggable by its title bar area.
+class _DraggableDialog extends StatefulWidget {
+  final Widget child;
+  const _DraggableDialog({required this.child});
+
+  @override
+  State<_DraggableDialog> createState() => _DraggableDialogState();
+}
+
+class _DraggableDialogState extends State<_DraggableDialog> {
+  Offset _offset = Offset.zero;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.translate(
+      offset: _offset,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() => _offset += details.delta);
+        },
+        child: widget.child,
+      ),
+    );
+  }
 }

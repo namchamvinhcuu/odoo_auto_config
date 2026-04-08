@@ -100,56 +100,6 @@ class OtherProjectListView extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (state.branches.containsKey(ws.path)) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      InkWell(
-                        onTap: () => onSwitchBranch(ws),
-                        mouseCursor: SystemMouseCursors.click,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Chip(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  state.branches[ws.path]!,
-                                  style: TextStyle(
-                                    color: branchColor(state.branches[ws.path]!),
-                                  ),
-                                ),
-                                if ((state.changedCount[ws.path] ?? 0) > 0) ...[
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    '${state.changedCount[ws.path]}↑',
-                                    style: const TextStyle(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                                if ((state.behindCount[ws.path] ?? 0) > 0) ...[
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    '${state.behindCount[ws.path]}↓',
-                                    style: const TextStyle(
-                                      color: Colors.cyan,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            avatar: Icon(
-                              Icons.account_tree,
-                              size: AppIconSize.md,
-                              color: branchColor(state.branches[ws.path]!),
-                            ),
-                            backgroundColor: branchColor(
-                              state.branches[ws.path]!,
-                            ).withValues(alpha: 0.1),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -164,6 +114,56 @@ class OtherProjectListView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
+                    if (state.branches.containsKey(ws.path)) ...[
+                      InkWell(
+                        onTap: () => onSwitchBranch(ws),
+                        mouseCursor: SystemMouseCursors.click,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Chip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                state.branches[ws.path]!,
+                                style: TextStyle(
+                                  color: branchColor(state.branches[ws.path]!),
+                                ),
+                              ),
+                              if ((state.changedCount[ws.path] ?? 0) > 0) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  '${state.changedCount[ws.path]}↑',
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                              if ((state.behindCount[ws.path] ?? 0) > 0) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  '${state.behindCount[ws.path]}↓',
+                                  style: const TextStyle(
+                                    color: Colors.cyan,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          avatar: Icon(
+                            Icons.account_tree,
+                            size: AppIconSize.md,
+                            color: branchColor(state.branches[ws.path]!),
+                          ),
+                          backgroundColor: branchColor(
+                            state.branches[ws.path]!,
+                          ).withValues(alpha: 0.1),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                    ],
                     IconButton(
                       onPressed: () => onToggleFavourite(ws),
                       icon: Icon(
@@ -177,12 +177,12 @@ class OtherProjectListView extends StatelessWidget {
                     if (exists) ...[
                       IconButton(
                         onPressed: () => onGitPull(ws),
-                        icon: const Icon(Icons.sync),
+                        icon: const Icon(GitActionIcons.pull, color: GitActionColors.pull),
                         tooltip: context.l10n.gitPull,
                       ),
                       IconButton(
                         onPressed: () => onGitCommit(ws),
-                        icon: const Icon(Icons.commit),
+                        icon: const Icon(GitActionIcons.commit, color: GitActionColors.commit),
                         tooltip: context.l10n.gitCommit,
                       ),
                       IconButton(

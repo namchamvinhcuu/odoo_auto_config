@@ -40,6 +40,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
   final _messageController = TextEditingController();
   bool _scanning = true;
   bool _running = false;
+  bool _done = false;
   bool _pushAfterCommit = true;
 
   @override
@@ -110,6 +111,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
   bool get _canCommit =>
       !_running &&
       !_scanning &&
+      !_done &&
       _selectedCount > 0 &&
       _messageController.text.trim().isNotEmpty;
 
@@ -185,7 +187,12 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         _addLine('\x1B[0;32m[+] ${repo.name}: ${context.l10n.gitCommitDone}\x1B[0m');
       }
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() {
+        _running = false;
+        _done = true;
+      });
+    }
   }
 
   void _toggleAll(bool select) {
@@ -229,7 +236,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
               Row(
                 children: [
                   TextButton.icon(
-                    onPressed: _running
+                    onPressed: (_running || _done)
                         ? null
                         : () => _toggleAll(_selectedCount < _repos.length),
                     icon: Icon(
@@ -263,7 +270,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
                     return CheckboxListTile(
                       dense: true,
                       value: repo.selected,
-                      onChanged: _running
+                      onChanged: (_running || _done)
                           ? null
                           : (v) => setState(() => repo.selected = v ?? false),
                       title: Text(repo.name),
@@ -282,7 +289,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
               // Commit message
               TextField(
                 controller: _messageController,
-                enabled: !_running,
+                enabled: !_running && !_done,
                 decoration: InputDecoration(
                   labelText: context.l10n.gitCommitMessage,
                   hintText: context.l10n.gitCommitMessageHint,
@@ -295,14 +302,14 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
               const SizedBox(height: AppSpacing.sm),
               // Push after commit checkbox
               GestureDetector(
-                onTap: _running
+                onTap: (_running || _done)
                     ? null
                     : () => setState(() => _pushAfterCommit = !_pushAfterCommit),
                 child: Row(
                   children: [
                     Checkbox(
                       value: _pushAfterCommit,
-                      onChanged: _running
+                      onChanged: (_running || _done)
                           ? null
                           : (v) => setState(() => _pushAfterCommit = v ?? false),
                     ),
@@ -363,7 +370,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         ),
       ),
       actions: [
-        if (_repos.isNotEmpty && !_running && _logLines.isEmpty)
+        if (_repos.isNotEmpty && !_running && !_done)
           FilledButton(
             onPressed: _canCommit ? _commit : null,
             child: Text(

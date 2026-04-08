@@ -126,7 +126,7 @@ class OdooProjectListView extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () => onGitPull(proj),
-                        icon: const Icon(Icons.sync),
+                        icon: const Icon(GitActionIcons.pull, color: GitActionColors.pull),
                         tooltip: context.l10n.gitPull,
                       ),
                       // Selective Pull — hidden, use Workspace View instead
@@ -137,7 +137,7 @@ class OdooProjectListView extends StatelessWidget {
                       // ),
                       IconButton(
                         onPressed: () => onGitCommit(proj),
-                        icon: const Icon(Icons.commit),
+                        icon: const Icon(GitActionIcons.commit, color: GitActionColors.commit),
                         tooltip: context.l10n.gitCommit,
                       ),
                       IconButton(
