@@ -17,7 +17,6 @@ class OtherProjectListView extends StatelessWidget {
     required this.onOpenInFileManager,
     required this.onEdit,
     required this.onSetupNginx,
-    required this.onLinkNginx,
     required this.onRemoveNginx,
     required this.onRemove,
     required this.onSwitchBranch,
@@ -35,7 +34,6 @@ class OtherProjectListView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
   final ValueChanged<WorkspaceInfo> onEdit;
   final ValueChanged<WorkspaceInfo> onSetupNginx;
-  final ValueChanged<WorkspaceInfo> onLinkNginx;
   final ValueChanged<WorkspaceInfo> onRemoveNginx;
   final ValueChanged<WorkspaceInfo> onRemove;
   final ValueChanged<WorkspaceInfo> onSwitchBranch;
@@ -84,22 +82,6 @@ class OtherProjectListView extends StatelessWidget {
                         ),
                         visualDensity: VisualDensity.compact,
                       ),
-                    if (ws.description.isNotEmpty) ...[
-                      const SizedBox(width: AppSpacing.sm),
-                      Flexible(
-                        child: Chip(
-                          label: Text(
-                            ws.description,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          avatar: const Icon(
-                            Icons.description,
-                            size: AppIconSize.md,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -114,56 +96,6 @@ class OtherProjectListView extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
-                    if (state.branches.containsKey(ws.path)) ...[
-                      InkWell(
-                        onTap: () => onSwitchBranch(ws),
-                        mouseCursor: SystemMouseCursors.click,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Chip(
-                          label: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                state.branches[ws.path]!,
-                                style: TextStyle(
-                                  color: branchColor(state.branches[ws.path]!),
-                                ),
-                              ),
-                              if ((state.changedCount[ws.path] ?? 0) > 0) ...[
-                                const SizedBox(width: AppSpacing.xs),
-                                Text(
-                                  '${state.changedCount[ws.path]}↑',
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                              if ((state.behindCount[ws.path] ?? 0) > 0) ...[
-                                const SizedBox(width: AppSpacing.xs),
-                                Text(
-                                  '${state.behindCount[ws.path]}↓',
-                                  style: const TextStyle(
-                                    color: Colors.cyan,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          avatar: Icon(
-                            Icons.account_tree,
-                            size: AppIconSize.md,
-                            color: branchColor(state.branches[ws.path]!),
-                          ),
-                          backgroundColor: branchColor(
-                            state.branches[ws.path]!,
-                          ).withValues(alpha: 0.1),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                    ],
                     IconButton(
                       onPressed: () => onToggleFavourite(ws),
                       icon: Icon(
@@ -208,37 +140,73 @@ class OtherProjectListView extends StatelessWidget {
                         tooltip: context.l10n.nginxRemove,
                       )
                     else
-                      PopupMenuButton<String>(
+                      IconButton(
+                        onPressed: () => onSetupNginx(ws),
                         icon: const Icon(Icons.dns),
                         tooltip: context.l10n.nginxSetup,
-                        onSelected: (v) {
-                          if (v == 'setup') onSetupNginx(ws);
-                          if (v == 'link') onLinkNginx(ws);
-                        },
-                        itemBuilder: (ctx) => [
-                          PopupMenuItem(
-                            value: 'setup',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.add, size: AppIconSize.md),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(context.l10n.nginxSetup),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'link',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.link, size: AppIconSize.md),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(context.l10n.nginxLink),
-                              ],
-                            ),
-                          ),
-                        ],
                       ),
+                    if (state.branches.containsKey(ws.path)) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      InkWell(
+                        onTap: () => onSwitchBranch(ws),
+                        mouseCursor: SystemMouseCursors.click,
+                        borderRadius: AppRadius.smallBorderRadius,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: branchColor(
+                              state.branches[ws.path]!,
+                            ).withValues(alpha: 0.15),
+                            borderRadius: AppRadius.smallBorderRadius,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if ((state.changedCount[ws.path] ?? 0) > 0) ...[
+                                Text(
+                                  '${state.changedCount[ws.path]}↑',
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
+                              if ((state.behindCount[ws.path] ?? 0) > 0) ...[
+                                Text(
+                                  '${state.behindCount[ws.path]}↓',
+                                  style: const TextStyle(
+                                    color: Colors.cyan,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
+                              Text(
+                                state.branches[ws.path]!,
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  color: branchColor(state.branches[ws.path]!),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
+                    if (ws.description.isNotEmpty)
+                      Text(
+                        ws.description,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: AppFontSize.sm,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     IconButton(
                       onPressed: () => onRemove(ws),
                       icon: const Icon(Icons.delete),

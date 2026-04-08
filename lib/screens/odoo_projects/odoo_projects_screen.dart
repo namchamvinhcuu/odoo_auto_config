@@ -231,67 +231,10 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     } catch (_) {}
   }
 
-  Future<void> _linkNginx(ProjectInfo proj) async {
-    final nginx = await NginxService.loadSettings();
-    final confDir = (nginx['confDir'] ?? '').toString();
-    final suffix = (nginx['domainSuffix'] ?? '').toString();
-    if (confDir.isEmpty || suffix.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.nginxNotConfigured)),
-        );
-      }
-      return;
-    }
-
-    final existingSubs = await NginxService.getExistingSubdomains(confDir);
-    if (existingSubs.isEmpty) return;
-
-    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
-
-    if (!mounted) return;
-    final selected = await AppDialog.show<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(context.l10n.nginxLink),
-        children: existingSubs.map((sub) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, sub),
-            child: ListTile(
-              leading: const Icon(Icons.dns, color: Colors.green),
-              title: Text(sub),
-              subtitle: Text('$sub$dotSuffix'),
-              dense: true,
-            ),
-          );
-        }).toList(),
-      ),
-    );
-    if (selected == null) return;
-
-    // Read ports from nginx conf and update project + odoo.conf
-    final ports = await NginxService.parseOdooPorts(confDir, selected);
-    var updated = proj.copyWith(nginxSubdomain: () => selected);
-    if (ports.httpPort != null && ports.lpPort != null) {
-      updated = updated.copyWith(
-        httpPort: ports.httpPort,
-        longpollingPort: ports.lpPort,
-      );
-      await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
-    }
-    await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.nginxLinked('$selected$dotSuffix'))),
-      );
-    }
-  }
-
   Future<void> _setupNginx(ProjectInfo proj) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
     if (suffix.isEmpty || (nginx['confDir'] ?? '').toString().isEmpty) {
-      // Navigate to Settings > Nginx tab (index 5)
       HomeScreen.navigateToSettings(settingsTab: 4);
       return;
     }
@@ -301,7 +244,7 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await AppDialog.show<({String subdomain, int? port})>(
+    final result = await AppDialog.show<NginxSetupResult>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
@@ -312,13 +255,33 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     );
     if (result == null) return;
 
+    if (result.isLink) {
+      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+      // Read ports from nginx conf and update project + odoo.conf
+      final ports = await NginxService.parseOdooPorts(confDir, result.subdomain);
+      var updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
+      if (ports.httpPort != null && ports.lpPort != null) {
+        updated = updated.copyWith(
+          httpPort: ports.httpPort,
+          longpollingPort: ports.lpPort,
+        );
+        await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
+      }
+      await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix'))),
+        );
+      }
+      return;
+    }
+
     try {
       final domain = await NginxService.setupOdoo(
         subdomain: result.subdomain,
         httpPort: proj.httpPort,
         longpollingPort: proj.longpollingPort,
       );
-      // Save subdomain to project
       final updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
       await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
       if (mounted) {
@@ -544,10 +507,6 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
         onNginxSetup: (p) async {
           Navigator.pop(ctx);
           await _setupNginx(p);
-        },
-        onNginxLink: (p) async {
-          Navigator.pop(ctx);
-          await _linkNginx(p);
         },
         onNginxRemove: (p) async {
           Navigator.pop(ctx);

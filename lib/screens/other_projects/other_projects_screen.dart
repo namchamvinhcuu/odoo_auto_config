@@ -192,51 +192,6 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     });
   }
 
-  Future<void> _linkNginx(WorkspaceInfo ws) async {
-    final nginx = await NginxService.loadSettings();
-    final confDir = (nginx['confDir'] ?? '').toString();
-    final suffix = (nginx['domainSuffix'] ?? '').toString();
-    if (confDir.isEmpty || suffix.isEmpty) {
-      HomeScreen.navigateToSettings(settingsTab: 4);
-      return;
-    }
-
-    final existingSubs = await NginxService.getExistingSubdomains(confDir);
-    if (existingSubs.isEmpty) return;
-
-    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
-
-    if (!mounted) return;
-    final selected = await AppDialog.show<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(context.l10n.nginxLink),
-        children: existingSubs.map((sub) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, sub),
-            child: ListTile(
-              leading: const Icon(Icons.dns, color: Colors.green),
-              title: Text(sub),
-              subtitle: Text('$sub$dotSuffix'),
-              dense: true,
-            ),
-          );
-        }).toList(),
-      ),
-    );
-    if (selected == null) return;
-
-    final updated = ws.copyWith(nginxSubdomain: () => selected);
-    await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.nginxLinked('$selected$dotSuffix')),
-        ),
-      );
-    }
-  }
-
   Future<void> _setupNginx(WorkspaceInfo ws) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
@@ -250,7 +205,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await AppDialog.show<({String subdomain, int? port})>(
+    final result = await AppDialog.show<NginxSetupResult>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(ws.name),
@@ -262,6 +217,20 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       ),
     );
     if (result == null) return;
+
+    if (result.isLink) {
+      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+      final updated = ws.copyWith(nginxSubdomain: () => result.subdomain);
+      await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix')),
+          ),
+        );
+      }
+      return;
+    }
 
     final port = result.port ?? ws.port;
     if (port == null || port <= 0) {
@@ -418,7 +387,6 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
       onEdit: _editWorkspace,
       onSetupNginx: _setupNginx,
-      onLinkNginx: _linkNginx,
       onRemoveNginx: _removeNginx,
       onRemove: _remove,
       onSwitchBranch: _switchBranch,
@@ -439,7 +407,6 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
       onEdit: _editWorkspace,
       onSetupNginx: _setupNginx,
-      onLinkNginx: _linkNginx,
       onRemoveNginx: _removeNginx,
       onRemove: _remove,
       onSwitchBranch: _switchBranch,
