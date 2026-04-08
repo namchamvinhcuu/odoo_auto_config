@@ -177,7 +177,7 @@ class OtherProjectListView extends StatelessWidget {
                     if (exists) ...[
                       IconButton(
                         onPressed: () => onGitPull(ws),
-                        icon: const Icon(Icons.sync),
+                        icon: const Icon(Icons.download),
                         tooltip: context.l10n.gitPull,
                       ),
                       IconButton(

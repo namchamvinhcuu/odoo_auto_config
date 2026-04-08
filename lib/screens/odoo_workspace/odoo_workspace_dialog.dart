@@ -10,6 +10,8 @@ import 'repo_branch_dialog.dart';
 import 'branch_picker_dialog.dart';
 import 'workspace_commit_dialog.dart';
 import 'git_action_dialog.dart';
+import 'repo_commit_dialog.dart';
+import 'repo_create_pr_dialog.dart';
 import 'publish_modules_dialog.dart';
 
 /// Number of repos to load per batch
@@ -417,6 +419,17 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _pushSingle(RepoInfo repo) {
+    if (repo.changedFiles > 0) {
+      // Has uncommitted changes → show commit dialog first
+      AppDialog.show(
+        context: context,
+        builder: (ctx) => RepoCommitDialog(
+          repoName: repo.name,
+          repoPath: repo.path,
+        ),
+      ).then((_) => _loadRepoStatus(repo));
+      return;
+    }
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -426,6 +439,17 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         onDone: () => _loadRepoStatus(repo),
       ),
     );
+  }
+
+  void _createPrSingle(RepoInfo repo) {
+    AppDialog.show(
+      context: context,
+      builder: (ctx) => RepoCreatePRDialog(
+        repoName: repo.name,
+        repoPath: repo.path,
+        currentBranch: repo.branch,
+      ),
+    ).then((_) => _loadRepoStatus(repo));
   }
 
   void _openRepoBranchDialog(RepoInfo repo) {
@@ -668,7 +692,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         // Batch actions
         FilledButton.tonalIcon(
           onPressed: hasSelection ? _pullSelected : null,
-          icon: const Icon(Icons.sync, size: AppIconSize.md),
+          icon: const Icon(Icons.download, size: AppIconSize.md),
           label: Text(context.l10n.workspaceViewPullSelected),
         ),
         FilledButton.tonalIcon(
@@ -830,8 +854,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                 // Per-repo actions
                 const SizedBox(width: AppSpacing.md),
                 _repoActionButton(
-                  icon: Icons.sync,
+                  icon: Icons.download,
                   tooltip: context.l10n.gitPull,
+                  color: Colors.blue,
                   onPressed: () => _pullSingle(repo),
                 ),
                 if (!repo.hasUpstream)
@@ -841,19 +866,26 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                     color: Colors.green,
                     onPressed: () => _publishSingle(repo),
                   )
-                else
+                else ...[
                   _repoActionButton(
                     icon: Icons.upload,
                     tooltip: context.l10n.push,
-                    onPressed: repo.aheadCount > 0
-                        ? () => _pushSingle(repo)
-                        : null,
+                    color: Colors.orange,
+                    onPressed: () => _pushSingle(repo),
                   ),
+                  _repoActionButton(
+                    icon: Icons.merge,
+                    tooltip: context.l10n.gitBranchPR,
+                    color: Colors.purple,
+                    onPressed: () => _createPrSingle(repo),
+                  ),
+                ],
               ],
               // Remove from workspace (always visible)
               _repoActionButton(
                 icon: Icons.close,
                 tooltip: context.l10n.removeFromList,
+                color: Colors.red,
                 onPressed: () => _removeRepo(repo),
               ),
             ],

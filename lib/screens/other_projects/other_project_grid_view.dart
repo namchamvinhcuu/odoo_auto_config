@@ -221,7 +221,7 @@ class OtherProjectGridView extends StatelessWidget {
                             spacing: AppSpacing.lg,
                             children: [
                               _gridBtn(
-                                icon: Icons.sync,
+                                icon: Icons.download,
                                 tooltip: context.l10n.gitPull,
                                 onPressed: () => onGitPull(ws),
                                 iconSize: btnSize,
@@ -293,7 +293,7 @@ class OtherProjectGridView extends StatelessWidget {
             value: 'git_pull',
             child: Row(
               children: [
-                const Icon(Icons.sync, size: AppIconSize.md),
+                const Icon(Icons.download, size: AppIconSize.md),
                 const SizedBox(width: AppSpacing.sm),
                 Text(context.l10n.gitPull),
               ],

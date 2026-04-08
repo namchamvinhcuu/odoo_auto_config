@@ -126,7 +126,7 @@ class OdooProjectListView extends StatelessWidget {
                       ),
                       IconButton(
                         onPressed: () => onGitPull(proj),
-                        icon: const Icon(Icons.sync),
+                        icon: const Icon(Icons.download),
                         tooltip: context.l10n.gitPull,
                       ),
                       // Selective Pull — hidden, use Workspace View instead

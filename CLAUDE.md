@@ -577,6 +577,9 @@ Branch: `refactor/core-clean-structure`
 - **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
 - **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
 
+## Quy tắc làm việc
+- **Sau mỗi task hoàn thành**: LUÔN tóm tắt những gì đã thay đổi + liệt kê danh sách đầy đủ các file đã sửa
+
 ## Lessons Learned — KHÔNG lặp lại các lỗi này
 
 ### UI / Layout
