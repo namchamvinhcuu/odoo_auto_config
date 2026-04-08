@@ -173,6 +173,8 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
             FilledButton.tonalIcon(
               onPressed: () {
                 Navigator.pop(ctx, false);
+                // Close PR dialog, then open commit dialog
+                Navigator.pop(context);
                 AppDialog.show(
                   context: context,
                   builder: (c) => RepoCommitDialog(

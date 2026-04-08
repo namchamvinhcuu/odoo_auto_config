@@ -146,7 +146,7 @@ lib/
 ## Root files
 
 ```
-├── pubspec.yaml                 # Package config, version 2.0.8+1, dependencies
+├── pubspec.yaml                 # Package config, version 2.0.9+1, dependencies
 ├── analysis_options.yaml        # Dart lint rules
 ├── l10n.yaml                    # Localization config
 ├── release.sh                   # macOS/Linux: version bump + git tag (bash)

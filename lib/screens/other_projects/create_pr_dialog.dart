@@ -179,7 +179,8 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
             FilledButton.tonalIcon(
               onPressed: () {
                 Navigator.pop(ctx, false);
-                // Open commit dialog
+                // Close PR dialog, then open commit dialog
+                Navigator.pop(context);
                 AppDialog.show(
                   context: context,
                   builder: (c) => SimpleGitCommitDialog(
