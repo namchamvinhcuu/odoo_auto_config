@@ -685,6 +685,16 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             label: Text(context.l10n.gitViewOnGithub),
           ),
           const Spacer(),
+          IconButton(
+            onPressed: (_switching || _loading)
+                ? null
+                : () {
+                    setState(() => _message = null);
+                    _loadBranches();
+                  },
+            icon: const Icon(Icons.refresh),
+            tooltip: context.l10n.refresh,
+          ),
           AppDialog.closeButton(context, enabled: !_switching),
         ],
       ),
