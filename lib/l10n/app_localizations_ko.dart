@@ -1610,6 +1610,14 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get gitBranchDeleteRemote => 'Also delete on remote';
+
+  @override
+  String gitBranchDeleteBlockedByPR(String branch) {
+    return 'Cannot delete remote branch \"$branch\" — has open PR. Merge or close the PR first.';
+  }
+
+  @override
   String get gitBranchForceDeleteTitle => 'Force Delete?';
 
   @override

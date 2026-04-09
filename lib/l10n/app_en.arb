@@ -596,6 +596,13 @@
   "gitBranchNameHint": "feature/my-feature",
   "gitBranchDeleteTitle": "Delete Branch",
   "gitBranchDeleteConfirm": "Delete local branch \"{branch}\"?",
+  "gitBranchDeleteRemote": "Also delete on remote",
+  "gitBranchDeleteBlockedByPR": "Cannot delete remote branch \"{branch}\" — has open PR. Merge or close the PR first.",
+  "@gitBranchDeleteBlockedByPR": {
+    "placeholders": {
+      "branch": {"type": "String"}
+    }
+  },
   "@gitBranchDeleteConfirm": {
     "placeholders": {
       "branch": {"type": "String"}

@@ -161,6 +161,38 @@ class GitBranchService {
     return (success: false, output: (result.stderr as String).trim());
   }
 
+  /// Delete a remote branch (`git push origin --delete <name>`).
+  static Future<GitResult> deleteRemoteBranch(
+    String workingDir,
+    String name,
+  ) async {
+    final result = await Process.run(
+      'git',
+      ['push', 'origin', '--delete', name],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    if (result.exitCode == 0) {
+      return (success: true, output: 'Deleted remote branch $name');
+    }
+    return (success: false, output: (result.stderr as String).trim());
+  }
+
+  /// Check if a branch has an open (unmerged) PR on GitHub.
+  /// Returns true if there is at least one open PR with this branch as head.
+  static Future<bool> hasOpenPR(String workingDir, String branch) async {
+    final result = await Process.run(
+      'gh',
+      ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--limit', '1'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    if (result.exitCode != 0) return false;
+    final output = (result.stdout as String).trim();
+    // gh returns "[]" when no PRs found
+    return output.isNotEmpty && output != '[]';
+  }
+
   /// Check if a delete failure is due to unmerged branch.
   static bool isNotFullyMergedError(String errorOutput) {
     return errorOutput.contains('not fully merged');

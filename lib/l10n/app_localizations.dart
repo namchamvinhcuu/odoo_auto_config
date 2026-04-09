@@ -3004,6 +3004,18 @@ abstract class AppLocalizations {
   /// **'Delete local branch \"{branch}\"?'**
   String gitBranchDeleteConfirm(String branch);
 
+  /// No description provided for @gitBranchDeleteRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Also delete on remote'**
+  String get gitBranchDeleteRemote;
+
+  /// No description provided for @gitBranchDeleteBlockedByPR.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot delete remote branch \"{branch}\" — has open PR. Merge or close the PR first.'**
+  String gitBranchDeleteBlockedByPR(String branch);
+
   /// No description provided for @gitBranchForceDeleteTitle.
   ///
   /// In en, this message translates to:
