@@ -500,7 +500,8 @@ Quit All
 - macOS: chạy binary trực tiếp với `--child-instance` flag (`ProcessStartMode.detached`)
   AppDelegate detect flag → set `NSApp.setActivationPolicy(.accessory)` → child KHÔNG hiện Dock icon
   KHÔNG dùng `open -n -a` vì tạo LaunchServices instance riêng → 2 Dock icons
-- Windows MSIX: `Get-AppxPackage` + `Start-Process shell:AppsFolder\...!App`
+- Windows: `Platform.resolvedExecutable` trực tiếp (bypass MSIX App Model single-instance)
+  KHÔNG dùng `shell:AppsFolder` — chỉ activate cửa sổ cũ, không tạo instance mới
 - Linux: `$APPIMAGE` hoặc `Platform.resolvedExecutable`
 - UI: nút "New Window" trong NavigationRail + trong tray menu
 
@@ -573,6 +574,9 @@ Quit All
   KHÔNG dùng `Platform.resolvedExecutable` vì MSIX thay đổi exe path mỗi version
 - **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
 - **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
+- **Windows MSIX relaunch**: KHÔNG dùng `shell:AppsFolder` trong detached PowerShell — không có shell context nên URI không resolve
+  Dùng `Get-AppxPackage` → `InstallLocation` → tìm exe → `Start-Process` trực tiếp
+  Script phải đợi PID exit trước (như macOS/Linux), dùng `-ForceUpdateFromAnyVersion` cho safety
 
 ### Code quality & Cross-platform
 - **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
@@ -610,6 +614,8 @@ Quit All
   Tránh duplicate instance khi click taskbar icon hoặc chạy exe lần 2
 
 ### Multi-instance
+- **Windows launch**: KHÔNG dùng `shell:AppsFolder` / `Get-AppxPackage` — MSIX App Model single-instance
+  chỉ activate cửa sổ cũ, không tạo process mới. Dùng `Platform.resolvedExecutable` trực tiếp để bypass
 - **macOS Dock icon**: KHÔNG dùng `open -n -a` để launch child instance (tạo 2 Dock icons)
   Phải chạy binary trực tiếp với `--child-instance` flag + AppDelegate set `.accessory` activation policy
 - **Cross-process JSON corruption**: `_readConfig()` PHẢI có try-catch cho `FormatException`
