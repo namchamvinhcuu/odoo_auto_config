@@ -51,6 +51,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
 
   /// Set the instance label to a specific project name.
   /// Call from dialogs when focusing on a project. Pass null to revert to tab name.
+  // ignore: unused_element
   static void setProjectLabel(String? projectName) {
     final state = _instance;
     if (state == null) return;

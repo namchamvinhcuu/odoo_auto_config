@@ -219,15 +219,26 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     if (result == null) return;
 
     if (result.isLink) {
-      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
-      final updated = ws.copyWith(nginxSubdomain: () => result.subdomain);
-      await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix')),
-          ),
-        );
+      try {
+        final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+        final updated = ws.copyWith(nginxSubdomain: () => result.subdomain);
+        await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix')),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.nginxFailed(e.toString())),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
       return;
     }

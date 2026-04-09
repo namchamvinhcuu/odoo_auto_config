@@ -281,7 +281,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     final usedPorts = await NginxService.getUsedPorts();
 
     if (!mounted) return;
-    final result = await AppDialog.show<({String subdomain, int? port})>(
+    final result = await AppDialog.show<NginxSetupResult>(
       context: context,
       builder: (ctx) => NginxSetupDialog(
         initialSubdomain: NginxService.sanitizeSubdomain(proj.name),
@@ -293,6 +293,28 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
     if (result == null) return;
 
     try {
+      if (result.isLink) {
+        // Link existing conf — just update the subdomain, no new conf created
+        final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+        final ports = await NginxService.parseOdooPorts(confDir, result.subdomain);
+        var updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
+        if (ports.httpPort != null && ports.lpPort != null) {
+          updated = updated.copyWith(
+            httpPort: ports.httpPort,
+            longpollingPort: ports.lpPort,
+          );
+        }
+        await StorageService.removeProject(proj.path);
+        await StorageService.addProject(updated.toJson());
+        if (mounted) {
+          setState(() {
+            _createdProject = updated;
+            _logs.add('\x1B[0;32m[+] Nginx linked: ${result.subdomain}$dotSuffix\x1B[0m');
+          });
+        }
+        return;
+      }
+
       final domain = await NginxService.setupOdoo(
         subdomain: result.subdomain,
         httpPort: proj.httpPort,
