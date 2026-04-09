@@ -308,6 +308,20 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
           return path.contains(' ') ? '"$path"' : path;
         }
       }
+      // Fallback: use where.exe to find gh in PATH
+      // (MSIX apps may have restricted File.exists() but cmd /c can still resolve PATH)
+      try {
+        final where = await Process.run(
+          'where.exe', ['gh'],
+          runInShell: true,
+        );
+        if (where.exitCode == 0) {
+          final found = (where.stdout as String).trim().split('\n').first.trim();
+          if (found.isNotEmpty) {
+            return found.contains(' ') ? '"$found"' : found;
+          }
+        }
+      } catch (_) {}
     } else {
       // Linux
       final candidates = [

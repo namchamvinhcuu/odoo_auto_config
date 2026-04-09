@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
@@ -36,6 +37,8 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   bool _done = false;
   bool _loading = true;
   bool _ghInstalled = false;
+  bool _ghAuthed = false;
+  bool _ghNativeAuth = false;
   bool _noChanges = false;
   String? _token;
   String _baseBranch = 'main';
@@ -57,6 +60,23 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     super.dispose();
   }
 
+  /// Read GitHub token from project's git-repositories script.
+  Future<String?> _readProjectToken(String projectPath) async {
+    final shPath = p.join(projectPath, 'git-repositories.sh');
+    final ps1Path = p.join(projectPath, 'git-repositories.ps1');
+    String? scriptPath;
+    if (await File(ps1Path).exists()) {
+      scriptPath = ps1Path;
+    } else if (await File(shPath).exists()) {
+      scriptPath = shPath;
+    }
+    if (scriptPath == null) return null;
+    final content = await File(scriptPath).readAsString();
+    final match = RegExp(r'TOKEN\s*=\s*"([^"]*)"').firstMatch(content);
+    final token = match?.group(1) ?? '';
+    return token.isEmpty ? null : token;
+  }
+
   Future<void> _checkGh() async {
     final gh = await PlatformService.ghPath;
     final result = await Process.run(
@@ -65,7 +85,26 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       runInShell: true,
     );
     final installed = result.exitCode == 0;
-    final token = await StorageService.getDefaultGitToken();
+
+    // Read token from project's git-repositories script (project-specific account)
+    // repoPath is projectPath/addons/repoName/ → project root is 2 levels up
+    final projectPath = p.dirname(p.dirname(widget.repoPath));
+    String? token = await _readProjectToken(projectPath);
+    // Fall back to default git account token
+    token ??= await StorageService.getDefaultGitToken();
+
+    // Check if gh is already authenticated via `gh auth login`
+    bool ghNativeAuth = false;
+    if (installed) {
+      final authResult = await Process.run(
+        gh,
+        ['auth', 'status'],
+        runInShell: true,
+      );
+      ghNativeAuth = authResult.exitCode == 0;
+    }
+    // Authed = either gh auth login or app token
+    final authed = ghNativeAuth || token != null;
 
     List<String> branches = [];
     final brResult = await Process.run(
@@ -100,6 +139,8 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
+        _ghAuthed = authed;
+        _ghNativeAuth = ghNativeAuth;
         _token = token;
         _remoteBranches = branches;
         _baseBranch = base;
@@ -253,7 +294,11 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       args,
       workingDirectory: widget.repoPath,
       runInShell: true,
-      environment: _token != null ? {'GH_TOKEN': _token!} : null,
+      // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+      // This respects gh auth login / gh auth switch for multi-account users
+      environment: (!_ghNativeAuth && _token != null)
+          ? {'GH_TOKEN': _token!}
+          : null,
     );
     pr.stdout
         .transform(utf8.decoder)
@@ -339,7 +384,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
                   ),
                 ],
               )
-            else if (_token == null)
+            else if (!_ghAuthed)
               Column(
                 children: [
                   const Icon(Icons.key_off,

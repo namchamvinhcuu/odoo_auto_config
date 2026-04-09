@@ -182,13 +182,24 @@ class GitBranchService {
   /// Check if a branch has an open (unmerged) PR on GitHub.
   /// Returns true if there is at least one open PR with this branch as head.
   static Future<bool> hasOpenPR(String workingDir, String branch) async {
+    // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+    Map<String, String>? env;
     final token = await StorageService.getDefaultGitToken();
+    if (token != null) {
+      final authCheck = await Process.run(
+        'gh', ['auth', 'status'],
+        runInShell: true,
+      );
+      if (authCheck.exitCode != 0) {
+        env = {'GH_TOKEN': token};
+      }
+    }
     final result = await Process.run(
       'gh',
       ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--limit', '1'],
       workingDirectory: workingDir,
       runInShell: true,
-      environment: token != null ? {'GH_TOKEN': token} : null,
+      environment: env,
     );
     if (result.exitCode != 0) return false;
     final output = (result.stdout as String).trim();

@@ -36,6 +36,8 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
   bool _done = false;
   bool _loading = true;
   bool _ghInstalled = false;
+  bool _ghAuthed = false;
+  bool _ghNativeAuth = false;
   bool _noChanges = false;
   String? _token;
   String _baseBranch = 'main';
@@ -67,6 +69,18 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     );
     final installed = result.exitCode == 0;
     final token = await StorageService.getDefaultGitToken();
+
+    // Check if gh is already authenticated via `gh auth login`
+    bool ghNativeAuth = false;
+    if (installed) {
+      final authResult = await Process.run(
+        gh,
+        ['auth', 'status'],
+        runInShell: true,
+      );
+      ghNativeAuth = authResult.exitCode == 0;
+    }
+    final authed = ghNativeAuth || token != null;
 
     // Load remote branches
     List<String> branches = [];
@@ -104,6 +118,8 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
+        _ghAuthed = authed;
+        _ghNativeAuth = ghNativeAuth;
         _token = token;
         _remoteBranches = branches;
         _baseBranch = base;
@@ -258,7 +274,11 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
       args,
       workingDirectory: widget.projectPath,
       runInShell: true,
-      environment: _token != null ? {'GH_TOKEN': _token!} : null,
+      // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+      // This respects gh auth login / gh auth switch for multi-account users
+      environment: (!_ghNativeAuth && _token != null)
+          ? {'GH_TOKEN': _token!}
+          : null,
     );
     pr.stdout
         .transform(utf8.decoder)
@@ -347,7 +367,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
                   ),
                 ],
               )
-            else if (_token == null)
+            else if (!_ghAuthed)
               Column(
                 children: [
                   const Icon(Icons.key_off,
