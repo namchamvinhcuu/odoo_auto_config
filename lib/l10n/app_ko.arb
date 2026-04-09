@@ -517,6 +517,8 @@
   "closeBehavior": "닫기 동작",
   "closeBehaviorExit": "앱 종료",
   "closeBehaviorTray": "시스템 트레이로 최소화",
+  "newWindow": "New Window",
+  "quitAll": "Quit All",
   "trayShow": "표시",
   "trayQuit": "종료",
 

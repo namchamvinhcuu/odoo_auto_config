@@ -39,7 +39,8 @@ lib/
 │   ├── venv_service.dart            # VenvService — tạo/scan/inspect venv, pip install
 │   ├── folder_structure_service.dart # FolderStructureService — tạo cấu trúc thư mục Odoo project với symlinks
 │   ├── vscode_config_service.dart   # VscodeConfigService — sinh .vscode/launch.json (debugpy)
-│   ├── tray_service.dart            # TrayService — system tray: init, show/hide, close behavior setting
+│   ├── instance_service.dart         # InstanceService — multi-instance: registry, IPC signals, PID check, launch
+│   ├── tray_service.dart            # TrayService — system tray: single icon, submenu Show/New Window/Quit All
 │   ├── update_service.dart          # UpdateInfo, UpdateService — auto-update: check GitHub releases, download, install
 │   ├── git_service.dart             # GitService — Git: check installed, resolve absolute path (cross-platform)
 │   └── git_branch_service.dart      # GitBranchService — shared git branch operations (switch, create, delete, publish, clean stale, getRemoteUrl, openInBrowser)

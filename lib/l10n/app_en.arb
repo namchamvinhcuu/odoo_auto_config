@@ -551,6 +551,8 @@
   "closeBehavior": "Close behavior",
   "closeBehaviorExit": "Exit app",
   "closeBehaviorTray": "Minimize to system tray",
+  "newWindow": "New Window",
+  "quitAll": "Quit All",
   "trayShow": "Show",
   "trayQuit": "Quit",
 

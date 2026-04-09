@@ -14,26 +14,22 @@ enum WindowSize {
 class ThemeState {
   final ThemeMode themeMode;
   final Color seedColor;
-  final String closeBehavior;
   final WindowSize windowSize;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
     this.seedColor = const Color(0xFF714B67),
-    this.closeBehavior = 'exit',
     this.windowSize = WindowSize.large,
   });
 
   ThemeState copyWith({
     ThemeMode? themeMode,
     Color? seedColor,
-    String? closeBehavior,
     WindowSize? windowSize,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
       seedColor: seedColor ?? this.seedColor,
-      closeBehavior: closeBehavior ?? this.closeBehavior,
       windowSize: windowSize ?? this.windowSize,
     );
   }
@@ -62,7 +58,6 @@ class ThemeNotifier extends Notifier<ThemeState> {
     final settings = await StorageService.loadSettings();
     final mode = settings['themeMode'] as String?;
     final colorValue = settings['seedColor'] as int?;
-    final behavior = (settings['closeBehavior'] ?? 'exit').toString();
     final savedSize = settings['windowSize'] as String?;
 
     state = ThemeState(
@@ -74,7 +69,6 @@ class ThemeNotifier extends Notifier<ThemeState> {
           : ThemeMode.system,
       seedColor:
           colorValue != null ? Color(colorValue) : const Color(0xFF714B67),
-      closeBehavior: behavior,
       windowSize: savedSize != null
           ? WindowSize.values.firstWhere(
               (w) => w.name == savedSize,
@@ -92,13 +86,6 @@ class ThemeNotifier extends Notifier<ThemeState> {
   Future<void> setSeedColor(Color color) async {
     state = state.copyWith(seedColor: color);
     await _save();
-  }
-
-  Future<void> setCloseBehavior(String value) async {
-    state = state.copyWith(closeBehavior: value);
-    await StorageService.updateSettings((settings) {
-      settings['closeBehavior'] = value;
-    });
   }
 
   Future<void> setWindowSize(WindowSize ws) async {

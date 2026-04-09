@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -8,6 +7,7 @@ import 'package:odoo_auto_config/generated/version.dart';
 import 'package:odoo_auto_config/providers/docker_status_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/providers/update_provider.dart';
+import 'package:odoo_auto_config/services/instance_service.dart';
 import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:odoo_auto_config/services/update_service.dart';
 import 'other_projects/other_projects_screen.dart';
@@ -30,11 +30,6 @@ class HomeScreen extends ConsumerStatefulWidget {
     _HomeScreenState._instance?._recheckViaProvider();
   }
 
-  /// Update cached close behavior — no longer needed, reads from themeProvider
-  static void updateCloseBehavior(String value) {
-    // Kept for backward compatibility — provider is now source of truth
-  }
-
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
@@ -44,7 +39,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   int _selectedIndex = 0;
   final List<int> _backHistory = [];
   final List<int> _forwardHistory = [];
-  String get _closeBehavior => ref.read(themeProvider).closeBehavior;
+  String? _projectLabel;
+
+  static const _tabLabels = [
+    'Odoo Projects',
+    'Other Projects',
+    'Profiles',
+    'Environment',
+    'Settings',
+  ];
+
+  /// Set the instance label to a specific project name.
+  /// Call from dialogs when focusing on a project. Pass null to revert to tab name.
+  static void setProjectLabel(String? projectName) {
+    final state = _instance;
+    if (state == null) return;
+    state._projectLabel = projectName;
+    state._updateInstanceLabel();
+  }
+
+  void _updateInstanceLabel() {
+    final label = _projectLabel ?? _tabLabels[_selectedIndex];
+    InstanceService.updateLabel(label);
+  }
 
   void _goToTab(int index) {
     if (index != _selectedIndex) {
@@ -52,18 +69,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
       _forwardHistory.clear();
     }
     setState(() => _selectedIndex = index);
+    _projectLabel = null;
+    _updateInstanceLabel();
   }
 
   void _goBack() {
     if (_backHistory.isEmpty) return;
     _forwardHistory.add(_selectedIndex);
     setState(() => _selectedIndex = _backHistory.removeLast());
+    _projectLabel = null;
+    _updateInstanceLabel();
   }
 
   void _goForward() {
     if (_forwardHistory.isEmpty) return;
     _backHistory.add(_selectedIndex);
     setState(() => _selectedIndex = _forwardHistory.removeLast());
+    _projectLabel = null;
+    _updateInstanceLabel();
   }
   void _recheckViaProvider() {
     ref.read(dockerStatusProvider.notifier).check();
@@ -74,7 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     super.initState();
     _instance = this;
     windowManager.addListener(this);
-    // Docker check and update check are auto-triggered by providers in build()
+    _updateInstanceLabel();
   }
 
 
@@ -114,37 +137,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
 
   @override
   void onWindowClose() async {
-    // macOS: onWindowClose works normally via setPreventClose
-    if (_closeBehavior == 'tray') {
-      await TrayService.hideToTray();
-    } else {
-      await TrayService.destroy();
-      await windowManager.destroy();
-    }
+    // macOS/Linux: always minimize to tray (multi-instance mode)
+    await TrayService.hideToTray();
   }
-
-  @override
-  void onWindowEvent(String eventName) {
-    // Windows: WM_CLOSE is handled natively (ShowWindow SW_HIDE in flutter_window.cpp),
-    // so onWindowClose never fires. Instead, when window is hidden and close behavior
-    // is 'exit', we quit the app. The 'hide' event fires for both minimize and close,
-    // but minimize also fires 'minimize' event first, so we use the flag to distinguish.
-    if (!Platform.isWindows) return;
-    if (eventName == 'minimize') {
-      _isMinimizing = true;
-    } else if (eventName == 'hide') {
-      if (_isMinimizing) {
-        _isMinimizing = false;
-        return;
-      }
-      // hide from X button (not minimize)
-      if (_closeBehavior == 'exit') {
-        TrayService.destroy().then((_) => exit(0));
-      }
-    }
-  }
-
-  bool _isMinimizing = false;
 
   static const _screens = <Widget>[
     OdooProjectsScreen(),
@@ -380,6 +375,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                             iconSize: AppIconSize.lg,
                           ),
                         ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      IconButton(
+                        onPressed: () => InstanceService.launchNewInstance(),
+                        icon: const Icon(Icons.open_in_new),
+                        tooltip: context.l10n.newWindow,
+                        iconSize: AppIconSize.lg,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       TextButton.icon(

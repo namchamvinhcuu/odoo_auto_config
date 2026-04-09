@@ -517,6 +517,8 @@
   "closeBehavior": "Khi đóng cửa sổ",
   "closeBehaviorExit": "Thoát app",
   "closeBehaviorTray": "Thu nhỏ vào system tray",
+  "newWindow": "New Window",
+  "quitAll": "Quit All",
   "trayShow": "Hiện",
   "trayQuit": "Thoát",
 

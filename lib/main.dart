@@ -8,6 +8,7 @@ import 'package:odoo_auto_config/providers/locale_provider.dart';
 import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/services/instance_service.dart';
 import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -47,8 +48,27 @@ void main() async {
   await windowManager.center();
   await windowManager.show();
 
-  // Init system tray
-  await TrayService.init(showLabel: 'Show', quitLabel: 'Quit');
+  // Multi-instance: register this instance and try to own the tray
+  await InstanceService.register();
+  final isTrayOwner = await InstanceService.tryAcquireTrayOwnership();
+  if (isTrayOwner) {
+    await TrayService.init();
+  }
+
+  // Start watching for IPC signals (show, quit_all, instance changes)
+  InstanceService.startWatching(
+    onShow: () async {
+      await windowManager.show();
+      await windowManager.focus();
+    },
+    onQuitAll: () async {
+      await TrayService.cleanup();
+      exit(0);
+    },
+    onInstancesChanged: isTrayOwner
+        ? () => TrayService.rebuildMenu()
+        : null,
+  );
 
   runApp(
     UncontrolledProviderScope(

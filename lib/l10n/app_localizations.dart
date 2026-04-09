@@ -2860,6 +2860,18 @@ abstract class AppLocalizations {
   /// **'Minimize to system tray'**
   String get closeBehaviorTray;
 
+  /// No description provided for @newWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'New Window'**
+  String get newWindow;
+
+  /// No description provided for @quitAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit All'**
+  String get quitAll;
+
   /// No description provided for @trayShow.
   ///
   /// In en, this message translates to:

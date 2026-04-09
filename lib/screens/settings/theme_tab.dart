@@ -5,7 +5,6 @@ import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/providers/locale_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/services/tray_service.dart';
-import 'package:odoo_auto_config/screens/home_screen.dart';
 
 class ThemeTab extends ConsumerWidget {
   const ThemeTab({super.key});
@@ -109,29 +108,17 @@ class ThemeTab extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xxxl),
 
-          // Close behavior (only macOS/Windows)
+          // Close behavior — forced to minimize to tray (multi-instance mode)
           if (TrayService.supported) ...[
             Text(context.l10n.closeBehavior,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.md),
-            SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'exit',
-                  icon: const Icon(Icons.close),
-                  label: Text(context.l10n.closeBehaviorExit),
-                ),
-                ButtonSegment(
-                  value: 'tray',
-                  icon: const Icon(Icons.hide_source),
-                  label: Text(context.l10n.closeBehaviorTray),
-                ),
+            Row(
+              children: [
+                const Icon(Icons.hide_source, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.closeBehaviorTray),
               ],
-              selected: {theme.closeBehavior},
-              onSelectionChanged: (v) {
-                themeNotifier.setCloseBehavior(v.first);
-                HomeScreen.updateCloseBehavior(v.first);
-              },
             ),
             const SizedBox(height: AppSpacing.xxxl),
           ],

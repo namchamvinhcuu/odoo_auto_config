@@ -1560,6 +1560,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closeBehaviorTray => 'Minimize to system tray';
 
   @override
+  String get newWindow => 'New Window';
+
+  @override
+  String get quitAll => 'Quit All';
+
+  @override
   String get trayShow => 'Show';
 
   @override

@@ -1556,6 +1556,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get closeBehaviorTray => 'Thu nhỏ vào system tray';
 
   @override
+  String get newWindow => 'New Window';
+
+  @override
+  String get quitAll => 'Quit All';
+
+  @override
   String get trayShow => 'Hiện';
 
   @override
