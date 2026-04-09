@@ -678,7 +678,12 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                     final url =
                         await GitBranchService.getRemoteUrl(widget.path);
                     if (url != null) {
-                      await GitBranchService.openInBrowser(url);
+                      final branch = _current;
+                      final isDefault =
+                          branch == 'main' || branch == 'master';
+                      final target =
+                          isDefault ? url : '$url/tree/$branch';
+                      await GitBranchService.openInBrowser(target);
                     }
                   },
             icon: const Icon(Icons.open_in_new, size: AppIconSize.md),
