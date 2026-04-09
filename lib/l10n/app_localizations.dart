@@ -2962,6 +2962,12 @@ abstract class AppLocalizations {
   /// **'Create Branch'**
   String get gitBranchCreateTitle;
 
+  /// No description provided for @gitBranchBaseBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Base branch'**
+  String get gitBranchBaseBranch;
+
   /// No description provided for @gitBranchNameLabel.
   ///
   /// In en, this message translates to:

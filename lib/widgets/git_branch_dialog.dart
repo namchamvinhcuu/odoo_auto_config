@@ -123,52 +123,95 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
 
   Future<void> _createBranch() async {
     final controller = TextEditingController();
-    final name = await AppDialog.show<String>(
+    final allBranches = [..._local, ..._remote.map((r) => 'origin/$r')];
+    var selectedBase = _current;
+    final result2 = await AppDialog.show<({String name, String base})>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Text(ctx.l10n.gitBranchCreateTitle),
-            const Spacer(),
-            AppDialog.closeButton(ctx),
-          ],
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: ctx.l10n.gitBranchNameLabel,
-            hintText: ctx.l10n.gitBranchNameHint,
-            border: const OutlineInputBorder(),
-            isDense: true,
-          ),
-          onSubmitted: (v) {
-            if (v.trim().isNotEmpty) Navigator.pop(ctx, v.trim());
+      builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final hasName = controller.text.trim().isNotEmpty;
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Text(ctx.l10n.gitBranchCreateTitle),
+                  const Spacer(),
+                  AppDialog.closeButton(ctx),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: ctx.l10n.gitBranchNameLabel,
+                      hintText: ctx.l10n.gitBranchNameHint,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (_) => setDialogState(() {}),
+                    onSubmitted: (v) {
+                      if (v.trim().isNotEmpty) {
+                        Navigator.pop(
+                            ctx, (name: v.trim(), base: selectedBase));
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedBase,
+                    decoration: InputDecoration(
+                      labelText: ctx.l10n.gitBranchBaseBranch,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    isExpanded: true,
+                    items: allBranches
+                        .map(
+                            (b) => DropdownMenuItem(value: b, child: Text(b)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setDialogState(() => selectedBase = v);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                FilledButton(
+                  onPressed: hasName
+                      ? () {
+                          Navigator.pop(ctx,
+                              (name: controller.text.trim(), base: selectedBase));
+                        }
+                      : null,
+                  child: Text(ctx.l10n.gitBranchCreate),
+                ),
+              ],
+            );
           },
         ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              final v = controller.text.trim();
-              if (v.isNotEmpty) Navigator.pop(ctx, v);
-            },
-            child: Text(ctx.l10n.gitBranchCreate),
-          ),
-        ],
-      ),
     );
     controller.dispose();
-    if (name == null || !mounted) return;
+    if (result2 == null || !mounted) return;
 
-    final result = await GitBranchService.createBranch(widget.path, name);
+    final baseBranch =
+        result2.base == _current ? null : result2.base;
+    final result = await GitBranchService.createBranch(
+      widget.path,
+      result2.name,
+      baseBranch: baseBranch,
+    );
     if (!mounted) return;
     if (result.success) {
       setState(() {
-        _current = name;
+        _current = result2.name;
         _message = result.output;
         _isError = false;
       });
-      widget.onChanged(name);
+      widget.onChanged(result2.name);
       _loadBranches();
     } else {
       setState(() {
