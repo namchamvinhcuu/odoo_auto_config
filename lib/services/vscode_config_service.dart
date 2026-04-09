@@ -67,5 +67,3 @@ class VscodeConfigService {
     return logs;
   }
 }
-
-// test gh
