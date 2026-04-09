@@ -271,7 +271,7 @@ Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
     await File(scriptPath).writeAsString(script);
     await Process.start(
       'powershell',
-      ['-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+      ['-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
       mode: ProcessStartMode.detached,
       runInShell: true,
     );
