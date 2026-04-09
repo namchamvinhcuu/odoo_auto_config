@@ -269,9 +269,7 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         'C:\\ProgramData\\chocolatey\\bin\\mkcert.exe',
       ];
       for (final path in candidates) {
-        if (await File(path).exists()) {
-          return path.contains(' ') ? '"$path"' : path;
-        }
+        if (await File(path).exists()) return path;
       }
     } else if (isMacOS) {
       final candidates = [
@@ -303,13 +301,9 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         '$localAppData\\Programs\\gh\\bin\\gh.exe',
       ];
       for (final path in candidates) {
-        if (await File(path).exists()) {
-          // Quote paths with spaces for runInShell: true (cmd /c splits at spaces)
-          return path.contains(' ') ? '"$path"' : path;
-        }
+        if (await File(path).exists()) return path;
       }
       // Fallback: use where.exe to find gh in PATH
-      // (MSIX apps may have restricted File.exists() but cmd /c can still resolve PATH)
       try {
         final where = await Process.run(
           'where.exe', ['gh'],
@@ -317,9 +311,7 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         );
         if (where.exitCode == 0) {
           final found = (where.stdout as String).trim().split('\n').first.trim();
-          if (found.isNotEmpty) {
-            return found.contains(' ') ? '"$found"' : found;
-          }
+          if (found.isNotEmpty) return found;
         }
       } catch (_) {}
     } else {
