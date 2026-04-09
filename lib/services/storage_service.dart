@@ -6,10 +6,21 @@ import 'package:path/path.dart' as p;
 class StorageService {
   static const _configFileName = 'odoo_auto_config.json';
 
+  static String get _configDir {
+    final home = Platform.environment['HOME'] ??
+        Platform.environment['USERPROFILE'] ??
+        '.';
+    return p.join(home, '.config', 'odoo_auto_config');
+  }
+
+  static String get _configPath => p.join(_configDir, _configFileName);
+
+  static String get _lockPath => p.join(_configDir, '.lock');
+
   /// Serialize all read-modify-write operations to prevent race conditions.
-  /// Without this lock, concurrent saves (e.g. saveSettings + saveWorkspaces)
-  /// can overwrite each other's data — causing nginx config, git accounts, etc.
-  /// to be lost.
+  /// In-process lock: prevents concurrent async calls within a single process.
+  /// Cross-process lock: file-based exclusive lock prevents multiple instances
+  /// from corrupting the shared config file.
   static Future<void> _lock = Future.value();
 
   static Future<T> _synchronized<T>(Future<T> Function() fn) {
@@ -18,20 +29,26 @@ class StorageService {
     _lock = completer.future.then((_) {}, onError: (_) {});
     () async {
       await prev;
+      // Cross-process file lock (with timeout to avoid hanging)
+      final lockFile = File(_lockPath);
+      await lockFile.parent.create(recursive: true);
+      final raf = await lockFile.open(mode: FileMode.write);
       try {
+        await raf.lock(FileLock.exclusive).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => raf, // proceed without lock after timeout
+        );
         completer.complete(await fn());
       } catch (e, s) {
         completer.completeError(e, s);
+      } finally {
+        try {
+          await raf.unlock();
+        } catch (_) {}
+        await raf.close();
       }
     }();
     return completer.future;
-  }
-
-  static String get _configPath {
-    final home = Platform.environment['HOME'] ??
-        Platform.environment['USERPROFILE'] ??
-        '.';
-    return p.join(home, '.config', 'odoo_auto_config', _configFileName);
   }
 
   static Future<Map<String, dynamic>> _readConfig() async {

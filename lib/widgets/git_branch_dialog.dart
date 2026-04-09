@@ -684,7 +684,19 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Text(context.l10n.gitBranches),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(context.l10n.gitBranches),
+              Text(
+                widget.displayName,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+              ),
+            ],
+          ),
           if (_current.isNotEmpty) ...[
             const SizedBox(width: AppSpacing.sm),
             Chip(

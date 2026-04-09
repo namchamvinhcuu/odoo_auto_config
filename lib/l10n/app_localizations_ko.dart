@@ -1528,6 +1528,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get closeBehaviorTray => '시스템 트레이로 최소화';
 
   @override
+  String get newWindow => 'New Window';
+
+  @override
+  String get quitAll => 'Quit All';
+
+  @override
   String get trayShow => '표시';
 
   @override

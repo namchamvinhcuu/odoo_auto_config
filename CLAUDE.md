@@ -106,39 +106,34 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
   (VD: bấm Setup Nginx khi chưa config → tự động chuyển sang Settings > Nginx tab)
 
-## Tính năng System Tray
+## Tính năng System Tray (Multi-Instance)
 - **Package**: `system_tray 2.0.3` — macOS, Windows, Linux
 - **Icon**: `assets/tray_icon.png` (512x512, package tự resize), `.ico` cho Windows
   `title: ''` — chỉ hiện icon, KHÔNG hiện text cạnh icon
-- **Init**: luôn init khi app khởi động (main.dart), tray icon luôn hiện
-- **Close behavior**: setting trong Settings > Theme tab
-  `'exit'` (mặc định): đóng cửa sổ = thoát app
-  `'tray'`: đóng cửa sổ = ẩn vào tray, click tray icon để mở lại
-- **Events**: click/double-click → show, right-click → menu (Show / Quit)
-- **Hỗ trợ**: macOS + Windows. `TrayService.supported` = `Platform.isMacOS || Platform.isWindows`
-  Linux: tạm tắt (tạo duplicate instance)
+- **Single tray icon**: chỉ instance đầu tiên (tray owner) tạo tray icon
+  Các instance khác skip tray init. Tray owner xác định bằng `.tray.lock` file lock.
+- **Close behavior**: luôn minimize to tray (không có lựa chọn "Exit app")
+  Click X → `TrayService.hideToTray()` → `windowManager.hide()`
+  HomeScreen `onWindowClose` luôn gọi `hideToTray()` (macOS/Linux)
+  Windows: native WM_CLOSE trong `flutter_window.cpp` hide window, không cần xử lý thêm ở Dart
+- **Tray menu** (SubMenu style):
+  ```
+  Show  ▸  Instance 1, Instance 2, ...
+  ──────────
+  New Window
+  ──────────
+  Quit All
+  ```
+- **Events**: click/double-click → show tray owner's window, right-click → menu
+- **Hỗ trợ**: macOS + Windows + Linux. `TrayService.supported` = tất cả desktop
 - **macOS**: dùng `windowManager.setPreventClose(true)` + `onWindowClose` callback
   `applicationShouldTerminateAfterLastWindowClosed` PHẢI return `false`
-  Không cần `setSkipTaskbar`, chỉ `hide()/show()`
-- **Windows**: cơ chế hoàn toàn khác macOS (xem chi tiết bên dưới)
-  - `window_manager 0.5.1` + Flutter 3.41: `setPreventClose(true)` KHÔNG hoạt động
-    Plugin intercept `WM_CLOSE` nhưng `onWindowClose` callback không fire
-  - **Giải pháp**: xử lý `WM_CLOSE` ở native C++ level
-    `flutter_window.cpp`: `case WM_CLOSE: ShowWindow(hwnd, SW_HIDE); return 0;`
-    Window bị hide thay vì destroy, tray icon giữ nguyên
-  - **Close behavior exit**: dùng `onWindowEvent('hide')` trong HomeScreen
-    Phân biệt minimize vs close bằng flag `_isMinimizing`
-    (`minimize` event fire trước `hide` khi minimize, nhưng không fire khi nhấn X)
-  - **Close behavior tray**: window đã bị hide bởi native code, không cần làm gì thêm
-  - `main.cpp`: `SetQuitOnClose(false)` — QUAN TRỌNG, nếu `true` thì `PostQuitMessage` sẽ
-    thoát app khi window bị destroy
-  - **KHÔNG dùng `setSkipTaskbar`** trên Windows — gây native crash với window_manager 0.5.1
-  - **Single instance**: Named mutex `WorkspaceConfiguration_SingleInstance` trong `main.cpp`
-    Nếu mutex đã tồn tại → `FindWindow` + `ShowWindow(SW_SHOW)` + `SetForegroundWindow` → exit
-    Tránh tạo duplicate instance khi click taskbar icon hoặc chạy exe lần 2
-- **WindowListener**: `onWindowClose` trong HomeScreen (macOS), `onWindowEvent` (Windows)
-  Cache `_closeBehavior` trong initState, KHÔNG async đọc file trong callback
-  `HomeScreen.updateCloseBehavior(value)` sync khi user đổi setting
+- **Windows**: xử lý `WM_CLOSE` ở native C++ level
+  `flutter_window.cpp`: `case WM_CLOSE: ShowWindow(hwnd, SW_HIDE); return 0;`
+  `main.cpp`: `SetQuitOnClose(false)` — QUAN TRỌNG
+  **KHÔNG dùng `setSkipTaskbar`** trên Windows — gây native crash
+- **Multi-instance**: Không còn single-instance enforcement
+  Windows: đã xóa mutex. Linux: `G_APPLICATION_NON_UNIQUE`
 - **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
 
 ## Tính năng Auto-Update
@@ -462,6 +457,77 @@ Branch: `refactor/core-clean-structure`
 - **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
 - **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
 - **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
+
+### Multi-Instance — Đang triển khai
+Cho phép mở nhiều cửa sổ app (separate processes) để thao tác nhiều projects cùng lúc.
+
+**Kiến trúc:**
+- Mỗi instance là 1 OS process riêng (Flutter không hỗ trợ true multi-window)
+- **Single tray icon** — instance đầu tiên giữ quyền via file lock, các instance khác không tạo tray
+- **Close behavior forced = "tray"** — bỏ lựa chọn "Exit app", luôn minimize to tray
+- **Quit = Quit All** — tắt tất cả instances cùng lúc
+- **File-based IPC** — giao tiếp giữa instances qua file system
+
+**IPC Directory** (`~/.config/odoo_auto_config/instances/`):
+- `<pid>.json` — registry mỗi instance: `{pid, label, started}`
+- `.tray.lock` — exclusive file lock (tray owner giữ open)
+- `<pid>.show` — signal file: show window của instance đó
+- `.quit_all` — signal file: tất cả instances exit
+
+**Tray menu** (submenu style):
+```
+Show  ▸  Instance 1
+         Instance 2
+──────────
+New Window
+──────────
+Quit All
+```
+
+**Tray ownership:**
+- Startup: try acquire `.tray.lock` (exclusive). Thành công → init tray, làm tray owner
+- Thất bại → skip tray init (instance khác đã owns)
+- Click/double-click tray icon → show tray owner's window
+- Tray owner watch `instances/` directory → rebuild menu khi instance thêm/bớt
+
+**Show signaling:**
+- Tray owner tạo file `<pid>.show` → target instance detect via `Directory.watch()` → show window → delete file
+
+**Quit All signaling:**
+- Tray owner tạo `.quit_all` → tất cả instances detect → cleanup → `exit(0)`
+
+**Instance launcher** (`InstanceService.launchNewInstance()`):
+- macOS: `open -n -a <app_path>` (`ProcessStartMode.detached`)
+- Windows MSIX: `Get-AppxPackage` + `Start-Process shell:AppsFolder\...!App`
+- Linux: `$APPIMAGE` hoặc `Platform.resolvedExecutable`
+- UI: nút "New Window" trong NavigationRail + trong tray menu
+
+**Cross-process storage:**
+- `StorageService._synchronized()` dùng cả in-process Future lock + cross-process `RandomAccessFile.lock(FileLock.exclusive)`
+- Lock file: `~/.config/odoo_auto_config/.lock`
+
+**Stale PID cleanup** (crash recovery):
+- macOS/Linux: `kill -0 <pid>` (exit code 0 = alive)
+- Windows: `tasklist /FI "PID eq <pid>"`
+- Dead PIDs → xóa `.json` registry file
+
+**Native changes:**
+- Windows `main.cpp`: xóa mutex `WorkspaceConfiguration_SingleInstance`
+- Linux `my_application.cc`: `G_APPLICATION_DEFAULT_FLAGS` → `G_APPLICATION_NON_UNIQUE`
+- macOS: không thay đổi native (dùng `open -n` để mở instance mới)
+
+**Files chính:**
+- `lib/services/instance_service.dart` — **MỚI**: registry, IPC, PID check, launch
+- `lib/services/tray_service.dart` — **REFACTOR LỚN**: ownership, submenu, watcher, signals
+- `lib/services/storage_service.dart` — thêm cross-process file lock
+- `lib/screens/home_screen.dart` — always hide-to-tray, nút "New Window"
+- `lib/screens/settings/theme_tab.dart` — xóa close behavior toggle
+- `lib/providers/theme_provider.dart` — hardcode closeBehavior='tray'
+
+**Future enhancements (chưa làm):**
+- Per-instance quit (submenu Quit ▸ [Instance 1, ..., All]) + auto-transfer tray ownership
+- Instance label hiện tên project/tab thay vì "Instance N"
+- Settings sync giữa instances via file watcher
 
 ## Quy tắc làm việc
 - **Sau mỗi task hoàn thành**: LUÔN tóm tắt những gì đã thay đổi + liệt kê danh sách đầy đủ các file đã sửa
