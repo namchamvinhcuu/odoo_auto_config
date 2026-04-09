@@ -229,12 +229,14 @@ class InstanceService {
   }
 
   static Future<void> _launchMacOS() async {
-    // Platform.resolvedExecutable → .../App.app/Contents/MacOS/binary
+    // Run the binary directly with --child-instance flag.
+    // AppDelegate detects this flag and sets .accessory activation policy,
+    // so the child instance does NOT show a separate Dock icon.
+    // (Using `open -n -a` would register a new LaunchServices instance → 2 Dock icons)
     final execPath = Platform.resolvedExecutable;
-    final appPath = p.dirname(p.dirname(p.dirname(execPath)));
     await Process.start(
-      'open',
-      ['-n', '-a', appPath],
+      execPath,
+      ['--child-instance'],
       mode: ProcessStartMode.detached,
       runInShell: true,
     );

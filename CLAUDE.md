@@ -497,7 +497,9 @@ Quit All
 - Tray owner tạo `.quit_all` → tất cả instances detect → cleanup → `exit(0)`
 
 **Instance launcher** (`InstanceService.launchNewInstance()`):
-- macOS: `open -n -a <app_path>` (`ProcessStartMode.detached`)
+- macOS: chạy binary trực tiếp với `--child-instance` flag (`ProcessStartMode.detached`)
+  AppDelegate detect flag → set `NSApp.setActivationPolicy(.accessory)` → child KHÔNG hiện Dock icon
+  KHÔNG dùng `open -n -a` vì tạo LaunchServices instance riêng → 2 Dock icons
 - Windows MSIX: `Get-AppxPackage` + `Start-Process shell:AppsFolder\...!App`
 - Linux: `$APPIMAGE` hoặc `Platform.resolvedExecutable`
 - UI: nút "New Window" trong NavigationRail + trong tray menu
@@ -505,6 +507,7 @@ Quit All
 **Cross-process storage:**
 - `StorageService._synchronized()` dùng cả in-process Future lock + cross-process `RandomAccessFile.lock(FileLock.exclusive)`
 - Lock file: `~/.config/odoo_auto_config/.lock`
+- `_readConfig()` có retry 1 lần khi JSON bị corrupt (instance khác đang write) → tránh crash
 
 **Stale PID cleanup** (crash recovery):
 - macOS/Linux: `kill -0 <pid>` (exit code 0 = alive)
@@ -605,6 +608,16 @@ Quit All
   `minimize` event fire trước `hide` khi minimize, nhưng KHÔNG fire khi nhấn X → dùng để phân biệt
 - **Single instance**: Named mutex trong `main.cpp`, `FindWindow` + `ShowWindow` để activate cái cũ
   Tránh duplicate instance khi click taskbar icon hoặc chạy exe lần 2
+
+### Multi-instance
+- **macOS Dock icon**: KHÔNG dùng `open -n -a` để launch child instance (tạo 2 Dock icons)
+  Phải chạy binary trực tiếp với `--child-instance` flag + AppDelegate set `.accessory` activation policy
+- **Cross-process JSON corruption**: `_readConfig()` PHẢI có try-catch cho `FormatException`
+  Khi instance A đang write config JSON, instance B có thể đọc được file bị cắt ngang (partial write)
+  → `jsonDecode` throw `FormatException` → crash nếu không catch
+  Fix: retry 1 lần sau 100ms delay. Nếu vẫn fail → return empty map (benign failure)
+- **Nginx link path**: PHẢI có try-catch quanh `updateProject`/`updateWorkspace`
+  Path "link existing" trong `_setupNginx` từng thiếu try-catch → crash khi cross-process write conflict
 
 ### Process / Shell
 - **`runInShell: true`** bắt buộc cho mọi `Process.run` trong AOT/release mode

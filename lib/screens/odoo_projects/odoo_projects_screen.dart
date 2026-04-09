@@ -256,22 +256,33 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
     if (result == null) return;
 
     if (result.isLink) {
-      final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
-      // Read ports from nginx conf and update project + odoo.conf
-      final ports = await NginxService.parseOdooPorts(confDir, result.subdomain);
-      var updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
-      if (ports.httpPort != null && ports.lpPort != null) {
-        updated = updated.copyWith(
-          httpPort: ports.httpPort,
-          longpollingPort: ports.lpPort,
-        );
-        await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
-      }
-      await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix'))),
-        );
+      try {
+        final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+        // Read ports from nginx conf and update project + odoo.conf
+        final ports = await NginxService.parseOdooPorts(confDir, result.subdomain);
+        var updated = proj.copyWith(nginxSubdomain: () => result.subdomain);
+        if (ports.httpPort != null && ports.lpPort != null) {
+          updated = updated.copyWith(
+            httpPort: ports.httpPort,
+            longpollingPort: ports.lpPort,
+          );
+          await _updateOdooConf(proj.path, ports.httpPort!, ports.lpPort!);
+        }
+        await ref.read(odooProjectsProvider.notifier).updateProject(proj, updated);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix'))),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.nginxFailed(e.toString())),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
       return;
     }

@@ -56,7 +56,20 @@ class StorageService {
     if (!await file.exists()) return {};
     final content = await file.readAsString();
     if (content.isEmpty) return {};
-    return jsonDecode(content) as Map<String, dynamic>;
+    try {
+      return jsonDecode(content) as Map<String, dynamic>;
+    } on FormatException {
+      // Another instance may be writing the file concurrently, causing a
+      // partial/corrupt read.  Wait briefly and retry once.
+      await Future.delayed(const Duration(milliseconds: 100));
+      try {
+        final retry = await file.readAsString();
+        if (retry.isEmpty) return {};
+        return jsonDecode(retry) as Map<String, dynamic>;
+      } catch (_) {
+        return {};
+      }
+    }
   }
 
   static Future<void> _writeConfig(Map<String, dynamic> config) async {
