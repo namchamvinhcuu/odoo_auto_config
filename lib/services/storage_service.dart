@@ -243,6 +243,23 @@ class StorageService {
     return (config['settings'] as Map<String, dynamic>?) ?? {};
   }
 
+  /// Get the GitHub token from the default git account.
+  /// Returns null if no account or no token configured.
+  static Future<String?> getDefaultGitToken() async {
+    final settings = await loadSettings();
+    final accounts = (settings['gitAccounts'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e as Map))
+            .toList() ??
+        [];
+    if (accounts.isEmpty) return null;
+    final defaultName = (settings['defaultGitAccount'] ?? '').toString();
+    final account = defaultName.isNotEmpty
+        ? accounts.where((a) => a['name'] == defaultName).firstOrNull
+        : accounts.first;
+    final token = (account?['token'] ?? '').toString();
+    return token.isEmpty ? null : token;
+  }
+
   static Future<void> saveSettings(Map<String, dynamic> settings) =>
     _synchronized(() async {
       final config = await _readConfig();

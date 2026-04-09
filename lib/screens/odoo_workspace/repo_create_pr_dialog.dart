@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'repo_commit_dialog.dart';
 
@@ -35,6 +37,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   bool _loading = true;
   bool _ghInstalled = false;
   bool _noChanges = false;
+  String? _token;
   String _baseBranch = 'main';
   List<String> _remoteBranches = [];
   String? _prUrl;
@@ -62,6 +65,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       runInShell: true,
     );
     final installed = result.exitCode == 0;
+    final token = await StorageService.getDefaultGitToken();
 
     List<String> branches = [];
     final brResult = await Process.run(
@@ -96,6 +100,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
+        _token = token;
         _remoteBranches = branches;
         _baseBranch = base;
         _noChanges = noChanges;
@@ -248,6 +253,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       args,
       workingDirectory: widget.repoPath,
       runInShell: true,
+      environment: _token != null ? {'GH_TOKEN': _token!} : null,
     );
     pr.stdout
         .transform(utf8.decoder)
@@ -330,6 +336,36 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
                       fontSize: AppFontSize.md,
                       color: Colors.grey.shade400,
                     ),
+                  ),
+                ],
+              )
+            else if (_token == null)
+              Column(
+                children: [
+                  const Icon(Icons.key_off,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    context.l10n.prGhNoToken,
+                    style: const TextStyle(fontSize: AppFontSize.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.l10n.prGhNoTokenDesc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppFontSize.md,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      HomeScreen.navigateToSettings(settingsTab: 5);
+                    },
+                    icon: const Icon(Icons.settings),
+                    label: Text(context.l10n.prGhGoToGitSettings),
                   ),
                 ],
               )

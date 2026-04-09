@@ -3088,6 +3088,24 @@ abstract class AppLocalizations {
   /// **'Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)'**
   String get prGhInstallHint;
 
+  /// No description provided for @prGhNoToken.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub Token not configured'**
+  String get prGhNoToken;
+
+  /// No description provided for @prGhNoTokenDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'To create pull requests, you need to add a GitHub account\nwith a Personal Access Token in Settings > Git.\n\nThe token needs \'repo\' scope permissions.'**
+  String get prGhNoTokenDesc;
+
+  /// No description provided for @prGhGoToGitSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Git Settings'**
+  String get prGhGoToGitSettings;
+
   /// No description provided for @prBase.
   ///
   /// In en, this message translates to:
