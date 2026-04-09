@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
@@ -78,8 +79,16 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     _loadBranches();
   }
 
-  Future<void> _loadBranches() async {
+  Future<void> _loadBranches({bool fetch = false}) async {
     setState(() => _loading = true);
+    if (fetch) {
+      await Process.run(
+        'git',
+        ['fetch', '--prune', '--quiet'],
+        workingDirectory: widget.path,
+        runInShell: true,
+      );
+    }
     final result = await GitBranchService.loadBranches(widget.path);
     if (!mounted) return;
     setState(() {
@@ -818,7 +827,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                 ? null
                 : () {
                     setState(() => _message = null);
-                    _loadBranches();
+                    _loadBranches(fetch: true);
                   },
             icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
             tooltip: context.l10n.refresh,
