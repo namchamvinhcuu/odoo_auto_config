@@ -243,21 +243,9 @@ class InstanceService {
   }
 
   static Future<void> _launchWindows() async {
-    // Try MSIX launch first
-    final result = await Process.run(
-      'powershell',
-      [
-        '-NoProfile',
-        '-Command',
-        r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1; "
-            r"if ($app) { Start-Process ('shell:AppsFolder\' + $app.PackageFamilyName + '!App'); Write-Output 'ok' } "
-            r"else { Write-Output 'notfound' }",
-      ],
-      runInShell: true,
-    );
-    if ((result.stdout as String).trim() == 'ok') return;
-
-    // Fallback: direct executable (debug mode)
+    // Launch exe directly — bypasses MSIX App Model single-instance enforcement.
+    // shell:AppsFolder only activates the existing window; direct exe creates a new process.
+    // Platform.resolvedExecutable is valid for both debug and MSIX (same version).
     await Process.start(
       Platform.resolvedExecutable,
       [],

@@ -224,16 +224,50 @@ rm -f "\$0"
 
   static Future<bool> _installWindows(String msixPath) async {
     final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.ps1');
-    final script = '\$ErrorActionPreference = "SilentlyContinue"\n'
-        'Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown\n'
-        'Start-Sleep -Seconds 3\n'
-        // Relaunch: dùng Start-Process trực tiếp với shell: URI
-        // KHÔNG dùng explorer.exe (sẽ mở OneDrive/Documents thay vì app)
-        r"$app = Get-AppxPackage | Where-Object { $_.Name -like '*odoo*auto*config*' } | Select-Object -First 1" '\n'
-        r"if ($app) {" '\n'
-        r"  Start-Process ('shell:AppsFolder\' + $app.PackageFamilyName + '!App')" '\n'
-        '}\n'
-        'Remove-Item -Path "$scriptPath" -Force\n';
+    final logPath = p.join(Directory.systemTemp.path, 'wsc_update.log');
+    final currentPid = pid;
+    final script = '''
+Start-Transcript -Path "$logPath" -Force
+
+# Wait for app to exit (like macOS/Linux)
+Write-Host "Waiting for PID $currentPid to exit..."
+do { Start-Sleep -Milliseconds 500 } while (Get-Process -Id $currentPid -ErrorAction SilentlyContinue)
+Write-Host "App exited."
+
+# Install MSIX
+Write-Host "Installing MSIX: $msixPath"
+try {
+    Add-AppPackage -Path "$msixPath" -ForceApplicationShutdown -ForceUpdateFromAnyVersion -ErrorAction Stop
+    Write-Host "Install complete."
+} catch {
+    Write-Host "Install error: \$_"
+    Stop-Transcript
+    exit 1
+}
+
+Start-Sleep -Seconds 1
+
+# Relaunch — use direct exe path (shell:AppsFolder fails in detached context)
+\$app = Get-AppxPackage | Where-Object { \$_.Name -like '*odoo*auto*config*' } | Select-Object -First 1
+if (\$app) {
+    Write-Host "Package: \$(\$app.PackageFamilyName)"
+    Write-Host "Location: \$(\$app.InstallLocation)"
+    \$exe = Get-ChildItem (Join-Path \$app.InstallLocation '*.exe') -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (\$exe) {
+        Write-Host "Launching: \$(\$exe.FullName)"
+        Start-Process \$exe.FullName
+    } else {
+        Write-Host "ERROR: exe not found in InstallLocation"
+    }
+} else {
+    Write-Host "ERROR: Package not found after install"
+}
+
+# Cleanup
+Remove-Item -Path "$msixPath" -Force -ErrorAction SilentlyContinue
+Stop-Transcript
+Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
+''';
     await File(scriptPath).writeAsString(script);
     await Process.start(
       'powershell',
