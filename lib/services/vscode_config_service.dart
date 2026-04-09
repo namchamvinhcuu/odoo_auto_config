@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:path/path.dart' as p;
+
 import 'platform_service.dart';
 
 class VscodeConfigService {
@@ -27,12 +29,7 @@ class VscodeConfigService {
       'request': 'launch',
       'python': PlatformService.venvPython(venvPath),
       'program': odooBinPath,
-      'args': [
-        '-c',
-        '\${workspaceFolder}/odoo.conf',
-        '--dev',
-        'xml',
-      ],
+      'args': ['-c', '\${workspaceFolder}/odoo.conf', '--dev', 'xml'],
       'env': <String, dynamic>{},
       'console': 'integratedTerminal',
       'justMyCode': false,
@@ -62,10 +59,13 @@ class VscodeConfigService {
       }
     }
 
-    await launchFile
-        .writeAsString(const JsonEncoder.withIndent('  ').convert(launch));
+    await launchFile.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(launch),
+    );
     logs.add('[+] Written: $launchPath');
 
     return logs;
   }
 }
+
+// test gh
