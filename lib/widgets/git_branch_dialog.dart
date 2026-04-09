@@ -222,35 +222,91 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
   }
 
   Future<void> _deleteBranch(String branch) async {
+    final hasRemote = _remote.contains(branch);
+    var deleteRemote = false;
+
     final confirmed = await AppDialog.show<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Text(ctx.l10n.gitBranchDeleteTitle),
-            const Spacer(),
-            AppDialog.closeButton(ctx),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Text(ctx.l10n.gitBranchDeleteTitle),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(ctx.l10n.gitBranchDeleteConfirm(branch)),
+              if (hasRemote) ...[
+                const SizedBox(height: AppSpacing.md),
+                GestureDetector(
+                  onTap: () =>
+                      setDialogState(() => deleteRemote = !deleteRemote),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: deleteRemote,
+                        onChanged: (v) =>
+                            setDialogState(() => deleteRemote = v ?? false),
+                      ),
+                      Text(ctx.l10n.gitBranchDeleteRemote),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: Text(ctx.l10n.delete),
+            ),
           ],
         ),
-        content: Text(ctx.l10n.gitBranchDeleteConfirm(branch)),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(ctx.l10n.delete),
-          ),
-        ],
       ),
     );
     if (confirmed != true || !mounted) return;
 
+    // Check for open PR before allowing remote delete
+    if (deleteRemote) {
+      final hasOpenPR =
+          await GitBranchService.hasOpenPR(widget.path, branch);
+      if (!mounted) return;
+      if (hasOpenPR) {
+        setState(() {
+          _message = context.l10n.gitBranchDeleteBlockedByPR(branch);
+          _isError = true;
+        });
+        return;
+      }
+    }
+
     final result = await GitBranchService.deleteBranch(widget.path, branch);
     if (!mounted) return;
     if (result.success) {
-      setState(() {
-        _message = result.output;
-        _isError = false;
-      });
+      var msg = result.output;
+      if (deleteRemote) {
+        final remoteResult =
+            await GitBranchService.deleteRemoteBranch(widget.path, branch);
+        if (!mounted) return;
+        msg = remoteResult.success
+            ? '${result.output}\n${remoteResult.output}'
+            : '${result.output}\nRemote: ${remoteResult.output}';
+        setState(() {
+          _message = msg;
+          _isError = !remoteResult.success;
+        });
+      } else {
+        setState(() {
+          _message = msg;
+          _isError = false;
+        });
+      }
       _loadBranches();
     } else {
       if (GitBranchService.isNotFullyMergedError(result.output)) {
@@ -282,11 +338,23 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             force: true,
           );
           if (mounted) {
-            setState(() {
-              _message = forceResult.output;
-              _isError = !forceResult.success;
-            });
-            if (forceResult.success) _loadBranches();
+            var msg = forceResult.output;
+            if (forceResult.success && deleteRemote) {
+              final remoteResult = await GitBranchService.deleteRemoteBranch(
+                  widget.path, branch);
+              if (mounted) {
+                msg = remoteResult.success
+                    ? '${forceResult.output}\n${remoteResult.output}'
+                    : '${forceResult.output}\nRemote: ${remoteResult.output}';
+              }
+            }
+            if (mounted) {
+              setState(() {
+                _message = msg;
+                _isError = !forceResult.success;
+              });
+              if (forceResult.success) _loadBranches();
+            }
           }
         }
       } else {
