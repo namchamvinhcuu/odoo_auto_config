@@ -589,6 +589,7 @@
     }
   },
   "gitBranchCreateTitle": "Create Branch",
+  "gitBranchBaseBranch": "Base branch",
   "gitBranchNameLabel": "Branch name",
   "gitBranchNameHint": "feature/my-feature",
   "gitBranchDeleteTitle": "Delete Branch",

@@ -124,13 +124,15 @@ class GitBranchService {
   }
 
   /// Create a new branch and switch to it.
+  /// If [baseBranch] is provided, creates from that branch instead of HEAD.
   static Future<GitResult> createBranch(
     String workingDir,
-    String name,
-  ) async {
+    String name, {
+    String? baseBranch,
+  }) async {
     final result = await Process.run(
       'git',
-      ['checkout', '-b', name],
+      ['checkout', '-b', name, if (baseBranch != null) baseBranch],
       workingDirectory: workingDir,
       runInShell: true,
     );
@@ -399,7 +401,10 @@ class GitBranchService {
     if (url.isEmpty) return null;
     // Convert SSH to HTTPS: git@github.com:org/repo.git → https://github.com/org/repo
     if (url.startsWith('git@')) {
-      url = url.replaceFirst('git@', 'https://').replaceFirst(':', '/');
+      url = url.replaceFirstMapped(
+        RegExp(r'git@([^:]+):(.+)'),
+        (m) => 'https://${m[1]}/${m[2]}',
+      );
     }
     // Remove trailing .git
     if (url.endsWith('.git')) {

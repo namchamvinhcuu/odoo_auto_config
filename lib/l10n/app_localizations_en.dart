@@ -1619,6 +1619,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gitBranchCreateTitle => 'Create Branch';
 
   @override
+  String get gitBranchBaseBranch => 'Base branch';
+
+  @override
   String get gitBranchNameLabel => 'Branch name';
 
   @override
