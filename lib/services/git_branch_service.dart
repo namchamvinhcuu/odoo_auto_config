@@ -165,10 +165,25 @@ class GitBranchService {
   }
 
   /// Publish a local branch to origin.
+  /// Creates an empty commit to make the branch visible on GitHub.
   static Future<GitResult> publishBranch(
     String workingDir,
     String branch,
   ) async {
+    // Create empty commit so the branch has its own commit on GitHub
+    final commit = await Process.run(
+      'git',
+      ['commit', '--allow-empty', '-m', 'publish new branch: $branch'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    if (commit.exitCode != 0) {
+      return (
+        success: false,
+        output: 'Commit failed: ${(commit.stderr as String).trim()}',
+      );
+    }
+
     final result = await Process.run(
       'git',
       ['push', '-u', 'origin', branch],
