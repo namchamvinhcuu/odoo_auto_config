@@ -1700,6 +1700,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)';
 
   @override
+  String get prGhNoToken => 'GitHub Token not configured';
+
+  @override
+  String get prGhNoTokenDesc =>
+      'To create pull requests, you need to add a GitHub account\nwith a Personal Access Token in Settings > Git.\n\nThe token needs \'repo\' scope permissions.';
+
+  @override
+  String get prGhGoToGitSettings => 'Go to Git Settings';
+
+  @override
   String get prBase => 'Base:';
 
   @override

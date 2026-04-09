@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'repo_commit_dialog.dart';
 
@@ -34,7 +37,10 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   bool _done = false;
   bool _loading = true;
   bool _ghInstalled = false;
+  bool _ghAuthed = false;
+  bool _ghNativeAuth = false;
   bool _noChanges = false;
+  String? _token;
   String _baseBranch = 'main';
   List<String> _remoteBranches = [];
   String? _prUrl;
@@ -54,14 +60,42 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     super.dispose();
   }
 
+  /// Read GitHub token from project's git-repositories script.
+  Future<String?> _readProjectToken(String projectPath) async {
+    final shPath = p.join(projectPath, 'git-repositories.sh');
+    final ps1Path = p.join(projectPath, 'git-repositories.ps1');
+    String? scriptPath;
+    if (await File(ps1Path).exists()) {
+      scriptPath = ps1Path;
+    } else if (await File(shPath).exists()) {
+      scriptPath = shPath;
+    }
+    if (scriptPath == null) return null;
+    final content = await File(scriptPath).readAsString();
+    final match = RegExp(r'TOKEN\s*=\s*"([^"]*)"').firstMatch(content);
+    final token = match?.group(1) ?? '';
+    return token.isEmpty ? null : token;
+  }
+
   Future<void> _checkGh() async {
-    final gh = await PlatformService.ghPath;
-    final result = await Process.run(
-      gh,
-      ['--version'],
-      runInShell: true,
-    );
+    final result = await PlatformService.runGh(['--version']);
     final installed = result.exitCode == 0;
+
+    // Read token from project's git-repositories script (project-specific account)
+    // repoPath is projectPath/addons/repoName/ → project root is 2 levels up
+    final projectPath = p.dirname(p.dirname(widget.repoPath));
+    String? token = await _readProjectToken(projectPath);
+    // Fall back to default git account token
+    token ??= await StorageService.getDefaultGitToken();
+
+    // Check if gh is already authenticated via `gh auth login`
+    bool ghNativeAuth = false;
+    if (installed) {
+      final authResult = await PlatformService.runGh(['auth', 'status']);
+      ghNativeAuth = authResult.exitCode == 0;
+    }
+    // Authed = either gh auth login or app token
+    final authed = ghNativeAuth || token != null;
 
     List<String> branches = [];
     final brResult = await Process.run(
@@ -96,6 +130,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
+        _ghAuthed = authed;
+        _ghNativeAuth = ghNativeAuth;
+        _token = token;
         _remoteBranches = branches;
         _baseBranch = base;
         _noChanges = noChanges;
@@ -242,12 +279,14 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
-    final gh = await PlatformService.ghPath;
-    final pr = await Process.start(
-      gh,
+    final pr = await PlatformService.startGh(
       args,
       workingDirectory: widget.repoPath,
-      runInShell: true,
+      // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+      // This respects gh auth login / gh auth switch for multi-account users
+      environment: (!_ghNativeAuth && _token != null)
+          ? {'GH_TOKEN': _token!}
+          : null,
     );
     pr.stdout
         .transform(utf8.decoder)
@@ -330,6 +369,36 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
                       fontSize: AppFontSize.md,
                       color: Colors.grey.shade400,
                     ),
+                  ),
+                ],
+              )
+            else if (!_ghAuthed)
+              Column(
+                children: [
+                  const Icon(Icons.key_off,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    context.l10n.prGhNoToken,
+                    style: const TextStyle(fontSize: AppFontSize.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.l10n.prGhNoTokenDesc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppFontSize.md,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      HomeScreen.navigateToSettings(settingsTab: 5);
+                    },
+                    icon: const Icon(Icons.settings),
+                    label: Text(context.l10n.prGhGoToGitSettings),
                   ),
                 ],
               )

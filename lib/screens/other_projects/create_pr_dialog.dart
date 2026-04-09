@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'simple_git_commit_dialog.dart';
 
@@ -34,7 +36,10 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
   bool _done = false;
   bool _loading = true;
   bool _ghInstalled = false;
+  bool _ghAuthed = false;
+  bool _ghNativeAuth = false;
   bool _noChanges = false;
+  String? _token;
   String _baseBranch = 'main';
   List<String> _remoteBranches = [];
   String? _prUrl;
@@ -56,13 +61,17 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
   Future<void> _checkGh() async {
     // Check gh CLI installed
-    final gh = await PlatformService.ghPath;
-    final result = await Process.run(
-      gh,
-      ['--version'],
-      runInShell: true,
-    );
+    final result = await PlatformService.runGh(['--version']);
     final installed = result.exitCode == 0;
+    final token = await StorageService.getDefaultGitToken();
+
+    // Check if gh is already authenticated via `gh auth login`
+    bool ghNativeAuth = false;
+    if (installed) {
+      final authResult = await PlatformService.runGh(['auth', 'status']);
+      ghNativeAuth = authResult.exitCode == 0;
+    }
+    final authed = ghNativeAuth || token != null;
 
     // Load remote branches
     List<String> branches = [];
@@ -100,6 +109,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     if (mounted) {
       setState(() {
         _ghInstalled = installed;
+        _ghAuthed = authed;
+        _ghNativeAuth = ghNativeAuth;
+        _token = token;
         _remoteBranches = branches;
         _baseBranch = base;
         _noChanges = noChanges;
@@ -247,12 +259,14 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
-    final gh = await PlatformService.ghPath;
-    final pr = await Process.start(
-      gh,
+    final pr = await PlatformService.startGh(
       args,
       workingDirectory: widget.projectPath,
-      runInShell: true,
+      // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+      // This respects gh auth login / gh auth switch for multi-account users
+      environment: (!_ghNativeAuth && _token != null)
+          ? {'GH_TOKEN': _token!}
+          : null,
     );
     pr.stdout
         .transform(utf8.decoder)
@@ -338,6 +352,36 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
                       fontSize: AppFontSize.md,
                       color: Colors.grey.shade400,
                     ),
+                  ),
+                ],
+              )
+            else if (!_ghAuthed)
+              Column(
+                children: [
+                  const Icon(Icons.key_off,
+                      color: Colors.orange, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    context.l10n.prGhNoToken,
+                    style: const TextStyle(fontSize: AppFontSize.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    context.l10n.prGhNoTokenDesc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppFontSize.md,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      HomeScreen.navigateToSettings(settingsTab: 5);
+                    },
+                    icon: const Icon(Icons.settings),
+                    label: Text(context.l10n.prGhGoToGitSettings),
                   ),
                 ],
               )

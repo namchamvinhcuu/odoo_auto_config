@@ -211,6 +211,17 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
     Detect PR đã tồn tại (URL từ stderr) → hiện "PR already exists. New commits have been pushed."
     Check uncommitted changes → cảnh báo + cho commit trước hoặc continue
     Nút "View in Browser" mở PR URL (cross-platform: open/start/xdg-open)
+  - **GH CLI Authentication** — 3 cấp ưu tiên:
+    1. `gh auth login` (native auth) → KHÔNG truyền `GH_TOKEN`, để gh tự quản lý (hỗ trợ `gh auth switch` multi-account)
+    2. Project-specific token (chỉ Odoo) → đọc TOKEN từ `git-repositories.sh`/`.ps1` trong project root
+       `RepoCreatePRDialog` derive project path: `p.dirname(p.dirname(repoPath))` (addons/repoName → project root)
+    3. Default account token → `StorageService.getDefaultGitToken()`
+    4. Không có gì → hiện warning icon `key_off` + mô tả + nút "Go to Git Settings" (tab 5)
+    Check auth: `gh auth status` (exitCode 0 = đã login). `GH_TOKEN` env var chỉ truyền khi gh chưa native authed
+    Pattern: `environment: (!_ghNativeAuth && _token != null) ? {'GH_TOKEN': _token!} : null`
+    `hasOpenPR` trong `git_branch_service.dart` cũng check `gh auth status` trước khi pass `GH_TOKEN`
+  - **GH CLI path (Windows MSIX)**: `PlatformService.ghPath` có fallback `where.exe gh` khi `File.exists()` không tìm thấy
+    (MSIX app có thể không thấy file qua `File.exists()` dù file tồn tại)
   - **Divider** tách main/master xuống cuối danh sách local và remote
   - **Current branch chip** hiện trong title dialog
   - **Mouse cursor** pointer cho branch tiles (dùng `InkWell.mouseCursor`, KHÔNG `MouseRegion`)
@@ -579,8 +590,9 @@ Quit All
   Script phải đợi PID exit trước (như macOS/Linux), dùng `-ForceUpdateFromAnyVersion` cho safety
 
 ### Code quality & Cross-platform
-- **Windows path có spaces** — `Process.run(exe, args, runInShell: true)` dùng `cmd /c` → tách tại dấu cách
-  PlatformService path getters (`ghPath`, `mkcertPath`) phải quote path: `return path.contains(' ') ? '"$path"' : path`
+- **Windows path có spaces** — `Process.run(exe, args, runInShell: true)` tự handle quoting trên Windows
+  **KHÔNG pre-quote path** (KHÔNG dùng `'"$path"'`) — Dart đã tự wrap, pre-quote gây double-quote → cmd không nhận ra
+  PlatformService path getters (`ghPath`, `mkcertPath`) trả về path nguyên bản, không thêm dấu `"`
 - **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
   LUÔN dùng `replaceFirstMapped(regex, (m) => '${m[1]}...')` khi cần preserve captured groups
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)

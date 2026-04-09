@@ -1696,6 +1696,16 @@ class AppLocalizationsVi extends AppLocalizations {
       'Install: brew install gh (macOS)\n         winget install GitHub.cli (Windows)\n         apt install gh (Linux)';
 
   @override
+  String get prGhNoToken => 'Chưa cấu hình GitHub Token';
+
+  @override
+  String get prGhNoTokenDesc =>
+      'Để tạo pull request, bạn cần thêm tài khoản GitHub\nvới Personal Access Token trong Settings > Git.\n\nToken cần quyền \'repo\'.';
+
+  @override
+  String get prGhGoToGitSettings => 'Đi tới Git Settings';
+
+  @override
   String get prBase => 'Base:';
 
   @override

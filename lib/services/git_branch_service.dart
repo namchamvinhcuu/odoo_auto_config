@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 
 /// Result of a git operation: success flag + combined output message.
 typedef GitResult = ({bool success, String output});
@@ -181,11 +183,19 @@ class GitBranchService {
   /// Check if a branch has an open (unmerged) PR on GitHub.
   /// Returns true if there is at least one open PR with this branch as head.
   static Future<bool> hasOpenPR(String workingDir, String branch) async {
-    final result = await Process.run(
-      'gh',
+    // Only pass GH_TOKEN as fallback when gh is not natively authenticated
+    Map<String, String>? env;
+    final token = await StorageService.getDefaultGitToken();
+    if (token != null) {
+      final authCheck = await PlatformService.runGh(['auth', 'status']);
+      if (authCheck.exitCode != 0) {
+        env = {'GH_TOKEN': token};
+      }
+    }
+    final result = await PlatformService.runGh(
       ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--limit', '1'],
       workingDirectory: workingDir,
-      runInShell: true,
+      environment: env,
     );
     if (result.exitCode != 0) return false;
     final output = (result.stdout as String).trim();
