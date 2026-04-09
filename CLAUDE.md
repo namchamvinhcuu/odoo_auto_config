@@ -590,9 +590,11 @@ Quit All
   Script phải đợi PID exit trước (như macOS/Linux), dùng `-ForceUpdateFromAnyVersion` cho safety
 
 ### Code quality & Cross-platform
-- **Windows path có spaces** — `Process.run(exe, args, runInShell: true)` tự handle quoting trên Windows
-  **KHÔNG pre-quote path** (KHÔNG dùng `'"$path"'`) — Dart đã tự wrap, pre-quote gây double-quote → cmd không nhận ra
-  PlatformService path getters (`ghPath`, `mkcertPath`) trả về path nguyên bản, không thêm dấu `"`
+- **Windows path có spaces** — `Process.run` tự handle quoting nhưng `Process.start` thì KHÔNG
+  PlatformService path getters (`ghPath`, `mkcertPath`) trả về path nguyên bản, **KHÔNG pre-quote**
+  Cho `gh` CLI: LUÔN dùng `PlatformService.runGh()` / `PlatformService.startGh()` — helper xử lý:
+  Windows + path có spaces → `runInShell: false` (CreateProcess handle spaces đúng)
+  macOS/Linux hoặc path không có spaces → `runInShell: true` (cần cho PATH resolution)
 - **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
   LUÔN dùng `replaceFirstMapped(regex, (m) => '${m[1]}...')` khi cần preserve captured groups
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
