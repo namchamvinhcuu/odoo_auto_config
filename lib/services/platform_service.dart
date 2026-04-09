@@ -269,7 +269,9 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         'C:\\ProgramData\\chocolatey\\bin\\mkcert.exe',
       ];
       for (final path in candidates) {
-        if (await File(path).exists()) return path;
+        if (await File(path).exists()) {
+          return path.contains(' ') ? '"$path"' : path;
+        }
       }
     } else if (isMacOS) {
       final candidates = [
@@ -301,7 +303,10 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         '$localAppData\\Programs\\gh\\bin\\gh.exe',
       ];
       for (final path in candidates) {
-        if (await File(path).exists()) return path;
+        if (await File(path).exists()) {
+          // Quote paths with spaces for runInShell: true (cmd /c splits at spaces)
+          return path.contains(' ') ? '"$path"' : path;
+        }
       }
     } else {
       // Linux

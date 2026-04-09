@@ -579,6 +579,8 @@ Quit All
   Script phải đợi PID exit trước (như macOS/Linux), dùng `-ForceUpdateFromAnyVersion` cho safety
 
 ### Code quality & Cross-platform
+- **Windows path có spaces** — `Process.run(exe, args, runInShell: true)` dùng `cmd /c` → tách tại dấu cách
+  PlatformService path getters (`ghPath`, `mkcertPath`) phải quote path: `return path.contains(' ') ? '"$path"' : path`
 - **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
   LUÔN dùng `replaceFirstMapped(regex, (m) => '${m[1]}...')` khi cần preserve captured groups
 - **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
