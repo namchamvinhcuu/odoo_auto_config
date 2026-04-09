@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
 /// Result of a git operation: success flag + combined output message.
@@ -186,19 +187,14 @@ class GitBranchService {
     Map<String, String>? env;
     final token = await StorageService.getDefaultGitToken();
     if (token != null) {
-      final authCheck = await Process.run(
-        'gh', ['auth', 'status'],
-        runInShell: true,
-      );
+      final authCheck = await PlatformService.runGh(['auth', 'status']);
       if (authCheck.exitCode != 0) {
         env = {'GH_TOKEN': token};
       }
     }
-    final result = await Process.run(
-      'gh',
+    final result = await PlatformService.runGh(
       ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--limit', '1'],
       workingDirectory: workingDir,
-      runInShell: true,
       environment: env,
     );
     if (result.exitCode != 0) return false;

@@ -78,12 +78,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   }
 
   Future<void> _checkGh() async {
-    final gh = await PlatformService.ghPath;
-    final result = await Process.run(
-      gh,
-      ['--version'],
-      runInShell: true,
-    );
+    final result = await PlatformService.runGh(['--version']);
     final installed = result.exitCode == 0;
 
     // Read token from project's git-repositories script (project-specific account)
@@ -96,11 +91,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     // Check if gh is already authenticated via `gh auth login`
     bool ghNativeAuth = false;
     if (installed) {
-      final authResult = await Process.run(
-        gh,
-        ['auth', 'status'],
-        runInShell: true,
-      );
+      final authResult = await PlatformService.runGh(['auth', 'status']);
       ghNativeAuth = authResult.exitCode == 0;
     }
     // Authed = either gh auth login or app token
@@ -288,12 +279,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
-    final gh = await PlatformService.ghPath;
-    final pr = await Process.start(
-      gh,
+    final pr = await PlatformService.startGh(
       args,
       workingDirectory: widget.repoPath,
-      runInShell: true,
       // Only pass GH_TOKEN as fallback when gh is not natively authenticated
       // This respects gh auth login / gh auth switch for multi-account users
       environment: (!_ghNativeAuth && _token != null)

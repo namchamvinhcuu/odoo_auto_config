@@ -1,4 +1,5 @@
-import 'dart:io' show Directory, File, Link, Platform, Process;
+import 'dart:io'
+    show Directory, File, Link, Platform, Process, ProcessResult;
 
 class PlatformService {
   /// Run a PowerShell script file with -STA flag (required for WinForms dialogs).
@@ -330,12 +331,50 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
 
   static Future<bool> isGhInstalled() async {
     try {
-      final gh = await ghPath;
-      final result = await Process.run(gh, ['--version'], runInShell: true);
+      final result = await runGh(['--version']);
       return result.exitCode == 0;
     } catch (_) {
       return false;
     }
+  }
+
+  /// Run a gh command (Process.run). Handles Windows path-with-spaces issue.
+  static Future<ProcessResult> runGh(
+    List<String> args, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+  }) async {
+    final gh = await ghPath;
+    if (isWindows && gh.contains(' ')) {
+      // On Windows, runInShell uses cmd /c which splits at spaces.
+      // Pass full path without runInShell — CreateProcess handles spaces.
+      return Process.run(gh, args,
+          workingDirectory: workingDirectory, environment: environment);
+    }
+    return Process.run(gh, args,
+        workingDirectory: workingDirectory,
+        runInShell: true,
+        environment: environment);
+  }
+
+  /// Start a gh process (Process.start) for streaming output.
+  /// Handles Windows path-with-spaces issue.
+  static Future<Process> startGh(
+    List<String> args, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+  }) async {
+    final gh = await ghPath;
+    if (isWindows && gh.contains(' ')) {
+      // On Windows, runInShell uses cmd /c which splits at spaces.
+      // Pass full path without runInShell — CreateProcess handles spaces.
+      return Process.start(gh, args,
+          workingDirectory: workingDirectory, environment: environment);
+    }
+    return Process.start(gh, args,
+        workingDirectory: workingDirectory,
+        runInShell: true,
+        environment: environment);
   }
 
   /// Install GitHub CLI (gh) via brew/winget/apt.

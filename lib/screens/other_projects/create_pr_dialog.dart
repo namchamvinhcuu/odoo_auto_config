@@ -61,23 +61,14 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
   Future<void> _checkGh() async {
     // Check gh CLI installed
-    final gh = await PlatformService.ghPath;
-    final result = await Process.run(
-      gh,
-      ['--version'],
-      runInShell: true,
-    );
+    final result = await PlatformService.runGh(['--version']);
     final installed = result.exitCode == 0;
     final token = await StorageService.getDefaultGitToken();
 
     // Check if gh is already authenticated via `gh auth login`
     bool ghNativeAuth = false;
     if (installed) {
-      final authResult = await Process.run(
-        gh,
-        ['auth', 'status'],
-        runInShell: true,
-      );
+      final authResult = await PlatformService.runGh(['auth', 'status']);
       ghNativeAuth = authResult.exitCode == 0;
     }
     final authed = ghNativeAuth || token != null;
@@ -268,12 +259,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         : 'Merge `${widget.currentBranch}` into `$_baseBranch`';
     args.addAll(['--body', body]);
 
-    final gh = await PlatformService.ghPath;
-    final pr = await Process.start(
-      gh,
+    final pr = await PlatformService.startGh(
       args,
       workingDirectory: widget.projectPath,
-      runInShell: true,
       // Only pass GH_TOKEN as fallback when gh is not natively authenticated
       // This respects gh auth login / gh auth switch for multi-account users
       environment: (!_ghNativeAuth && _token != null)
