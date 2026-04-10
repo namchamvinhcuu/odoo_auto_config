@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
+import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'repo_info.dart';
 import 'repo_branch_dialog.dart';
 import 'branch_picker_dialog.dart';
@@ -16,6 +19,8 @@ import 'publish_modules_dialog.dart';
 
 /// Number of repos to load per batch
 const _kBatchSize = 8;
+const _kSearchItemExtent = 40.0;
+const _kSearchMaxVisibleItems = 5;
 
 /// Odoo Workspace View — dashboard for managing pinned repos in addons/
 class OdooWorkspaceDialog extends StatefulWidget {
@@ -33,17 +38,21 @@ class OdooWorkspaceDialog extends StatefulWidget {
 }
 
 class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
-  /// All repo names found in addons/ (for search/add)
+  /// All repo names found under the project root (excluding the root repo itself)
   List<String> _allRepoNames = [];
 
   /// Pinned repos (persisted, shown in main list)
   final List<RepoInfo> _repos = [];
+  final Set<String> _addingRepoNames = {};
 
   final _addRepoController = TextEditingController();
   final _addRepoFocusNode = FocusNode();
   final _scrollController = ScrollController();
+  final _searchListScrollController = ScrollController();
   bool _scanning = true;
   bool _loadingMore = false;
+  bool _isSearchOpen = false;
+  int _highlightedIndex = 0;
 
   String get _storageKey => 'workspaceRepos_${widget.projectPath}';
   String get _selectionKey => 'workspaceSelected_${widget.projectPath}';
@@ -60,6 +69,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     _addRepoController.dispose();
     _addRepoFocusNode.dispose();
     _scrollController.dispose();
+    _searchListScrollController.dispose();
     super.dispose();
   }
 
@@ -83,32 +93,23 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     });
 
     try {
-      // Scan all repos in addons/
-      final addonsDir = Directory(p.join(widget.projectPath, 'addons'));
-      final allNames = <String>[];
-      if (await addonsDir.exists()) {
-        await for (final entity in addonsDir.list()) {
-          if (entity is Directory) {
-            final gitDir = Directory(p.join(entity.path, '.git'));
-            if (await gitDir.exists()) {
-              allNames.add(p.basename(entity.path));
-            }
-          }
-        }
-      }
+      final projectDir = Directory(widget.projectPath);
+      final allNames = await _scanProjectRepos(projectDir);
       allNames.sort();
       _allRepoNames = allNames;
 
       // Load persisted pinned list
       final settings = await StorageService.loadSettings();
-      final saved = (settings[_storageKey] as List?)
+      final saved =
+          (settings[_storageKey] as List?)
               ?.map((e) => e.toString())
               .where((r) => allNames.contains(r))
               .toList() ??
           [];
 
       // Load persisted selection
-      final selectedSet = (settings[_selectionKey] as List?)
+      final selectedSet =
+          (settings[_selectionKey] as List?)
               ?.map((e) => e.toString())
               .toSet() ??
           <String>{};
@@ -117,7 +118,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       for (final name in saved) {
         final repo = RepoInfo(
           name: name,
-          path: p.join(widget.projectPath, 'addons', name),
+          path: p.join(widget.projectPath, name),
         );
         repo.selected = selectedSet.contains(name);
         _repos.add(repo);
@@ -154,6 +155,36 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     if (mounted) setState(() {});
   }
 
+  Future<List<String>> _scanProjectRepos(Directory projectDir) async {
+    final repos = <String>[];
+    if (!await projectDir.exists()) return repos;
+
+    Future<void> scanDir(Directory dir) async {
+      final gitDir = Directory(p.join(dir.path, '.git'));
+      if (await gitDir.exists()) {
+        final relative = p.relative(dir.path, from: widget.projectPath);
+        if (relative != '.' && relative.isNotEmpty) {
+          repos.add(relative);
+        }
+        return;
+      }
+
+      await for (final entity in dir.list(followLinks: false)) {
+        if (entity is Directory && p.basename(entity.path) != '.git') {
+          await scanDir(entity);
+        }
+      }
+    }
+
+    await for (final entity in projectDir.list(followLinks: false)) {
+      if (entity is Directory) {
+        await scanDir(entity);
+      }
+    }
+
+    return repos;
+  }
+
   Future<void> _loadRepoStatus(RepoInfo repo) async {
     // Branch
     final branchResult = await Process.run(
@@ -175,8 +206,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
     if (statusResult.exitCode == 0) {
       final output = (statusResult.stdout as String).trimRight();
-      repo.changedFiles =
-          output.isEmpty ? 0 : LineSplitter.split(output).length;
+      repo.changedFiles = output.isEmpty
+          ? 0
+          : LineSplitter.split(output).length;
     }
 
     // Fetch quietly for ahead/behind
@@ -223,31 +255,76 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   Future<void> _savePinnedList() async {
     await StorageService.updateSettings((settings) {
       settings[_storageKey] = _repos.map((r) => r.name).toList();
-      settings[_selectionKey] =
-          _repos.where((r) => r.selected).map((r) => r.name).toList();
+      settings[_selectionKey] = _repos
+          .where((r) => r.selected)
+          .map((r) => r.name)
+          .toList();
     });
   }
 
   Future<void> _saveSelection() async {
     await StorageService.updateSettings((settings) {
-      settings[_selectionKey] =
-          _repos.where((r) => r.selected).map((r) => r.name).toList();
+      settings[_selectionKey] = _repos
+          .where((r) => r.selected)
+          .map((r) => r.name)
+          .toList();
     });
   }
 
   Future<void> _addRepo(String name) async {
     if (_repos.any((r) => r.name == name)) return;
-    final repo = RepoInfo(
-      name: name,
-      path: p.join(widget.projectPath, 'addons', name),
-    );
+    final repo = RepoInfo(name: name, path: p.join(widget.projectPath, name));
     setState(() {
       _repos.add(repo);
       _repos.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
     });
     await _savePinnedList();
     await _loadRepoStatus(repo);
+  }
+
+  Future<void> _handleRepoSelected(String name) async {
+    if (_addingRepoNames.contains(name) || _repos.any((r) => r.name == name)) {
+      _resetAddRepoField();
+      return;
+    }
+
+    setState(() => _addingRepoNames.add(name));
+    try {
+      await _addRepo(name);
+    } finally {
+      if (mounted) {
+        setState(() => _addingRepoNames.remove(name));
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _resetAddRepoField();
+          }
+        });
+      }
+    }
+  }
+
+  void _resetAddRepoField() {
+    _addRepoController.clear();
+    setState(() {
+      _highlightedIndex = 0;
+      _isSearchOpen = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _addRepoFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _dismissSearchFocus() {
+    if (_addRepoFocusNode.hasFocus) {
+      _addRepoFocusNode.unfocus();
+    }
+    if (_isSearchOpen) {
+      setState(() => _isSearchOpen = false);
+    }
   }
 
   Future<void> _removeRepo(RepoInfo repo) async {
@@ -255,12 +332,54 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     await _savePinnedList();
   }
 
+  Future<void> _cloneRepoToWorkspace() async {
+    _dismissSearchFocus();
+    final result = await AppDialog.show<CloneRepositoryResult>(
+      context: context,
+      builder: (ctx) => CloneRepositoryDialog(
+        title: 'Clone Repository to Workspace',
+        subtitle:
+            'Clone a repository inside this project. Keep the target folder as "addons" for the standard flow, or change it to another folder under the project root.',
+        submitLabel: 'Clone to Project',
+        initialBaseDir: widget.projectPath,
+        allowBaseDirPicker: false,
+        showDescription: false,
+        baseDirLabel: 'Project Directory',
+        baseDirHint: widget.projectPath,
+        targetFolderLabel: 'Target Folder',
+        initialTargetFolder: 'addons',
+      ),
+    );
+    if (result == null) return;
+
+    final repoKey = p.relative(result.targetDir, from: widget.projectPath);
+    if (!_allRepoNames.contains(repoKey)) {
+      _allRepoNames.add(repoKey);
+      _allRepoNames.sort();
+    }
+    await _addRepo(repoKey);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloned "${result.repoName}" into "$repoKey"')),
+      );
+    }
+  }
+
   // ── Helpers ──
 
   /// Repo names available to add (not yet pinned)
   List<String> get _availableToAdd {
     final pinnedNames = _repos.map((r) => r.name).toSet();
-    return _allRepoNames.where((n) => !pinnedNames.contains(n)).toList();
+    return _allRepoNames
+        .where((n) => !pinnedNames.contains(n) && !_addingRepoNames.contains(n))
+        .toList();
+  }
+
+  List<String> get _filteredRepoNames {
+    final query = _addRepoController.text.trim().toLowerCase();
+    final available = _availableToAdd;
+    if (query.isEmpty) return available;
+    return available.where((n) => n.toLowerCase().contains(query)).toList();
   }
 
   int get _selectedCount => _repos.where((r) => r.selected).length;
@@ -290,6 +409,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   void _pullSelected() {
     final selected = _repos.where((r) => r.selected).toList();
     if (selected.isEmpty) return;
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -311,13 +431,17 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         .toList();
 
     if (reposWithChanges.isEmpty) {
+      _dismissSearchFocus();
       AppDialog.show(
         context: context,
         builder: (ctx) => AlertDialog(
           title: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.grey,
-                  size: AppIconSize.xxl),
+              const Icon(
+                Icons.check_circle,
+                color: Colors.grey,
+                size: AppIconSize.xxl,
+              ),
               const Spacer(),
               AppDialog.closeButton(ctx),
             ],
@@ -331,6 +455,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       return;
     }
 
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => WorkspaceCommitDialog(
@@ -364,8 +489,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             allBranches.add(trimmed.replaceFirst('refs/heads/', ''));
           } else if (trimmed.startsWith('refs/remotes/origin/') &&
               !trimmed.endsWith('/HEAD')) {
-            allBranches
-                .add(trimmed.replaceFirst('refs/remotes/origin/', ''));
+            allBranches.add(trimmed.replaceFirst('refs/remotes/origin/', ''));
           }
         }
       }
@@ -388,6 +512,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     if (selected.isEmpty) return;
 
     if (!mounted) return;
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -407,6 +532,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   // ── Per-repo actions ──
 
   void _pullSingle(RepoInfo repo) {
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -421,15 +547,15 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   void _pushSingle(RepoInfo repo) {
     if (repo.changedFiles > 0) {
       // Has uncommitted changes → show commit dialog first
+      _dismissSearchFocus();
       AppDialog.show(
         context: context,
-        builder: (ctx) => RepoCommitDialog(
-          repoName: repo.name,
-          repoPath: repo.path,
-        ),
+        builder: (ctx) =>
+            RepoCommitDialog(repoName: repo.name, repoPath: repo.path),
       ).then((_) => _loadRepoStatus(repo));
       return;
     }
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -442,6 +568,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _createPrSingle(RepoInfo repo) {
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => RepoCreatePRDialog(
@@ -453,6 +580,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _openRepoBranchDialog(RepoInfo repo) {
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => RepoBranchDialog(
@@ -469,11 +597,11 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _publishSingle(RepoInfo repo) {
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
-        title:
-            '${context.l10n.gitBranchPublish(repo.branch)} — ${repo.name}',
+        title: '${context.l10n.gitBranchPublish(repo.branch)} — ${repo.name}',
         repos: [repo],
         action: 'publish',
         onDone: () => _loadRepoStatus(repo),
@@ -482,9 +610,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   void _publishSelected() {
-    final selected =
-        _repos.where((r) => r.selected && !r.hasUpstream).toList();
+    final selected = _repos.where((r) => r.selected && !r.hasUpstream).toList();
     if (selected.isEmpty) return;
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
       builder: (ctx) => GitActionDialog(
@@ -505,8 +633,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth =
-        screenWidth > 1000 ? AppDialog.widthXl : AppDialog.widthLg;
+    final dialogWidth = screenWidth > 1000
+        ? AppDialog.widthXl
+        : AppDialog.widthLg;
 
     return AlertDialog(
       title: Row(
@@ -519,7 +648,11 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           const Spacer(),
           IconButton(
             onPressed: () => _loadPinnedRepos(loadAll: true),
-            icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
             style: IconButton.styleFrom(
               backgroundColor: Colors.teal,
               shape: RoundedRectangleBorder(
@@ -554,114 +687,298 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   Widget _buildAddRepoBar() {
-    final available = _availableToAdd;
+    final filtered = _filteredRepoNames;
+    final hasSearchResults = filtered.isNotEmpty;
+    final safeHighlightedIndex = hasSearchResults
+        ? _highlightedIndex.clamp(0, filtered.length - 1)
+        : 0;
+    final visibleItemCount = filtered.length < _kSearchMaxVisibleItems
+        ? filtered.length
+        : _kSearchMaxVisibleItems;
+    final preferredPanelHeight = hasSearchResults
+        ? visibleItemCount * _kSearchItemExtent
+        : _kSearchItemExtent * 1.5;
+    final maxResponsivePanelHeight = math.max(
+      _kSearchItemExtent * 2,
+      MediaQuery.of(context).size.height * 0.22,
+    );
+    final searchPanelHeight = math.min(
+      preferredPanelHeight,
+      maxResponsivePanelHeight,
+    );
 
-    return RawAutocomplete<String>(
-      textEditingController: _addRepoController,
-      focusNode: _addRepoFocusNode,
-      optionsBuilder: (textEditingValue) {
-        // Hiện toàn bộ danh sách khi focus, lọc khi gõ
-        final q = textEditingValue.text.toLowerCase();
-        if (q.isEmpty) return available;
-        return available.where((n) => n.toLowerCase().contains(q));
-      },
-      onSelected: (name) {
-        _addRepo(name);
-        _addRepoController.clear();
-        // Giữ focus để tiếp tục thêm
-        _addRepoFocusNode.requestFocus();
-      },
-      fieldViewBuilder: (ctx, controller, focusNode, onSubmitted) {
-        return SizedBox(
-          height: 36,
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            decoration: InputDecoration(
-              hintText: context.l10n.gitSearchRepo,
-              prefixIcon:
-                  const Icon(Icons.add_circle_outline, size: AppIconSize.md),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${_repos.length} / ${_allRepoNames.length}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: AppFontSize.sm,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackVertically = constraints.maxWidth < 860;
+        final searchSection = TapRegion(
+          onTapOutside: (_) {
+            if (_isSearchOpen) {
+              setState(() => _isSearchOpen = false);
+            }
+          },
+          child: Column(
+            children: [
+              Focus(
+                focusNode: _addRepoFocusNode,
+                onFocusChange: (hasFocus) {
+                  if (!mounted) return;
+                  setState(() {
+                    if (hasFocus) {
+                      _isSearchOpen = true;
+                      _highlightedIndex = 0;
+                    }
+                  });
+                },
+                onKeyEvent: (_, event) {
+                  if (event is! KeyDownEvent || !_isSearchOpen) {
+                    return KeyEventResult.ignored;
+                  }
+
+                  final filtered = _filteredRepoNames;
+                  if (event.logicalKey == LogicalKeyboardKey.escape) {
+                    setState(() => _isSearchOpen = false);
+                    return KeyEventResult.handled;
+                  }
+
+                  if (filtered.isEmpty) return KeyEventResult.ignored;
+
+                  if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                    setState(() {
+                      _highlightedIndex = (_highlightedIndex + 1).clamp(
+                        0,
+                        filtered.length - 1,
+                      );
+                    });
+                    _scrollHighlightedOptionIntoView();
+                    return KeyEventResult.handled;
+                  }
+
+                  if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                    setState(() {
+                      _highlightedIndex = (_highlightedIndex - 1).clamp(
+                        0,
+                        filtered.length - 1,
+                      );
+                    });
+                    _scrollHighlightedOptionIntoView();
+                    return KeyEventResult.handled;
+                  }
+
+                  if (event.logicalKey == LogicalKeyboardKey.enter ||
+                      event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+                    _handleRepoSelected(filtered[safeHighlightedIndex]);
+                    return KeyEventResult.handled;
+                  }
+
+                  return KeyEventResult.ignored;
+                },
+                child: SizedBox(
+                  height: 36,
+                  child: TextField(
+                    controller: _addRepoController,
+                    onTap: () {
+                      setState(() => _isSearchOpen = true);
+                    },
+                    onChanged: (_) {
+                      setState(() {
+                        _isSearchOpen = true;
+                        _highlightedIndex = 0;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: context.l10n.gitSearchRepo,
+                      prefixIcon: const Icon(
+                        Icons.add_circle_outline,
+                        size: AppIconSize.md,
+                      ),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${_repos.length} / ${_allRepoNames.length}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: AppFontSize.sm,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          IconButton(
+                            onPressed: () {
+                              setState(() => _isSearchOpen = !_isSearchOpen);
+                              if (!_addRepoFocusNode.hasFocus) {
+                                _addRepoFocusNode.requestFocus();
+                              }
+                            },
+                            icon: Icon(
+                              _isSearchOpen
+                                  ? Icons.arrow_drop_up
+                                  : Icons.arrow_drop_down,
+                              size: AppIconSize.lg,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  // Dropdown toggle
-                  IconButton(
-                    onPressed: () {
-                      if (focusNode.hasFocus) {
-                        focusNode.unfocus();
-                      } else {
-                        focusNode.requestFocus();
-                      }
-                    },
-                    icon: const Icon(Icons.arrow_drop_down,
-                        size: AppIconSize.lg),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 28, minHeight: 28),
-                  ),
-                ],
+                ),
               ),
-            ),
+              if (_isSearchOpen) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Container(
+                  constraints: BoxConstraints(maxHeight: searchPanelHeight),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).dialogTheme.backgroundColor,
+                    borderRadius: AppRadius.mediumBorderRadius,
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: filtered.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(AppSpacing.lg),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'No repositories found',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      : NotificationListener<ScrollEndNotification>(
+                          onNotification: (_) {
+                            _snapSearchListToItemBoundary();
+                            return false;
+                          },
+                          child: ListView.builder(
+                            controller: _searchListScrollController,
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemExtent: _kSearchItemExtent,
+                            itemCount: filtered.length,
+                            itemBuilder: (ctx, i) {
+                              final name = filtered[i];
+                              final isHighlighted = i == safeHighlightedIndex;
+                              return Material(
+                                color: isHighlighted
+                                    ? Colors.teal.withValues(alpha: 0.22)
+                                    : Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _handleRepoSelected(name),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.add_circle_outline,
+                                          size: AppIconSize.md,
+                                        ),
+                                        const SizedBox(width: AppSpacing.md),
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontFamily: 'monospace',
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                ),
+              ],
+            ],
           ),
         );
-      },
-      optionsViewBuilder: (ctx, onSelected, options) {
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 8,
-            borderRadius: AppRadius.mediumBorderRadius,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: 300,
-                maxWidth: MediaQuery.of(ctx).size.width * 0.5,
-              ),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (ctx, i) {
-                  final name = options.elementAt(i);
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(
-                      Icons.add_circle_outline,
-                      size: AppIconSize.md,
-                    ),
-                    title: Text(
-                      name,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
-                    onTap: () => onSelected(name),
-                  );
-                },
-              ),
-            ),
-          ),
+        final cloneButton = FilledButton.icon(
+          onPressed: _cloneRepoToWorkspace,
+          icon: const Icon(Icons.download, size: AppIconSize.md),
+          label: const Text('Clone Repo'),
+        );
+
+        if (stackVertically) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              searchSection,
+              const SizedBox(height: AppSpacing.sm),
+              Align(alignment: Alignment.centerRight, child: cloneButton),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: searchSection),
+            const SizedBox(width: AppSpacing.sm),
+            cloneButton,
+          ],
         );
       },
     );
   }
 
+  void _scrollHighlightedOptionIntoView() {
+    if (!_searchListScrollController.hasClients) return;
+    final position = _searchListScrollController.position;
+    final firstVisibleIndex = (position.pixels / _kSearchItemExtent).floor();
+    final visibleItemCount = (position.viewportDimension / _kSearchItemExtent)
+        .floor();
+
+    double? targetOffset;
+    if (_highlightedIndex < firstVisibleIndex) {
+      targetOffset = _highlightedIndex * _kSearchItemExtent;
+    } else if (_highlightedIndex >= firstVisibleIndex + visibleItemCount) {
+      targetOffset =
+          (_highlightedIndex - visibleItemCount + 1) * _kSearchItemExtent;
+    }
+
+    if (targetOffset == null) return;
+    final clamped = targetOffset.clamp(0.0, position.maxScrollExtent);
+    _searchListScrollController.animateTo(
+      clamped,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _snapSearchListToItemBoundary() {
+    if (!_searchListScrollController.hasClients) return;
+    final position = _searchListScrollController.position;
+    final currentOffset = position.pixels;
+    final snappedOffset =
+        (currentOffset / _kSearchItemExtent).round() * _kSearchItemExtent;
+    final clamped = snappedOffset.clamp(0.0, position.maxScrollExtent);
+    if ((clamped - currentOffset).abs() < 0.5) return;
+    _searchListScrollController.animateTo(
+      clamped,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+    );
+  }
+
   void _openPublishDialog() {
+    _dismissSearchFocus();
     AppDialog.show(
       context: context,
-      builder: (ctx) => PublishModulesDialog(
-        projectPath: widget.projectPath,
-      ),
+      builder: (ctx) => PublishModulesDialog(projectPath: widget.projectPath),
     ).then((_) => _loadPinnedRepos(loadAll: true));
   }
 
@@ -678,9 +995,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
               ? null
               : () => _toggleAll(_selectedCount < _repos.length),
           icon: Icon(
-            _selectedCount == _repos.length
-                ? Icons.deselect
-                : Icons.select_all,
+            _selectedCount == _repos.length ? Icons.deselect : Icons.select_all,
             size: AppIconSize.md,
           ),
           label: Text(
@@ -820,8 +1135,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                         vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
-                        color: _branchColor(repo.branch)
-                            .withValues(alpha: 0.15),
+                        color: _branchColor(
+                          repo.branch,
+                        ).withValues(alpha: 0.15),
                         borderRadius: AppRadius.smallBorderRadius,
                       ),
                       child: Text(
@@ -837,20 +1153,11 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                 const SizedBox(width: AppSpacing.md),
                 // Status indicators
                 if (repo.changedFiles > 0)
-                  _statusBadge(
-                    '${repo.changedFiles} \u2191',
-                    Colors.orange,
-                  ),
+                  _statusBadge('${repo.changedFiles} \u2191', Colors.orange),
                 if (repo.aheadCount > 0)
-                  _statusBadge(
-                    '${repo.aheadCount} \u2191',
-                    Colors.green,
-                  ),
+                  _statusBadge('${repo.aheadCount} \u2191', Colors.green),
                 if (repo.behindCount > 0)
-                  _statusBadge(
-                    '${repo.behindCount} \u2193',
-                    Colors.cyan,
-                  ),
+                  _statusBadge('${repo.behindCount} \u2193', Colors.cyan),
                 // Per-repo actions
                 const SizedBox(width: AppSpacing.md),
                 _repoActionButton(
@@ -928,11 +1235,14 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }) {
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: AppIconSize.lg, color: onPressed != null ? color : null),
+      icon: Icon(
+        icon,
+        size: AppIconSize.lg,
+        color: onPressed != null ? color : null,
+      ),
       tooltip: tooltip,
       padding: const EdgeInsets.all(AppSpacing.xs),
       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
     );
   }
-
 }
