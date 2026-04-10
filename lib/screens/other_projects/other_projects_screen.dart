@@ -11,6 +11,7 @@ import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/providers/other_projects_provider.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
@@ -25,7 +26,8 @@ class OtherProjectsScreen extends ConsumerStatefulWidget {
   const OtherProjectsScreen({super.key});
 
   @override
-  ConsumerState<OtherProjectsScreen> createState() => _OtherProjectsScreenState();
+  ConsumerState<OtherProjectsScreen> createState() =>
+      _OtherProjectsScreenState();
 }
 
 class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
@@ -33,7 +35,8 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   String _filterType = '';
 
   void _switchBranch(WorkspaceInfo ws) {
-    final branches = ref.read(otherProjectsProvider).valueOrNull?.branches ?? {};
+    final branches =
+        ref.read(otherProjectsProvider).valueOrNull?.branches ?? {};
     AppDialog.show(
       context: context,
       builder: (ctx) => SwitchBranchDialog(
@@ -90,6 +93,28 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     }
   }
 
+  Future<void> _cloneRepository() async {
+    final result = await AppDialog.show<CloneRepositoryResult>(
+      context: context,
+      builder: (ctx) => const CloneRepositoryDialog(),
+    );
+    if (result != null) {
+      final workspace = WorkspaceInfo(
+        name: result.repoName,
+        path: result.targetDir,
+        type: result.detectedType,
+        description: result.description,
+        createdAt: DateTime.now().toIso8601String(),
+      );
+      await ref.read(otherProjectsProvider.notifier).addWorkspace(workspace);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cloned and added "${workspace.name}"')),
+        );
+      }
+    }
+  }
+
   Future<void> _editWorkspace(WorkspaceInfo workspace) async {
     final result = await AppDialog.show<WorkspaceInfo>(
       context: context,
@@ -103,7 +128,9 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
             ? () => workspace.nginxSubdomain
             : null,
       );
-      await ref.read(otherProjectsProvider.notifier).updateWorkspace(workspace, updated);
+      await ref
+          .read(otherProjectsProvider.notifier)
+          .updateWorkspace(workspace, updated);
     }
   }
 
@@ -134,7 +161,11 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     }
     try {
       if (Platform.isMacOS) {
-        await Process.run('open', ['-a', 'Visual Studio Code', path], runInShell: true);
+        await Process.run('open', [
+          '-a',
+          'Visual Studio Code',
+          path,
+        ], runInShell: true);
       } else if (Platform.isWindows) {
         await Process.run('cmd', ['/c', 'code', path], runInShell: true);
       } else {
@@ -150,7 +181,10 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   }
 
   void _showVscodeInstallDialog() {
-    AppDialog.show(context: context, builder: (ctx) => const VscodeInstallDialog());
+    AppDialog.show(
+      context: context,
+      builder: (ctx) => const VscodeInstallDialog(),
+    );
   }
 
   void _runGitPull(WorkspaceInfo ws) {
@@ -222,11 +256,15 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       try {
         final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
         final updated = ws.copyWith(nginxSubdomain: () => result.subdomain);
-        await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
+        await ref
+            .read(otherProjectsProvider.notifier)
+            .updateWorkspace(ws, updated);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.nginxLinked('${result.subdomain}$dotSuffix')),
+              content: Text(
+                context.l10n.nginxLinked('${result.subdomain}$dotSuffix'),
+              ),
             ),
           );
         }
@@ -263,7 +301,9 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
         nginxSubdomain: () => result.subdomain,
         port: result.port ?? port,
       );
-      await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
+      await ref
+          .read(otherProjectsProvider.notifier)
+          .updateWorkspace(ws, updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.nginxSetupSuccess(domain))),
@@ -312,7 +352,9 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       await NginxService.removeNginx(sub);
       // Clear subdomain from workspace
       final updated = ws.copyWith(nginxSubdomain: () => null);
-      await ref.read(otherProjectsProvider.notifier).updateWorkspace(ws, updated);
+      await ref
+          .read(otherProjectsProvider.notifier)
+          .updateWorkspace(ws, updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -387,7 +429,10 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     }
   }
 
-  Widget _buildListView(List<WorkspaceInfo> filtered, OtherProjectsState state) {
+  Widget _buildListView(
+    List<WorkspaceInfo> filtered,
+    OtherProjectsState state,
+  ) {
     return OtherProjectListView(
       workspaces: filtered,
       state: state,
@@ -407,7 +452,10 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     );
   }
 
-  Widget _buildGridView(List<WorkspaceInfo> filtered, OtherProjectsState state) {
+  Widget _buildGridView(
+    List<WorkspaceInfo> filtered,
+    OtherProjectsState state,
+  ) {
     return OtherProjectGridView(
       workspaces: filtered,
       state: state,
@@ -458,7 +506,8 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     final asyncState = ref.watch(otherProjectsProvider);
-    final isGridView = ref.watch(odooProjectsProvider).valueOrNull?.gridView ?? true;
+    final isGridView =
+        ref.watch(odooProjectsProvider).valueOrNull?.gridView ?? true;
 
     return Padding(
       padding: AppSpacing.screenPadding,
@@ -475,7 +524,8 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
               ),
               const Spacer(),
               IconButton(
-                onPressed: () => ref.read(odooProjectsProvider.notifier).toggleGridView(),
+                onPressed: () =>
+                    ref.read(odooProjectsProvider.notifier).toggleGridView(),
                 icon: Icon(isGridView ? Icons.view_list : Icons.grid_view),
                 tooltip: isGridView
                     ? context.l10n.wsViewList
@@ -487,8 +537,15 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                 label: Text(context.l10n.import_),
               ),
               const SizedBox(width: AppSpacing.sm),
+              FilledButton.icon(
+                onPressed: _cloneRepository,
+                icon: const Icon(Icons.download),
+                label: const Text('Clone Repo'),
+              ),
+              const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
-                onPressed: () => ref.read(otherProjectsProvider.notifier).reload(),
+                onPressed: () =>
+                    ref.read(otherProjectsProvider.notifier).reload(),
                 icon: const Icon(Icons.refresh),
                 tooltip: context.l10n.refresh,
               ),
@@ -570,10 +627,10 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
           const SizedBox(height: AppSpacing.lg),
           asyncState.when(
             loading: () => const Expanded(
-                child: Center(child: CircularProgressIndicator())),
-            error: (err, _) => Expanded(
-              child: Center(child: Text(err.toString())),
+              child: Center(child: CircularProgressIndicator()),
             ),
+            error: (err, _) =>
+                Expanded(child: Center(child: Text(err.toString()))),
             data: (state) {
               final workspaces = state.workspaces;
               final filtered = _applyFilter(workspaces);

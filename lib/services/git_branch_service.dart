@@ -18,15 +18,58 @@ typedef BranchesResult = ({
 typedef StaleBranchesResult = ({List<String> staleBranches, String output});
 
 /// Result of merging branches.
-typedef MergeResult = ({
-  bool success,
-  String output,
-  String currentBranch,
-});
+typedef MergeResult = ({bool success, String output, String currentBranch});
 
 /// Stateless service for common git branch operations.
 /// Handles only git commands — UI (dialogs, setState) stays in the caller.
 class GitBranchService {
+  /// Ensure origin fetches all remote branches, even for repos cloned with
+  /// `--single-branch`.
+  static Future<void> ensureOriginFetchesAllBranches(String workingDir) async {
+    final currentRefspec = await Process.run(
+      'git',
+      ['config', '--get-all', 'remote.origin.fetch'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    if (currentRefspec.exitCode != 0) return;
+
+    const fullRefspec = '+refs/heads/*:refs/remotes/origin/*';
+    final refspecs = (currentRefspec.stdout as String)
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+
+    if (refspecs.length == 1 && refspecs.first == fullRefspec) {
+      return;
+    }
+
+    await Process.run(
+      'git',
+      ['config', '--unset-all', 'remote.origin.fetch'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    await Process.run(
+      'git',
+      ['config', '--add', 'remote.origin.fetch', fullRefspec],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+  }
+
+  /// Expand fetch refspec if needed, then fetch + prune remote branches.
+  static Future<void> fetchAllBranches(String workingDir) async {
+    await ensureOriginFetchesAllBranches(workingDir);
+    await Process.run(
+      'git',
+      ['fetch', '--prune', '--quiet', 'origin'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+  }
+
   /// Load local/remote branches, current branch status (changed files, behind count).
   static Future<BranchesResult> loadBranches(String workingDir) async {
     // Get branch list
@@ -48,10 +91,11 @@ class GitBranchService {
 
     final localBranches = <String>{};
     final remoteBranches = <String>{};
-    for (final ref in (result.stdout as String)
-        .split('\n')
-        .map((b) => b.trim())
-        .where((b) => b.isNotEmpty)) {
+    for (final ref
+        in (result.stdout as String)
+            .split('\n')
+            .map((b) => b.trim())
+            .where((b) => b.isNotEmpty)) {
       if (ref.contains('HEAD')) continue;
       if (ref.startsWith('refs/heads/')) {
         localBranches.add(ref.substring('refs/heads/'.length));
@@ -193,7 +237,18 @@ class GitBranchService {
       }
     }
     final result = await PlatformService.runGh(
-      ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number', '--limit', '1'],
+      [
+        'pr',
+        'list',
+        '--head',
+        branch,
+        '--state',
+        'open',
+        '--json',
+        'number',
+        '--limit',
+        '1',
+      ],
       workingDirectory: workingDir,
       environment: env,
     );
@@ -250,12 +305,7 @@ class GitBranchService {
     String? currentBranch,
   }) async {
     // Fetch + prune remote refs
-    await Process.run(
-      'git',
-      ['fetch', '--prune'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    await fetchAllBranches(workingDir);
 
     // Find local branches whose upstream is gone
     final result = await Process.run(
@@ -290,8 +340,7 @@ class GitBranchService {
   }
 
   /// Delete multiple branches (force). Returns deleted and failed lists.
-  static Future<({List<String> deleted, List<String> failed})>
-      deleteBranches(
+  static Future<({List<String> deleted, List<String> failed})> deleteBranches(
     String workingDir,
     List<String> branches,
   ) async {
@@ -460,8 +509,8 @@ class GitBranchService {
     final cmd = Platform.isMacOS
         ? 'open'
         : Platform.isWindows
-            ? 'start'
-            : 'xdg-open';
+        ? 'start'
+        : 'xdg-open';
     await Process.run(cmd, [url], runInShell: true);
   }
 }

@@ -20,6 +20,70 @@ const _presetTypes = [
   'Java',
 ];
 
+class WorkspaceImportHelper {
+  static String basename(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final trimmed = normalized.endsWith('/')
+        ? normalized.substring(0, normalized.length - 1)
+        : normalized;
+    if (trimmed.isEmpty) return '';
+    return trimmed.split('/').last;
+  }
+
+  static Future<String> detectType(String dirPath) async {
+    final markers = {
+      'pubspec.yaml': 'Flutter',
+      'package.json': '',
+      '.csproj': '.NET',
+      'Cargo.toml': 'Rust',
+      'go.mod': 'Go',
+      'pom.xml': 'Java',
+      'build.gradle': 'Java',
+      'requirements.txt': 'Python',
+      'setup.py': 'Python',
+      'pyproject.toml': 'Python',
+    };
+
+    final dir = Directory(dirPath);
+    if (!await dir.exists()) return '';
+
+    for (final entry in markers.entries) {
+      if (await File('$dirPath/${entry.key}').exists()) {
+        if (entry.key == 'package.json') {
+          if (await File('$dirPath/next.config.js').exists() ||
+              await File('$dirPath/next.config.mjs').exists() ||
+              await File('$dirPath/next.config.ts').exists()) {
+            return 'NextJS';
+          }
+          return 'React';
+        }
+
+        if (entry.value == 'Python') {
+          if (await File('$dirPath/odoo-bin').exists() ||
+              await File('$dirPath/odoo.conf').exists() ||
+              await Directory('$dirPath/addons').exists()) {
+            return 'Odoo';
+          }
+          return entry.value;
+        }
+
+        return entry.value;
+      }
+    }
+
+    try {
+      final files = await dir.list().toList();
+      for (final f in files) {
+        if (f.path.endsWith('.csproj') || f.path.endsWith('.sln')) {
+          return '.NET';
+        }
+      }
+    } catch (_) {}
+
+    return '';
+  }
+}
+
 class ImportWorkspaceDialog extends StatefulWidget {
   final WorkspaceInfo? existing;
 
@@ -65,7 +129,7 @@ class _ImportWorkspaceDialogState extends State<ImportWorkspaceDialog> {
     setState(() {
       _workspacePath = path!;
       if (_nameController.text.isEmpty) {
-        _nameController.text = path.split('/').last.split('\\').last;
+        _nameController.text = WorkspaceImportHelper.basename(path);
       }
     });
 
@@ -75,60 +139,9 @@ class _ImportWorkspaceDialogState extends State<ImportWorkspaceDialog> {
 
   Future<void> _autoDetectType(String dirPath) async {
     if (_typeController.text.isNotEmpty) return;
-
-    final markers = {
-      'pubspec.yaml': 'Flutter',
-      'package.json': '', // need further check
-      '.csproj': '.NET',
-      'Cargo.toml': 'Rust',
-      'go.mod': 'Go',
-      'pom.xml': 'Java',
-      'build.gradle': 'Java',
-      'requirements.txt': 'Python',
-      'setup.py': 'Python',
-      'pyproject.toml': 'Python',
-    };
-
-    final dir = Directory(dirPath);
-    if (!await dir.exists()) return;
-
-    for (final entry in markers.entries) {
-      if (await File('$dirPath/${entry.key}').exists()) {
-        if (entry.key == 'package.json') {
-          // Check for next.config
-          if (await File('$dirPath/next.config.js').exists() ||
-              await File('$dirPath/next.config.mjs').exists() ||
-              await File('$dirPath/next.config.ts').exists()) {
-            setState(() => _typeController.text = 'NextJS');
-          } else {
-            setState(() => _typeController.text = 'React');
-          }
-        } else if (entry.value == 'Python') {
-          // Check if it's Odoo
-          if (await File('$dirPath/odoo-bin').exists() ||
-              await File('$dirPath/odoo.conf').exists() ||
-              await Directory('$dirPath/addons').exists()) {
-            setState(() => _typeController.text = 'Odoo');
-          } else {
-            setState(() => _typeController.text = entry.value);
-          }
-        } else {
-          setState(() => _typeController.text = entry.value);
-        }
-        return;
-      }
-    }
-
-    // Check .csproj pattern (any *.csproj file)
-    try {
-      final files = await dir.list().toList();
-      for (final f in files) {
-        if (f.path.endsWith('.csproj') || f.path.endsWith('.sln')) {
-          setState(() => _typeController.text = '.NET');
-          return;
-        }
-      }
-    } catch (_) {}
+    final type = await WorkspaceImportHelper.detectType(dirPath);
+    if (!mounted || type.isEmpty) return;
+    setState(() => _typeController.text = type);
   }
 
   void _save() {
@@ -161,7 +174,9 @@ class _ImportWorkspaceDialogState extends State<ImportWorkspaceDialog> {
       title: Row(
         children: [
           Text(
-            widget.existing != null ? context.l10n.wsEdit : context.l10n.wsImport,
+            widget.existing != null
+                ? context.l10n.wsEdit
+                : context.l10n.wsImport,
           ),
           const Spacer(),
           AppDialog.closeButton(context),

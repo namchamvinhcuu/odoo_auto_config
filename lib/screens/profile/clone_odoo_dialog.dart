@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/command_runner.dart';
+import 'package:odoo_auto_config/services/git_branch_service.dart';
 import 'package:odoo_auto_config/services/git_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
@@ -60,10 +61,12 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
     String? path;
     if (PlatformService.isWindows) {
       path = await PlatformService.pickDirectory(
-          dialogTitle: context.l10n.baseDirectory);
+        dialogTitle: context.l10n.baseDirectory,
+      );
     } else {
-      path = await FilePicker.platform
-          .getDirectoryPath(dialogTitle: context.l10n.baseDirectory);
+      path = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: context.l10n.baseDirectory,
+      );
     }
     if (path != null) setState(() => _baseDir = path!);
   }
@@ -89,7 +92,8 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
 
     if (await Directory(targetDir).exists()) {
       setState(
-          () => _logLines.add('[ERROR] Directory already exists: $targetDir'));
+        () => _logLines.add('[ERROR] Directory already exists: $targetDir'),
+      );
       return;
     }
 
@@ -155,6 +159,13 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
       if (!mounted) return;
 
       if (exitCode == 0) {
+        await GitBranchService.ensureOriginFetchesAllBranches(targetDir);
+        await Process.run(
+          'git',
+          ['fetch', '--prune', '--quiet', 'origin'],
+          workingDirectory: targetDir,
+          runInShell: true,
+        );
         setState(() {
           _logLines.add('');
           _logLines.add('[+] Odoo $_version.0 cloned successfully!');
@@ -201,11 +212,12 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(context.l10n.cloneOdooSubtitle,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.grey)),
+            Text(
+              context.l10n.cloneOdooSubtitle,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
             const SizedBox(height: AppSpacing.lg),
             // Version selector
             DropdownButtonFormField<int>(
@@ -216,8 +228,9 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
                 isDense: true,
               ),
               items: _versions
-                  .map((v) =>
-                      DropdownMenuItem(value: v, child: Text('Odoo $v.0')))
+                  .map(
+                    (v) => DropdownMenuItem(value: v, child: Text('Odoo $v.0')),
+                  )
                   .toList(),
               onChanged: _cloning ? null : _onVersionChanged,
             ),
@@ -263,8 +276,10 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
               onChanged: _cloning
                   ? null
                   : (v) => setState(() => _shallowClone = v ?? true),
-              title: Text(context.l10n.shallowClone,
-                  style: const TextStyle(fontSize: AppFontSize.md)),
+              title: Text(
+                context.l10n.shallowClone,
+                style: const TextStyle(fontSize: AppFontSize.md),
+              ),
               dense: true,
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
@@ -290,10 +305,12 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.download),
             label: Text(
-                _cloning ? context.l10n.cloning : context.l10n.cloneOdooSource),
+              _cloning ? context.l10n.cloning : context.l10n.cloneOdooSource,
+            ),
           ),
       ],
     );

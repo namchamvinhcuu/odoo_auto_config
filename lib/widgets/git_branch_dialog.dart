@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
@@ -10,19 +9,17 @@ import 'package:odoo_auto_config/services/git_branch_service.dart';
 typedef GitDialogBuilder = Widget Function(String name, String path);
 
 /// Callback to build a pull dialog with optional target/current branch.
-typedef GitPullDialogBuilder = Widget Function(
-  String name,
-  String path, {
-  String? targetBranch,
-  String? currentBranch,
-});
+typedef GitPullDialogBuilder =
+    Widget Function(
+      String name,
+      String path, {
+      String? targetBranch,
+      String? currentBranch,
+    });
 
 /// Callback to build a PR dialog with current branch info.
-typedef GitPRDialogBuilder = Widget Function(
-  String name,
-  String path,
-  String currentBranch,
-);
+typedef GitPRDialogBuilder =
+    Widget Function(String name, String path, String currentBranch);
 
 /// Callback to build a prune dialog that returns branches to delete.
 typedef GitPruneDialogBuilder = Widget Function(List<String> branches);
@@ -82,12 +79,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
   Future<void> _loadBranches({bool fetch = false}) async {
     setState(() => _loading = true);
     if (fetch) {
-      await Process.run(
-        'git',
-        ['fetch', '--prune', '--quiet'],
-        workingDirectory: widget.path,
-        runInShell: true,
-      );
+      await GitBranchService.fetchAllBranches(widget.path);
     }
     final result = await GitBranchService.loadBranches(widget.path);
     if (!mounted) return;
@@ -137,77 +129,76 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     final result2 = await AppDialog.show<({String name, String base})>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            final hasName = controller.text.trim().isNotEmpty;
-            return AlertDialog(
-              title: Row(
-                children: [
-                  Text(ctx.l10n.gitBranchCreateTitle),
-                  const Spacer(),
-                  AppDialog.closeButton(ctx),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: ctx.l10n.gitBranchNameLabel,
-                      hintText: ctx.l10n.gitBranchNameHint,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    onChanged: (_) => setDialogState(() {}),
-                    onSubmitted: (v) {
-                      if (v.trim().isNotEmpty) {
-                        Navigator.pop(
-                            ctx, (name: v.trim(), base: selectedBase));
-                      }
-                    },
+        builder: (ctx, setDialogState) {
+          final hasName = controller.text.trim().isNotEmpty;
+          return AlertDialog(
+            title: Row(
+              children: [
+                Text(ctx.l10n.gitBranchCreateTitle),
+                const Spacer(),
+                AppDialog.closeButton(ctx),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: ctx.l10n.gitBranchNameLabel,
+                    hintText: ctx.l10n.gitBranchNameHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedBase,
-                    decoration: InputDecoration(
-                      labelText: ctx.l10n.gitBranchBaseBranch,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    isExpanded: true,
-                    items: allBranches
-                        .map(
-                            (b) => DropdownMenuItem(value: b, child: Text(b)))
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() => selectedBase = v);
-                      }
-                    },
+                  onChanged: (_) => setDialogState(() {}),
+                  onSubmitted: (v) {
+                    if (v.trim().isNotEmpty) {
+                      Navigator.pop(ctx, (name: v.trim(), base: selectedBase));
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedBase,
+                  decoration: InputDecoration(
+                    labelText: ctx.l10n.gitBranchBaseBranch,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
                   ),
-                ],
-              ),
-              actions: [
-                FilledButton(
-                  onPressed: hasName
-                      ? () {
-                          Navigator.pop(ctx,
-                              (name: controller.text.trim(), base: selectedBase));
-                        }
-                      : null,
-                  child: Text(ctx.l10n.gitBranchCreate),
+                  isExpanded: true,
+                  items: allBranches
+                      .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setDialogState(() => selectedBase = v);
+                    }
+                  },
                 ),
               ],
-            );
-          },
-        ),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: hasName
+                    ? () {
+                        Navigator.pop(ctx, (
+                          name: controller.text.trim(),
+                          base: selectedBase,
+                        ));
+                      }
+                    : null,
+                child: Text(ctx.l10n.gitBranchCreate),
+              ),
+            ],
+          );
+        },
+      ),
     );
     controller.dispose();
     if (result2 == null || !mounted) return;
 
-    final baseBranch =
-        result2.base == _current ? null : result2.base;
+    final baseBranch = result2.base == _current ? null : result2.base;
     final result = await GitBranchService.createBranch(
       widget.path,
       result2.name,
@@ -283,8 +274,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
 
     // Check for open PR before allowing remote delete
     if (deleteRemote) {
-      final hasOpenPR =
-          await GitBranchService.hasOpenPR(widget.path, branch);
+      final hasOpenPR = await GitBranchService.hasOpenPR(widget.path, branch);
       if (!mounted) return;
       if (hasOpenPR) {
         setState(() {
@@ -300,8 +290,10 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     if (result.success) {
       var msg = result.output;
       if (deleteRemote) {
-        final remoteResult =
-            await GitBranchService.deleteRemoteBranch(widget.path, branch);
+        final remoteResult = await GitBranchService.deleteRemoteBranch(
+          widget.path,
+          branch,
+        );
         if (!mounted) return;
         msg = remoteResult.success
             ? '${result.output}\n${remoteResult.output}'
@@ -350,7 +342,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             var msg = forceResult.output;
             if (forceResult.success && deleteRemote) {
               final remoteResult = await GitBranchService.deleteRemoteBranch(
-                  widget.path, branch);
+                widget.path,
+                branch,
+              );
               if (mounted) {
                 msg = remoteResult.success
                     ? '${forceResult.output}\n${remoteResult.output}'
@@ -391,26 +385,31 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
           children: [
             ListTile(
               leading: const Icon(Icons.arrow_back, color: Colors.blue),
-              title: Text.rich(TextSpan(children: [
-                const TextSpan(text: 'Merge '),
+              title: Text.rich(
                 TextSpan(
-                  text: branch,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
+                  children: [
+                    const TextSpan(text: 'Merge '),
+                    TextSpan(
+                      text: branch,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const TextSpan(text: ' into '),
+                    TextSpan(
+                      text: _current,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
-                const TextSpan(text: ' into '),
-                TextSpan(
-                  text: _current,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ])),
-              subtitle:
-                  Text(ctx.l10n.gitMergeIntoCurrentDesc(_current, branch)),
+              ),
+              subtitle: Text(
+                ctx.l10n.gitMergeIntoCurrentDesc(_current, branch),
+              ),
               onTap: () => Navigator.pop(ctx, 'into_current'),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.mediumBorderRadius,
@@ -419,26 +418,29 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             const SizedBox(height: AppSpacing.sm),
             ListTile(
               leading: const Icon(Icons.arrow_forward, color: Colors.green),
-              title: Text.rich(TextSpan(children: [
-                const TextSpan(text: 'Merge '),
+              title: Text.rich(
                 TextSpan(
-                  text: _current,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
+                  children: [
+                    const TextSpan(text: 'Merge '),
+                    TextSpan(
+                      text: _current,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const TextSpan(text: ' into '),
+                    TextSpan(
+                      text: branch,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
-                const TextSpan(text: ' into '),
-                TextSpan(
-                  text: branch,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ])),
-              subtitle:
-                  Text(ctx.l10n.gitMergeIntoTargetDesc(_current, branch)),
+              ),
+              subtitle: Text(ctx.l10n.gitMergeIntoTargetDesc(_current, branch)),
               onTap: () => Navigator.pop(ctx, 'into_target'),
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.mediumBorderRadius,
@@ -550,8 +552,10 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     );
     if (toDelete == null || toDelete.isEmpty || !mounted) return;
 
-    final deleteResult =
-        await GitBranchService.deleteBranches(widget.path, toDelete);
+    final deleteResult = await GitBranchService.deleteBranches(
+      widget.path,
+      toDelete,
+    );
     if (mounted) {
       setState(() {
         if (deleteResult.deleted.isNotEmpty) {
@@ -575,10 +579,12 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     List<String> branches, {
     bool isRemote = false,
   }) {
-    final mainBranches =
-        branches.where((b) => b == 'main' || b == 'master').toList();
-    final otherBranches =
-        branches.where((b) => b != 'main' && b != 'master').toList();
+    final mainBranches = branches
+        .where((b) => b == 'main' || b == 'master')
+        .toList();
+    final otherBranches = branches
+        .where((b) => b != 'main' && b != 'master')
+        .toList();
     return [
       ...otherBranches.map((b) => _branchTile(b, isRemote: isRemote)),
       if (otherBranches.isNotEmpty && mainBranches.isNotEmpty)
@@ -592,8 +598,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     final canTap = !isCurrent && !_switching;
     return InkWell(
       onTap: canTap ? () => _checkout(branch) : null,
-      mouseCursor:
-          canTap ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      mouseCursor: canTap ? SystemMouseCursors.click : SystemMouseCursors.basic,
       borderRadius: AppRadius.smallBorderRadius,
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -713,8 +718,11 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       children: [
         Row(
           children: [
-            Icon(Icons.account_tree,
-                size: AppIconSize.md, color: Colors.grey.shade500),
+            Icon(
+              Icons.account_tree,
+              size: AppIconSize.md,
+              color: Colors.grey.shade500,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               context.l10n.gitBranchLocal,
@@ -738,8 +746,11 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       children: [
         Row(
           children: [
-            Icon(Icons.cloud_outlined,
-                size: AppIconSize.md, color: Colors.grey.shade500),
+            Icon(
+              Icons.cloud_outlined,
+              size: AppIconSize.md,
+              color: Colors.grey.shade500,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               context.l10n.gitBranchRemote,
@@ -769,8 +780,8 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
               Text(
                 widget.displayName,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
             ],
           ),
@@ -790,8 +801,9 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                   fontSize: AppFontSize.md,
                 ),
               ),
-              backgroundColor:
-                  widget.branchColor(_current).withValues(alpha: 0.1),
+              backgroundColor: widget
+                  .branchColor(_current)
+                  .withValues(alpha: 0.1),
               visualDensity: VisualDensity.compact,
             ),
           ],
@@ -807,14 +819,13 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             onPressed: _switching
                 ? null
                 : () async {
-                    final url =
-                        await GitBranchService.getRemoteUrl(widget.path);
+                    final url = await GitBranchService.getRemoteUrl(
+                      widget.path,
+                    );
                     if (url != null) {
                       final branch = _current;
-                      final isDefault =
-                          branch == 'main' || branch == 'master';
-                      final target =
-                          isDefault ? url : '$url/tree/$branch';
+                      final isDefault = branch == 'main' || branch == 'master';
+                      final target = isDefault ? url : '$url/tree/$branch';
                       await GitBranchService.openInBrowser(target);
                     }
                   },
@@ -829,10 +840,16 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                     setState(() => _message = null);
                     _loadBranches(fetch: true);
                   },
-            icon: const Icon(Icons.refresh, color: Colors.white, size: AppIconSize.md),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
             tooltip: context.l10n.refresh,
             style: IconButton.styleFrom(
-              backgroundColor: (_switching || _loading) ? Colors.grey : GitActionColors.refresh,
+              backgroundColor: (_switching || _loading)
+                  ? Colors.grey
+                  : GitActionColors.refresh,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
@@ -857,9 +874,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     FilledButton.tonalIcon(
-                      onPressed: (_switching ||
-                              _loading ||
-                              _behindRemote == 0)
+                      onPressed: (_switching || _loading || _behindRemote == 0)
                           ? null
                           : () async {
                               await AppDialog.show(
@@ -874,7 +889,10 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                                 _loadBranches();
                               }
                             },
-                      icon: const Icon(GitActionIcons.pull, size: AppIconSize.md),
+                      icon: const Icon(
+                        GitActionIcons.pull,
+                        size: AppIconSize.md,
+                      ),
                       label: Text(context.l10n.gitBranchPull),
                       style: FilledButton.styleFrom(
                         foregroundColor: GitActionColors.pull,
@@ -882,9 +900,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.tonalIcon(
-                      onPressed: (_switching ||
-                              _loading ||
-                              _changedFiles == 0)
+                      onPressed: (_switching || _loading || _changedFiles == 0)
                           ? null
                           : () async {
                               await AppDialog.show(
@@ -899,7 +915,10 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                                 _loadBranches();
                               }
                             },
-                      icon: const Icon(GitActionIcons.commit, size: AppIconSize.md),
+                      icon: const Icon(
+                        GitActionIcons.commit,
+                        size: AppIconSize.md,
+                      ),
                       label: Text(context.l10n.gitBranchCommit),
                       style: FilledButton.styleFrom(
                         foregroundColor: GitActionColors.commit,
@@ -942,29 +961,33 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                   ],
                 ),
                 // Status info
-                if (!_loading &&
-                    (_changedFiles > 0 || _behindRemote > 0)) ...[
+                if (!_loading && (_changedFiles > 0 || _behindRemote > 0)) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       if (_changedFiles > 0)
                         Chip(
-                          avatar: const Icon(Icons.edit_note,
-                              size: AppIconSize.md, color: Colors.orange),
+                          avatar: const Icon(
+                            Icons.edit_note,
+                            size: AppIconSize.md,
+                            color: Colors.orange,
+                          ),
                           label: Text(
                             context.l10n.gitBranchChanged(_changedFiles),
                             style: const TextStyle(color: Colors.orange),
                           ),
-                          backgroundColor:
-                              Colors.orange.withValues(alpha: 0.1),
+                          backgroundColor: Colors.orange.withValues(alpha: 0.1),
                           visualDensity: VisualDensity.compact,
                         ),
                       if (_changedFiles > 0 && _behindRemote > 0)
                         const SizedBox(width: AppSpacing.sm),
                       if (_behindRemote > 0)
                         Chip(
-                          avatar: const Icon(Icons.arrow_downward,
-                              size: AppIconSize.md, color: Colors.cyan),
+                          avatar: const Icon(
+                            Icons.arrow_downward,
+                            size: AppIconSize.md,
+                            color: Colors.cyan,
+                          ),
                           label: Text(
                             context.l10n.gitBranchBehind(_behindRemote),
                             style: const TextStyle(color: Colors.cyan),
@@ -1010,8 +1033,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color:
-                          (_isError ? Colors.red : Colors.green).withValues(
+                      color: (_isError ? Colors.red : Colors.green).withValues(
                         alpha: 0.1,
                       ),
                       borderRadius: AppRadius.smallBorderRadius,

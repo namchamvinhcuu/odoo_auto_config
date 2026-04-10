@@ -133,6 +133,7 @@ lib/
 │   ├── status_card.dart             # StatusCard (StatelessWidget) — styled status card (success/error/warning/loading/info)
 │   ├── directory_picker_field.dart  # DirectoryPickerField (StatefulWidget) — text field + browse button
 │   ├── log_output.dart              # LogOutput (StatefulWidget) — real-time log với color coding + auto-scroll
+│   ├── clone_repository_dialog.dart # CloneRepositoryDialog — shared git clone dialog cho Other Projects và Odoo Workspace
 │   ├── nginx_setup_dialog.dart      # NginxSetupDialog (StatefulWidget) — setup nginx (subdomain, port, validation, conflict detection)
 │   ├── git_branch_dialog.dart       # GitBranchDialog (StatefulWidget) — shared Git Branches dialog (Other Projects + Odoo Workspace)
 │   ├── vscode_install_dialog.dart   # VscodeInstallDialog (StatefulWidget) — VSCode installer (brew/winget/apt)
