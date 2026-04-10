@@ -76,7 +76,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
   void initState() {
     super.initState();
     _current = widget.currentBranch;
-    _loadBranches();
+    _loadBranches(fetch: true);
   }
 
   Future<void> _loadBranches({bool fetch = false}) async {
