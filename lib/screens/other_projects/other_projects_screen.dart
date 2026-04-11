@@ -33,6 +33,7 @@ class OtherProjectsScreen extends ConsumerStatefulWidget {
 class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   final _searchController = TextEditingController();
   String _filterType = '';
+  String? _selectedPath;
 
   void _switchBranch(WorkspaceInfo ws) {
     final branches =
@@ -459,9 +460,11 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     return OtherProjectGridView(
       workspaces: filtered,
       state: state,
+      selectedPath: _selectedPath,
       onToggleFavourite: _toggleFavourite,
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
+      onSelect: (ws) => setState(() => _selectedPath = _selectedPath == ws.path ? null : ws.path),
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
       onEdit: _editWorkspace,
