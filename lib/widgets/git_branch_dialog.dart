@@ -924,34 +924,50 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                         foregroundColor: GitActionColors.commit,
                       ),
                     ),
-                    // PR button — hidden, code kept for future use
-                    // if (_current != 'main' && _current != 'master') ...[
-                    //   const SizedBox(width: AppSpacing.sm),
-                    //   FilledButton.tonalIcon(
-                    //     onPressed: _switching
-                    //         ? null
-                    //         : () async {
-                    //             await AppDialog.show(
-                    //               context: context,
-                    //               builder: (ctx) => widget.prDialogBuilder(
-                    //                 widget.displayName,
-                    //                 widget.path,
-                    //                 _current,
-                    //               ),
-                    //             );
-                    //             if (mounted) {
-                    //               setState(() => _message = null);
-                    //               _loadBranches();
-                    //             }
-                    //           },
-                    //     icon: const Icon(GitActionIcons.prBar,
-                    //         size: AppIconSize.md),
-                    //     label: Text(context.l10n.gitBranchPR),
-                    //     style: FilledButton.styleFrom(
-                    //       foregroundColor: GitActionColors.pr,
-                    //     ),
-                    //   ),
-                    // ],
+                    // PR button — check uncommitted changes first
+                    if (_current != 'main' && _current != 'master') ...[
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.tonalIcon(
+                        onPressed: _switching
+                            ? null
+                            : () async {
+                                // Check for uncommitted changes
+                                final hasChanges = _changedFiles > 0;
+                                if (hasChanges) {
+                                  // Open commit dialog first
+                                  await AppDialog.show(
+                                    context: context,
+                                    builder: (ctx) =>
+                                        widget.commitDialogBuilder(
+                                      widget.displayName,
+                                      widget.path,
+                                    ),
+                                  );
+                                } else {
+                                  // No changes — open PR dialog directly
+                                  await AppDialog.show(
+                                    context: context,
+                                    builder: (ctx) =>
+                                        widget.prDialogBuilder(
+                                      widget.displayName,
+                                      widget.path,
+                                      _current,
+                                    ),
+                                  );
+                                }
+                                if (mounted) {
+                                  setState(() => _message = null);
+                                  _loadBranches();
+                                }
+                              },
+                        icon: const Icon(GitActionIcons.prBar,
+                            size: AppIconSize.md),
+                        label: Text(context.l10n.gitBranchPR),
+                        style: FilledButton.styleFrom(
+                          foregroundColor: GitActionColors.pr,
+                        ),
+                      ),
+                    ],
                     const SizedBox(width: AppSpacing.sm),
                     FilledButton.icon(
                       onPressed: _switching ? null : _createBranch,
