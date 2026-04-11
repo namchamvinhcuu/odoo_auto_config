@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
-import 'package:odoo_auto_config/widgets/ansi_parser.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class RepoStatus {
   final String name;
@@ -216,164 +216,128 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
       content: SizedBox(
         width: AppDialog.widthLg,
         child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            child: SingleChildScrollView(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            if (_scanning)
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.md),
-                child: LinearProgressIndicator(),
-              ),
-            if (!_scanning && _repos.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  context.l10n.gitNoReposWithChanges,
-                  style: const TextStyle(color: Colors.grey),
+              if (_scanning)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.md),
+                  child: LinearProgressIndicator(),
                 ),
-              ),
-            if (_repos.isNotEmpty) ...[
-              // Select all / Deselect all
-              Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: (_running || _done)
-                        ? null
-                        : () => _toggleAll(_selectedCount < _repos.length),
-                    icon: Icon(
-                      _selectedCount == _repos.length
-                          ? Icons.deselect
-                          : Icons.select_all,
-                      size: AppIconSize.md,
-                    ),
-                    label: Text(
-                      _selectedCount == _repos.length
-                          ? context.l10n.gitDeselectAll
-                          : context.l10n.gitSelectAll,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    context.l10n.gitStagedFiles(_selectedCount),
+              if (!_scanning && _repos.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    context.l10n.gitNoReposWithChanges,
                     style: const TextStyle(color: Colors.grey),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              // Repo list
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: AppDialog.listHeight),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _repos.length,
-                  itemBuilder: (ctx, i) {
-                    final repo = _repos[i];
-                    return CheckboxListTile(
-                      dense: true,
-                      value: repo.selected,
-                      onChanged: (_running || _done)
-                          ? null
-                          : (v) => setState(() => repo.selected = v ?? false),
-                      title: Text(repo.name),
-                      subtitle: Text(
-                        '${repo.changedFiles} file(s)',
-                        style: TextStyle(
-                          fontSize: AppFontSize.md,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    );
-                  },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Commit message
-              TextField(
-                controller: _messageController,
-                enabled: !_running && !_done,
-                decoration: InputDecoration(
-                  labelText: context.l10n.gitCommitMessage,
-                  hintText: context.l10n.gitCommitMessageHint,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 8,
-                minLines: 3,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Push after commit checkbox
-              GestureDetector(
-                onTap: (_running || _done)
-                    ? null
-                    : () => setState(() => _pushAfterCommit = !_pushAfterCommit),
-                child: Row(
+              if (_repos.isNotEmpty) ...[
+                Row(
                   children: [
-                    Checkbox(
-                      value: _pushAfterCommit,
-                      onChanged: (_running || _done)
+                    TextButton.icon(
+                      onPressed: (_running || _done)
                           ? null
-                          : (v) => setState(() => _pushAfterCommit = v ?? false),
+                          : () => _toggleAll(_selectedCount < _repos.length),
+                      icon: Icon(
+                        _selectedCount == _repos.length
+                            ? Icons.deselect
+                            : Icons.select_all,
+                        size: AppIconSize.md,
+                      ),
+                      label: Text(
+                        _selectedCount == _repos.length
+                            ? context.l10n.gitDeselectAll
+                            : context.l10n.gitSelectAll,
+                      ),
                     ),
-                    Text(context.l10n.gitPushAfterCommit),
+                    const Spacer(),
+                    Text(
+                      context.l10n.gitStagedFiles(_selectedCount),
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            if (_running)
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.md),
-                child: LinearProgressIndicator(),
-              ),
-            // Log output
-            Container(
-              height: AppDialog.logHeightLg,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppLogColors.terminalBg,
-                borderRadius: AppRadius.mediumBorderRadius,
-                border: Border.all(color: Colors.grey.shade700),
-              ),
-              child: _logLines.isEmpty
-                  ? Center(
-                      child: Text(
-                        context.l10n.noOutputYet,
-                        style: const TextStyle(
-                            color: Colors.grey, fontFamily: 'monospace'),
-                      ),
-                    )
-                  : SelectionArea(
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (final line in _logLines)
-                                Text.rich(
-                                  TextSpan(
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: AppFontSize.md,
-                                    ),
-                                    children: AnsiParser.parse(line),
-                                  ),
-                                ),
-                            ],
+                const SizedBox(height: AppSpacing.xs),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: AppDialog.listHeight),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _repos.length,
+                      itemBuilder: (ctx, i) {
+                        final repo = _repos[i];
+                        return CheckboxListTile(
+                          dense: true,
+                          value: repo.selected,
+                          onChanged: (_running || _done)
+                              ? null
+                              : (v) => setState(() => repo.selected = v ?? false),
+                          title: Text(repo.name),
+                          subtitle: Text(
+                            '${repo.changedFiles} file(s)',
+                            style: TextStyle(
+                              fontSize: AppFontSize.md,
+                              color: Colors.grey.shade500,
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
-            ),
-          ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  controller: _messageController,
+                  enabled: !_running && !_done,
+                  decoration: InputDecoration(
+                    labelText: context.l10n.gitCommitMessage,
+                    hintText: context.l10n.gitCommitMessageHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 8,
+                  minLines: 3,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                GestureDetector(
+                  onTap: (_running || _done)
+                      ? null
+                      : () => setState(() => _pushAfterCommit = !_pushAfterCommit),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _pushAfterCommit,
+                        onChanged: (_running || _done)
+                            ? null
+                            : (v) => setState(() => _pushAfterCommit = v ?? false),
+                      ),
+                      Text(context.l10n.gitPushAfterCommit),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              if (_running)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.md),
+                  child: LinearProgressIndicator(),
+                ),
+              Flexible(
+                child: Flexible(
+                         child: LogOutput(
+                           lines: _logLines,
+                           maxHeight: AppDialog.logHeightLg,
+                           ansiColors: true,
+                           scrollController: _scrollController,
+                         ),
+                       ),
+              ),
+            ],
           ),
-        ),
         ),
       ),
       actions: [

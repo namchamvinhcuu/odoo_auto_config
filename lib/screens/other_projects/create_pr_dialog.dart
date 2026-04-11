@@ -8,8 +8,8 @@ import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
-import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'simple_git_commit_dialog.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class CreatePRDialog extends StatefulWidget {
   final String projectName;
@@ -524,35 +524,11 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
             ],
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
-              Container(
+              LogOutput(
+                lines: _logLines,
                 height: AppDialog.logHeightSm,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppLogColors.terminalBg,
-                  borderRadius: AppRadius.mediumBorderRadius,
-                  border: Border.all(color: Colors.grey.shade700),
-                ),
-                child: SelectionArea(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _logLines
-                          .map((line) => Text.rich(
-                                TextSpan(
-                                  children: AnsiParser.parse(line),
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: AppFontSize.md,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
+                ansiColors: true,
+                scrollController: _scrollController,
               ),
             ],
           ],

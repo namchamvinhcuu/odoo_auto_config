@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'package:odoo_auto_config/generated/version.dart';
+import 'package:odoo_auto_config/services/instance_service.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -155,7 +156,9 @@ rm "\$0"
     await Process.start('bash', [scriptPath, '$pid'],
         runInShell: true, mode: ProcessStartMode.detached);
 
-    // Exit app so script can replace the file
+    // Quit all other instances before replacing binary
+    await InstanceService.signalQuitAll();
+    await Future.delayed(const Duration(seconds: 1));
     exit(0);
   }
 
@@ -217,6 +220,9 @@ rm -f "\$0"
     await Process.start('/bin/bash', [scriptPath, '$pid'],
         runInShell: true, mode: ProcessStartMode.detached);
 
+    // Quit all other instances before replacing binary
+    await InstanceService.signalQuitAll();
+    await Future.delayed(const Duration(seconds: 1));
     exit(0);
   }
 
@@ -275,6 +281,10 @@ Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
       mode: ProcessStartMode.detached,
       runInShell: true,
     );
+
+    // Quit all other instances before replacing binary
+    await InstanceService.signalQuitAll();
+    await Future.delayed(const Duration(seconds: 1));
     exit(0);
   }
 
