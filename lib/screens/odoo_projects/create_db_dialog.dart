@@ -193,7 +193,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         width: AppDialog.widthSm,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: Column(

@@ -360,7 +360,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
         width: AppDialog.widthMd,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: _editing ? _buildEditView() : _buildInfoView(),

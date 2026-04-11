@@ -291,7 +291,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
         width: AppDialog.widthLg,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: Column(
             mainAxisSize: MainAxisSize.min,

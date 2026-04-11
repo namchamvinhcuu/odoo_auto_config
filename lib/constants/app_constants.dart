@@ -74,6 +74,10 @@ class AppDialog {
   static const double logHeightLg = 250;
   static const double logHeightXl = 350;
 
+  /// Max height for dialog content area (70% of screen height).
+  static double contentMaxHeight(BuildContext context) =>
+      MediaQuery.of(context).size.height * 0.7;
+
   /// Show a draggable dialog that cannot be dismissed by tapping outside or pressing ESC.
   /// Use this instead of [showDialog] for all app dialogs.
   static Future<T?> show<T>({

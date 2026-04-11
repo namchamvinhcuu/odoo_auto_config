@@ -186,7 +186,7 @@ class _ImportWorkspaceDialogState extends State<ImportWorkspaceDialog> {
         width: AppDialog.widthMd,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: Column(

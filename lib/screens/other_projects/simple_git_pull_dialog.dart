@@ -201,7 +201,7 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
         width: AppDialog.widthLg,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: Column(
