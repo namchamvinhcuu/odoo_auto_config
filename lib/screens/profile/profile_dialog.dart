@@ -172,7 +172,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
         width: AppDialog.widthXl,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: Column(

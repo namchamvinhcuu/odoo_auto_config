@@ -194,7 +194,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
         width: AppDialog.widthLg,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: SingleChildScrollView(
           child: Column(

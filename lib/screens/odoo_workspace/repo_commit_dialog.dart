@@ -277,7 +277,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
         width: AppDialog.widthLg,
         child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxHeight: AppDialog.contentMaxHeight(context),
             ),
             child: Column(
             mainAxisSize: MainAxisSize.min,
