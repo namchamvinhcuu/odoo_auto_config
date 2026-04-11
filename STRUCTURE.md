@@ -7,7 +7,7 @@
 lib/
 ├── main.dart                        # Entry point, OdooAutoConfigApp (ConsumerWidget), Provider setup, window_manager init, SelectionArea
 ├── constants/
-│   └── app_constants.dart           # Design tokens: AppSpacing, AppFontSize, AppIconSize, AppRadius, AppDialog, GitActionIcons, GitActionColors, AppLogColors, AppNav
+│   └── app_constants.dart           # Design tokens: AppSpacing(xxs→xxxl), AppFontSize(xs→title), AppIconSize(sm→feature), AppRadius(sm→xl), AppDialog(width/height/listHeight/logHeight + show/closeButton), GitActionIcons, GitActionColors, AppLogColors, AppNav
 ├── generated/
 │   └── version.dart                 # Generated version const (auto by CI/release.sh — KHÔNG sửa thủ công)
 ├── l10n/

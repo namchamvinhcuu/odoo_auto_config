@@ -550,7 +550,19 @@ Quit All
 ## Lessons Learned — KHÔNG lặp lại các lỗi này
 
 ### UI / Layout
-- **KHÔNG hardcode số** cho size/spacing/font — luôn dùng `AppFontSize`, `AppIconSize`, `AppSpacing`, `AppRadius`, `AppDialog`
+- **KHÔNG BAO GIỜ hardcode số** cho UI dimensions — luôn dùng constants từ `app_constants.dart`:
+  **Spacing**: `AppSpacing.xxs(2)/xs(4)/sm(8)/md(12)/lg(16)/xl(20)/xxl(24)/xxxl(32)`
+  **Font**: `AppFontSize.xs(11)/sm(12)/md(13)/lg(16)/xl(17)/xxl(18)/title(28)`
+  **Icon**: `AppIconSize.sm(14)/md(16)/statusIcon(18)/lg(24)/xl(28)/xxl(40)/xxxl(48)/feature(64)`
+  **Radius**: `AppRadius.sm(4)/md(8)/lg(12)/xl(24)` + `smallBorderRadius/mediumBorderRadius/largeBorderRadius`
+  **Dialog width**: `AppDialog.widthSm(500)/widthMd(700)/widthLg(800)/widthXl(900)`
+  **Dialog height**: `AppDialog.heightSm(400)/heightMd(450)/heightLg(700)/heightXl(750)`
+  **List container**: `AppDialog.listHeightSm(120)/listHeight(150)`
+  **Log output**: `AppDialog.logHeightSm(180)/logHeightMd(200)/logHeightLg(250)/logHeightXl(350)`
+  **CircularProgressIndicator trong button**: `SizedBox(width: AppIconSize.md, height: AppIconSize.md)`
+  Nếu cần giá trị mới → thêm constant vào `app_constants.dart` TRƯỚC, rồi dùng constant đó
+- **Dialog content PHẢI wrap `SingleChildScrollView`** — tránh overflow khi nội dung dài (log output + form fields + list)
+  Pattern: `content: SizedBox(width: AppDialog.widthLg, child: SingleChildScrollView(child: Column(...)))`
 - **Grid card top row** dùng `Stack` + `Align` cho elements ở các góc (branch top-left, star top-right).
   KHÔNG dùng `Row` + `Spacer`/`Flexible` — gây lỗi vị trí khi có/không có conditional children
 - **Dialog responsive** dùng `Builder` + `MediaQuery.of(context).size.width`.
