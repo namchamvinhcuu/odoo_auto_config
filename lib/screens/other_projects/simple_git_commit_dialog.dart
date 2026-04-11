@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
-import 'package:odoo_auto_config/widgets/ansi_parser.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 import 'create_pr_dialog.dart';
 
 class SimpleGitCommitDialog extends StatefulWidget {
@@ -293,8 +293,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.7,
             ),
-            child: SingleChildScrollView(
-          child: Column(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -347,9 +346,10 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Container(
-                  height: AppDialog.listHeight,
-                  decoration: BoxDecoration(
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: AppDialog.listHeight),
+                    decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade600),
                     borderRadius: AppRadius.mediumBorderRadius,
                   ),
@@ -394,6 +394,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                       );
                     },
                   ),
+                ),
                 ),
                 const SizedBox(height: AppSpacing.md),
 
@@ -453,48 +454,13 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
 
               // Log output area
               if (_logLines.isNotEmpty || _running)
-                Container(
-                  height: AppDialog.logHeightSm,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppLogColors.terminalBg,
-                    borderRadius: AppRadius.mediumBorderRadius,
-                    border: Border.all(color: Colors.grey.shade700),
+                Flexible(
+                  child: LogOutput(
+                    lines: _logLines,
+                    maxHeight: AppDialog.logHeightSm,
+                    ansiColors: true,
+                    scrollController: _scrollController,
                   ),
-                  child: _logLines.isEmpty
-                      ? Center(
-                          child: Text(
-                            context.l10n.noOutputYet,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        )
-                      : SelectionArea(
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  for (final line in _logLines)
-                                    Text.rich(
-                                      TextSpan(
-                                        style: const TextStyle(
-                                          fontFamily: 'monospace',
-                                          fontSize: AppFontSize.md,
-                                        ),
-                                        children: AnsiParser.parse(line),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
                 ),
             ],
 
@@ -531,7 +497,6 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
               ),
           ],
           ),
-        ),
         ),
       ),
     );

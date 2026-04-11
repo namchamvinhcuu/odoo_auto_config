@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
-import 'package:odoo_auto_config/widgets/ansi_parser.dart';
 import 'repo_info.dart';
+import 'package:odoo_auto_config/widgets/log_output.dart';
 
 // ── Workspace Commit Dialog ──
 
@@ -146,116 +146,93 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       content: SizedBox(
         width: AppDialog.widthLg,
         child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.7,
-            ),
-            child: SingleChildScrollView(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            // Repo list
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: AppDialog.listHeightSm),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: widget.repos.length,
-                itemBuilder: (ctx, i) {
-                  final repo = widget.repos[i];
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.folder,
-                        size: AppIconSize.md, color: Colors.orange),
-                    title: Text(repo.name,
-                        style: const TextStyle(fontSize: AppFontSize.md)),
-                    trailing: Text(
-                      '${repo.changedFiles} file(s)',
-                      style: TextStyle(
-                        fontSize: AppFontSize.sm,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            // Commit message
-            TextField(
-              controller: _messageController,
-              minLines: 3,
-              maxLines: 8,
-              decoration: InputDecoration(
-                labelText: context.l10n.gitCommitMessage,
-                hintText: context.l10n.gitCommitMessageHint,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: (_) => setState(() {}),
-              autofocus: true,
-              enabled: !_running && !_done,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            // Push after commit
-            GestureDetector(
-              onTap: (_running || _done)
-                  ? null
-                  : () =>
-                      setState(() => _pushAfterCommit = !_pushAfterCommit),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: _pushAfterCommit,
-                    onChanged: (_running || _done)
-                        ? null
-                        : (v) =>
-                            setState(() => _pushAfterCommit = v ?? true),
-                    visualDensity: VisualDensity.compact,
+              // Repo list
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: AppDialog.listHeightSm),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: widget.repos.length,
+                    itemBuilder: (ctx, i) {
+                      final repo = widget.repos[i];
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.folder,
+                            size: AppIconSize.md, color: Colors.orange),
+                        title: Text(repo.name,
+                            style: const TextStyle(fontSize: AppFontSize.md)),
+                        trailing: Text(
+                          '${repo.changedFiles} file(s)',
+                          style: TextStyle(
+                            fontSize: AppFontSize.sm,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  Text(
-                    context.l10n.gitPushAfterCommit,
-                    style: const TextStyle(fontSize: AppFontSize.sm),
-                  ),
-                ],
+                ),
               ),
-            ),
-            // Log output
-            if (_logLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              // Commit message
+              TextField(
+                controller: _messageController,
+                minLines: 3,
+                maxLines: 8,
+                decoration: InputDecoration(
+                  labelText: context.l10n.gitCommitMessage,
+                  hintText: context.l10n.gitCommitMessageHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (_) => setState(() {}),
+                autofocus: true,
+                enabled: !_running && !_done,
+              ),
               const SizedBox(height: AppSpacing.sm),
-              Container(
-                height: AppDialog.logHeightMd,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppLogColors.terminalBg,
-                  borderRadius: AppRadius.mediumBorderRadius,
-                  border: Border.all(color: Colors.grey.shade700),
-                ),
-                child: SelectionArea(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    padding: EdgeInsets.all(AppSpacing.md),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final line in _logLines)
-                            Text.rich(
-                              TextSpan(children: AnsiParser.parse(line)),
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: AppFontSize.sm,
-                              ),
-                            ),
-                        ],
-                      ),
+              // Push after commit
+              GestureDetector(
+                onTap: (_running || _done)
+                    ? null
+                    : () =>
+                        setState(() => _pushAfterCommit = !_pushAfterCommit),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: _pushAfterCommit,
+                      onChanged: (_running || _done)
+                          ? null
+                          : (v) =>
+                              setState(() => _pushAfterCommit = v ?? true),
+                      visualDensity: VisualDensity.compact,
                     ),
-                  ),
+                    Text(
+                      context.l10n.gitPushAfterCommit,
+                      style: const TextStyle(fontSize: AppFontSize.sm),
+                    ),
+                  ],
                 ),
               ),
+              // Log output
+              if (_logLines.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Flexible(
+                  child: LogOutput(
+                    lines: _logLines,
+                    maxHeight: AppDialog.logHeightMd,
+                    ansiColors: true,
+                    scrollController: _scrollController,
+                  ),
+                ),
+              ],
             ],
-          ],
           ),
-        ),
         ),
       ),
       actions: [
