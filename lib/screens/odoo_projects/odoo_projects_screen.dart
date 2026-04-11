@@ -30,6 +30,7 @@ class OdooProjectsScreen extends ConsumerStatefulWidget {
 
 class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
   final _searchController = TextEditingController();
+  String? _selectedPath;
 
   List<ProjectInfo> _applyFilter(List<ProjectInfo> projects) {
     final q = _searchController.text.toLowerCase();
@@ -466,12 +467,14 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
   Widget _buildGridView(List<ProjectInfo> filtered) {
     return OdooProjectGridView(
       projects: filtered,
+      selectedPath: _selectedPath,
       onToggleFavourite: _toggleFavourite,
       onShowInfo: _showProjectInfo,
       onOpenWorkspace: _openWorkspaceView,
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
       onSelectivePull: _runSelectivePull,
+      onSelect: (proj) => setState(() => _selectedPath = _selectedPath == proj.path ? null : proj.path),
       onOpenInVscode: (proj) => _openInVscode(proj.path),
       onOpenInFileManager: (proj) => _openInFileManager(proj.path),
       onOpenInBrowser: _openInBrowser,

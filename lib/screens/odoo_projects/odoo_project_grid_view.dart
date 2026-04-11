@@ -8,12 +8,14 @@ class OdooProjectGridView extends StatelessWidget {
   const OdooProjectGridView({
     super.key,
     required this.projects,
+    this.selectedPath,
     required this.onToggleFavourite,
     required this.onShowInfo,
     required this.onOpenWorkspace,
     required this.onGitPull,
     required this.onGitCommit,
     required this.onSelectivePull,
+    required this.onSelect,
     required this.onOpenInVscode,
     required this.onOpenInFileManager,
     required this.onOpenInBrowser,
@@ -21,12 +23,14 @@ class OdooProjectGridView extends StatelessWidget {
   });
 
   final List<ProjectInfo> projects;
+  final String? selectedPath;
   final ValueChanged<ProjectInfo> onToggleFavourite;
   final ValueChanged<ProjectInfo> onShowInfo;
   final ValueChanged<ProjectInfo> onOpenWorkspace;
   final ValueChanged<ProjectInfo> onGitPull;
   final ValueChanged<ProjectInfo> onGitCommit;
   final ValueChanged<ProjectInfo> onSelectivePull;
+  final ValueChanged<ProjectInfo> onSelect;
   final ValueChanged<ProjectInfo> onOpenInVscode;
   final ValueChanged<ProjectInfo> onOpenInFileManager;
   final ValueChanged<ProjectInfo> onOpenInBrowser;
@@ -62,13 +66,25 @@ class OdooProjectGridView extends StatelessWidget {
             final proj = projects[index];
             final exists = Directory(proj.path).existsSync();
 
+            final isSelected = selectedPath == proj.path;
+
             return Card(
               clipBehavior: Clip.antiAlias,
+              shape: isSelected
+                  ? RoundedRectangleBorder(
+                      borderRadius: AppRadius.mediumBorderRadius,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    )
+                  : null,
               child: Tooltip(
                 message: proj.description.isNotEmpty ? proj.description : proj.path,
                 waitDuration: const Duration(milliseconds: 500),
                 child: InkWell(
-                  onTap: exists ? () => onOpenInVscode(proj) : null,
+                  onTap: () => onSelect(proj),
+                  onDoubleTap: exists ? () => onOpenInVscode(proj) : null,
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(context, details.globalPosition, proj, exists),
                   child: Column(

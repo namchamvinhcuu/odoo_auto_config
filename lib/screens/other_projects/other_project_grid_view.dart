@@ -13,6 +13,8 @@ class OtherProjectGridView extends StatelessWidget {
     required this.onToggleFavourite,
     required this.onGitPull,
     required this.onGitCommit,
+    this.selectedPath,
+    required this.onSelect,
     required this.onOpenInVscode,
     required this.onOpenInFileManager,
     required this.onEdit,
@@ -26,9 +28,11 @@ class OtherProjectGridView extends StatelessWidget {
 
   final List<WorkspaceInfo> workspaces;
   final OtherProjectsState state;
+  final String? selectedPath;
   final ValueChanged<WorkspaceInfo> onToggleFavourite;
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
+  final ValueChanged<WorkspaceInfo> onSelect;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
   final ValueChanged<WorkspaceInfo> onEdit;
@@ -69,13 +73,25 @@ class OtherProjectGridView extends StatelessWidget {
             final exists = Directory(ws.path).existsSync();
             final color = exists ? colorForType(ws.type) : Colors.grey;
 
+            final isSelected = selectedPath == ws.path;
+
             return Card(
               clipBehavior: Clip.antiAlias,
+              shape: isSelected
+                  ? RoundedRectangleBorder(
+                      borderRadius: AppRadius.mediumBorderRadius,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    )
+                  : null,
               child: Tooltip(
                 message: ws.description.isNotEmpty ? ws.description : ws.path,
                 waitDuration: const Duration(milliseconds: 500),
                 child: InkWell(
-                  onTap: exists ? () => onOpenInVscode(ws) : null,
+                  onTap: () => onSelect(ws),
+                  onDoubleTap: exists ? () => onOpenInVscode(ws) : null,
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(context, details.globalPosition, ws, exists),
                   child: Padding(
