@@ -125,7 +125,11 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,6 +245,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
             ],
           ],
           ),
+        ),
         ),
       ),
       actions: [

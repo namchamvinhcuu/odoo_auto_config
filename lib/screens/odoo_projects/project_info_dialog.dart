@@ -358,8 +358,13 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthMd,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: _editing ? _buildEditView() : _buildInfoView(),
+        ),
         ),
       ),
       actions: [

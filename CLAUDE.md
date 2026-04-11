@@ -561,8 +561,23 @@ Quit All
   **Log output**: `AppDialog.logHeightSm(180)/logHeightMd(200)/logHeightLg(250)/logHeightXl(350)`
   **CircularProgressIndicator trong button**: `SizedBox(width: AppIconSize.md, height: AppIconSize.md)`
   Nếu cần giá trị mới → thêm constant vào `app_constants.dart` TRƯỚC, rồi dùng constant đó
-- **Dialog content PHẢI wrap `SingleChildScrollView`** — tránh overflow khi nội dung dài (log output + form fields + list)
-  Pattern: `content: SizedBox(width: AppDialog.widthLg, child: SingleChildScrollView(child: Column(...)))`
+- **Dialog content PHẢI wrap `ConstrainedBox` + `SingleChildScrollView`** — tránh overflow khi nội dung dài
+  `SingleChildScrollView` + `Column(mainAxisSize: MainAxisSize.min)` KHÔNG tự scroll vì Column request đúng height nó cần.
+  PHẢI thêm `ConstrainedBox(maxHeight)` để giới hạn vùng hiển thị, khi đó `SingleChildScrollView` mới scroll được.
+  Pattern chuẩn:
+  ```dart
+  content: SizedBox(
+    width: AppDialog.widthLg,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [...]),
+      ),
+    ),
+  ),
+  ```
 - **Grid card top row** dùng `Stack` + `Align` cho elements ở các góc (branch top-left, star top-right).
   KHÔNG dùng `Row` + `Spacer`/`Flexible` — gây lỗi vị trí khi có/không có conditional children
 - **Dialog responsive** dùng `Builder` + `MediaQuery.of(context).size.width`.

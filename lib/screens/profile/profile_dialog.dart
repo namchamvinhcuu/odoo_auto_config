@@ -170,7 +170,11 @@ class _ProfileDialogState extends State<ProfileDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthXl,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -399,6 +403,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
               ],
             ],
           ),
+        ),
         ),
       ),
       actions: [
