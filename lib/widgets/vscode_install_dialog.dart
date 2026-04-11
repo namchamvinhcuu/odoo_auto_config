@@ -102,11 +102,12 @@ class _VscodeInstallDialogState extends State<VscodeInstallDialog> {
     return AlertDialog(
       title: Text(context.l10n.installVscode),
       content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        width: AppDialog.widthSm,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(
               context.l10n.installVscodeSubtitle,
               style: Theme.of(context)
@@ -116,9 +117,10 @@ class _VscodeInstallDialogState extends State<VscodeInstallDialog> {
             ),
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              LogOutput(lines: _logLines, height: 200),
+              LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
             ],
           ],
+          ),
         ),
       ),
       actions: [
@@ -131,8 +133,8 @@ class _VscodeInstallDialogState extends State<VscodeInstallDialog> {
             onPressed: _installing ? null : _install,
             icon: _installing
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download),

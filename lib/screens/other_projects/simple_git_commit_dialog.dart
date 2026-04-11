@@ -289,10 +289,11 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.md),
@@ -343,7 +344,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Container(
-                  height: 150,
+                  height: AppDialog.listHeight,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade600),
                     borderRadius: AppRadius.mediumBorderRadius,
@@ -449,7 +450,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
               // Log output area
               if (_logLines.isNotEmpty || _running)
                 Container(
-                  height: 180,
+                  height: AppDialog.logHeightSm,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: AppLogColors.terminalBg,
@@ -525,6 +526,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                 ),
               ),
           ],
+          ),
         ),
       ),
     );

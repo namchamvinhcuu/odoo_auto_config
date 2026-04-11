@@ -352,7 +352,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
           ],
         ),
         content: SizedBox(
-          width: 500,
+          width: AppDialog.widthSm,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,7 +593,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                     const SizedBox(height: AppSpacing.md),
 
                     // Log output
-                    Flexible(child: LogOutput(lines: _logs, height: 180)),
+                    Flexible(child: LogOutput(lines: _logs, height: AppDialog.logHeightSm)),
                   ],
                 ),
         ),

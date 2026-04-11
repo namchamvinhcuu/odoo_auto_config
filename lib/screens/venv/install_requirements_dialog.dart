@@ -76,8 +76,8 @@ class _InstallRequirementsDialogState
             const Padding(
               padding: EdgeInsets.only(right: AppSpacing.sm),
               child: SizedBox(
-                width: 20,
-                height: 20,
+                width: AppIconSize.xl,
+                height: AppIconSize.xl,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
@@ -85,7 +85,7 @@ class _InstallRequirementsDialogState
         ],
       ),
       content: SizedBox(
-        width: 600,
+        width: AppDialog.widthMd,
         child: LogOutput(lines: _logs),
       ),
     );

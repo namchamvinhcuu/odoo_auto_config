@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Spacing constants used throughout the app
 class AppSpacing {
+  static const double xxs = 2;
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 12;
@@ -32,9 +33,12 @@ class AppFontSize {
 class AppIconSize {
   static const double sm = 14;
   static const double md = 16;
+  static const double statusIcon = 18;
   static const double lg = 24;
   static const double xl = 28;
   static const double xxl = 40;
+  static const double xxxl = 48;
+  static const double feature = 64;
 }
 
 /// Border radius constants
@@ -61,6 +65,14 @@ class AppDialog {
   static const double heightMd = 450;
   static const double heightLg = 700;
   static const double heightXl = 750;
+
+  // Container heights for lists and log outputs
+  static const double listHeightSm = 120;
+  static const double listHeight = 150;
+  static const double logHeightSm = 180;
+  static const double logHeightMd = 200;
+  static const double logHeightLg = 250;
+  static const double logHeightXl = 350;
 
   /// Show a draggable dialog that cannot be dismissed by tapping outside or pressing ESC.
   /// Use this instead of [showDialog] for all app dialogs.

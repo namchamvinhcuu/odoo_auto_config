@@ -338,7 +338,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
               Column(
                 children: [
                   const Icon(Icons.warning_amber,
-                      color: Colors.orange, size: 48),
+                      color: Colors.orange, size: AppIconSize.xxxl),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     context.l10n.prGhNotInstalled,
@@ -359,7 +359,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
               Column(
                 children: [
                   const Icon(Icons.key_off,
-                      color: Colors.orange, size: 48),
+                      color: Colors.orange, size: AppIconSize.xxxl),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     context.l10n.prGhNoToken,
@@ -429,7 +429,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
               if (_noChanges && !_done) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Icon(Icons.merge_type,
-                    size: 48, color: Colors.grey.shade500),
+                    size: AppIconSize.xxxl, color: Colors.grey.shade500),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   context.l10n.prNoChanges,
@@ -525,7 +525,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
               Container(
-                height: 180,
+                height: AppDialog.logHeightSm,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: AppLogColors.terminalBg,

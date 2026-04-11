@@ -237,8 +237,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                   const Padding(
                     padding: EdgeInsets.all(AppSpacing.sm),
                     child: SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: AppIconSize.md,
+                      height: AppIconSize.md,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )

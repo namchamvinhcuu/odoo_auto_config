@@ -187,7 +187,7 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ],
           ),
@@ -199,8 +199,8 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
             onPressed: (_creating || !_isValid) ? null : _create,
             icon: _creating
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.rocket_launch),
             label: Text(_creating

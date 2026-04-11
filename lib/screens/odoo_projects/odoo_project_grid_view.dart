@@ -77,7 +77,7 @@ class OdooProjectGridView extends StatelessWidget {
                       if (proj.hasNginx)
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                           color: Colors.teal,
                           child: Text(
                             'nginx',

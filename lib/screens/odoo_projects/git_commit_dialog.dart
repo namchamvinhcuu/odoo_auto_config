@@ -215,9 +215,10 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             if (_scanning)
               const Padding(
                 padding: EdgeInsets.only(bottom: AppSpacing.md),
@@ -261,7 +262,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
               const SizedBox(height: AppSpacing.xs),
               // Repo list
               ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 150),
+                constraints: const BoxConstraints(maxHeight: AppDialog.listHeight),
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: _repos.length,
@@ -326,7 +327,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
               ),
             // Log output
             Container(
-              height: 250,
+              height: AppDialog.logHeightLg,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppLogColors.terminalBg,
@@ -367,6 +368,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
                     ),
             ),
           ],
+          ),
         ),
       ),
       actions: [

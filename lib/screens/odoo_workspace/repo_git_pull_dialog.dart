@@ -192,16 +192,17 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_running)
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.md),
-                child: LinearProgressIndicator(),
-              ),
-            Container(
-              height: 250,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_running)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.md),
+                  child: LinearProgressIndicator(),
+                ),
+              Container(
+                height: AppDialog.logHeightLg,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppLogColors.terminalBg,
@@ -244,6 +245,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
                     ),
             ),
           ],
+          ),
         ),
       ),
     );
