@@ -103,7 +103,11 @@ class _VscodeInstallDialogState extends State<VscodeInstallDialog> {
       title: Text(context.l10n.installVscode),
       content: SizedBox(
         width: AppDialog.widthSm,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,6 +125,7 @@ class _VscodeInstallDialogState extends State<VscodeInstallDialog> {
             ],
           ],
           ),
+        ),
         ),
       ),
       actions: [

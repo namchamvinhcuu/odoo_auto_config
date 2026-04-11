@@ -145,7 +145,11 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -251,6 +255,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
             ],
           ],
           ),
+        ),
         ),
       ),
       actions: [

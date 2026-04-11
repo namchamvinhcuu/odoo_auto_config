@@ -81,7 +81,11 @@ class _PostgresInstallDialogState extends State<PostgresInstallDialog> {
       ]),
       content: SizedBox(
         width: AppDialog.widthSm,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,6 +141,7 @@ class _PostgresInstallDialogState extends State<PostgresInstallDialog> {
             ],
           ],
           ),
+        ),
         ),
       ),
       actions: [

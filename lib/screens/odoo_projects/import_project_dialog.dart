@@ -139,7 +139,11 @@ class _ImportProjectDialogState extends State<ImportProjectDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthMd,
-        child: SingleChildScrollView(
+        child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -241,6 +245,7 @@ class _ImportProjectDialogState extends State<ImportProjectDialog> {
 
             ],
           ),
+        ),
         ),
       ),
       actions: [
