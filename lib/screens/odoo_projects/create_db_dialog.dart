@@ -190,7 +190,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         ],
       ),
       content: SizedBox(
-        width: 520,
+        width: AppDialog.widthSm,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -239,7 +239,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 250),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightLg),
               ],
             ],
           ),
@@ -249,7 +249,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         FilledButton.icon(
           onPressed: _creating || _nameController.text.trim().isEmpty ? null : _create,
           icon: _creating
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(width: AppIconSize.md, height: AppIconSize.md, child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.add),
           label: Text(_creating ? context.l10n.creatingDatabase : context.l10n.createDatabase),
         ),

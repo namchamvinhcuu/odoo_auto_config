@@ -89,8 +89,8 @@ class DockerTab extends ConsumerWidget {
                               s.startingDocker ? null : () => notifier.startDocker(),
                           icon: s.startingDocker
                               ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
+                                  width: AppIconSize.md,
+                                  height: AppIconSize.md,
                                   child:
                                       CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.play_arrow),
@@ -129,7 +129,7 @@ class DockerTab extends ConsumerWidget {
   Widget _envChip(String label, bool ok) {
     return Chip(
       avatar: Icon(ok ? Icons.check_circle : Icons.cancel,
-          size: 18, color: ok ? Colors.green : Colors.red),
+          size: AppIconSize.statusIcon, color: ok ? Colors.green : Colors.red),
       label: Text(label),
       backgroundColor: ok
           ? Colors.green.withValues(alpha: 0.1)

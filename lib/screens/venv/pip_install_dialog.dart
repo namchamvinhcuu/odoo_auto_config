@@ -79,7 +79,7 @@ class _PipInstallDialogState extends State<PipInstallDialog> {
         ],
       ),
       content: SizedBox(
-        width: 550,
+        width: AppDialog.widthMd,
         height: AppDialog.heightSm,
         child: Column(
           children: [

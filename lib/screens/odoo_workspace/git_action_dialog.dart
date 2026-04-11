@@ -179,16 +179,17 @@ class _GitActionDialogState extends State<GitActionDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_running)
-              const Padding(
-                padding: EdgeInsets.only(bottom: AppSpacing.sm),
-                child: LinearProgressIndicator(),
-              ),
-            Container(
-              height: 350,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_running)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: LinearProgressIndicator(),
+                ),
+              Container(
+                height: AppDialog.logHeightXl,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppLogColors.terminalBg,
@@ -227,6 +228,7 @@ class _GitActionDialogState extends State<GitActionDialog> {
                     ),
             ),
           ],
+          ),
         ),
       ),
     );

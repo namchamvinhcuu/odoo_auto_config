@@ -357,7 +357,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
         ],
       ),
       content: SizedBox(
-        width: 560,
+        width: AppDialog.widthMd,
         child: SingleChildScrollView(
           child: _editing ? _buildEditView() : _buildInfoView(),
         ),
@@ -573,7 +573,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 22, color: Colors.grey),
+          Icon(icon, size: AppIconSize.lg, color: Colors.grey),
           const SizedBox(width: AppSpacing.sm),
           SizedBox(
             width: 170,

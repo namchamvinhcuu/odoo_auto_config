@@ -125,10 +125,11 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(context.l10n.nginxInitSubtitle,
                 style: Theme.of(context)
                     .textTheme
@@ -151,8 +152,8 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
                 onPressed: _installingMkcert ? null : _installMkcert,
                 icon: _installingMkcert
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: AppIconSize.md,
+                        height: AppIconSize.md,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.download),
                 label: Text(_installingMkcert
@@ -161,7 +162,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ]
             else ...[
@@ -235,10 +236,11 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ],
           ],
+          ),
         ),
       ),
       actions: [
@@ -247,8 +249,8 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
             onPressed: (_creating || !_isValid) ? null : _create,
             icon: _creating
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.create_new_folder),
             label: Text(_creating

@@ -57,11 +57,12 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
         AppDialog.closeButton(context, enabled: !_uninstalling),
       ]),
       content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        width: AppDialog.widthSm,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             if (!_uninstalling && !_uninstalled) ...[
               Text(
                 context.l10n.uninstallPythonConfirm(widget.fullVersion),
@@ -79,9 +80,10 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
             ],
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              LogOutput(lines: _logLines, height: 200),
+              LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
             ],
           ],
+          ),
         ),
       ),
       actions: [
@@ -99,8 +101,8 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
             ),
             icon: _uninstalling
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.delete),

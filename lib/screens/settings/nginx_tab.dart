@@ -364,7 +364,7 @@ class _NginxTabState extends ConsumerState<NginxTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.dns_outlined, size: 64, color: Colors.grey.shade600),
+            Icon(Icons.dns_outlined, size: AppIconSize.feature, color: Colors.grey.shade600),
             const SizedBox(height: AppSpacing.lg),
             Text(context.l10n.nginxSettings,
                 style: Theme.of(context).textTheme.titleLarge),
@@ -439,8 +439,8 @@ class _NginxTabState extends ConsumerState<NginxTab> {
                           _restartingNginx ? null : _restartNginxContainer,
                       icon: _restartingNginx
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: AppIconSize.statusIcon,
+                              height: AppIconSize.statusIcon,
                               child:
                                   CircularProgressIndicator(strokeWidth: 2))
                           : const Icon(Icons.restart_alt),

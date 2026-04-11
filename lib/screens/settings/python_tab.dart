@@ -246,7 +246,7 @@ class _PythonTabState extends ConsumerState<PythonTab>
   Widget _envChip(String label, bool ok) {
     return Chip(
       avatar: Icon(ok ? Icons.check_circle : Icons.cancel,
-          size: 18, color: ok ? Colors.green : Colors.red),
+          size: AppIconSize.statusIcon, color: ok ? Colors.green : Colors.red),
       label: Text(label),
       backgroundColor: ok
           ? Colors.green.withValues(alpha: 0.1)

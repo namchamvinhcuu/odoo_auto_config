@@ -92,7 +92,7 @@ class OtherProjectGridView extends StatelessWidget {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpacing.sm,
-                                    vertical: 2,
+                                    vertical: AppSpacing.xxs,
                                   ),
                                   decoration: BoxDecoration(
                                     color: color.withValues(alpha: 0.15),
@@ -142,7 +142,7 @@ class OtherProjectGridView extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.sm,
-                                vertical: 2,
+                                vertical: AppSpacing.xxs,
                               ),
                               decoration: BoxDecoration(
                                 color: branchColor(

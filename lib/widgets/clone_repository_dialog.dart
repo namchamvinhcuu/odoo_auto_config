@@ -406,7 +406,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
                 title: const Text('Shallow clone (--depth 1, faster download)'),
               ),
               const SizedBox(height: AppSpacing.md),
-              LogOutput(lines: _logLines, height: 240),
+              LogOutput(lines: _logLines, height: AppDialog.logHeightLg),
             ],
           ),
         ),
@@ -416,8 +416,8 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
           onPressed: _canClone ? _clone : null,
           icon: _cloning
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: AppIconSize.md,
+                  height: AppIconSize.md,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.download),

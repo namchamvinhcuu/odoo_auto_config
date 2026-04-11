@@ -145,12 +145,13 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       ),
       content: SizedBox(
         width: AppDialog.widthLg,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Repo list
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 120),
+              constraints: const BoxConstraints(maxHeight: AppDialog.listHeightSm),
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: widget.repos.length,
@@ -217,7 +218,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               Container(
-                height: 200,
+                height: AppDialog.logHeightMd,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: AppLogColors.terminalBg,
@@ -249,6 +250,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
               ),
             ],
           ],
+          ),
         ),
       ),
       actions: [

@@ -100,7 +100,7 @@ class _PackageListDialogState extends State<PackageListDialog> {
         ],
       ),
       content: SizedBox(
-        width: 550,
+        width: AppDialog.widthMd,
         height: AppDialog.heightMd,
         child: Column(
           children: [

@@ -355,7 +355,7 @@ class _PythonCheckScreenState extends State<PythonCheckScreen> {
     return Chip(
       avatar: Icon(
         available ? Icons.check_circle : Icons.cancel,
-        size: 18,
+        size: AppIconSize.statusIcon,
         color: available ? Colors.green : Colors.red,
       ),
       label: Text(label),
@@ -434,7 +434,7 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
     return AlertDialog(
       title: Text(context.l10n.installPythonTitle),
       content: SizedBox(
-        width: 520,
+        width: AppDialog.widthSm,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,7 +488,7 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ],
           ],
@@ -505,8 +505,8 @@ class _PythonInstallDialogState extends State<_PythonInstallDialog> {
                 (_installing || _selectedVersion == null) ? null : _install,
             icon: _installing
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download),
@@ -578,7 +578,7 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
     return AlertDialog(
       title: Text(context.l10n.dockerInstallTitle),
       content: SizedBox(
-        width: 520,
+        width: AppDialog.widthSm,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,7 +615,7 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
               ),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ],
           ],
@@ -631,8 +631,8 @@ class _DockerInstallDialogState extends State<_DockerInstallDialog> {
             onPressed: _installing ? null : _install,
             icon: _installing
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download),

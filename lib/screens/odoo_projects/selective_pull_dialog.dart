@@ -200,7 +200,7 @@ class _SelectivePullDialogState extends State<SelectivePullDialog> {
 
               // Selected repos list
               Container(
-                height: 150,
+                height: AppDialog.listHeight,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade700),

@@ -98,11 +98,12 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
         AppDialog.closeButton(context, enabled: !_installing),
       ]),
       content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        width: AppDialog.widthSm,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(context.l10n.dockerInstallSubtitle,
                 style: Theme.of(context)
                     .textTheme
@@ -164,10 +165,11 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
                       color: Colors.grey.shade600)),
               if (_logLines.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
-                LogOutput(lines: _logLines, height: 200),
+                LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
               ],
             ],
           ],
+          ),
         ),
       ),
       actions: [
@@ -182,8 +184,8 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
             onPressed: _startingDocker ? null : _startDocker,
             icon: _startingDocker
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.play_arrow),
             label: Text(_startingDocker
@@ -195,8 +197,8 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
             onPressed: _installing ? null : _install,
             icon: _installing
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.download),
             label: Text(_installing

@@ -207,7 +207,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
         ],
       ),
       content: SizedBox(
-        width: 560,
+        width: AppDialog.widthMd,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,7 +286,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
             ),
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              LogOutput(lines: _logLines, height: 200),
+              LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
             ],
           ],
         ),
@@ -303,8 +303,8 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
             onPressed: _canClone ? _clone : null,
             icon: _cloning
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.download),

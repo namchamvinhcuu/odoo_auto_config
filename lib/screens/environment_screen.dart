@@ -48,8 +48,8 @@ class EnvironmentScreen extends ConsumerWidget {
                     : () => _autoSetup(context, ref),
                 icon: env.autoInstalling
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
+                        width: AppIconSize.md,
+                        height: AppIconSize.md,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.auto_fix_high),
@@ -78,7 +78,7 @@ class EnvironmentScreen extends ConsumerWidget {
                     _buildSummaryCard(context, issueCount),
                   if (env.autoLog.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    LogOutput(lines: env.autoLog, height: 300),
+                    LogOutput(lines: env.autoLog, height: AppDialog.logHeightXl),
                   ],
                 ],
               ),
@@ -181,7 +181,7 @@ class EnvironmentScreen extends ConsumerWidget {
     AppDialog.show(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.restart_alt, size: 48, color: Colors.orange),
+        icon: const Icon(Icons.restart_alt, size: AppIconSize.xxxl, color: Colors.orange),
         title: Text(context.l10n.envRestartRequired),
         content: Text(context.l10n.envRestartMessage),
         actions: [
@@ -268,8 +268,8 @@ class EnvironmentScreen extends ConsumerWidget {
             ),
             if (isLoading)
               const SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: AppIconSize.xl,
+                  height: AppIconSize.xl,
                   child: CircularProgressIndicator(strokeWidth: 2))
             else ...[
               _chip(
@@ -306,7 +306,7 @@ class EnvironmentScreen extends ConsumerWidget {
   Widget _chip(BuildContext context, String label, bool ok) {
     return Chip(
       avatar: Icon(ok ? Icons.check_circle : Icons.cancel,
-          size: 18, color: ok ? Colors.green : Colors.red),
+          size: AppIconSize.statusIcon, color: ok ? Colors.green : Colors.red),
       label: Text(label),
       backgroundColor: ok
           ? Colors.green.withValues(alpha: 0.1)
@@ -420,7 +420,7 @@ class _InstallDialogState extends State<_InstallDialog> {
     return AlertDialog(
       title: Text(widget.title),
       content: SizedBox(
-        width: 520,
+        width: AppDialog.widthSm,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,7 +432,7 @@ class _InstallDialogState extends State<_InstallDialog> {
                     ?.copyWith(color: Colors.grey)),
             if (_logLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              LogOutput(lines: _logLines, height: 200),
+              LogOutput(lines: _logLines, height: AppDialog.logHeightMd),
             ],
           ],
         ),
@@ -447,8 +447,8 @@ class _InstallDialogState extends State<_InstallDialog> {
             onPressed: _installing ? null : _install,
             icon: _installing
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: AppIconSize.md,
+                    height: AppIconSize.md,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.download),
             label: Text(
