@@ -152,6 +152,9 @@ jobs:
           Copy-Item install.ps1 build/windows/x64/runner/Release/
           Copy-Item install.bat build/windows/x64/runner/Release/
 
+      - name: Create portable .exe (Enigma Virtual Box)
+        run: powershell -ExecutionPolicy Bypass -File build-portable.ps1
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
@@ -160,6 +163,7 @@ jobs:
             build/windows/x64/runner/Release/certificate.pfx
             build/windows/x64/runner/Release/install.ps1
             build/windows/x64/runner/Release/install.bat
+            build/WorkspaceConfiguration.exe
 
   publish-public:
     needs: [build-linux, build-macos, build-windows]
@@ -190,7 +194,8 @@ jobs:
           |----------|------|------|
           | Linux | \`WorkspaceConfiguration.AppImage\` | ~17 MB |
           | macOS | \`WorkspaceConfiguration.dmg\` | ~19 MB |
-          | Windows | \`WorkspaceConfiguration.msix\` | ~14 MB |
+          | Windows (installer) | \`WorkspaceConfiguration.msix\` | ~14 MB |
+          | Windows (portable) | \`WorkspaceConfiguration.exe\` | ~40 MB |
 
           ---
 
@@ -209,11 +214,15 @@ jobs:
 
           > If you see \"App is damaged\", run: \`xattr -cr /Applications/Workspace\\ Configuration.app\`
 
-          ### Windows
+          ### Windows (Installer — MSIX)
           1. Download **all 4 files** (\`.msix\`, \`.pfx\`, \`.ps1\`, \`.bat\`)
           2. Place them in the **same folder**
           3. Right-click \`install.bat\` > **Run as Administrator**
           4. Launch from **Start Menu**
+
+          ### Windows (Portable)
+          1. Download \`WorkspaceConfiguration.exe\`
+          2. Place anywhere and double-click to run — no installation needed
 
           ---
           See [README](https://github.com/namchamvinhcuu/workspace-configuration#readme) for full usage guide." \

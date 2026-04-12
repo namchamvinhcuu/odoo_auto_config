@@ -10,7 +10,8 @@
       "Bash(cp /tmp/settings_truncated.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/settings/settings_screen.dart)",
       "Bash(mv /tmp/projects_screen_trimmed.dart /Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens/projects/projects_screen.dart)",
       "Bash(git mv:*)",
-      "Bash(find . -type f -name \"*.dart\" -exec grep -l \"launchNewInstance\\\\|_launchMacOS\" {} \\\\;)"
+      "Bash(find . -type f -name \"*.dart\" -exec grep -l \"launchNewInstance\\\\|_launchMacOS\" {} \\\\;)",
+      "WebSearch"
     ],
     "additionalDirectories": [
       "/Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens"

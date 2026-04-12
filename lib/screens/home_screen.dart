@@ -269,11 +269,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                   : Colors.orange.withValues(alpha: 0.1),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    // Navigate to Environment screen
-                    _goToTab(3);
-                  },
+                  onPressed: () => _goToTab(3),
                   child: Text(context.l10n.dockerGoToSettings),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      ref.read(dockerStatusProvider.notifier).dismiss(),
+                  child: Text(context.l10n.dismiss),
                 ),
               ],
             ),

@@ -120,7 +120,9 @@ class UpdateService {
       } else if (Platform.isMacOS) {
         return _installMacOS(filePath);
       } else if (Platform.isWindows) {
-        return _installWindows(filePath);
+        return _isWindowsMsix
+            ? _installWindows(filePath)
+            : _installWindowsPortable(filePath);
       }
       return false;
     } catch (_) {
@@ -300,12 +302,69 @@ Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
     exit(0);
   }
 
+  // ── Windows: portable .exe update (non-MSIX) ──
+
+  static Future<bool> _installWindowsPortable(String newExePath) async {
+    final currentExe = Platform.resolvedExecutable;
+    final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.ps1');
+    final logPath = p.join(Directory.systemTemp.path, 'wsc_update.log');
+    final currentPid = pid;
+    final script = '''
+Start-Transcript -Path "$logPath" -Force
+
+# Wait for app to exit
+Write-Host "Waiting for PID $currentPid to exit..."
+do { Start-Sleep -Milliseconds 500 } while (Get-Process -Id $currentPid -ErrorAction SilentlyContinue)
+Write-Host "App exited."
+
+# Replace exe
+Write-Host "Replacing: $currentExe"
+try {
+    Copy-Item -Path "$newExePath" -Destination "$currentExe" -Force -ErrorAction Stop
+    Write-Host "Replace complete."
+} catch {
+    Write-Host "Replace error: \$_"
+    Stop-Transcript
+    exit 1
+}
+
+Start-Sleep -Seconds 1
+
+# Relaunch
+Write-Host "Relaunching: $currentExe"
+Start-Process "$currentExe"
+
+# Cleanup
+Remove-Item -Path "$newExePath" -Force -ErrorAction SilentlyContinue
+Stop-Transcript
+Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
+''';
+    await File(scriptPath).writeAsString(script);
+    await Process.start(
+      'powershell',
+      ['-WindowStyle', 'Hidden', '-ExecutionPolicy', 'Bypass', '-File', scriptPath],
+      mode: ProcessStartMode.detached,
+      runInShell: true,
+    );
+
+    // Quit all other instances before replacing binary
+    await InstanceService.signalQuitAll();
+    await Future.delayed(const Duration(seconds: 1));
+    exit(0);
+  }
+
   // ── Helpers ──
+
+  /// Detect if running as MSIX package (exe inside WindowsApps folder).
+  static bool get _isWindowsMsix {
+    if (!Platform.isWindows) return false;
+    return Platform.resolvedExecutable.contains('WindowsApps');
+  }
 
   static String _platformAssetSuffix() {
     if (Platform.isLinux) return '.AppImage';
     if (Platform.isMacOS) return '-macOS.zip';
-    if (Platform.isWindows) return '.msix';
+    if (Platform.isWindows) return _isWindowsMsix ? '.msix' : '.exe';
     return '';
   }
 
