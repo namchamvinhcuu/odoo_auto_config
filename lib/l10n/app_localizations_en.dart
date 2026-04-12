@@ -176,6 +176,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openInVscode => 'Open in VSCode';
 
   @override
+  String get openInVisualStudio => 'Open in Visual Studio';
+
+  @override
+  String get noSlnFileFound => 'No .sln file found in project directory';
+
+  @override
+  String get selectSlnFile => 'Select solution file';
+
+  @override
+  String get couldNotOpenVisualStudio => 'Could not open Visual Studio';
+
+  @override
   String get gitPull => 'Git Pull';
 
   @override

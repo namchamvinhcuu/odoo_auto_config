@@ -16,6 +16,7 @@ class OtherProjectGridView extends StatelessWidget {
     this.selectedPath,
     required this.onSelect,
     required this.onOpenInVscode,
+    required this.onOpenInVisualStudio,
     required this.onOpenInFileManager,
     required this.onEdit,
     required this.onSetupNginx,
@@ -34,6 +35,7 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onGitCommit;
   final ValueChanged<WorkspaceInfo> onSelect;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
+  final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
   final ValueChanged<WorkspaceInfo> onEdit;
   final ValueChanged<WorkspaceInfo> onSetupNginx;
@@ -42,6 +44,11 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onSwitchBranch;
   final Color Function(String) branchColor;
   final Color Function(String) colorForType;
+
+  static bool _isDotNet(String type) {
+    final t = type.toLowerCase();
+    return t == '.net' || t == 'dotnet' || t == 'c#';
+  }
 
   int _gridCrossAxisCount(double width) {
     if (width >= 1100) return 4;
@@ -337,6 +344,17 @@ class OtherProjectGridView extends StatelessWidget {
               ],
             ),
           ),
+        if (exists && _isDotNet(ws.type))
+          PopupMenuItem(
+            value: 'visual_studio',
+            child: Row(
+              children: [
+                const Icon(Icons.developer_mode, size: AppIconSize.md, color: Colors.purple),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openInVisualStudio),
+              ],
+            ),
+          ),
         if (exists)
           PopupMenuItem(
             value: 'folder',
@@ -409,6 +427,8 @@ class OtherProjectGridView extends StatelessWidget {
         onGitCommit(ws);
       case 'vscode':
         onOpenInVscode(ws);
+      case 'visual_studio':
+        onOpenInVisualStudio(ws);
       case 'folder':
         onOpenInFileManager(ws);
       case 'nginx_setup':

@@ -95,8 +95,15 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - **Favourite** - Star icon (IconButton với hover), sort favourite lên đầu rồi by name A-Z
 - **Grid card click** - Single click = chọn card (hiện primary border), double click = mở VSCode
   `selectedPath` state quản lý ở screen level, truyền xuống grid view qua callback
-- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit/selective pull, VSCode, folder, edit, delete)
+- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit/selective pull, VSCode, Visual Studio (.NET only), folder, edit, delete)
 - **Grid tooltip** - Hover hiện description (hoặc path nếu không có description)
+- **Open in Visual Studio** (.NET projects only, Windows only):
+  - Hiện thêm nút/menu "Open in Visual Studio" bên cạnh "Open in VSCode" cho .NET projects
+  - Tìm file `.sln` trong thư mục project → mở bằng `devenv.exe` (tìm qua `vswhere.exe`)
+  - Nếu nhiều `.sln` → dialog cho user chọn. Nếu không có `.sln` → hiện thông báo
+  - UI: context menu (grid), icon button (list view). macOS/Linux không hiện option này
+  - Detect Visual Studio: `vswhere.exe -latest -property productPath`
+  - Helper `_isDotNet(type)`: check `.net`, `dotnet`, `c#` (case-insensitive)
 - **Auto-detect project type** - Import workspace tự động nhận diện từ marker files
 - **Nginx status** - Lưu `nginxSubdomain` vào model JSON (không derive từ tên project)
   Khi setup: lưu subdomain. Khi remove: xóa subdomain. Check bằng `hasNginx` getter.

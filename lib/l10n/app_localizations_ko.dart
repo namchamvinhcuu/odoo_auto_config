@@ -172,6 +172,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openInVscode => 'VSCode에서 열기';
 
   @override
+  String get openInVisualStudio => 'Visual Studio에서 열기';
+
+  @override
+  String get noSlnFileFound => '프로젝트 디렉토리에 .sln 파일이 없습니다';
+
+  @override
+  String get selectSlnFile => '솔루션 파일 선택';
+
+  @override
+  String get couldNotOpenVisualStudio => 'Visual Studio를 열 수 없습니다';
+
+  @override
   String get gitPull => 'Git Pull';
 
   @override

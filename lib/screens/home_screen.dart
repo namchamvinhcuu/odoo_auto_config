@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
@@ -100,7 +101,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
     super.initState();
     _instance = this;
     windowManager.addListener(this);
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     _updateInstanceLabel();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    // macOS: Cmd+[ / Cmd+], Windows/Linux: Ctrl+[ / Ctrl+]
+    final modifier = Platform.isMacOS
+        ? HardwareKeyboard.instance.isMetaPressed
+        : HardwareKeyboard.instance.isControlPressed;
+    if (modifier) {
+      if (event.logicalKey == LogicalKeyboardKey.bracketLeft) {
+        _goBack();
+        return true;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.bracketRight) {
+        _goForward();
+        return true;
+      }
+    }
+    return false;
   }
 
 
@@ -147,6 +168,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     windowManager.removeListener(this);
     if (_instance == this) _instance = null;
     super.dispose();

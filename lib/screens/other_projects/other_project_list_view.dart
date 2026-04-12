@@ -14,6 +14,7 @@ class OtherProjectListView extends StatelessWidget {
     required this.onGitPull,
     required this.onGitCommit,
     required this.onOpenInVscode,
+    required this.onOpenInVisualStudio,
     required this.onOpenInFileManager,
     required this.onEdit,
     required this.onSetupNginx,
@@ -31,6 +32,7 @@ class OtherProjectListView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
+  final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
   final ValueChanged<WorkspaceInfo> onEdit;
   final ValueChanged<WorkspaceInfo> onSetupNginx;
@@ -40,6 +42,11 @@ class OtherProjectListView extends StatelessWidget {
   final Color Function(String) branchColor;
   final IconData Function(String) iconForType;
   final Color Function(String) colorForType;
+
+  static bool _isDotNet(String type) {
+    final t = type.toLowerCase();
+    return t == '.net' || t == 'dotnet' || t == 'c#';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +129,12 @@ class OtherProjectListView extends StatelessWidget {
                         icon: const Icon(Icons.code),
                         tooltip: context.l10n.openInVscode,
                       ),
+                      if (_isDotNet(ws.type))
+                        IconButton(
+                          onPressed: () => onOpenInVisualStudio(ws),
+                          icon: const Icon(Icons.developer_mode, color: Colors.purple),
+                          tooltip: context.l10n.openInVisualStudio,
+                        ),
                       IconButton(
                         onPressed: () => onOpenInFileManager(ws),
                         icon: const Icon(Icons.folder_open),

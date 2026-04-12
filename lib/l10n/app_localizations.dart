@@ -412,6 +412,30 @@ abstract class AppLocalizations {
   /// **'Open in VSCode'**
   String get openInVscode;
 
+  /// No description provided for @openInVisualStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Visual Studio'**
+  String get openInVisualStudio;
+
+  /// No description provided for @noSlnFileFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No .sln file found in project directory'**
+  String get noSlnFileFound;
+
+  /// No description provided for @selectSlnFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Select solution file'**
+  String get selectSlnFile;
+
+  /// No description provided for @couldNotOpenVisualStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Visual Studio'**
+  String get couldNotOpenVisualStudio;
+
   /// No description provided for @gitPull.
   ///
   /// In en, this message translates to:

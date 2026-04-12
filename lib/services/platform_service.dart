@@ -518,6 +518,59 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     }
   }
 
+  /// Check if Visual Studio (full IDE, not VSCode) is installed — Windows only
+  static Future<bool> isVisualStudioInstalled() async {
+    if (!isWindows) return false;
+    try {
+      final vswhere = r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe';
+      final result = await Process.run(
+        vswhere,
+        ['-latest', '-property', 'productPath'],
+        runInShell: true,
+      );
+      return result.exitCode == 0 &&
+          result.stdout.toString().trim().isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Find .sln files in a project directory
+  static List<String> findSlnFiles(String dirPath) {
+    try {
+      final dir = Directory(dirPath);
+      if (!dir.existsSync()) return [];
+      return dir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.sln'))
+          .map((f) => f.path)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Open a .sln file in Visual Studio — Windows only
+  /// Uses vswhere to find devenv.exe, then opens the .sln
+  static Future<bool> openInVisualStudio(String slnPath) async {
+    if (!isWindows) return false;
+    try {
+      final vswhere = r'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe';
+      final result = await Process.run(
+        vswhere,
+        ['-latest', '-property', 'productPath'],
+        runInShell: true,
+      );
+      final devenv = result.stdout.toString().trim();
+      if (devenv.isEmpty) return false;
+      await Process.start(devenv, [slnPath], runInShell: true);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static String venvActivateScript(String venvPath) {
     if (isWindows) {
       return '$venvPath\\Scripts\\activate.bat';
