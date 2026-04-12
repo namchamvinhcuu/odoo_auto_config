@@ -302,7 +302,7 @@ Remove-Item -Path "$scriptPath" -Force -ErrorAction SilentlyContinue
     exit(0);
   }
 
-  // ── Windows: portable .exe update (non-MSIX) ──
+  // ── Windows: portable update (non-MSIX) — replace single .exe ──
 
   static Future<bool> _installWindowsPortable(String newExePath) async {
     final currentExe = Platform.resolvedExecutable;

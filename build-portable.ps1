@@ -1,13 +1,9 @@
 # Build portable single .exe using Enigma Virtual Box
 # Usage: powershell -ExecutionPolicy Bypass -File build-portable.ps1
-#
-# Prerequisites: Flutter Windows build must be completed first.
-# This script downloads EVB if needed, generates .evb config, and packs into single .exe.
 
 param(
     [string]$ReleaseDir = "build\windows\x64\runner\Release",
-    [string]$OutputName = "WorkspaceConfiguration",
-    [string]$EvbDir = "build\evb"
+    [string]$OutputName = "WorkspaceConfiguration"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,6 +12,7 @@ $ExeName = "WorkspaceConfiguration.exe"
 $InputExe = "$ReleaseDir\$ExeName"
 $OutputExe = "build\$OutputName.exe"
 $EvbProject = "build\$OutputName.evb"
+$EvbDir = "build\evb"
 $EvbConsole = "$EvbDir\enigmavbconsole.exe"
 
 Write-Host ""
@@ -38,7 +35,6 @@ if (-not (Test-Path $EvbConsole)) {
     Invoke-WebRequest -Uri $EvbUrl -OutFile $EvbInstaller -UseBasicParsing
     Write-Host "  Installing EVB silently..." -ForegroundColor Gray
 
-    # Silent install to custom directory
     New-Item -ItemType Directory -Force -Path $EvbDir | Out-Null
     Start-Process -FilePath $EvbInstaller -ArgumentList "/VERYSILENT", "/DIR=$((Resolve-Path $EvbDir).Path)" -Wait -NoNewWindow
     Remove-Item $EvbInstaller -Force -ErrorAction SilentlyContinue
@@ -52,57 +48,150 @@ if (-not (Test-Path $EvbConsole)) {
     Write-Host "[1/3] Enigma Virtual Box found" -ForegroundColor Green
 }
 
-# Generate .evb project file by scanning Release folder
+# Generate .evb project file
 Write-Host "[2/3] Generating .evb project..." -ForegroundColor Yellow
 
-function Get-EvbFiles {
-    param([string]$Dir, [string]$RelativePath = "")
-
-    $xml = ""
-    foreach ($item in Get-ChildItem -Path $Dir) {
-        if ($item.PSIsContainer) {
-            # Folder
-            $subPath = if ($RelativePath) { "$RelativePath\$($item.Name)" } else { $item.Name }
-            $innerXml = Get-EvbFiles -Dir $item.FullName -RelativePath $subPath
-            $xml += @"
-      <File>
-        <Type>2</Type>
-        <Name>$($item.Name)</Name>
-        <Files>
-$innerXml
-        </Files>
-      </File>
+function Get-EvbFileNode {
+    param([string]$FilePath, [string]$Name)
+    return @"
+              <File>
+                <Type>2</Type>
+                <Name>$Name</Name>
+                <File>$FilePath</File>
+                <ActiveX>False</ActiveX>
+                <ActiveXInstall>False</ActiveXInstall>
+                <Action>0</Action>
+                <OverwriteDateTime>False</OverwriteDateTime>
+                <OverwriteAttributes>False</OverwriteAttributes>
+                <PassCommandLine>False</PassCommandLine>
+                <HideFromDialogs>0</HideFromDialogs>
+              </File>
 "@
-        } else {
-            # Skip the main exe (it's the InputFile, not embedded)
-            if ($RelativePath -eq "" -and $item.Name -eq $ExeName) { continue }
-            $xml += @"
-      <File>
-        <Type>3</Type>
-        <Name>$($item.Name)</Name>
-        <SourcePath>$($item.FullName)</SourcePath>
-      </File>
-"@
-        }
-    }
-    return $xml
 }
 
-$filesXml = Get-EvbFiles -Dir (Resolve-Path $ReleaseDir).Path
+function Get-EvbDirNode {
+    param([string]$DirPath, [string]$Name)
+
+    $innerXml = ""
+    foreach ($item in Get-ChildItem -Path $DirPath) {
+        if ($item.PSIsContainer) {
+            $innerXml += Get-EvbDirNode -DirPath $item.FullName -Name $item.Name
+        } else {
+            $innerXml += Get-EvbFileNode -FilePath $item.FullName -Name $item.Name
+        }
+    }
+
+    return @"
+              <File>
+                <Type>3</Type>
+                <Name>$Name</Name>
+                <Action>0</Action>
+                <OverwriteDateTime>False</OverwriteDateTime>
+                <OverwriteAttributes>False</OverwriteAttributes>
+                <HideFromDialogs>0</HideFromDialogs>
+                <Files>
+$innerXml
+                </Files>
+              </File>
+"@
+}
+
+# Build file nodes for everything in Release folder (except the main exe)
+$releasePath = (Resolve-Path $ReleaseDir).Path
+$filesXml = ""
+foreach ($item in Get-ChildItem -Path $releasePath) {
+    # Skip the main exe (it's the InputFile)
+    if (-not $item.PSIsContainer -and $item.Name -eq $ExeName) { continue }
+    # Skip MSIX-related files
+    if ($item.Name -match '\.(msix|pfx)$' -or $item.Name -match '^install\.(ps1|bat)$') { continue }
+
+    if ($item.PSIsContainer) {
+        $filesXml += Get-EvbDirNode -DirPath $item.FullName -Name $item.Name
+    } else {
+        $filesXml += Get-EvbFileNode -FilePath $item.FullName -Name $item.Name
+    }
+}
+
 $inputExeFull = (Resolve-Path $InputExe).Path
-$outputExeFull = "$PWD\$OutputExe"
+$outputExeFull = Join-Path $PWD $OutputExe
 
 $evbXml = @"
-<?xml version="1.0" encoding="UTF-8"?>
-<EvbData>
+<?xml version="1.0" encoding="windows-1252"?>
+<>
   <InputFile>$inputExeFull</InputFile>
   <OutputFile>$outputExeFull</OutputFile>
-  <CompressFiles>true</CompressFiles>
-  <DeleteExtractedOnExit>true</DeleteExtractedOnExit>
   <Files>
+    <Enabled>True</Enabled>
+    <DeleteExtractedOnExit>True</DeleteExtractedOnExit>
+    <CompressFiles>True</CompressFiles>
+    <Files>
+      <File>
+        <Type>3</Type>
+        <Name>%DEFAULT FOLDER%</Name>
+        <Action>0</Action>
+        <OverwriteDateTime>False</OverwriteDateTime>
+        <OverwriteAttributes>False</OverwriteAttributes>
+        <HideFromDialogs>0</HideFromDialogs>
+        <Files>
 $filesXml
+        </Files>
+      </File>
+    </Files>
   </Files>
-</EvbData>
+  <Registries>
+    <Enabled>False</Enabled>
+    <Registries>
+      <Registry>
+        <Type>1</Type>
+        <Virtual>True</Virtual>
+        <Name>Classes</Name>
+        <ValueType>0</ValueType>
+        <Value/>
+        <Registries/>
+      </Registry>
+      <Registry>
+        <Type>1</Type>
+        <Virtual>True</Virtual>
+        <Name>User</Name>
+        <ValueType>0</ValueType>
+        <Value/>
+        <Registries/>
+      </Registry>
+      <Registry>
+        <Type>1</Type>
+        <Virtual>True</Virtual>
+        <Name>Machine</Name>
+        <ValueType>0</ValueType>
+        <Value/>
+        <Registries/>
+      </Registry>
+      <Registry>
+        <Type>1</Type>
+        <Virtual>True</Virtual>
+        <Name>Users</Name>
+        <ValueType>0</ValueType>
+        <Value/>
+        <Registries/>
+      </Registry>
+      <Registry>
+        <Type>1</Type>
+        <Virtual>True</Virtual>
+        <Name>Config</Name>
+        <ValueType>0</ValueType>
+        <Value/>
+        <Registries/>
+      </Registry>
+    </Registries>
+  </Registries>
+  <Packaging>
+    <Enabled>False</Enabled>
+  </Packaging>
+  <Options>
+    <ShareVirtualSystem>False</ShareVirtualSystem>
+    <MapExecutableWithTemporaryFile>True</MapExecutableWithTemporaryFile>
+    <AllowRunningOfVirtualExeFiles>True</AllowRunningOfVirtualExeFiles>
+  </Options>
+</>
 "@
 
 Set-Content -Path $EvbProject -Value $evbXml -Encoding UTF8
@@ -112,13 +201,16 @@ Write-Host "  Generated: $EvbProject" -ForegroundColor Green
 Write-Host "[3/3] Packing into single .exe..." -ForegroundColor Yellow
 & $EvbConsole $EvbProject
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: EVB packing failed" -ForegroundColor Red
+    Write-Host "ERROR: EVB packing failed (exit code $LASTEXITCODE)" -ForegroundColor Red
     exit 1
 }
 
-# Report
+# Verify output size (should be >10MB for a Flutter app)
 if (Test-Path $OutputExe) {
     $size = (Get-Item $OutputExe).Length / 1MB
+    if ($size -lt 10) {
+        Write-Host "WARNING: Output is only $([math]::Round($size, 1)) MB — EVB may not have embedded files correctly" -ForegroundColor Yellow
+    }
     Write-Host ""
     Write-Host "=== Portable Build Complete ===" -ForegroundColor Green
     Write-Host "  Output: $OutputExe" -ForegroundColor White
