@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Workspace Configuration
+Exec=/opt/workspace-configuration/WorkspaceConfiguration
+Icon=workspace-configuration
+Categories=Development;
+Comment=Setup and manage development environments
+StartupWMClass=com.namchamvinhcuu.WorkspaceConfiguration

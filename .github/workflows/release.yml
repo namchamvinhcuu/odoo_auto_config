@@ -72,10 +72,54 @@ jobs:
 
           ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run --no-appstream "$APPDIR" build/WorkspaceConfiguration.AppImage
 
+      - name: Install fpm
+        run: |
+          sudo apt-get install -y ruby ruby-dev build-essential rpm
+          sudo gem install fpm
+
+      - name: Create .deb package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          fpm -s dir -t deb \
+            --name workspace-configuration \
+            --version "$VERSION" \
+            --architecture x86_64 \
+            --description "Setup and manage development environments" \
+            --maintainer "namchamvinhcuu" \
+            --url "https://github.com/namchamvinhcuu/workspace-configuration" \
+            --depends libgtk-3-0 \
+            --depends libayatana-appindicator3-1 \
+            --after-install packaging/postinst.sh \
+            --package "build/WorkspaceConfiguration-${VERSION}.deb" \
+            build/linux/x64/release/bundle/=/opt/workspace-configuration \
+            packaging/workspace-configuration.desktop=/usr/share/applications/workspace-configuration.desktop \
+            workspaces.png=/usr/share/icons/hicolor/512x512/apps/workspace-configuration.png
+
+      - name: Create .rpm package
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          fpm -s dir -t rpm \
+            --name workspace-configuration \
+            --version "$VERSION" \
+            --architecture x86_64 \
+            --description "Setup and manage development environments" \
+            --maintainer "namchamvinhcuu" \
+            --url "https://github.com/namchamvinhcuu/workspace-configuration" \
+            --depends gtk3 \
+            --depends libayatana-appindicator-gtk3 \
+            --after-install packaging/postinst.sh \
+            --package "build/WorkspaceConfiguration-${VERSION}.rpm" \
+            build/linux/x64/release/bundle/=/opt/workspace-configuration \
+            packaging/workspace-configuration.desktop=/usr/share/applications/workspace-configuration.desktop \
+            workspaces.png=/usr/share/icons/hicolor/512x512/apps/workspace-configuration.png
+
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/WorkspaceConfiguration.AppImage
+          files: |
+            build/WorkspaceConfiguration.AppImage
+            build/WorkspaceConfiguration-*.deb
+            build/WorkspaceConfiguration-*.rpm
 
   build-macos:
     runs-on: macos-latest
@@ -192,17 +236,30 @@ jobs:
 
           | Platform | File | Size |
           |----------|------|------|
-          | Linux | \`WorkspaceConfiguration.AppImage\` | ~17 MB |
+          | Linux (portable) | \`WorkspaceConfiguration.AppImage\` | ~17 MB |
+          | Linux (deb) | \`WorkspaceConfiguration-*.deb\` | ~17 MB |
+          | Linux (rpm) | \`WorkspaceConfiguration-*.rpm\` | ~17 MB |
           | macOS | \`WorkspaceConfiguration.dmg\` | ~19 MB |
           | Windows (installer) | \`WorkspaceConfiguration.msix\` | ~14 MB |
           | Windows (portable) | \`WorkspaceConfiguration.exe\` | ~40 MB |
 
           ---
 
-          ### Linux
+          ### Linux (AppImage — portable, mọi distro)
           \`\`\`bash
           chmod +x WorkspaceConfiguration.AppImage
           ./WorkspaceConfiguration.AppImage
+          \`\`\`
+
+          ### Linux (deb — Ubuntu/Debian/Mint)
+          \`\`\`bash
+          sudo dpkg -i WorkspaceConfiguration-*.deb
+          sudo apt-get install -f  # install dependencies if needed
+          \`\`\`
+
+          ### Linux (rpm — Fedora/RHEL/CentOS)
+          \`\`\`bash
+          sudo dnf install ./WorkspaceConfiguration-*.rpm
           \`\`\`
 
           ### macOS
