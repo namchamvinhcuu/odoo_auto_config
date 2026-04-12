@@ -176,6 +176,18 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openInVscode => 'Mở trong VSCode';
 
   @override
+  String get openInVisualStudio => 'Mở trong Visual Studio';
+
+  @override
+  String get noSlnFileFound => 'Không tìm thấy file .sln trong thư mục dự án';
+
+  @override
+  String get selectSlnFile => 'Chọn solution file';
+
+  @override
+  String get couldNotOpenVisualStudio => 'Không thể mở Visual Studio';
+
+  @override
   String get gitPull => 'Git Pull';
 
   @override

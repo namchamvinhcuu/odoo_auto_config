@@ -181,6 +181,61 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     }
   }
 
+  Future<void> _openInVisualStudio(String path) async {
+    final slnFiles = PlatformService.findSlnFiles(path);
+    if (slnFiles.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.noSlnFileFound)),
+      );
+      return;
+    }
+
+    String slnPath;
+    if (slnFiles.length == 1) {
+      slnPath = slnFiles.first;
+    } else {
+      // Cho user chọn khi có nhiều .sln files
+      final selected = await AppDialog.show<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Row(
+            children: [
+              Text(context.l10n.selectSlnFile),
+              const Spacer(),
+              AppDialog.closeButton(ctx),
+            ],
+          ),
+          content: SizedBox(
+            width: AppDialog.widthSm,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: slnFiles
+                  .map(
+                    (f) => ListTile(
+                      leading: const Icon(Icons.description),
+                      title: Text(p.basename(f)),
+                      subtitle: Text(f, style: const TextStyle(fontSize: AppFontSize.xs)),
+                      onTap: () => Navigator.pop(ctx, f),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ),
+      );
+      if (selected == null) return;
+      slnPath = selected;
+    }
+
+    final success = await PlatformService.openInVisualStudio(slnPath);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotOpenVisualStudio)),
+      );
+    }
+  }
+
   void _showVscodeInstallDialog() {
     AppDialog.show(
       context: context,
@@ -441,6 +496,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
       onOpenInVscode: (ws) => _openInVscode(ws.path),
+      onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
       onEdit: _editWorkspace,
       onSetupNginx: _setupNginx,
@@ -466,6 +522,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onGitCommit: _runGitCommit,
       onSelect: (ws) => setState(() => _selectedPath = _selectedPath == ws.path ? null : ws.path),
       onOpenInVscode: (ws) => _openInVscode(ws.path),
+      onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
       onEdit: _editWorkspace,
       onSetupNginx: _setupNginx,
