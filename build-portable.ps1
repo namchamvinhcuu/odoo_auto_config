@@ -22,7 +22,6 @@ Write-Host ""
 # Verify release build exists
 if (-not (Test-Path $InputExe)) {
     Write-Host "ERROR: Release build not found at $InputExe" -ForegroundColor Red
-    Write-Host "Run 'flutter build windows --release' first." -ForegroundColor Yellow
     exit 1
 }
 
@@ -51,170 +50,129 @@ if (-not (Test-Path $EvbConsole)) {
 # Generate .evb project file
 Write-Host "[2/3] Generating .evb project..." -ForegroundColor Yellow
 
-function Get-EvbFileNode {
-    param([string]$FilePath, [string]$Name)
-    return @"
-              <File>
-                <Type>2</Type>
-                <Name>$Name</Name>
-                <File>$FilePath</File>
-                <ActiveX>False</ActiveX>
-                <ActiveXInstall>False</ActiveXInstall>
-                <Action>0</Action>
-                <OverwriteDateTime>False</OverwriteDateTime>
-                <OverwriteAttributes>False</OverwriteAttributes>
-                <PassCommandLine>False</PassCommandLine>
-                <HideFromDialogs>0</HideFromDialogs>
-              </File>
-"@
+function Get-EvbFileXml([string]$FilePath, [string]$Name) {
+    $lines = @()
+    $lines += '              <File>'
+    $lines += '                <Type>2</Type>'
+    $lines += "                <Name>$Name</Name>"
+    $lines += "                <File>$FilePath</File>"
+    $lines += '                <ActiveX>False</ActiveX>'
+    $lines += '                <ActiveXInstall>False</ActiveXInstall>'
+    $lines += '                <Action>0</Action>'
+    $lines += '                <OverwriteDateTime>False</OverwriteDateTime>'
+    $lines += '                <OverwriteAttributes>False</OverwriteAttributes>'
+    $lines += '                <PassCommandLine>False</PassCommandLine>'
+    $lines += '                <HideFromDialogs>0</HideFromDialogs>'
+    $lines += '              </File>'
+    return $lines -join "`r`n"
 }
 
-function Get-EvbDirNode {
-    param([string]$DirPath, [string]$Name)
-
-    $innerXml = ""
+function Get-EvbDirXml([string]$DirPath, [string]$Name) {
+    $inner = @()
     foreach ($item in Get-ChildItem -Path $DirPath) {
         if ($item.PSIsContainer) {
-            $innerXml += Get-EvbDirNode -DirPath $item.FullName -Name $item.Name
+            $inner += Get-EvbDirXml -DirPath $item.FullName -Name $item.Name
         } else {
-            $innerXml += Get-EvbFileNode -FilePath $item.FullName -Name $item.Name
+            $inner += Get-EvbFileXml -FilePath $item.FullName -Name $item.Name
         }
     }
-
-    return @"
-              <File>
-                <Type>3</Type>
-                <Name>$Name</Name>
-                <Action>0</Action>
-                <OverwriteDateTime>False</OverwriteDateTime>
-                <OverwriteAttributes>False</OverwriteAttributes>
-                <HideFromDialogs>0</HideFromDialogs>
-                <Files>
-$innerXml
-                </Files>
-              </File>
-"@
+    $lines = @()
+    $lines += '              <File>'
+    $lines += '                <Type>3</Type>'
+    $lines += "                <Name>$Name</Name>"
+    $lines += '                <Action>0</Action>'
+    $lines += '                <OverwriteDateTime>False</OverwriteDateTime>'
+    $lines += '                <OverwriteAttributes>False</OverwriteAttributes>'
+    $lines += '                <HideFromDialogs>0</HideFromDialogs>'
+    $lines += '                <Files>'
+    $lines += ($inner -join "`r`n")
+    $lines += '                </Files>'
+    $lines += '              </File>'
+    return $lines -join "`r`n"
 }
 
-# Build file nodes for everything in Release folder (except the main exe)
 $releasePath = (Resolve-Path $ReleaseDir).Path
-$filesXml = ""
+$fileNodes = @()
 foreach ($item in Get-ChildItem -Path $releasePath) {
-    # Skip the main exe (it's the InputFile)
     if (-not $item.PSIsContainer -and $item.Name -eq $ExeName) { continue }
-    # Skip MSIX-related files
     if ($item.Name -match '\.(msix|pfx)$' -or $item.Name -match '^install\.(ps1|bat)$') { continue }
-
     if ($item.PSIsContainer) {
-        $filesXml += Get-EvbDirNode -DirPath $item.FullName -Name $item.Name
+        $fileNodes += Get-EvbDirXml -DirPath $item.FullName -Name $item.Name
     } else {
-        $filesXml += Get-EvbFileNode -FilePath $item.FullName -Name $item.Name
+        $fileNodes += Get-EvbFileXml -FilePath $item.FullName -Name $item.Name
     }
 }
 
 $inputExeFull = (Resolve-Path $InputExe).Path
 $outputExeFull = Join-Path $PWD $OutputExe
+$allFiles = $fileNodes -join "`r`n"
 
-$evbXml = @"
-<?xml version="1.0" encoding="windows-1252"?>
-<>
-  <InputFile>$inputExeFull</InputFile>
-  <OutputFile>$outputExeFull</OutputFile>
-  <Files>
-    <Enabled>True</Enabled>
-    <DeleteExtractedOnExit>True</DeleteExtractedOnExit>
-    <CompressFiles>True</CompressFiles>
-    <Files>
-      <File>
-        <Type>3</Type>
-        <Name>%DEFAULT FOLDER%</Name>
-        <Action>0</Action>
-        <OverwriteDateTime>False</OverwriteDateTime>
-        <OverwriteAttributes>False</OverwriteAttributes>
-        <HideFromDialogs>0</HideFromDialogs>
-        <Files>
-$filesXml
-        </Files>
-      </File>
-    </Files>
-  </Files>
-  <Registries>
-    <Enabled>False</Enabled>
-    <Registries>
-      <Registry>
-        <Type>1</Type>
-        <Virtual>True</Virtual>
-        <Name>Classes</Name>
-        <ValueType>0</ValueType>
-        <Value/>
-        <Registries/>
-      </Registry>
-      <Registry>
-        <Type>1</Type>
-        <Virtual>True</Virtual>
-        <Name>User</Name>
-        <ValueType>0</ValueType>
-        <Value/>
-        <Registries/>
-      </Registry>
-      <Registry>
-        <Type>1</Type>
-        <Virtual>True</Virtual>
-        <Name>Machine</Name>
-        <ValueType>0</ValueType>
-        <Value/>
-        <Registries/>
-      </Registry>
-      <Registry>
-        <Type>1</Type>
-        <Virtual>True</Virtual>
-        <Name>Users</Name>
-        <ValueType>0</ValueType>
-        <Value/>
-        <Registries/>
-      </Registry>
-      <Registry>
-        <Type>1</Type>
-        <Virtual>True</Virtual>
-        <Name>Config</Name>
-        <ValueType>0</ValueType>
-        <Value/>
-        <Registries/>
-      </Registry>
-    </Registries>
-  </Registries>
-  <Packaging>
-    <Enabled>False</Enabled>
-  </Packaging>
-  <Options>
-    <ShareVirtualSystem>False</ShareVirtualSystem>
-    <MapExecutableWithTemporaryFile>True</MapExecutableWithTemporaryFile>
-    <AllowRunningOfVirtualExeFiles>True</AllowRunningOfVirtualExeFiles>
-  </Options>
-</>
-"@
+# Build EVB XML using array join (avoids PowerShell here-string parse issues with <>)
+$xml = @()
+$xml += '<?xml version="1.0" encoding="windows-1252"?>'
+$xml += '<>'
+$xml += "  <InputFile>$inputExeFull</InputFile>"
+$xml += "  <OutputFile>$outputExeFull</OutputFile>"
+$xml += '  <Files>'
+$xml += '    <Enabled>True</Enabled>'
+$xml += '    <DeleteExtractedOnExit>True</DeleteExtractedOnExit>'
+$xml += '    <CompressFiles>True</CompressFiles>'
+$xml += '    <Files>'
+$xml += '      <File>'
+$xml += '        <Type>3</Type>'
+$xml += '        <Name>%DEFAULT FOLDER%</Name>'
+$xml += '        <Action>0</Action>'
+$xml += '        <OverwriteDateTime>False</OverwriteDateTime>'
+$xml += '        <OverwriteAttributes>False</OverwriteAttributes>'
+$xml += '        <HideFromDialogs>0</HideFromDialogs>'
+$xml += '        <Files>'
+$xml += $allFiles
+$xml += '        </Files>'
+$xml += '      </File>'
+$xml += '    </Files>'
+$xml += '  </Files>'
+$xml += '  <Registries>'
+$xml += '    <Enabled>False</Enabled>'
+$xml += '    <Registries>'
+$xml += '      <Registry><Type>1</Type><Virtual>True</Virtual><Name>Classes</Name><ValueType>0</ValueType><Value/><Registries/></Registry>'
+$xml += '      <Registry><Type>1</Type><Virtual>True</Virtual><Name>User</Name><ValueType>0</ValueType><Value/><Registries/></Registry>'
+$xml += '      <Registry><Type>1</Type><Virtual>True</Virtual><Name>Machine</Name><ValueType>0</ValueType><Value/><Registries/></Registry>'
+$xml += '      <Registry><Type>1</Type><Virtual>True</Virtual><Name>Users</Name><ValueType>0</ValueType><Value/><Registries/></Registry>'
+$xml += '      <Registry><Type>1</Type><Virtual>True</Virtual><Name>Config</Name><ValueType>0</ValueType><Value/><Registries/></Registry>'
+$xml += '    </Registries>'
+$xml += '  </Registries>'
+$xml += '  <Packaging>'
+$xml += '    <Enabled>False</Enabled>'
+$xml += '  </Packaging>'
+$xml += '  <Options>'
+$xml += '    <ShareVirtualSystem>False</ShareVirtualSystem>'
+$xml += '    <MapExecutableWithTemporaryFile>True</MapExecutableWithTemporaryFile>'
+$xml += '    <AllowRunningOfVirtualExeFiles>True</AllowRunningOfVirtualExeFiles>'
+$xml += '  </Options>'
+$xml += '</>'
 
-Set-Content -Path $EvbProject -Value $evbXml -Encoding UTF8
+$xmlContent = $xml -join "`r`n"
+[System.IO.File]::WriteAllText((Join-Path $PWD $EvbProject), $xmlContent, [System.Text.Encoding]::UTF8)
 Write-Host "  Generated: $EvbProject" -ForegroundColor Green
 
-# Run EVB to create single .exe
+# Run EVB
 Write-Host "[3/3] Packing into single .exe..." -ForegroundColor Yellow
-& $EvbConsole $EvbProject
+& $EvbConsole (Join-Path $PWD $EvbProject)
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: EVB packing failed (exit code $LASTEXITCODE)" -ForegroundColor Red
     exit 1
 }
 
-# Verify output size (should be >10MB for a Flutter app)
+# Verify output
 if (Test-Path $OutputExe) {
-    $size = (Get-Item $OutputExe).Length / 1MB
+    $size = [math]::Round((Get-Item $OutputExe).Length / 1MB, 1)
     if ($size -lt 10) {
-        Write-Host "WARNING: Output is only $([math]::Round($size, 1)) MB — EVB may not have embedded files correctly" -ForegroundColor Yellow
+        Write-Host "WARNING: Output is only $size MB - EVB may not have embedded files" -ForegroundColor Yellow
     }
     Write-Host ""
     Write-Host "=== Portable Build Complete ===" -ForegroundColor Green
     Write-Host "  Output: $OutputExe" -ForegroundColor White
-    Write-Host "  Size:   $([math]::Round($size, 1)) MB" -ForegroundColor White
+    Write-Host "  Size:   $size MB" -ForegroundColor White
     Write-Host ""
 } else {
     Write-Host "ERROR: Output file not found" -ForegroundColor Red
