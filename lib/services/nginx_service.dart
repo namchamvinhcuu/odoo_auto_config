@@ -40,6 +40,12 @@ class NginxService {
         args: ['install', 'mkcert'],
         description: 'brew install mkcert',
       );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: ['dnf', 'install', '-y', 'mkcert'],
+        description: 'pkexec dnf install -y mkcert',
+      );
     } else {
       return (
         executable: 'pkexec',

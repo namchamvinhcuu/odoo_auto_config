@@ -126,6 +126,27 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
   static bool get isWindows => Platform.isWindows;
   static bool get isMacOS => Platform.isMacOS;
 
+  /// Linux package manager: 'apt' (Debian/Ubuntu) or 'dnf' (Fedora/RHEL).
+  /// Returns null if neither is found.
+  static String? _linuxPm;
+  static bool _linuxPmDetected = false;
+
+  static String? get linuxPackageManager {
+    if (!isLinux) return null;
+    if (!_linuxPmDetected) {
+      _linuxPmDetected = true;
+      if (File('/usr/bin/apt').existsSync()) {
+        _linuxPm = 'apt';
+      } else if (File('/usr/bin/dnf').existsSync()) {
+        _linuxPm = 'dnf';
+      }
+    }
+    return _linuxPm;
+  }
+
+  static bool get isApt => linuxPackageManager == 'apt';
+  static bool get isDnf => linuxPackageManager == 'dnf';
+
   static List<String> get pythonCandidates {
     if (isWindows) {
       final candidates = <String>['python', 'python3', 'py'];
@@ -400,8 +421,15 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     } else if (isWindows) {
       cmd = 'winget';
       args = ['install', '--id', 'GitHub.cli', '-e', '--accept-source-agreements'];
+    } else if (isDnf) {
+      cmd = 'pkexec';
+      args = [
+        'bash', '-c',
+        "dnf install -y 'dnf-command(config-manager)' && "
+            'dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo && '
+            'dnf install -y gh',
+      ];
     } else {
-      // Linux
       cmd = 'pkexec';
       args = ['apt', 'install', '-y', 'gh'];
     }
@@ -462,6 +490,17 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
         executable: 'brew',
         args: ['install', '--cask', 'visual-studio-code'],
         description: 'brew install --cask visual-studio-code',
+      );
+    } else if (isDnf) {
+      return (
+        executable: 'pkexec',
+        args: [
+          'bash', '-c',
+          'rpm --import https://packages.microsoft.com/keys/microsoft.asc && '
+          'echo -e "[code]\\nname=Visual Studio Code\\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\\nenabled=1\\ngpgcheck=1\\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo && '
+          'dnf install -y code',
+        ],
+        description: 'dnf install code (Microsoft repository)',
       );
     } else {
       return (

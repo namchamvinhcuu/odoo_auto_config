@@ -26,6 +26,7 @@
   "updateAvailable": "Có bản cập nhật: {current} → {latest}",
   "updateNow": "Cập nhật ngay",
   "dismiss": "Bỏ qua",
+  "userManual": "Hướng dẫn sử dụng",
   "updateDownloadFailed": "Tải bản cập nhật thất bại. Vui lòng thử lại.",
   "updateInstallFailed": "Cài đặt bản cập nhật thất bại. Vui lòng thử lại.",
   "install": "Cài đặt",

@@ -103,6 +103,20 @@ class DockerInstallService {
         args: ['install', '--cask', cask],
         description: 'brew install --cask $cask',
       );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: [
+          'bash',
+          '-c',
+          'dnf install -y dnf-plugins-core && '
+              'dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo && '
+              'dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin && '
+              'systemctl enable --now docker',
+        ],
+        description:
+            'dnf install docker-ce docker-compose-plugin && systemctl enable docker',
+      );
     } else {
       return (
         executable: 'pkexec',

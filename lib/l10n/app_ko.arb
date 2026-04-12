@@ -26,6 +26,7 @@
   "updateAvailable": "업데이트 가능: {current} → {latest}",
   "updateNow": "지금 업데이트",
   "dismiss": "무시",
+  "userManual": "사용 설명서",
   "updateDownloadFailed": "업데이트 다운로드에 실패했습니다. 다시 시도해 주세요.",
   "updateInstallFailed": "업데이트 설치에 실패했습니다. 다시 시도해 주세요.",
   "install": "설치",

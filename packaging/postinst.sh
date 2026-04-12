@@ -1,0 +1,4 @@
+#!/bin/bash
+chmod +x /opt/workspace-configuration/WorkspaceConfiguration
+update-desktop-database /usr/share/applications/ 2>/dev/null || true
+gtk-update-icon-cache /usr/share/icons/hicolor/ 2>/dev/null || true
