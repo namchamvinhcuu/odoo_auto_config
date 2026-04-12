@@ -103,12 +103,15 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 
 ## Hành vi khi khởi động
 - Check Docker installed + daemon running (retry 3 lần, mỗi lần cách 5s - phòng trường hợp auto-start after login)
-- Nếu Docker không cài hoặc daemon chưa chạy → hiện MaterialBanner (không tự tắt) với nút "Go to Settings"
+- Nếu Docker không cài hoặc daemon chưa chạy → hiện MaterialBanner với nút "Go to Settings" + "Dismiss"
+- Docker chưa running → **poll mỗi 10 giây** tự động. Banner tự biến mất khi Docker start. Dismiss = dừng poll
 - Nếu Docker running + nginx container stopped → tự động `docker start <container>`
-- Banner chỉ mất khi Docker daemon thực sự running
-- Check GitHub CLI (gh) installed → nếu chưa có → tự động install (brew/winget/apt)
+- Check GitHub CLI (gh) installed → nếu chưa có → tự động install (brew/winget/apt/dnf)
 - `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
-  (VD: bấm Setup Nginx khi chưa config → tự động chuyển sang Settings > Nginx tab)
+- **Sidebar layout**: NavigationRail trailing wrap `SingleChildScrollView` tránh overflow size S
+  Thứ tự dưới tabs: New Window → divider → version → Check Update → User Manual
+  Back/Forward buttons comment out (dùng mouse buttons), tìm `TODO: re-enable back/forward`
+- **User Manual**: Mở browser đến GitHub README (public repo). i18n 3 ngôn ngữ
 
 ## Tính năng System Tray (Multi-Instance)
 - **Package**: `system_tray 2.0.3` — macOS, Windows, Linux
@@ -378,6 +381,10 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
   Tất cả screens gọi chung `startDaemon()` — 1 chỗ sửa, cả app cập nhật
 
 ### Windows
+- **2 phương thức phân phối**: MSIX (installer) + EVB portable (single .exe)
+  Detect: `_isWindowsMsix` = exe path chứa `WindowsApps`
+  CI build: `build-portable.ps1` dùng Enigma Virtual Box v11.30 pack single .exe
+  Auto-update: MSIX → download `.msix` + `Add-AppPackage`, Portable → download `.exe` + `Copy-Item` (không tự relaunch vì SmartScreen)
 - MSIX cần `runFullTrust` capability để Process.run hoạt động
 - Native file/folder picker bằng PowerShell + COM (IFileOpenDialog)
 - Open VSCode: `cmd /c code` (qua PATH)
@@ -401,10 +408,14 @@ bash release.sh 2.0.0    # chỉ định version cụ thể
 - Windows system tray: đã test OK (2026-04-05) — hide to tray, show from tray, single instance, exit mode
 
 ### Linux
-- Python install: `pkexec apt install` (graphical sudo, không cần terminal)
+- **Hỗ trợ 2 package manager**: `PlatformService.linuxPackageManager` detect `/usr/bin/apt` vs `/usr/bin/dnf`
+  Helpers: `PlatformService.isApt`, `PlatformService.isDnf`. Cached, chỉ detect 1 lần
+- Python install: `pkexec apt/dnf install` (graphical sudo, không cần terminal)
 - Hosts: `pkexec` (polkit graphical sudo)
 - Port check: `lsof -i :PORT`
-- Docker install: `pkexec apt install docker.io docker-compose-v2` + systemctl enable
+- Docker install: apt=`docker.io docker-compose-v2`, dnf=Docker CE repo + `docker-ce docker-compose-plugin`
+- **CI build**: `.deb` + `.rpm` bằng `fpm` (Ruby gem). Install path `/opt/workspace-configuration/`
+  Files: `packaging/workspace-configuration.desktop`, `packaging/postinst.sh`
 
 ## Quyết định thiết kế
 - **Nginx chỉ Docker**: Không hỗ trợ nginx local vì conf structure khác nhau tùy OS/cách cài
@@ -546,10 +557,13 @@ Quit All
 - `lib/screens/settings/theme_tab.dart` — xóa close behavior toggle
 - `lib/providers/theme_provider.dart` — hardcode closeBehavior='tray'
 
+**Đã triển khai:**
+- **Settings sync**: `StorageService.startConfigWatcher()` — file watcher detect thay đổi config từ instance khác
+  Debounce 500ms, ignore self-writes (1s window). Reload tất cả 7 providers khi config thay đổi
+
 **Future enhancements (chưa làm):**
 - Per-instance quit (submenu Quit ▸ [Instance 1, ..., All]) + auto-transfer tray ownership
 - Instance label hiện tên project/tab thay vì "Instance N"
-- Settings sync giữa instances via file watcher
 
 ## Quy tắc làm việc
 - **Sau mỗi task hoàn thành**: LUÔN tóm tắt những gì đã thay đổi + liệt kê danh sách đầy đủ các file đã sửa

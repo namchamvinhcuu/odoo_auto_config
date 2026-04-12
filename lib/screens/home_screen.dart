@@ -374,38 +374,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
               ),
             ],
             trailing: Expanded(
-              child: Align(
-                alignment: Alignment.bottomCenter,
+              child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: _backHistory.isNotEmpty ? _goBack : null,
-                            icon: const Icon(Icons.arrow_back),
-                            tooltip: _backHistory.isNotEmpty ? context.l10n.back : null,
-                            iconSize: AppIconSize.lg,
-                          ),
-                          IconButton(
-                            onPressed: _forwardHistory.isNotEmpty ? _goForward : null,
-                            icon: const Icon(Icons.arrow_forward),
-                            tooltip: _forwardHistory.isNotEmpty ? context.l10n.forward : null,
-                            iconSize: AppIconSize.lg,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
+                      // TODO: re-enable back/forward buttons if needed
+                      // Row(
+                      //   mainAxisSize: MainAxisSize.min,
+                      //   children: [
+                      //     IconButton(
+                      //       onPressed: _backHistory.isNotEmpty ? _goBack : null,
+                      //       icon: const Icon(Icons.arrow_back),
+                      //       tooltip: _backHistory.isNotEmpty ? context.l10n.back : null,
+                      //       iconSize: AppIconSize.lg,
+                      //     ),
+                      //     IconButton(
+                      //       onPressed: _forwardHistory.isNotEmpty ? _goForward : null,
+                      //       icon: const Icon(Icons.arrow_forward),
+                      //       tooltip: _forwardHistory.isNotEmpty ? context.l10n.forward : null,
+                      //       iconSize: AppIconSize.lg,
+                      //     ),
+                      //   ],
+                      // ),
+                      // const SizedBox(height: AppSpacing.sm),
                       IconButton(
                         onPressed: () => InstanceService.launchNewInstance(),
                         icon: const Icon(Icons.open_in_new),
                         tooltip: context.l10n.newWindow,
                         iconSize: AppIconSize.lg,
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      SizedBox(
+                        width: AppNav.minExtendedWidth - AppSpacing.xxl * 2,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                          child: Container(height: 1, color: Colors.grey.shade500),
+                        ),
+                      ),
+                      Text(
+                        'v$appVersion',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xs,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
                       TextButton.icon(
                         onPressed: updateState.updating
                             ? null
@@ -414,20 +427,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                             size: AppIconSize.lg),
                         label: const Text('Check Update'),
                       ),
-                      const SizedBox(height: AppSpacing.sm),
                       TextButton.icon(
                         onPressed: _openUserManual,
                         icon: const Icon(Icons.menu_book,
                             size: AppIconSize.lg),
                         label: Text(context.l10n.userManual),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'v$appVersion',
-                        style: TextStyle(
-                          fontSize: AppFontSize.xs,
-                          color: Colors.grey.shade500,
-                        ),
                       ),
                     ],
                   ),
