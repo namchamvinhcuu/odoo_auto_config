@@ -600,6 +600,12 @@ class PostgresService {
         args: ['install', 'libpq'],
         description: 'brew install libpq',
       );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: ['dnf', 'install', '-y', 'postgresql'],
+        description: 'dnf install postgresql',
+      );
     } else {
       return (
         executable: 'pkexec',

@@ -63,6 +63,12 @@ class GitService {
         args: ['--install'],
         description: 'xcode-select --install',
       );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: ['dnf', 'install', '-y', 'git'],
+        description: 'pkexec dnf install -y git',
+      );
     } else {
       return (
         executable: 'pkexec',

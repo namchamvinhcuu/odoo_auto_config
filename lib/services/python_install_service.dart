@@ -39,8 +39,13 @@ class PythonInstallService {
         args: ['install', 'python@$version'],
         description: 'brew install python@$version',
       );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: ['dnf', 'install', '-y', 'python$version'],
+        description: 'pkexec dnf install -y python$version',
+      );
     } else {
-      // Linux: use pkexec for graphical sudo prompt (works in GUI apps)
       return (
         executable: 'pkexec',
         args: ['apt', 'install', '-y', 'python$version', 'python$version-venv'],
@@ -49,7 +54,7 @@ class PythonInstallService {
     }
   }
 
-  /// Check if winget/brew/pkexec+apt is available.
+  /// Check if winget/brew/pkexec+apt/dnf is available.
   static Future<bool> isPackageManagerAvailable() async {
     try {
       if (PlatformService.isWindows) {
@@ -61,12 +66,11 @@ class PythonInstallService {
             await Process.run('brew', ['--version'], runInShell: true);
         return result.exitCode == 0;
       } else {
-        // Linux: need both pkexec and apt
+        // Linux: need pkexec + (apt or dnf)
         final pkexecResult =
             await Process.run('which', ['pkexec'], runInShell: true);
-        final aptResult =
-            await Process.run('apt', ['--version'], runInShell: true);
-        return pkexecResult.exitCode == 0 && aptResult.exitCode == 0;
+        return pkexecResult.exitCode == 0 &&
+            PlatformService.linuxPackageManager != null;
       }
     } catch (_) {
       return false;
@@ -151,6 +155,12 @@ class PythonInstallService {
         executable: 'brew',
         args: ['uninstall', 'python@$version'],
         description: 'brew uninstall python@$version',
+      );
+    } else if (PlatformService.isDnf) {
+      return (
+        executable: 'pkexec',
+        args: ['dnf', 'remove', '-y', 'python$version'],
+        description: 'pkexec dnf remove -y python$version',
       );
     } else {
       return (

@@ -12,7 +12,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$ExeName = "odoo_auto_config.exe"
+$ExeName = "WorkspaceConfiguration.exe"
 $InputExe = "$ReleaseDir\$ExeName"
 $OutputExe = "build\$OutputName.exe"
 $EvbProject = "build\$OutputName.evb"
