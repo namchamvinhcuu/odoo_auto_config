@@ -84,9 +84,11 @@ class UpdateService {
       final downloadDir = _getDownloadDir();
       final filePath = p.join(downloadDir, fileName);
 
-      // Use curl with progress
+      // Use curl with timeout (connect 15s, max 5 min for large files)
       final result = await Process.run('curl', [
         '-fSL',
+        '--connect-timeout', '15',
+        '--max-time', '300',
         '-o', filePath,
         url,
       ], runInShell: true);
@@ -138,15 +140,25 @@ class UpdateService {
     }
 
     // Create update script that waits for app to exit, replaces, and relaunches
+    final logPath = p.join(Directory.systemTemp.path, 'wsc_update.log');
     final scriptPath = p.join(Directory.systemTemp.path, 'wsc_update.sh');
     await File(scriptPath).writeAsString('''#!/bin/bash
+exec > "$logPath" 2>&1
+set -e
+
 # Wait for current process to exit
+echo "Waiting for PID \$1 to exit..."
 while kill -0 \$1 2>/dev/null; do sleep 0.5; done
+echo "App exited."
+
 # Replace AppImage
+echo "Copying $newAppImage -> $appImagePath"
 cp "$newAppImage" "$appImagePath"
 chmod +x "$appImagePath"
 rm "$newAppImage"
+
 # Relaunch
+echo "Relaunching..."
 exec "$appImagePath" &
 rm "\$0"
 ''');

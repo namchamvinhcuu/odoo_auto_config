@@ -393,6 +393,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                             size: AppIconSize.lg),
                         label: const Text('Check Update'),
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'v$appVersion',
+                        style: TextStyle(
+                          fontSize: AppFontSize.xs,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
