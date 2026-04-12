@@ -158,11 +158,11 @@ LRESULT CALLBACK Win32Window::WndProc(HWND const window,
                                       UINT const message,
                                       WPARAM const wparam,
                                       LPARAM const lparam) noexcept {
-  if (message == WM_CLOSE) {
-    // Intercept WM_CLOSE at the earliest point — hide instead of close
-    ShowWindow(window, SW_HIDE);
-    return 0;
-  }
+  // TODO: re-enable minimize to tray when ready
+  // if (message == WM_CLOSE) {
+  //   ShowWindow(window, SW_HIDE);
+  //   return 0;
+  // }
   if (message == WM_NCCREATE) {
     auto window_struct = reinterpret_cast<CREATESTRUCT*>(lparam);
     SetWindowLongPtr(window, GWLP_USERDATA,

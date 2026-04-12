@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
@@ -8,7 +9,8 @@ import 'package:odoo_auto_config/providers/docker_status_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/providers/update_provider.dart';
 import 'package:odoo_auto_config/services/instance_service.dart';
-import 'package:odoo_auto_config/services/tray_service.dart';
+// TODO: re-enable tray when ready
+// import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:odoo_auto_config/services/update_service.dart';
 import 'other_projects/other_projects_screen.dart';
 import 'environment_screen.dart';
@@ -138,8 +140,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
 
   @override
   void onWindowClose() async {
-    // macOS/Linux: always minimize to tray (multi-instance mode)
-    await TrayService.hideToTray();
+    // TODO: re-enable minimize to tray when ready
+    // await TrayService.hideToTray();
+    await InstanceService.cleanup();
+    exit(0);
   }
 
   static const _screens = <Widget>[

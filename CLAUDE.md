@@ -68,7 +68,9 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
     return const MyState();
   }
   ```
-- **Real-time logging** - LogOutput widget auto-scroll, color-coded, SelectionArea wrap riêng
+- **Real-time logging** - `LogOutput` widget shared cho tất cả dialog có log output
+  Hỗ trợ: `height` (fixed) hoặc `maxHeight` (flexible), `ansiColors: true` cho ANSI parsing,
+  `scrollController` optional. KHÔNG copy-paste Container inline — luôn dùng `LogOutput`
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
 - **AppDialog.show()** - LUÔN dùng `AppDialog.show()` thay `showDialog()` cho mọi dialog trong app.
@@ -91,6 +93,8 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vào settings JSON
   Grid default, responsive columns: S=3, M=4, L=5. Scale icon/button theo cell width
 - **Favourite** - Star icon (IconButton với hover), sort favourite lên đầu rồi by name A-Z
+- **Grid card click** - Single click = chọn card (hiện primary border), double click = mở VSCode
+  `selectedPath` state quản lý ở screen level, truyền xuống grid view qua callback
 - **Grid context menu** - Right-click hiện menu (favourite, git pull/commit/selective pull, VSCode, folder, edit, delete)
 - **Grid tooltip** - Hover hiện description (hoặc path nếu không có description)
 - **Auto-detect project type** - Import workspace tự động nhận diện từ marker files
@@ -112,10 +116,10 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
   `title: ''` — chỉ hiện icon, KHÔNG hiện text cạnh icon
 - **Single tray icon**: chỉ instance đầu tiên (tray owner) tạo tray icon
   Các instance khác skip tray init. Tray owner xác định bằng `.tray.lock` file lock.
-- **Close behavior**: luôn minimize to tray (không có lựa chọn "Exit app")
-  Click X → `TrayService.hideToTray()` → `windowManager.hide()`
-  HomeScreen `onWindowClose` luôn gọi `hideToTray()` (macOS/Linux)
-  Windows: native WM_CLOSE trong `flutter_window.cpp` hide window, không cần xử lý thêm ở Dart
+- **Close behavior**: **TẠM TẮT minimize to tray** — click X = thoát app hẳn
+  Code cũ (hideToTray) được comment out, tìm bằng `TODO: re-enable minimize to tray when ready`
+  Các file đã comment out: `home_screen.dart`, `win32_window.cpp`, `flutter_window.cpp`, `main.cpp`, `AppDelegate.swift`
+  Khi bật lại: uncomment tất cả `TODO: re-enable` + đổi `SetQuitOnClose(true)` → `false` + `return true` → `false`
 - **Tray menu** (SubMenu style):
   ```
   Show  ▸  Instance 1, Instance 2, ...
@@ -127,10 +131,9 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - **Events**: click/double-click → show tray owner's window, right-click → menu
 - **Hỗ trợ**: macOS + Windows + Linux. `TrayService.supported` = tất cả desktop
 - **macOS**: dùng `windowManager.setPreventClose(true)` + `onWindowClose` callback
-  `applicationShouldTerminateAfterLastWindowClosed` PHẢI return `false`
-- **Windows**: xử lý `WM_CLOSE` ở native C++ level
-  `flutter_window.cpp`: `case WM_CLOSE: ShowWindow(hwnd, SW_HIDE); return 0;`
-  `main.cpp`: `SetQuitOnClose(false)` — QUAN TRỌNG
+  `applicationShouldTerminateAfterLastWindowClosed` hiện return `true` (tạm tắt tray, bật lại → `false`)
+- **Windows**: WM_CLOSE intercept hiện **comment out** (tạm tắt tray)
+  `main.cpp`: `SetQuitOnClose(true)` (tạm tắt tray, bật lại → `false`)
   **KHÔNG dùng `setSkipTaskbar`** trên Windows — gây native crash
 - **Multi-instance**: Không còn single-instance enforcement
   Windows: đã xóa mutex. Linux: `G_APPLICATION_NON_UNIQUE`
@@ -148,7 +151,11 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
   - **Windows**: Tải `.msix` → `Add-AppPackage -ForceApplicationShutdown` → `Start-Process` relaunch
     Relaunch dùng `Start-Process ('shell:AppsFolder\' + PackageFamilyName + '!App')`
     KHÔNG dùng `explorer.exe` (sẽ mở OneDrive/Documents thay vì app)
-- **Xử lý lỗi**: Download/install fail → hiện SnackBar thông báo. macOS log tại `/tmp/wsc_update.log`
+- **Multi-instance update**: Trước `exit(0)`, gọi `InstanceService.signalQuitAll()` + delay 1s
+  Đảm bảo tất cả instance khác thoát trước khi binary bị thay thế
+- **Download timeout**: curl `--connect-timeout 15` + `--max-time 300` (5 phút max)
+- **Xử lý lỗi**: Download/install fail → hiện SnackBar thông báo
+  Log: macOS + Linux `/tmp/wsc_update.log`, Windows `%TEMP%\wsc_update.log`
 - **Public repo**: Releases publish lên `namchamvinhcuu/workspace-configuration` (public)
   Code dev tại `namchamvinhcuu/odoo_auto_config` (private)
 - **QUAN TRỌNG**: Khi release, `assets/version.json` phải khớp với version tag

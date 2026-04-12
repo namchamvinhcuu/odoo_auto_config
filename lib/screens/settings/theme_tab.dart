@@ -4,7 +4,8 @@ import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/providers/locale_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
-import 'package:odoo_auto_config/services/tray_service.dart';
+// TODO: re-enable tray when ready
+// import 'package:odoo_auto_config/services/tray_service.dart';
 
 class ThemeTab extends ConsumerWidget {
   const ThemeTab({super.key});
@@ -108,20 +109,20 @@ class ThemeTab extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.xxxl),
 
-          // Close behavior — forced to minimize to tray (multi-instance mode)
-          if (TrayService.supported) ...[
-            Text(context.l10n.closeBehavior,
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                const Icon(Icons.hide_source, size: AppIconSize.md),
-                const SizedBox(width: AppSpacing.sm),
-                Text(context.l10n.closeBehaviorTray),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-          ],
+          // TODO: re-enable tray when ready
+          // if (TrayService.supported) ...[
+          //   Text(context.l10n.closeBehavior,
+          //       style: Theme.of(context).textTheme.titleMedium),
+          //   const SizedBox(height: AppSpacing.md),
+          //   Row(
+          //     children: [
+          //       const Icon(Icons.hide_source, size: AppIconSize.md),
+          //       const SizedBox(width: AppSpacing.sm),
+          //       Text(context.l10n.closeBehaviorTray),
+          //     ],
+          //   ),
+          //   const SizedBox(height: AppSpacing.xxxl),
+          // ],
 
           // Preview
           Text(context.l10n.preview,

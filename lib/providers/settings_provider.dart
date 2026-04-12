@@ -172,6 +172,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   Future<void> loadGitAccounts() async {
     if (state.gitLoaded) return;
+    await reloadGitAccounts();
+  }
+
+  /// Force reload git accounts from disk (used by cross-instance sync).
+  Future<void> reloadGitAccounts() async {
     final settings = await StorageService.loadSettings();
     final accounts = (settings['gitAccounts'] as List?)
             ?.map((e) => Map<String, dynamic>.from(e as Map))

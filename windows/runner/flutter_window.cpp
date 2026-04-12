@@ -67,10 +67,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
-    case WM_CLOSE:
-      // Hide window instead of destroying — system tray will bring it back
-      ShowWindow(hwnd, SW_HIDE);
-      return 0;
+    // TODO: re-enable minimize to tray when ready
+    // case WM_CLOSE:
+    //   ShowWindow(hwnd, SW_HIDE);
+    //   return 0;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

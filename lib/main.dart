@@ -6,10 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:odoo_auto_config/l10n/app_localizations.dart';
 import 'package:odoo_auto_config/providers/locale_provider.dart';
 import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
+import 'package:odoo_auto_config/providers/other_projects_provider.dart';
+import 'package:odoo_auto_config/providers/profile_provider.dart';
+import 'package:odoo_auto_config/providers/settings_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
+import 'package:odoo_auto_config/providers/venv_provider.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'package:odoo_auto_config/services/instance_service.dart';
-import 'package:odoo_auto_config/services/tray_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
+// TODO: re-enable tray when ready
+// import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
@@ -48,27 +54,36 @@ void main() async {
   await windowManager.center();
   await windowManager.show();
 
-  // Multi-instance: register this instance and try to own the tray
+  // Multi-instance: register this instance
   await InstanceService.register();
-  final isTrayOwner = await InstanceService.tryAcquireTrayOwnership();
-  if (isTrayOwner) {
-    await TrayService.init();
-  }
+  // TODO: re-enable tray when ready
+  // final isTrayOwner = await InstanceService.tryAcquireTrayOwnership();
+  // if (isTrayOwner) {
+  //   await TrayService.init();
+  // }
 
-  // Start watching for IPC signals (show, quit_all, instance changes)
+  // Start watching for IPC signals (quit_all for update signaling)
   InstanceService.startWatching(
     onShow: () async {
       await windowManager.show();
       await windowManager.focus();
     },
     onQuitAll: () async {
-      await TrayService.cleanup();
+      await InstanceService.cleanup();
       exit(0);
     },
-    onInstancesChanged: isTrayOwner
-        ? () => TrayService.rebuildMenu()
-        : null,
   );
+
+  // Watch config file for changes from other instances → reload all providers
+  StorageService.startConfigWatcher(() {
+    container.read(themeProvider.notifier).load();
+    container.read(localeProvider.notifier).load();
+    container.read(odooProjectsProvider.notifier).reload();
+    container.read(otherProjectsProvider.notifier).reload();
+    container.read(profileProvider.notifier).refresh();
+    container.read(venvProvider.notifier).reload();
+    container.read(settingsProvider.notifier).reloadGitAccounts();
+  });
 
   runApp(
     UncontrolledProviderScope(

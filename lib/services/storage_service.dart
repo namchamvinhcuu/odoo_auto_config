@@ -6,6 +6,38 @@ import 'package:path/path.dart' as p;
 class StorageService {
   static const _configFileName = 'odoo_auto_config.json';
 
+  // ── Cross-instance config file watcher ──
+
+  static StreamSubscription<FileSystemEvent>? _configWatcher;
+  static Timer? _debounceTimer;
+  static DateTime _lastWriteTime = DateTime(0);
+
+  /// Start watching the config file for changes from other instances.
+  /// [onChange] is called (debounced 500ms) when another instance modifies the file.
+  static void startConfigWatcher(void Function() onChange) {
+    stopConfigWatcher();
+    final dir = Directory(_configDir);
+    if (!dir.existsSync()) return;
+    _configWatcher = dir.watch(events: FileSystemEvent.modify).listen((event) {
+      if (!event.path.endsWith(_configFileName)) return;
+      // Ignore self-writes (within 1 second of our last write)
+      if (DateTime.now().difference(_lastWriteTime).inMilliseconds < 1000) {
+        return;
+      }
+      // Debounce: wait 500ms for rapid writes to settle
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(const Duration(milliseconds: 500), onChange);
+    });
+  }
+
+  /// Stop watching the config file.
+  static void stopConfigWatcher() {
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _configWatcher?.cancel();
+    _configWatcher = null;
+  }
+
   static String get _configDir {
     final home = Platform.environment['HOME'] ??
         Platform.environment['USERPROFILE'] ??
@@ -75,6 +107,7 @@ class StorageService {
   static Future<void> _writeConfig(Map<String, dynamic> config) async {
     final file = File(_configPath);
     await file.parent.create(recursive: true);
+    _lastWriteTime = DateTime.now(); // Mark self-write to ignore in watcher
     await file.writeAsString(
       const JsonEncoder.withIndent('  ').convert(config),
     );
