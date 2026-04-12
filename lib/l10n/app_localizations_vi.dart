@@ -84,6 +84,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dismiss => 'Bỏ qua';
 
   @override
+  String get userManual => 'Hướng dẫn sử dụng';
+
+  @override
   String get updateDownloadFailed =>
       'Tải bản cập nhật thất bại. Vui lòng thử lại.';
 

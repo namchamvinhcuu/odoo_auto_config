@@ -329,10 +329,7 @@ try {
 }
 
 Start-Sleep -Seconds 1
-
-# Relaunch
-Write-Host "Relaunching: $currentExe"
-Start-Process "$currentExe"
+Write-Host "Update complete."
 
 # Cleanup
 Remove-Item -Path "$newExePath" -Force -ErrorAction SilentlyContinue

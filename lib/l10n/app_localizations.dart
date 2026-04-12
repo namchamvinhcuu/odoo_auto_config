@@ -244,6 +244,12 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get dismiss;
 
+  /// No description provided for @userManual.
+  ///
+  /// In en, this message translates to:
+  /// **'User Manual'**
+  String get userManual;
+
   /// No description provided for @updateDownloadFailed.
   ///
   /// In en, this message translates to:

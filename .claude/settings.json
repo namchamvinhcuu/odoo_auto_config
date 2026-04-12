@@ -18,10 +18,13 @@
       "Bash(curl -sL \"https://raw.githubusercontent.com/samtupy/nvgt/main/other/nvgt.evb\" -o /tmp/nvgt.evb)",
       "Bash(iconv -f UTF-16LE -t UTF-8 /tmp/nvgt.evb)",
       "Bash(curl -sL \"https://raw.githubusercontent.com/ohto-ai/PostLive/master/LivePlatformClient/PortablePacckage/PortableLiveLoginUnit.evb\" -o /tmp/postlive.evb)",
-      "Bash(iconv -f UTF-16LE -t UTF-8 /tmp/postlive.evb)"
+      "Bash(iconv -f UTF-16LE -t UTF-8 /tmp/postlive.evb)",
+      "Bash(git clone:*)"
     ],
     "additionalDirectories": [
-      "/Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens"
+      "/Volumes/Data/Workspace/Projects/nam-dev/odoo_auto_config/lib/screens",
+      "/tmp/workspace-configuration",
+      "/private/tmp/workspace-configuration"
     ]
   }
 }

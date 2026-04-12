@@ -104,6 +104,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   }
 
 
+  static const _manualUrl =
+      'https://github.com/namchamvinhcuu/workspace-configuration#readme';
+
+  Future<void> _openUserManual() async {
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [_manualUrl], runInShell: true);
+      } else if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', _manualUrl], runInShell: true);
+      } else {
+        await Process.run('xdg-open', [_manualUrl], runInShell: true);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _checkUpdateWithSnackBar() async {
     final info = await UpdateService.checkForUpdate();
     if (info != null && info.hasUpdate) {
@@ -398,6 +413,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                         icon: const Icon(Icons.system_update,
                             size: AppIconSize.lg),
                         label: const Text('Check Update'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextButton.icon(
+                        onPressed: _openUserManual,
+                        icon: const Icon(Icons.menu_book,
+                            size: AppIconSize.lg),
+                        label: Text(context.l10n.userManual),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
