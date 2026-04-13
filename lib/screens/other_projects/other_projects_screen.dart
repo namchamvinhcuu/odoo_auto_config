@@ -11,6 +11,7 @@ import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/providers/other_projects_provider.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
@@ -31,9 +32,33 @@ class OtherProjectsScreen extends ConsumerStatefulWidget {
 }
 
 class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
+  static const _favKey = 'otherProjectsFavouritesOnly';
+
   final _searchController = TextEditingController();
   String _filterType = '';
   String? _selectedPath;
+  bool _favouritesOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavouritesOnly();
+  }
+
+  Future<void> _loadFavouritesOnly() async {
+    final settings = await StorageService.loadSettings();
+    final value = settings[_favKey] as bool? ?? false;
+    if (mounted && value != _favouritesOnly) {
+      setState(() => _favouritesOnly = value);
+    }
+  }
+
+  Future<void> _setFavouritesOnly(bool value) async {
+    setState(() => _favouritesOnly = value);
+    await StorageService.updateSettings((settings) {
+      settings[_favKey] = value;
+    });
+  }
 
   void _switchBranch(WorkspaceInfo ws) {
     final branches =
@@ -77,7 +102,8 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
           w.description.toLowerCase().contains(q);
       final matchType =
           _filterType.isEmpty || w.type.toLowerCase() == _filterType;
-      return matchSearch && matchType;
+      final matchFavourite = !_favouritesOnly || w.favourite;
+      return matchSearch && matchType && matchFavourite;
     }).toList();
   }
 
@@ -682,6 +708,15 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                   ],
                 ),
               ],
+              const SizedBox(width: AppSpacing.sm),
+              IconButton(
+                onPressed: () => _setFavouritesOnly(!_favouritesOnly),
+                icon: Icon(
+                  _favouritesOnly ? Icons.star : Icons.star_border,
+                  color: _favouritesOnly ? Colors.amber : null,
+                ),
+                tooltip: context.l10n.showFavouritesOnly,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),

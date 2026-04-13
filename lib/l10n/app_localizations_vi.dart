@@ -935,6 +935,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get unfavourite => 'Bỏ yêu thích';
 
   @override
+  String get showFavouritesOnly => 'Chỉ yêu thích';
+
+  @override
   String get wsPort => 'Port (tùy chọn)';
 
   @override

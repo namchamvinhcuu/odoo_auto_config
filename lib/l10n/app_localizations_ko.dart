@@ -921,6 +921,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unfavourite => '즐겨찾기 제거';
 
   @override
+  String get showFavouritesOnly => '즐겨찾기만';
+
+  @override
   String get wsPort => '포트 (선택사항)';
 
   @override

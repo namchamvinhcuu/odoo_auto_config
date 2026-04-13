@@ -8,6 +8,7 @@ import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
@@ -29,17 +30,44 @@ class OdooProjectsScreen extends ConsumerStatefulWidget {
 }
 
 class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
+  static const _favKey = 'odooProjectsFavouritesOnly';
+
   final _searchController = TextEditingController();
   String? _selectedPath;
+  bool _favouritesOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavouritesOnly();
+  }
+
+  Future<void> _loadFavouritesOnly() async {
+    final settings = await StorageService.loadSettings();
+    final value = settings[_favKey] as bool? ?? false;
+    if (mounted && value != _favouritesOnly) {
+      setState(() => _favouritesOnly = value);
+    }
+  }
+
+  Future<void> _setFavouritesOnly(bool value) async {
+    setState(() => _favouritesOnly = value);
+    await StorageService.updateSettings((settings) {
+      settings[_favKey] = value;
+    });
+  }
 
   List<ProjectInfo> _applyFilter(List<ProjectInfo> projects) {
     final q = _searchController.text.toLowerCase();
-    if (q.isEmpty) return projects;
     return projects.where((p) {
-      return p.name.toLowerCase().contains(q) ||
+      final matchSearch =
+          q.isEmpty ||
+          p.name.toLowerCase().contains(q) ||
           p.path.toLowerCase().contains(q) ||
           p.description.toLowerCase().contains(q) ||
           p.httpPort.toString().contains(q);
+      final matchFavourite = !_favouritesOnly || p.favourite;
+      return matchSearch && matchFavourite;
     }).toList();
   }
 
@@ -588,25 +616,40 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
                 ?.copyWith(color: Colors.grey),
           ),
           const SizedBox(height: AppSpacing.lg),
-          // Search bar
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: context.l10n.projectsSearchHint,
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {});
-                      },
-                    )
-                  : null,
-            ),
-            onChanged: (_) => setState(() {}),
+          // Search bar + favourites-only filter
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: context.l10n.projectsSearchHint,
+                    prefixIcon: const Icon(Icons.search),
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              IconButton(
+                onPressed: () => _setFavouritesOnly(!_favouritesOnly),
+                icon: Icon(
+                  _favouritesOnly ? Icons.star : Icons.star_border,
+                  color: _favouritesOnly ? Colors.amber : null,
+                ),
+                tooltip: context.l10n.showFavouritesOnly,
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           asyncState.when(

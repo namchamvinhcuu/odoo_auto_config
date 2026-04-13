@@ -939,6 +939,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unfavourite => 'Remove from favourites';
 
   @override
+  String get showFavouritesOnly => 'Favourites only';
+
+  @override
   String get wsPort => 'Port (optional)';
 
   @override

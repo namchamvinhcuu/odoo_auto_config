@@ -1786,6 +1786,12 @@ abstract class AppLocalizations {
   /// **'Remove from favourites'**
   String get unfavourite;
 
+  /// No description provided for @showFavouritesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites only'**
+  String get showFavouritesOnly;
+
   /// No description provided for @wsPort.
   ///
   /// In en, this message translates to:

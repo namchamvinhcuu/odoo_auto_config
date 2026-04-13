@@ -301,6 +301,7 @@
 
   "favourite": "Thêm vào yêu thích",
   "unfavourite": "Bỏ yêu thích",
+  "showFavouritesOnly": "Chỉ yêu thích",
 
   "wsPort": "Port (tùy chọn)",
   "wsPortHint": "VD: 3000, 8080",

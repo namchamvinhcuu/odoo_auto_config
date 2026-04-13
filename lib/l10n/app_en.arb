@@ -330,6 +330,7 @@
 
   "favourite": "Add to favourites",
   "unfavourite": "Remove from favourites",
+  "showFavouritesOnly": "Favourites only",
 
   "wsPort": "Port (optional)",
   "wsPortHint": "e.g. 3000, 8080",
