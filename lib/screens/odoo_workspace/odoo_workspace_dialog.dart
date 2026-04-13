@@ -6,8 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
+import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'repo_info.dart';
 import 'repo_branch_dialog.dart';
 import 'branch_picker_dialog.dart';
@@ -26,12 +29,17 @@ const _kSearchMaxVisibleItems = 5;
 class OdooWorkspaceDialog extends StatefulWidget {
   final String projectName;
   final String projectPath;
+  final String? nginxSubdomain;
 
   const OdooWorkspaceDialog({
     super.key,
     required this.projectName,
     required this.projectPath,
+    this.nginxSubdomain,
   });
+
+  bool get hasNginx =>
+      nginxSubdomain != null && nginxSubdomain!.isNotEmpty;
 
   @override
   State<OdooWorkspaceDialog> createState() => _OdooWorkspaceDialogState();
@@ -628,6 +636,63 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
+  // ── Open in VSCode / Browser ──
+
+  Future<void> _openPathInVscode(String path) async {
+    final installed = await PlatformService.isVscodeInstalled();
+    if (!installed) {
+      if (!mounted) return;
+      _dismissSearchFocus();
+      AppDialog.show(
+        context: context,
+        builder: (ctx) => const VscodeInstallDialog(),
+      );
+      return;
+    }
+    try {
+      if (Platform.isMacOS) {
+        await Process.run(
+          'open',
+          ['-a', 'Visual Studio Code', path],
+          runInShell: true,
+        );
+      } else if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'code', path], runInShell: true);
+      } else {
+        await Process.run('code', [path], runInShell: true);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotOpenVscode)),
+        );
+      }
+    }
+  }
+
+  Future<void> _openProjectInVscode() {
+    _dismissSearchFocus();
+    return _openPathInVscode(widget.projectPath);
+  }
+
+  Future<void> _openProjectInBrowser() async {
+    if (!widget.hasNginx) return;
+    _dismissSearchFocus();
+    final nginx = await NginxService.loadSettings();
+    final suffix = (nginx['domainSuffix'] ?? '').toString();
+    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
+    final url = 'https://${widget.nginxSubdomain}$dotSuffix';
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [url], runInShell: true);
+      } else if (Platform.isWindows) {
+        await Process.run('cmd', ['/c', 'start', url], runInShell: true);
+      } else {
+        await Process.run('xdg-open', [url], runInShell: true);
+      }
+    } catch (_) {}
+  }
+
   // ── Build ──
 
   @override
@@ -646,6 +711,44 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             child: Text(context.l10n.workspaceViewTitle(widget.projectName)),
           ),
           const Spacer(),
+          IconButton(
+            onPressed: _openProjectInVscode,
+            icon: const Icon(
+              Icons.code,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+              padding: EdgeInsets.zero,
+            ),
+            tooltip: context.l10n.openInVscode,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          if (widget.hasNginx) ...[
+            IconButton(
+              onPressed: _openProjectInBrowser,
+              icon: const Icon(
+                Icons.language,
+                color: Colors.white,
+                size: AppIconSize.md,
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+                padding: EdgeInsets.zero,
+              ),
+              tooltip: context.l10n.openInBrowser,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           IconButton(
             onPressed: () => _loadPinnedRepos(loadAll: true),
             icon: const Icon(
@@ -1086,6 +1189,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           setState(() => repo.selected = !repo.selected);
           _saveSelection();
         },
+        onDoubleTap: () => _openPathInVscode(repo.path),
         borderRadius: AppRadius.mediumBorderRadius,
         child: Padding(
           padding: const EdgeInsets.symmetric(

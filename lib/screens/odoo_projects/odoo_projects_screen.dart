@@ -184,6 +184,7 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
       builder: (ctx) => OdooWorkspaceDialog(
         projectName: project.name,
         projectPath: project.path,
+        nginxSubdomain: project.nginxSubdomain,
       ),
     );
   }
