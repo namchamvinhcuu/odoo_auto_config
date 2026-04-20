@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 
 /// Spacing constants used throughout the app
 class AppSpacing {
@@ -78,27 +80,78 @@ class AppDialog {
   static double contentMaxHeight(BuildContext context) =>
       MediaQuery.of(context).size.height * 0.7;
 
-  /// Show a draggable dialog that cannot be dismissed by tapping outside or pressing ESC.
-  /// Use this instead of [showDialog] for all app dialogs.
+  /// Show a draggable dialog that cannot be dismissed by tapping outside.
+  ///
+  /// ESC is allowed by default. When the dialog is running a process, call
+  /// `context.setDialogRunning(true)` (and `false` when done) — this blocks
+  /// ESC and automatically disables [closeButton]. All centralized in one
+  /// place so dialogs do not need their own `PopScope` wrapper.
   static Future<T?> show<T>({
     required BuildContext context,
     required Widget Function(BuildContext) builder,
   }) {
+    final controller = _DialogProcessController();
     return showDialog<T>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) =>
-          PopScope(canPop: false, child: _DraggableDialog(child: builder(ctx))),
-    );
+      builder: (ctx) => _DialogProcessScope(
+        notifier: controller,
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (_, __) => PopScope(
+            canPop: !controller.running,
+            child: CallbackShortcuts(
+              bindings: <ShortcutActivator, VoidCallback>{
+                const SingleActivator(LogicalKeyboardKey.escape): () {
+                  if (!controller.running && Navigator.canPop(ctx)) {
+                    Navigator.pop(ctx);
+                  }
+                },
+              },
+              child: Focus(
+                autofocus: true,
+                child: _DraggableDialog(child: builder(ctx)),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ).whenComplete(controller.dispose);
   }
 
   /// Red X close button for dialog title rows.
   /// Use in title Row: `[...other widgets, const Spacer(), AppDialog.closeButton(context)]`
-  /// Set [enabled] to false to disable close (e.g. while process is running).
+  ///
+  /// Auto-disabled while the enclosing dialog is marked running via
+  /// `context.setDialogRunning(true)`. Pass [enabled] to override manually.
   static Widget closeButton(
     BuildContext context, {
     VoidCallback? onClose,
-    bool enabled = true,
+    bool? enabled,
+  }) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_DialogProcessScope>();
+    if (scope == null || enabled != null) {
+      return _renderCloseButton(
+        context,
+        enabled: enabled ?? true,
+        onClose: onClose,
+      );
+    }
+    return AnimatedBuilder(
+      animation: scope.notifier!,
+      builder: (ctx, _) => _renderCloseButton(
+        ctx,
+        enabled: !scope.notifier!.running,
+        onClose: onClose,
+      ),
+    );
+  }
+
+  static Widget _renderCloseButton(
+    BuildContext context, {
+    required bool enabled,
+    VoidCallback? onClose,
   }) {
     return IconButton(
       onPressed: enabled ? (onClose ?? () => Navigator.pop(context)) : null,
@@ -114,6 +167,67 @@ class AppDialog {
       tooltip: 'Close',
     );
   }
+}
+
+/// Signal whether the enclosing dialog is running a process.
+///
+/// Blocks ESC and disables [AppDialog.closeButton] while true. Safe to call
+/// outside an [AppDialog.show] context — it becomes a no-op.
+///
+/// Uses `getInheritedWidgetOfExactType` (not `dependOn...`) so callers do not
+/// register as dependents. This means it is safe to call from `initState`,
+/// and the caller does not rebuild when the scope's value changes — which is
+/// the right behavior for a fire-and-forget setter.
+extension DialogProcessContextX on BuildContext {
+  void setDialogRunning(bool running) {
+    final scope = getInheritedWidgetOfExactType<_DialogProcessScope>();
+    scope?.notifier?.setRunning(running);
+  }
+
+  /// Whether the enclosing dialog is currently running a process.
+  /// Returns `false` if called outside [AppDialog.show].
+  bool get isDialogRunning =>
+      getInheritedWidgetOfExactType<_DialogProcessScope>()
+          ?.notifier
+          ?.running ??
+      false;
+
+  /// Run [task] with the dialog marked as running; automatically release
+  /// on completion (success or failure). Avoids forgetting `setDialogRunning(false)`.
+  Future<T> runDialogProcess<T>(Future<T> Function() task) async {
+    setDialogRunning(true);
+    try {
+      return await task();
+    } finally {
+      setDialogRunning(false);
+    }
+  }
+}
+
+class _DialogProcessController extends ChangeNotifier {
+  bool _running = false;
+  bool get running => _running;
+  void setRunning(bool v) {
+    if (_running == v) return;
+    _running = v;
+    // Defer notification if called during build (e.g. from initState) so we
+    // don't `markNeedsBuild` on ancestors mid-frame.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) => notifyListeners());
+    } else {
+      notifyListeners();
+    }
+  }
+}
+
+class _DialogProcessScope
+    extends InheritedNotifier<_DialogProcessController> {
+  const _DialogProcessScope({
+    required _DialogProcessController super.notifier,
+    required super.child,
+  });
 }
 
 /// Icons for git/action buttons — consistent across all views
@@ -163,16 +277,29 @@ class _DraggableDialog extends StatefulWidget {
 }
 
 class _DraggableDialogState extends State<_DraggableDialog> {
-  Offset _offset = Offset.zero;
+  final ValueNotifier<Offset> _offset = ValueNotifier(Offset.zero);
+
+  @override
+  void dispose() {
+    _offset.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: _offset,
-      child: GestureDetector(
-        onPanUpdate: (details) {
-          setState(() => _offset += details.delta);
-        },
+    return Listener(
+      behavior: HitTestBehavior.deferToChild,
+      onPointerMove: (event) {
+        if (event.buttons != 0 || event.down) {
+          _offset.value += event.delta;
+        }
+      },
+      child: ValueListenableBuilder<Offset>(
+        valueListenable: _offset,
+        builder: (_, offset, child) => Transform.translate(
+          offset: offset,
+          child: child,
+        ),
         child: widget.child,
       ),
     );

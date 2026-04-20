@@ -55,6 +55,7 @@ class _GitPullDialogState extends State<GitPullDialog> {
 
   Future<void> _run() async {
     setState(() => _running = true);
+    if (mounted) context.setDialogRunning(true);
     try {
       final String executable;
       final List<String> args;
@@ -87,7 +88,10 @@ class _GitPullDialogState extends State<GitPullDialog> {
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+    }
   }
 
   @override
@@ -97,7 +101,7 @@ class _GitPullDialogState extends State<GitPullDialog> {
         children: [
           Text(context.l10n.gitPullTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

@@ -74,16 +74,48 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
 - **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
 - **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
 - **AppDialog.show()** - LUÔN dùng `AppDialog.show()` thay `showDialog()` cho mọi dialog trong app.
-  Tự động wrap `barrierDismissible: false` + `PopScope(canPop: false)` → không đóng bằng click ngoài hoặc ESC.
-  Tự động wrap `_DraggableDialog` → tất cả dialog có thể kéo di chuyển bằng drag.
-  Sửa 1 chỗ (`app_constants.dart`) áp dụng cho tất cả dialog.
+  `barrierDismissible: false` → KHÔNG đóng khi click ngoài.
+  **ESC cho phép theo mặc định** → dialog idle có thể tắt bằng ESC.
+  Dialog có process: chỉ cần gọi `context.setDialogRunning(true/false)` — KHÔNG cần wrap `PopScope`.
+  PopScope + closeButton disable LOGIC đều TẬP TRUNG trong `AppDialog.show()` qua `DialogProcessController`
+  (InheritedNotifier). Sau này thay đổi hành vi guard chỉ cần sửa `app_constants.dart`, không đụng 26 dialog.
+  ```dart
+  // Trong dialog:
+  Future<void> _install() async {
+    setState(() => _installing = true);
+    context.setDialogRunning(true);       // signal controller
+    try {
+      await doWork();
+    } finally {
+      if (mounted) {
+        setState(() => _installing = false);
+        context.setDialogRunning(false);  // release
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(                   // KHÔNG wrap PopScope
+      title: Row([
+        Text('...'),
+        const Spacer(),
+        AppDialog.closeButton(context),   // auto-disable khi running
+      ]),
+      ...
+    );
+  }
+  ```
+  Tự động wrap `_DraggableDialog` → tất cả dialog kéo di chuyển bằng drag.
+  `_DraggableDialog` dùng `Listener.onPointerMove` + `ValueNotifier` (KHÔNG `GestureDetector.onPanUpdate`)
+  để tránh gesture arena cướp tap của buttons (Linux/desktop với chuột precise pointer nhạy pan ~2px).
 - **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
-  Hỗ trợ `enabled:` (default true) — khi `false`: button xám, không bấm được (dùng khi process đang chạy).
+  **Auto-disable** khi `context.setDialogRunning(true)` được gọi — không cần truyền `enabled:` thủ công.
   Hỗ trợ `onClose:` để custom close behavior (VD: return value khi pop).
+  Hỗ trợ `enabled:` (optional override) — khi cần override explicit, truyền `enabled: false/true`.
   KHÔNG dùng footer Close/Cancel button nữa.
   Close-only dialog: xóa `actions:`, thêm closeButton vào title Row
   Cancel+Action dialog: xóa Cancel, thêm closeButton vào title Row, giữ action button trong `actions:`
-  Dialog có process: `AppDialog.closeButton(context, enabled: !_running)` để chặn đóng giữa chừng
 - **Port conflict detection** - kiểm tra trùng port giữa các Odoo project
 - **Cross-platform** - PlatformService abstract paths; mỗi service có branch cho 3 OS
 - **Responsive layout** - Row cho header (Spacer đẩy nút sang phải), Wrap cho card actions
@@ -620,8 +652,10 @@ Quit All
   auto-run khi mở, `LinearProgressIndicator`, `SelectionArea` + `Text.rich` cho copy text,
   ANSI color parsing, auto-scroll, Close disabled khi running
 - **SnackBar bị chìm sau dialog** — dùng dialog thông báo thay SnackBar khi context đang có dialog mở
-- **KHÔNG dùng `showDialog()` trực tiếp** — luôn dùng `AppDialog.show()` để đảm bảo tất cả dialog
-  không đóng bằng click ngoài, ESC, và có thể thay đổi behavior tập trung tại 1 chỗ
+- **KHÔNG dùng `showDialog()` trực tiếp** — luôn dùng `AppDialog.show()` để tất cả dialog có
+  `barrierDismissible: false` (không đóng khi click ngoài) + draggable + PopScope/closeButton logic
+  TẬP TRUNG tại 1 chỗ (`app_constants.dart`). Dialog process chỉ cần gọi `context.setDialogRunning(true/false)`,
+  KHÔNG wrap PopScope thủ công trong từng dialog
 - **Close button process dialog** — dùng `enabled: !_running` thay vì `onClose: _running ? null : ...`
   Pattern cũ bị bug: khi `onClose: null`, fallback default `Navigator.pop` → vẫn cho đóng
 

@@ -63,6 +63,7 @@ class _GitActionDialogState extends State<GitActionDialog> {
 
   Future<void> _run() async {
     setState(() => _running = true);
+    if (mounted) context.setDialogRunning(true);
     for (final repo in widget.repos) {
       switch (widget.action) {
         case 'pull':
@@ -76,7 +77,10 @@ class _GitActionDialogState extends State<GitActionDialog> {
       }
     }
     widget.onDone();
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+    }
   }
 
   Future<void> _pullRepo(RepoInfo repo) async {
@@ -173,7 +177,7 @@ class _GitActionDialogState extends State<GitActionDialog> {
       title: Row(
         children: [
           Expanded(child: Text(widget.title)),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

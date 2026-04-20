@@ -135,6 +135,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
 
   Future<void> _commit() async {
     setState(() => _running = true);
+    context.setDialogRunning(true);
 
     final selectedFiles = _changedFiles
         .where((f) => f['selected'] == true)
@@ -157,7 +158,10 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
           if ((addResult.stderr as String).trim().isNotEmpty) {
             _addLine((addResult.stderr as String).trim());
           }
-          if (mounted) setState(() => _running = false);
+          if (mounted) {
+            setState(() => _running = false);
+            context.setDialogRunning(false);
+          }
           return;
         }
       }
@@ -190,6 +194,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
           '\x1B[0;31m[-] ${context.l10n.gitCommitFailed(commitExit)}\x1B[0m',
         );
         setState(() => _running = false);
+        context.setDialogRunning(false);
         return;
       }
       _addLine('\x1B[0;32m[+] ${context.l10n.gitCommitDone}\x1B[0m');
@@ -231,6 +236,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
         _running = false;
         _done = true;
       });
+      context.setDialogRunning(false);
     }
   }
 
@@ -284,7 +290,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

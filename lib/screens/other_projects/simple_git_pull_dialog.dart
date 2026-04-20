@@ -88,6 +88,7 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
 
   Future<void> _run() async {
     setState(() => _running = true);
+    if (mounted) context.setDialogRunning(true);
     try {
       if (widget.targetBranch != null) {
         await _runPullOtherBranch();
@@ -97,7 +98,10 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+    }
   }
 
   Future<void> _runPullCurrent() async {
@@ -194,7 +198,7 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

@@ -64,6 +64,7 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
       _creating = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
 
     try {
       final projectDir = await PostgresService.initProject(
@@ -82,6 +83,7 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
           _creating = false;
           _created = true;
         });
+        context.setDialogRunning(false);
         widget.onCreated();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -94,6 +96,7 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
           _creating = false;
           _logLines.add('[ERROR] $e');
         });
+        context.setDialogRunning(false);
       }
     }
   }
@@ -104,7 +107,7 @@ class _PgSetupDialogState extends State<PgSetupDialog> {
       title: Row(children: [
         Text(context.l10n.postgresSetupTitle),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_creating),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,

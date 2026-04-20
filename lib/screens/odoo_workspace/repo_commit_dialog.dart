@@ -126,6 +126,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
 
   Future<void> _commit() async {
     setState(() => _running = true);
+    context.setDialogRunning(true);
 
     final selectedFiles =
         _changedFiles.where((f) => f['selected'] == true).toList();
@@ -145,7 +146,10 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
         );
         if (addResult.exitCode != 0) {
           _addLine('\x1B[0;31m[-] git add failed for: $file\x1B[0m');
-          if (mounted) setState(() => _running = false);
+          if (mounted) {
+            setState(() => _running = false);
+            context.setDialogRunning(false);
+          }
           return;
         }
       }
@@ -177,6 +181,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
           '\x1B[0;31m[-] ${context.l10n.gitCommitFailed(commitExit)}\x1B[0m',
         );
         setState(() => _running = false);
+        context.setDialogRunning(false);
         return;
       }
       _addLine('\x1B[0;32m[+] ${context.l10n.gitCommitDone}\x1B[0m');
@@ -218,6 +223,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
         _running = false;
         _done = true;
       });
+      context.setDialogRunning(false);
     }
   }
 
@@ -270,7 +276,7 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

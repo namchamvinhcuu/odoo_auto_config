@@ -35,6 +35,7 @@ class _PipInstallDialogState extends State<PipInstallDialog> {
       _logs.add('    Venv: ${widget.venvPath}');
       _logs.add('');
     });
+    context.setDialogRunning(true);
 
     final pip = PlatformService.venvPip(widget.venvPath);
     final args = input.split(RegExp(r'\s+'));
@@ -57,6 +58,7 @@ class _PipInstallDialogState extends State<PipInstallDialog> {
       _installing = false;
       _controller.clear();
     });
+    context.setDialogRunning(false);
   }
 
   @override
@@ -75,7 +77,7 @@ class _PipInstallDialogState extends State<PipInstallDialog> {
           Expanded(
               child: Text(
                   context.l10n.installPackagesTitle(widget.venvName))),
-          AppDialog.closeButton(context, enabled: !_installing),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

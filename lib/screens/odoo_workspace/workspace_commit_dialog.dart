@@ -58,6 +58,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
     if (message.isEmpty) return;
 
     setState(() => _running = true);
+    context.setDialogRunning(true);
     for (final repo in widget.repos) {
       _addLine('\x1B[0;34m[*] Committing ${repo.name}...\x1B[0m');
 
@@ -125,6 +126,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
         _running = false;
         _done = true;
       });
+      context.setDialogRunning(false);
     }
   }
 
@@ -140,7 +142,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
             child: Text(context.l10n.gitCommitTitle(
                 '${widget.repos.length} repos')),
           ),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

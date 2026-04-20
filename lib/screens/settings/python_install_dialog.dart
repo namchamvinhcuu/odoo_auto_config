@@ -43,6 +43,7 @@ class _PythonInstallDialogState extends State<PythonInstallDialog> {
       _installing = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
     final exitCode = await PythonInstallService.install(
       _selectedVersion!,
       (line) {
@@ -51,6 +52,7 @@ class _PythonInstallDialogState extends State<PythonInstallDialog> {
     );
     if (mounted) {
       setState(() => _installing = false);
+      context.setDialogRunning(false);
       if (exitCode == 0) widget.onInstalled();
     }
   }
@@ -69,7 +71,7 @@ class _PythonInstallDialogState extends State<PythonInstallDialog> {
       title: Row(children: [
         Text(context.l10n.installPythonTitle),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_installing),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthSm,

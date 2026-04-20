@@ -117,6 +117,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _creating = true;
       _portError = null;
@@ -124,6 +125,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
       _logs.add(
           '[+] Creating project "$projectName" with profile "${profile.name}"...');
     });
+    context.setDialogRunning(true);
 
     try {
       final folderConfig = FolderStructureConfig(
@@ -249,13 +251,17 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
           _logs.add('[ERROR] $e');
           _creating = false;
         });
+        context.setDialogRunning(false);
         _showSymlinkErrorDialog(e.message);
       }
       return;
     } catch (e) {
       setState(() => _logs.add('[ERROR] $e'));
     } finally {
-      if (mounted) setState(() => _creating = false);
+      if (mounted) {
+        setState(() => _creating = false);
+        context.setDialogRunning(false);
+      }
     }
   }
 
@@ -422,7 +428,7 @@ class _QuickCreateDialogState extends State<QuickCreateDialog> {
                         Text(context.l10n.quickCreateTitle,
                             style: Theme.of(context).textTheme.titleLarge),
                         const Spacer(),
-                        AppDialog.closeButton(context, enabled: !_creating, onClose: () => Navigator.pop(context, _done)),
+                        AppDialog.closeButton(context, onClose: () => Navigator.pop(context, _done)),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),

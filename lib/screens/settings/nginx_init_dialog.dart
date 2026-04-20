@@ -76,6 +76,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
       _creating = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
 
     try {
       final projectDir = await NginxService.initProject(
@@ -92,6 +93,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
           _creating = false;
           _created = true;
         });
+        context.setDialogRunning(false);
         final confDir = p.join(projectDir, 'conf.d');
         widget.onCreated(confDir, _domainController.text.trim());
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,6 +106,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
           _creating = false;
           _logLines.add('[ERROR] $e');
         });
+        context.setDialogRunning(false);
       }
     }
   }
@@ -121,7 +124,7 @@ class _NginxInitDialogState extends State<NginxInitDialog> {
       title: Row(children: [
         Text(context.l10n.nginxInitTitle),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_creating),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthMd,

@@ -33,6 +33,7 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
       _uninstalling = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
     final exitCode = await PythonInstallService.uninstall(
       widget.version,
       (line) {
@@ -44,6 +45,7 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
         _uninstalling = false;
         _uninstalled = exitCode == 0;
       });
+      context.setDialogRunning(false);
       if (exitCode == 0) widget.onUninstalled();
     }
   }
@@ -54,7 +56,7 @@ class _PythonUninstallDialogState extends State<PythonUninstallDialog> {
       title: Row(children: [
         Text(context.l10n.uninstallPython),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_uninstalling),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthSm,

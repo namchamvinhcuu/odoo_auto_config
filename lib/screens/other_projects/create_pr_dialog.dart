@@ -158,6 +158,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     if (title.isEmpty) return;
 
     setState(() => _running = true);
+    context.setDialogRunning(true);
 
     // Check for uncommitted changes
     final status = await Process.run(
@@ -174,6 +175,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
     if (uncommitted > 0 && mounted) {
       setState(() => _running = false);
+      context.setDialogRunning(false);
       final proceed = await AppDialog.show<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -213,6 +215,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
       );
       if (proceed != true || !mounted) return;
       setState(() => _running = true);
+      context.setDialogRunning(true);
     }
 
     // Push current branch first
@@ -240,6 +243,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
       if (mounted) {
         _addLine('\x1B[0;31m[-] Push failed\x1B[0m');
         setState(() => _running = false);
+        context.setDialogRunning(false);
       }
       return;
     }
@@ -302,6 +306,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         _done = true;
         _running = false;
       });
+      context.setDialogRunning(false);
     } else if (_prUrl != null) {
       // PR already exists — push succeeded, just show the existing PR
       _addLine(
@@ -311,9 +316,11 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         _done = true;
         _running = false;
       });
+      context.setDialogRunning(false);
     } else {
       _addLine('\x1B[0;31m[-] Failed to create pull request\x1B[0m');
       setState(() => _running = false);
+      context.setDialogRunning(false);
     }
   }
 
@@ -324,7 +331,7 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
         children: [
           Text(context.l10n.prTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

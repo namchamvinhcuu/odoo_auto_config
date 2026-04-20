@@ -55,6 +55,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
 
   Future<void> _run() async {
     setState(() => _running = true);
+    if (mounted) context.setDialogRunning(true);
     for (final repo in widget.repos) {
       final repoPath = p.join(widget.projectPath, 'addons', repo);
       _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
@@ -89,6 +90,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
     if (mounted) {
       _addLine('\x1B[0;32m[+] Done!\x1B[0m');
       setState(() => _running = false);
+      context.setDialogRunning(false);
     }
   }
 
@@ -100,7 +102,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
           Text(context.l10n.gitSelectivePullTitle(
               '${widget.repos.length} repos')),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

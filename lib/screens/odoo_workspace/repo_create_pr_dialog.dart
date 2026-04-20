@@ -179,6 +179,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     if (title.isEmpty) return;
 
     setState(() => _running = true);
+    context.setDialogRunning(true);
 
     // Check uncommitted changes
     final status = await Process.run(
@@ -195,6 +196,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
 
     if (uncommitted > 0 && mounted) {
       setState(() => _running = false);
+      context.setDialogRunning(false);
       final proceed = await AppDialog.show<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -232,6 +234,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       );
       if (proceed != true || !mounted) return;
       setState(() => _running = true);
+      context.setDialogRunning(true);
     }
 
     // Push first
@@ -260,6 +263,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
       if (mounted) {
         _addLine('\x1B[0;31m[-] Push failed\x1B[0m');
         setState(() => _running = false);
+        context.setDialogRunning(false);
       }
       return;
     }
@@ -320,6 +324,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         _done = true;
         _running = false;
       });
+      context.setDialogRunning(false);
     } else if (_prUrl != null) {
       _addLine(
         '\x1B[0;33m[~] PR already exists. New commits have been pushed.\x1B[0m',
@@ -328,9 +333,11 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         _done = true;
         _running = false;
       });
+      context.setDialogRunning(false);
     } else {
       _addLine('\x1B[0;31m[-] Failed to create pull request\x1B[0m');
       setState(() => _running = false);
+      context.setDialogRunning(false);
     }
   }
 
@@ -341,7 +348,7 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
         children: [
           Text(context.l10n.prTitle(widget.repoName)),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

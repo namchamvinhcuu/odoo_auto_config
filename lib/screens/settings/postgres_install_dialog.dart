@@ -51,6 +51,7 @@ class _PostgresInstallDialogState extends State<PostgresInstallDialog> {
       _installing = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
     final exitCode = await PostgresService.install((line) {
       if (mounted) setState(() => _logLines.add(line));
     }, version: _selectedVersion);
@@ -59,6 +60,7 @@ class _PostgresInstallDialogState extends State<PostgresInstallDialog> {
         _installing = false;
         _installed = exitCode == 0;
       });
+      context.setDialogRunning(false);
       if (exitCode == 0) widget.onInstalled();
     }
   }
@@ -77,7 +79,7 @@ class _PostgresInstallDialogState extends State<PostgresInstallDialog> {
       title: Row(children: [
         Text(context.l10n.postgresInstallTitle),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_installing),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthSm,

@@ -78,6 +78,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
 
   Future<void> _loadBranches({bool fetch = false}) async {
     setState(() => _loading = true);
+    if (mounted) context.setDialogRunning(true);
     if (fetch) {
       await GitBranchService.fetchAllBranches(widget.path);
     }
@@ -95,6 +96,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _behindRemote = result.behindRemote;
       _loading = false;
     });
+    context.setDialogRunning(false);
   }
 
   Future<void> _checkout(String branch) async {
@@ -102,6 +104,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _switching = true;
       _message = null;
     });
+    context.setDialogRunning(true);
     final result = await GitBranchService.switchBranch(widget.path, branch);
     if (!mounted) return;
     if (result.success) {
@@ -111,6 +114,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
         _message = result.output;
         _isError = false;
       });
+      context.setDialogRunning(false);
       widget.onChanged(branch);
       _loadBranches();
     } else {
@@ -119,6 +123,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
         _message = result.output;
         _isError = true;
       });
+      context.setDialogRunning(false);
     }
   }
 
@@ -456,6 +461,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _switching = true;
       _message = null;
     });
+    context.setDialogRunning(true);
 
     try {
       final MergeResult result;
@@ -479,6 +485,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
         _message = result.output;
         _isError = !result.success;
       });
+      context.setDialogRunning(false);
       widget.onChanged(result.currentBranch);
       if (direction == 'into_target') _loadBranches();
     } catch (e) {
@@ -488,6 +495,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
           _message = e.toString();
           _isError = true;
         });
+        context.setDialogRunning(false);
       }
     }
   }
@@ -497,6 +505,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _switching = true;
       _message = null;
     });
+    context.setDialogRunning(true);
     final result = await GitBranchService.publishBranch(widget.path, branch);
     if (!mounted) return;
     setState(() {
@@ -504,6 +513,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _message = result.output;
       _isError = !result.success;
     });
+    context.setDialogRunning(false);
     if (result.success) _loadBranches();
   }
 
@@ -528,6 +538,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _switching = true;
       _message = null;
     });
+    context.setDialogRunning(true);
     final result = await GitBranchService.cleanStaleBranches(
       widget.path,
       currentBranch: _current,
@@ -540,10 +551,12 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
         _message = result.output;
         _isError = false;
       });
+      context.setDialogRunning(false);
       return;
     }
 
     setState(() => _switching = false);
+    context.setDialogRunning(false);
 
     if (!mounted) return;
     final toDelete = await AppDialog.show<List<String>>(
@@ -858,7 +871,7 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context, enabled: !_switching),
+          AppDialog.closeButton(context),
         ],
       ),
       content: Builder(

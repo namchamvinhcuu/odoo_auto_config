@@ -99,6 +99,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       _scanning = true;
       _repos.clear();
     });
+    if (mounted) context.setDialogRunning(true);
 
     try {
       final projectDir = Directory(widget.projectPath);
@@ -143,9 +144,14 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         // Initial open: load first batch only
         await _loadNextBatch();
       }
+
+      if (mounted) context.setDialogRunning(false);
     } catch (e) {
       // Error scanning repos — ignore silently
-      if (mounted) setState(() => _scanning = false);
+      if (mounted) {
+        setState(() => _scanning = false);
+        context.setDialogRunning(false);
+      }
     }
   }
 
@@ -767,7 +773,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
             tooltip: context.l10n.refresh,
           ),
           const SizedBox(width: AppSpacing.sm),
-          AppDialog.closeButton(context, enabled: !_scanning),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

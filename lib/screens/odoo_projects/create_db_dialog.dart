@@ -57,6 +57,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
       _creating = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
 
     void log(String line) {
       if (mounted) setState(() => _logLines.add(line));
@@ -77,6 +78,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         if (!mounted) return;
         log('[ERROR] ${context.l10n.noPostgresContainer}');
         setState(() => _creating = false);
+        context.setDialogRunning(false);
         return;
       }
 
@@ -93,7 +95,10 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         final err = createResult.stderr.toString().trim();
         if (!err.contains('already exists')) {
           log('[ERROR] $err');
-          setState(() => _creating = false);
+          if (mounted) {
+            setState(() => _creating = false);
+            context.setDialogRunning(false);
+          }
           return;
         }
         log('[WARN] Database "$dbName" already exists, initializing...');
@@ -108,7 +113,10 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         if (widget.odooBinPath == null) log('[WARN] odoo-bin not found');
         if (widget.confPath == null) log('[WARN] odoo.conf not found');
         widget.onCreated(dbName);
-        setState(() => _creating = false);
+        if (mounted) {
+          setState(() => _creating = false);
+          context.setDialogRunning(false);
+        }
         return;
       }
 
@@ -171,11 +179,17 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
           log('');
           log('[ERROR] Odoo init failed with exit code $exitCode');
         }
-        setState(() => _creating = false);
+        if (mounted) {
+          setState(() => _creating = false);
+          context.setDialogRunning(false);
+        }
       }
     } catch (e) {
       log('[ERROR] $e');
-      if (mounted) setState(() => _creating = false);
+      if (mounted) {
+        setState(() => _creating = false);
+        context.setDialogRunning(false);
+      }
     }
   }
 
@@ -186,7 +200,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
         children: [
           Text(context.l10n.createDatabase),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_creating),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

@@ -97,15 +97,20 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _cloning = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
 
     // Check/install git first
     final gitOk = await _ensureGit();
     if (!gitOk) {
-      setState(() => _cloning = false);
+      if (mounted) {
+        setState(() => _cloning = false);
+        context.setDialogRunning(false);
+      }
       return;
     }
 
@@ -166,6 +171,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
           workingDirectory: targetDir,
           runInShell: true,
         );
+        if (!mounted) return;
         setState(() {
           _logLines.add('');
           _logLines.add('[+] Odoo $_version.0 cloned successfully!');
@@ -173,6 +179,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
           _cloning = false;
           _cloned = true;
         });
+        context.setDialogRunning(false);
         widget.onCloned(targetDir);
       } else {
         setState(() {
@@ -185,6 +192,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
           _logLines.add('[ERROR] Clone failed with exit code $exitCode');
           _cloning = false;
         });
+        context.setDialogRunning(false);
       }
     } catch (e) {
       if (mounted) {
@@ -192,6 +200,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
           _logLines.add('[ERROR] $e');
           _cloning = false;
         });
+        context.setDialogRunning(false);
       }
     }
   }
@@ -203,7 +212,7 @@ class _CloneOdooDialogState extends State<CloneOdooDialog> {
         children: [
           Text(context.l10n.cloneOdooTitle),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_cloning),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

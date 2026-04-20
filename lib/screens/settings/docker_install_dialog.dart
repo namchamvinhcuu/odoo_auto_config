@@ -54,6 +54,7 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
       _installing = true;
       _logLines.clear();
     });
+    context.setDialogRunning(true);
     final exitCode = await DockerInstallService.install((line) {
       if (mounted) setState(() => _logLines.add(line));
     }, macOsDocker: _macOsDocker);
@@ -65,6 +66,7 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
         _needsRestart = wslJustInstalled;
         _installed = exitCode == 0 && !wslJustInstalled;
       });
+      context.setDialogRunning(false);
       if (_installed) {
         // Lưu lựa chọn Docker runtime (macOS)
         if (PlatformService.isMacOS) {
@@ -95,7 +97,7 @@ class _DockerInstallDialogState extends State<DockerInstallDialog> {
       title: Row(children: [
         Text(context.l10n.dockerInstallTitle),
         const Spacer(),
-        AppDialog.closeButton(context, enabled: !_installing),
+        AppDialog.closeButton(context),
       ]),
       content: SizedBox(
         width: AppDialog.widthSm,

@@ -332,6 +332,7 @@ class _PublishModulesDialogState extends State<PublishModulesDialog> {
       _publishing = true;
       _logSpans.clear();
     });
+    context.setDialogRunning(true);
 
     for (final name in _selected.toList()) {
       final modulePath = p.join(widget.projectPath, 'addons', name);
@@ -465,7 +466,10 @@ class _PublishModulesDialogState extends State<PublishModulesDialog> {
     }
 
     _addLog('\nDone.', color: Colors.white);
-    if (mounted) setState(() => _publishing = false);
+    if (mounted) {
+      setState(() => _publishing = false);
+      context.setDialogRunning(false);
+    }
   }
 
   @override
@@ -479,7 +483,7 @@ class _PublishModulesDialogState extends State<PublishModulesDialog> {
             child: Text(context.l10n.publishModules),
           ),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_publishing),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

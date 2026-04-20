@@ -40,6 +40,7 @@ class _InstallRequirementsDialogState
       _logs.add('    pip: ${PlatformService.venvPip(widget.venvPath)}');
       _logs.add('');
     });
+    if (mounted) context.setDialogRunning(true);
 
     final result = await widget.venvService.installRequirements(
       widget.venvPath,
@@ -63,6 +64,7 @@ class _InstallRequirementsDialogState
       }
       _running = false;
     });
+    context.setDialogRunning(false);
   }
 
   @override
@@ -81,7 +83,7 @@ class _InstallRequirementsDialogState
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

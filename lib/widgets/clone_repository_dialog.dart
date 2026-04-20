@@ -173,16 +173,19 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _cloning = true;
       _logLines.clear();
       _logLines.add('[+] Preparing to clone repository...');
     });
+    context.setDialogRunning(true);
 
     final gitOk = await _ensureGit();
     if (!gitOk) {
       if (mounted) {
         setState(() => _cloning = false);
+        context.setDialogRunning(false);
       }
       return;
     }
@@ -238,6 +241,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
           _logLines.add('[ERROR] Clone failed with exit code $exitCode');
           _cloning = false;
         });
+        context.setDialogRunning(false);
         return;
       }
 
@@ -257,6 +261,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
         description: _descriptionController.text.trim(),
       );
 
+      if (!mounted) return;
       setState(() {
         _logLines.add('');
         _logLines.add('[+] Clone completed successfully!');
@@ -266,8 +271,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
         }
         _cloning = false;
       });
-
-      if (!mounted) return;
+      context.setDialogRunning(false);
       Navigator.pop(context, result);
     } catch (e) {
       if (!mounted) return;
@@ -275,6 +279,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
         _logLines.add('[ERROR] $e');
         _cloning = false;
       });
+      context.setDialogRunning(false);
     }
   }
 
@@ -285,7 +290,7 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
         children: [
           Text(widget.title),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_cloning),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

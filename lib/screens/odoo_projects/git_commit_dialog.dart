@@ -73,10 +73,14 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
 
   Future<void> _scanRepos() async {
     setState(() => _scanning = true);
+    if (mounted) context.setDialogRunning(_running || _scanning);
     try {
       final addonsDir = Directory(p.join(widget.projectPath, 'addons'));
       if (!await addonsDir.exists()) {
-        setState(() => _scanning = false);
+        if (mounted) {
+          setState(() => _scanning = false);
+          context.setDialogRunning(_running || _scanning);
+        }
         return;
       }
       final entries = await addonsDir.list().toList();
@@ -103,7 +107,10 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
-    if (mounted) setState(() => _scanning = false);
+    if (mounted) {
+      setState(() => _scanning = false);
+      context.setDialogRunning(_running || _scanning);
+    }
   }
 
   int get _selectedCount => _repos.where((r) => r.selected).length;
@@ -122,6 +129,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
     if (selected.isEmpty) return;
 
     setState(() => _running = true);
+    context.setDialogRunning(_running || _scanning);
     for (final repo in selected) {
       _addLine('\x1B[0;34m[*] ${repo.name}\x1B[0m');
 
@@ -192,6 +200,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         _running = false;
         _done = true;
       });
+      context.setDialogRunning(_running || _scanning);
     }
   }
 
@@ -210,7 +219,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         children: [
           Text(context.l10n.gitCommitTitle(widget.projectName)),
           const Spacer(),
-          AppDialog.closeButton(context, enabled: !_running && !_scanning),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(

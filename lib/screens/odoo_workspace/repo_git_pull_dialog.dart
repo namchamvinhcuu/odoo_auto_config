@@ -88,6 +88,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
 
   Future<void> _run() async {
     setState(() => _running = true);
+    if (mounted) context.setDialogRunning(true);
     try {
       if (widget.targetBranch != null) {
         await _runPullOtherBranch();
@@ -97,7 +98,10 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
     } catch (e) {
       if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+    }
   }
 
   Future<void> _runPullCurrent() async {
@@ -187,7 +191,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
                   : context.l10n.gitPullTitle(widget.repoName),
             ),
           ),
-          AppDialog.closeButton(context, enabled: !_running),
+          AppDialog.closeButton(context),
         ],
       ),
       content: SizedBox(
