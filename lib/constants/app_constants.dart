@@ -267,7 +267,12 @@ class AppNav {
   static const double minExtendedWidth = 220;
 }
 
-/// Wrapper that makes any dialog draggable by its title bar area.
+/// Wrapper that makes any dialog draggable by its title bar area only.
+///
+/// Drag is restricted to the top [_dragHandleHeight] pixels of the dialog
+/// (typical AlertDialog title area). Content below — TextField, log output,
+/// SelectionArea — remains fully interactive: users can click and drag to
+/// select text without accidentally moving the dialog.
 class _DraggableDialog extends StatefulWidget {
   final Widget child;
   const _DraggableDialog({required this.child});
@@ -279,6 +284,11 @@ class _DraggableDialog extends StatefulWidget {
 class _DraggableDialogState extends State<_DraggableDialog> {
   final ValueNotifier<Offset> _offset = ValueNotifier(Offset.zero);
 
+  // Height of the title bar drag zone, in logical pixels.
+  // Covers default AlertDialog title padding (24px) + close button row (~40px) + bottom padding.
+  static const double _dragHandleHeight = 80;
+  bool _canDrag = false;
+
   @override
   void dispose() {
     _offset.dispose();
@@ -287,19 +297,28 @@ class _DraggableDialogState extends State<_DraggableDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.deferToChild,
-      onPointerMove: (event) {
-        if (event.buttons != 0 || event.down) {
-          _offset.value += event.delta;
-        }
-      },
-      child: ValueListenableBuilder<Offset>(
-        valueListenable: _offset,
-        builder: (_, offset, child) => Transform.translate(
-          offset: offset,
-          child: child,
-        ),
+    // Transform wraps Listener so Listener.localPosition is relative to the
+    // AlertDialog's rendered area — stays correct even after the dialog is
+    // dragged away from its original centered position.
+    return ValueListenableBuilder<Offset>(
+      valueListenable: _offset,
+      builder: (_, offset, child) => Transform.translate(
+        offset: offset,
+        child: child,
+      ),
+      child: Listener(
+        behavior: HitTestBehavior.deferToChild,
+        onPointerDown: (event) {
+          _canDrag = event.localPosition.dy < _dragHandleHeight;
+        },
+        onPointerMove: (event) {
+          if (!_canDrag) return;
+          if (event.buttons != 0 || event.down) {
+            _offset.value += event.delta;
+          }
+        },
+        onPointerUp: (_) => _canDrag = false,
+        onPointerCancel: (_) => _canDrag = false,
         child: widget.child,
       ),
     );

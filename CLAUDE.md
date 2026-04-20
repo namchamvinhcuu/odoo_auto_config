@@ -106,9 +106,14 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
     );
   }
   ```
-  Tự động wrap `_DraggableDialog` → tất cả dialog kéo di chuyển bằng drag.
+  Tự động wrap `_DraggableDialog` → dialog kéo di chuyển **CHỈ từ vùng title bar** (top 80px).
+  Content bên dưới (TextField, log output, SelectionArea) giữ nguyên khả năng bôi chọn + copy text —
+  không bị cướp pointer move thành drag.
   `_DraggableDialog` dùng `Listener.onPointerMove` + `ValueNotifier` (KHÔNG `GestureDetector.onPanUpdate`)
   để tránh gesture arena cướp tap của buttons (Linux/desktop với chuột precise pointer nhạy pan ~2px).
+  `Listener` đặt **BÊN TRONG** `Transform.translate` — `localPosition.dy` luôn đúng so với dialog đang
+  hiển thị kể cả sau khi đã kéo đi chỗ khác (nếu đặt ngoài thì sau lần kéo đầu tiên title area bị dịch
+  → không detect được nữa). Track `_canDrag` theo `onPointerDown.localPosition.dy < 80`.
 - **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
   **Auto-disable** khi `context.setDialogRunning(true)` được gọi — không cần truyền `enabled:` thủ công.
   Hỗ trợ `onClose:` để custom close behavior (VD: return value khi pop).

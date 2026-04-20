@@ -681,6 +681,25 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     return _openPathInVscode(widget.projectPath);
   }
 
+  Future<void> _openProjectFolder() async {
+    _dismissSearchFocus();
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [widget.projectPath], runInShell: true);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [widget.projectPath], runInShell: true);
+      } else {
+        await Process.run('xdg-open', [widget.projectPath], runInShell: true);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.couldNotOpen(widget.projectPath))),
+        );
+      }
+    }
+  }
+
   Future<void> _openProjectInBrowser() async {
     if (!widget.hasNginx) return;
     _dismissSearchFocus();
@@ -733,6 +752,24 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
               padding: EdgeInsets.zero,
             ),
             tooltip: context.l10n.openInVscode,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          IconButton(
+            onPressed: _openProjectFolder,
+            icon: const Icon(
+              Icons.folder_open,
+              color: Colors.white,
+              size: AppIconSize.md,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
+              padding: EdgeInsets.zero,
+            ),
+            tooltip: context.l10n.openFolder,
           ),
           const SizedBox(width: AppSpacing.sm),
           if (widget.hasNginx) ...[
