@@ -1821,4 +1821,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String publishModulesCreatingRepo(String name) {
     return 'Creating repo: $name';
   }
+
+  @override
+  String get shortcutsTitle => 'Shortcuts';
+
+  @override
+  String get shortcutsSubtitle =>
+      'Customize keyboard shortcuts for in-app actions.';
+
+  @override
+  String get shortcutsChange => 'Change';
+
+  @override
+  String get shortcutsReset => 'Reset to default';
+
+  @override
+  String get shortcutsResetAll => 'Reset all';
+
+  @override
+  String get shortcutsCaptureTitle => 'Set Shortcut';
+
+  @override
+  String shortcutsCaptureFor(String action) {
+    return 'Press the key combination for \"$action\":';
+  }
+
+  @override
+  String get shortcutsCaptureHint => 'Press a key combination...';
+
+  @override
+  String get shortcutsInvalidHint =>
+      'Include at least one modifier key (Ctrl, Cmd, Shift, or Alt).';
 }

@@ -7,9 +7,11 @@ import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/generated/version.dart';
 import 'package:odoo_auto_config/providers/docker_status_provider.dart';
+import 'package:odoo_auto_config/providers/shortcut_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/providers/update_provider.dart';
 import 'package:odoo_auto_config/services/instance_service.dart';
+import 'package:odoo_auto_config/services/shortcut_service.dart';
 // TODO: re-enable tray when ready
 // import 'package:odoo_auto_config/services/tray_service.dart';
 import 'package:odoo_auto_config/services/update_service.dart';
@@ -121,7 +123,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
         return true;
       }
     }
+    // User-configurable shortcuts.
+    final action = ref.read(shortcutProvider.notifier).findAction(event);
+    if (action != null) {
+      _dispatchAction(action);
+      return true;
+    }
     return false;
+  }
+
+  void _dispatchAction(String actionId) {
+    switch (actionId) {
+      case ShortcutActions.newWindow:
+        InstanceService.launchNewInstance();
+        break;
+    }
   }
 
 
@@ -246,6 +262,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
   Widget build(BuildContext context) {
     final dockerStatus = ref.watch(dockerStatusProvider);
     final updateState = ref.watch(updateProvider);
+    final newWindowShortcut =
+        ref.watch(shortcutProvider).shortcuts[ShortcutActions.newWindow];
+    final newWindowTooltip = newWindowShortcut == null
+        ? context.l10n.newWindow
+        : '${context.l10n.newWindow}  (${newWindowShortcut.format()})';
 
     final dockerBanner = dockerStatus.installed == false
         ? context.l10n.dockerNotInstalledBanner
@@ -424,7 +445,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
                       IconButton(
                         onPressed: () => InstanceService.launchNewInstance(),
                         icon: const Icon(Icons.open_in_new),
-                        tooltip: context.l10n.newWindow,
+                        tooltip: newWindowTooltip,
                         iconSize: AppIconSize.lg,
                       ),
                       SizedBox(

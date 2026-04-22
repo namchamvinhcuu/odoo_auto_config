@@ -599,5 +599,15 @@
   "publishModulesFailed": "{name} publish 실패: {error}",
   "publishModulesSelect": "Publish할 모듈 선택",
   "publishModulesPublish": "Publish",
-  "publishModulesCreatingRepo": "저장소 생성 중: {name}"
+  "publishModulesCreatingRepo": "저장소 생성 중: {name}",
+
+  "shortcutsTitle": "단축키",
+  "shortcutsSubtitle": "앱 내 동작에 대한 키보드 단축키를 사용자 지정합니다.",
+  "shortcutsChange": "변경",
+  "shortcutsReset": "기본값으로 재설정",
+  "shortcutsResetAll": "모두 재설정",
+  "shortcutsCaptureTitle": "단축키 설정",
+  "shortcutsCaptureFor": "\"{action}\"에 대한 키 조합을 누르세요:",
+  "shortcutsCaptureHint": "키 조합을 누르세요...",
+  "shortcutsInvalidHint": "보조 키(Ctrl, Cmd, Shift, Alt) 중 하나 이상을 포함해야 합니다."
 }

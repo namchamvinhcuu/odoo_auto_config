@@ -599,5 +599,15 @@
   "publishModulesFailed": "Publish {name} thất bại: {error}",
   "publishModulesSelect": "Chọn module để publish",
   "publishModulesPublish": "Publish",
-  "publishModulesCreatingRepo": "Đang tạo repo: {name}"
+  "publishModulesCreatingRepo": "Đang tạo repo: {name}",
+
+  "shortcutsTitle": "Phím tắt",
+  "shortcutsSubtitle": "Tùy chỉnh phím tắt cho các thao tác trong app.",
+  "shortcutsChange": "Thay đổi",
+  "shortcutsReset": "Khôi phục mặc định",
+  "shortcutsResetAll": "Khôi phục tất cả",
+  "shortcutsCaptureTitle": "Đặt phím tắt",
+  "shortcutsCaptureFor": "Nhấn tổ hợp phím cho \"{action}\":",
+  "shortcutsCaptureHint": "Nhấn tổ hợp phím...",
+  "shortcutsInvalidHint": "Phải có ít nhất một phím bổ trợ (Ctrl, Cmd, Shift hoặc Alt)."
 }

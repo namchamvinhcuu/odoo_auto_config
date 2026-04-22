@@ -6,6 +6,7 @@ import 'git_tab.dart';
 import 'nginx_tab.dart';
 import 'postgres_tab.dart';
 import 'python_tab.dart';
+import 'shortcuts_tab.dart';
 import 'theme_tab.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -26,7 +27,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 6,
+      length: 7,
       vsync: this,
       initialIndex: SettingsScreen.initialTab,
     );
@@ -52,6 +53,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const Tab(icon: Icon(Icons.storage), text: 'PostgreSQL'),
             const Tab(icon: Icon(Icons.dns), text: 'Nginx'),
             const Tab(icon: Icon(Icons.key), text: 'Git'),
+            Tab(
+              icon: const Icon(Icons.keyboard),
+              text: context.l10n.shortcutsTitle,
+            ),
           ],
         ),
         Expanded(
@@ -64,6 +69,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               PostgresTab(),
               NginxTab(),
               GitTab(),
+              ShortcutsTab(),
             ],
           ),
         ),

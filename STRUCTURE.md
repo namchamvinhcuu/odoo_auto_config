@@ -43,7 +43,8 @@ lib/
 │   ├── tray_service.dart            # TrayService — system tray: single icon, submenu Show/New Window/Quit All
 │   ├── update_service.dart          # UpdateInfo, UpdateService — auto-update: check GitHub releases, download, install
 │   ├── git_service.dart             # GitService — Git: check installed, resolve absolute path (cross-platform)
-│   └── git_branch_service.dart      # GitBranchService — shared git branch operations (switch, create, delete, publish, clean stale, getRemoteUrl, openInBrowser)
+│   ├── git_branch_service.dart      # GitBranchService — shared git branch operations (switch, create, delete, publish, clean stale, getRemoteUrl, openInBrowser)
+│   └── shortcut_service.dart        # ShortcutSpec (ctrl/meta/shift/alt + triggerKeyId, matches/format/toJson) + ShortcutActions ids + platform-aware defaults
 │
 ├── providers/
 │   ├── theme_provider.dart          # ThemeState + ThemeNotifier (Notifier) — theme mode, seed color, closeBehavior, windowSize
@@ -55,7 +56,8 @@ lib/
 │   ├── settings_provider.dart       # SettingsState + SettingsNotifier (Notifier) — scan environment + git accounts
 │   ├── venv_provider.dart           # VenvState + VenvNotifier (AsyncNotifier) — CRUD registered venvs
 │   ├── docker_status_provider.dart  # DockerStatus + DockerStatusNotifier (Notifier) — Docker status auto-check + nginx auto-start
-│   └── update_provider.dart         # UpdateState + UpdateNotifier (Notifier) — auto-check GitHub releases
+│   ├── update_provider.dart         # UpdateState + UpdateNotifier (Notifier) — auto-check GitHub releases
+│   └── shortcut_provider.dart       # ShortcutState + ShortcutNotifier (Notifier) — customizable keyboard shortcuts, persist to settings, findAction(event) for dispatch
 │
 ├── screens/
 │   ├── home_screen.dart             # HomeScreen (ConsumerStatefulWidget) — NavigationRail (4 tab) + window size selector (S/M/L) + tray listener
@@ -101,14 +103,15 @@ lib/
 │   │   ├── profile_dialog.dart          # ProfileDialog — create/edit profile (DB config, venv, git account)
 │   │   └── clone_odoo_dialog.dart       # CloneOdooDialog — clone Odoo source từ GitHub
 │   │
-│   ├── settings/                    # 6 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git
-│   │   ├── settings_screen.dart         # SettingsScreen (ConsumerStatefulWidget) — TabBar + 6 tab widgets
+│   ├── settings/                    # 7 tabs: Theme, Docker, Python+Venv, PostgreSQL, Nginx, Git, Shortcuts
+│   │   ├── settings_screen.dart         # SettingsScreen (ConsumerStatefulWidget) — TabBar + 7 tab widgets
 │   │   ├── theme_tab.dart               # ThemeTab (ConsumerWidget) — language, theme mode, accent color, window size, close behavior
 │   │   ├── docker_tab.dart              # DockerTab (ConsumerWidget) — docker status, install/start
 │   │   ├── python_tab.dart              # PythonTab (ConsumerStatefulWidget) — python check + venv (sub-tabs)
 │   │   ├── postgres_tab.dart            # PostgresTab (ConsumerWidget) — client tools detect, server status, Docker setup
 │   │   ├── nginx_tab.dart               # NginxTab (ConsumerStatefulWidget) — config record, port check, container controls
 │   │   ├── git_tab.dart                 # GitTab (ConsumerWidget) — git accounts CRUD + default account
+│   │   ├── shortcuts_tab.dart           # ShortcutsTab (ConsumerWidget) — list actions, Change/Reset via capture dialog, Reset All
 │   │   ├── git_account_dialog.dart      # GitAccountDialog — add/edit Git account credentials
 │   │   ├── python_install_dialog.dart   # PythonInstallDialog — Python version installer (winget/brew/apt)
 │   │   ├── python_uninstall_dialog.dart # PythonUninstallDialog — Python version uninstaller
@@ -137,6 +140,7 @@ lib/
 │   ├── nginx_setup_dialog.dart      # NginxSetupDialog (StatefulWidget) — setup nginx (subdomain, port, validation, conflict detection)
 │   ├── git_branch_dialog.dart       # GitBranchDialog (StatefulWidget) — shared Git Branches dialog (Other Projects + Odoo Workspace)
 │   ├── vscode_install_dialog.dart   # VscodeInstallDialog (StatefulWidget) — VSCode installer (brew/winget/apt)
+│   ├── shortcut_capture_dialog.dart # ShortcutCaptureDialog (StatefulWidget) — Focus + onKeyEvent, capture key combo, validate modifier required
 │   └── ansi_parser.dart             # AnsiParser — static ANSI escape code parser cho terminal log output
 │
 └── templates/

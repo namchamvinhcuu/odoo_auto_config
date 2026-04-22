@@ -3303,6 +3303,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creating repo: {name}'**
   String publishModulesCreatingRepo(String name);
+
+  /// No description provided for @shortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts'**
+  String get shortcutsTitle;
+
+  /// No description provided for @shortcutsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize keyboard shortcuts for in-app actions.'**
+  String get shortcutsSubtitle;
+
+  /// No description provided for @shortcutsChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get shortcutsChange;
+
+  /// No description provided for @shortcutsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get shortcutsReset;
+
+  /// No description provided for @shortcutsResetAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all'**
+  String get shortcutsResetAll;
+
+  /// No description provided for @shortcutsCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Shortcut'**
+  String get shortcutsCaptureTitle;
+
+  /// No description provided for @shortcutsCaptureFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Press the key combination for \"{action}\":'**
+  String shortcutsCaptureFor(String action);
+
+  /// No description provided for @shortcutsCaptureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Press a key combination...'**
+  String get shortcutsCaptureHint;
+
+  /// No description provided for @shortcutsInvalidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Include at least one modifier key (Ctrl, Cmd, Shift, or Alt).'**
+  String get shortcutsInvalidHint;
 }
 
 class _AppLocalizationsDelegate

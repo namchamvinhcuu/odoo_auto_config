@@ -1816,4 +1816,35 @@ class AppLocalizationsVi extends AppLocalizations {
   String publishModulesCreatingRepo(String name) {
     return 'Đang tạo repo: $name';
   }
+
+  @override
+  String get shortcutsTitle => 'Phím tắt';
+
+  @override
+  String get shortcutsSubtitle =>
+      'Tùy chỉnh phím tắt cho các thao tác trong app.';
+
+  @override
+  String get shortcutsChange => 'Thay đổi';
+
+  @override
+  String get shortcutsReset => 'Khôi phục mặc định';
+
+  @override
+  String get shortcutsResetAll => 'Khôi phục tất cả';
+
+  @override
+  String get shortcutsCaptureTitle => 'Đặt phím tắt';
+
+  @override
+  String shortcutsCaptureFor(String action) {
+    return 'Nhấn tổ hợp phím cho \"$action\":';
+  }
+
+  @override
+  String get shortcutsCaptureHint => 'Nhấn tổ hợp phím...';
+
+  @override
+  String get shortcutsInvalidHint =>
+      'Phải có ít nhất một phím bổ trợ (Ctrl, Cmd, Shift hoặc Alt).';
 }

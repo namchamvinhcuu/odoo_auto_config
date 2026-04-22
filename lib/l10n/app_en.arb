@@ -705,5 +705,16 @@
   "publishModulesSelect": "Select modules to publish",
   "publishModulesPublish": "Publish",
   "publishModulesCreatingRepo": "Creating repo: {name}",
-  "@publishModulesCreatingRepo": { "placeholders": { "name": { "type": "String" } } }
+  "@publishModulesCreatingRepo": { "placeholders": { "name": { "type": "String" } } },
+
+  "shortcutsTitle": "Shortcuts",
+  "shortcutsSubtitle": "Customize keyboard shortcuts for in-app actions.",
+  "shortcutsChange": "Change",
+  "shortcutsReset": "Reset to default",
+  "shortcutsResetAll": "Reset all",
+  "shortcutsCaptureTitle": "Set Shortcut",
+  "shortcutsCaptureFor": "Press the key combination for \"{action}\":",
+  "@shortcutsCaptureFor": { "placeholders": { "action": { "type": "String" } } },
+  "shortcutsCaptureHint": "Press a key combination...",
+  "shortcutsInvalidHint": "Include at least one modifier key (Ctrl, Cmd, Shift, or Alt)."
 }

@@ -1787,4 +1787,34 @@ class AppLocalizationsKo extends AppLocalizations {
   String publishModulesCreatingRepo(String name) {
     return '저장소 생성 중: $name';
   }
+
+  @override
+  String get shortcutsTitle => '단축키';
+
+  @override
+  String get shortcutsSubtitle => '앱 내 동작에 대한 키보드 단축키를 사용자 지정합니다.';
+
+  @override
+  String get shortcutsChange => '변경';
+
+  @override
+  String get shortcutsReset => '기본값으로 재설정';
+
+  @override
+  String get shortcutsResetAll => '모두 재설정';
+
+  @override
+  String get shortcutsCaptureTitle => '단축키 설정';
+
+  @override
+  String shortcutsCaptureFor(String action) {
+    return '\"$action\"에 대한 키 조합을 누르세요:';
+  }
+
+  @override
+  String get shortcutsCaptureHint => '키 조합을 누르세요...';
+
+  @override
+  String get shortcutsInvalidHint =>
+      '보조 키(Ctrl, Cmd, Shift, Alt) 중 하나 이상을 포함해야 합니다.';
 }

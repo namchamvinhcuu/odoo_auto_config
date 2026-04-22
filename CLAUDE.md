@@ -280,6 +280,29 @@ Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docke
   Windows: đã xóa mutex. Linux: `G_APPLICATION_NON_UNIQUE`
 - **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
 
+## Tính năng Keyboard Shortcuts
+
+In-app customizable shortcuts (chỉ fire khi app đang focus).
+
+- **Storage**: `~/.config/odoo_auto_config/odoo_auto_config.json` > `settings.shortcuts`
+  Format: `{ "actionId": {ctrl, meta, shift, alt, key} }` — `key` là `LogicalKeyboardKey.keyId` (int)
+- **Default per-platform**: macOS dùng `meta` (Cmd), Windows/Linux dùng `ctrl`. Default init khi chưa có setting
+- **UI**: Settings > **Shortcuts** (tab thứ 7) — list actions, nút Change/Reset mỗi action, Reset All
+- **Capture dialog**: `ShortcutCaptureDialog` (`lib/widgets/shortcut_capture_dialog.dart`)
+  Dùng `HardwareKeyboard.instance.addHandler` (KHÔNG Focus.onKeyEvent — xem Lessons Learned UI/Layout).
+  Validate: bắt buộc có ít nhất 1 modifier để tránh user tự khóa mình (VD: bind "Enter" đơn)
+- **Dispatcher**: `home_screen._handleKeyEvent` gọi `shortcutProvider.notifier.findAction(event)`
+  → nếu match → `_dispatchAction(actionId)` → chuyển vào switch case
+- **Pause khi capture**: `shortcutProvider.state.capturing` flag. `shortcuts_tab._change()` wrap
+  `AppDialog.show()` bằng try/finally set/reset flag. `findAction` return null khi capturing → không
+  trigger action trong lúc user đang set combo
+- **Thêm action mới**:
+  1. Thêm id vào `ShortcutActions` + `ShortcutActions.all`
+  2. Thêm default vào `ShortcutService.defaults()`
+  3. Thêm case trong `home_screen._dispatchAction()`
+  4. Thêm label (l10n hoặc `ShortcutService.defaultActionLabel()`)
+- **Actions đã có**: `newWindow` (mở instance mới qua `InstanceService.launchNewInstance()`)
+
 ## Tính năng Auto-Update
 
 - **Phát hiện version**: Đọc từ `lib/generated/version.dart` (compiled Dart const)
@@ -793,6 +816,16 @@ Quit All
   KHÔNG wrap PopScope thủ công trong từng dialog
 - **Close button process dialog** — dùng `enabled: !_running` thay vì `onClose: _running ? null : ...`
   Pattern cũ bị bug: khi `onClose: null`, fallback default `Navigator.pop` → vẫn cho đóng
+- **Key capture trong dialog** — KHÔNG dùng `Focus(autofocus: true, onKeyEvent: ...)` vì `AppDialog.show()`
+  đã wrap content trong `Focus(autofocus: true)` để handle ESC → nested Focus bị outer Focus giành primary
+  focus → inner onKeyEvent không fire các lần sau. Thay bằng `HardwareKeyboard.instance.addHandler(_h)` trong
+  `initState` + `removeHandler(_h)` trong `dispose`. Handler return `true` để consume (trừ ESC → return `false`
+  để AppDialog's CallbackShortcuts xử lý).
+- **Pause global key dispatcher khi capture shortcut** — nếu app có `HardwareKeyboard.addHandler` global dispatch
+  các shortcut đã đăng ký, khi user bấm combo trùng shortcut hiện tại trong capture dialog → action fire
+  (VD: launch new window) → cửa sổ mới cướp focus → capture dialog kẹt. Fix: thêm flag `capturing` trong
+  provider state, global dispatcher check flag → skip. Capture dialog flow: wrap `AppDialog.show()` bằng
+  try/finally, `setCapturing(true)` trước, `setCapturing(false)` trong finally.
 
 ### Git operations
 

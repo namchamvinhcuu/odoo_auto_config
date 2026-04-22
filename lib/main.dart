@@ -9,6 +9,7 @@ import 'package:odoo_auto_config/providers/odoo_projects_provider.dart';
 import 'package:odoo_auto_config/providers/other_projects_provider.dart';
 import 'package:odoo_auto_config/providers/profile_provider.dart';
 import 'package:odoo_auto_config/providers/settings_provider.dart';
+import 'package:odoo_auto_config/providers/shortcut_provider.dart';
 import 'package:odoo_auto_config/providers/theme_provider.dart';
 import 'package:odoo_auto_config/providers/venv_provider.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
@@ -45,6 +46,7 @@ void main() async {
   await Future.wait([
     container.read(themeProvider.notifier).load(),
     container.read(localeProvider.notifier).load(),
+    container.read(shortcutProvider.notifier).load(),
     container.read(odooProjectsProvider.future),
   ]);
 
@@ -78,6 +80,7 @@ void main() async {
   StorageService.startConfigWatcher(() {
     container.read(themeProvider.notifier).load();
     container.read(localeProvider.notifier).load();
+    container.read(shortcutProvider.notifier).load();
     container.read(odooProjectsProvider.notifier).reload();
     container.read(otherProjectsProvider.notifier).reload();
     container.read(profileProvider.notifier).refresh();
