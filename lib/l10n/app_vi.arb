@@ -609,5 +609,12 @@
   "shortcutsCaptureTitle": "Đặt phím tắt",
   "shortcutsCaptureFor": "Nhấn tổ hợp phím cho \"{action}\":",
   "shortcutsCaptureHint": "Nhấn tổ hợp phím...",
-  "shortcutsInvalidHint": "Phải có ít nhất một phím bổ trợ (Ctrl, Cmd, Shift hoặc Alt)."
+  "shortcutsInvalidHint": "Phải có ít nhất một phím bổ trợ (Ctrl, Cmd, Shift hoặc Alt).",
+
+  "discardSelected": "Discard Selected",
+  "discardTitle": "Discard Changes",
+  "discardAction": "Discard",
+  "discardConfirmMessage": "Các file sau sẽ bị discard ({count} file):",
+  "discardWarning": "Hành động này không thể hoàn tác.",
+  "discardUntrackedWarning": "{count} file untracked sẽ bị xóa vĩnh viễn khỏi ổ đĩa."
 }

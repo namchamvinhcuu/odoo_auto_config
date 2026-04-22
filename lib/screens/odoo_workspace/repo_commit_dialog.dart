@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_discard_service.dart';
+import 'package:odoo_auto_config/widgets/discard_confirm_dialog.dart';
 import 'repo_create_pr_dialog.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
@@ -123,6 +125,55 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
       !_done &&
       _selectedCount > 0 &&
       _messageController.text.trim().isNotEmpty;
+
+  bool get _canDiscard =>
+      !_running && !_loading && !_done && _selectedCount > 0;
+
+  Future<void> _discard() async {
+    final items = _changedFiles
+        .where((f) => f['selected'] == true)
+        .map((f) => DiscardItem(
+              status: f['status'] as String,
+              file: f['file'] as String,
+            ))
+        .toList();
+    if (items.isEmpty) return;
+
+    final confirmed = await AppDialog.show<bool>(
+      context: context,
+      builder: (_) => DiscardConfirmDialog(items: items),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _running = true);
+    context.setDialogRunning(true);
+    _addLine(
+      '\x1B[0;34m> git discard (${items.length} files)\x1B[0m',
+    );
+    try {
+      final outcome = await GitDiscardService.discard(
+        repoPath: widget.repoPath,
+        items: items,
+      );
+      if (!mounted) return;
+      for (final f in outcome.restored) {
+        _addLine('\x1B[0;32m[+] restored: $f\x1B[0m');
+      }
+      for (final f in outcome.deleted) {
+        _addLine('\x1B[0;32m[+] deleted: $f\x1B[0m');
+      }
+      for (final e in outcome.errors) {
+        _addLine('\x1B[0;31m[-] $e\x1B[0m');
+      }
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+      await _loadStatus();
+    }
+  }
 
   Future<void> _commit() async {
     setState(() => _running = true);
@@ -314,6 +365,18 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const Spacer(),
+                    TextButton.icon(
+                      onPressed: _canDiscard ? _discard : null,
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        size: AppIconSize.md,
+                      ),
+                      label: Text(context.l10n.discardSelected),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
                     TextButton.icon(
                       onPressed: (_running || _done)
                           ? null

@@ -1817,4 +1817,26 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get shortcutsInvalidHint =>
       '보조 키(Ctrl, Cmd, Shift, Alt) 중 하나 이상을 포함해야 합니다.';
+
+  @override
+  String get discardSelected => 'Discard Selected';
+
+  @override
+  String get discardTitle => 'Discard Changes';
+
+  @override
+  String get discardAction => 'Discard';
+
+  @override
+  String discardConfirmMessage(int count) {
+    return '다음 $count개 파일의 변경 사항이 폐기됩니다:';
+  }
+
+  @override
+  String get discardWarning => '이 작업은 취소할 수 없습니다.';
+
+  @override
+  String discardUntrackedWarning(int count) {
+    return '추적되지 않은 파일 $count개가 디스크에서 영구적으로 삭제됩니다.';
+  }
 }

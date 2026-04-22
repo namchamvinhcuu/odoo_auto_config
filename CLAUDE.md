@@ -364,6 +364,14 @@ In-app customizable shortcuts (chỉ fire khi app đang focus).
   - Other Projects: `git status --porcelain` → checkbox list files → `git add --` từng file → `git commit` → optional `git push`
   - Odoo Projects: scan `addons/` tìm repos có changes → checkbox list repos → `git add -A` + `git commit` + optional `git push` cho mỗi repo
   - Reload status sau khi commit để hiện file/repo còn lại
+- **Git Discard** (Sourcetree-style, destructive — áp dụng cho `SimpleGitCommitDialog` + `RepoCommitDialog`):
+  - Button "Discard Selected" cạnh Select All trong header list file (dùng chung checkbox với Commit)
+  - Mở `DiscardConfirmDialog` (`lib/widgets/discard_confirm_dialog.dart`) — liệt kê file + cảnh báo "cannot be undone" + cảnh báo riêng untracked sẽ bị xóa vĩnh viễn
+  - Shared service: `GitDiscardService.discard()` (`lib/services/git_discard_service.dart`)
+    Tracked (M/A/D/R/MM/...): `git checkout HEAD -- <files>` (1 lệnh duy nhất, revert cả staged + unstaged)
+    Untracked (`??`): `File.delete()` hoặc `Directory.delete(recursive)` (permanent, không trash)
+  - Sau discard → reload status qua `_loadStatus()` để update list
+  - KHÔNG áp dụng cho batch dialogs (`WorkspaceCommitDialog`, `GitCommitDialog` Odoo multi-repo) — user phải vào per-repo để discard, tránh destructive action chạy nhiều repo cùng lúc
 - **Git Repositories Script** (`git-repositories.sh` / `.ps1`):
   - Template trong `odoo_templates.dart` với params `token` và `org`
   - Tạo tự động khi Quick Create Odoo project

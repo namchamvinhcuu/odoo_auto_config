@@ -716,5 +716,14 @@
   "shortcutsCaptureFor": "Press the key combination for \"{action}\":",
   "@shortcutsCaptureFor": { "placeholders": { "action": { "type": "String" } } },
   "shortcutsCaptureHint": "Press a key combination...",
-  "shortcutsInvalidHint": "Include at least one modifier key (Ctrl, Cmd, Shift, or Alt)."
+  "shortcutsInvalidHint": "Include at least one modifier key (Ctrl, Cmd, Shift, or Alt).",
+
+  "discardSelected": "Discard Selected",
+  "discardTitle": "Discard Changes",
+  "discardAction": "Discard",
+  "discardConfirmMessage": "The following {count, plural, one{file} other{{count} files}} will be discarded:",
+  "@discardConfirmMessage": { "placeholders": { "count": { "type": "int" } } },
+  "discardWarning": "This action cannot be undone.",
+  "discardUntrackedWarning": "{count, plural, one{1 untracked file} other{{count} untracked files}} will be permanently deleted from disk.",
+  "@discardUntrackedWarning": { "placeholders": { "count": { "type": "int" } } }
 }

@@ -1852,4 +1852,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get shortcutsInvalidHint =>
       'Include at least one modifier key (Ctrl, Cmd, Shift, or Alt).';
+
+  @override
+  String get discardSelected => 'Discard Selected';
+
+  @override
+  String get discardTitle => 'Discard Changes';
+
+  @override
+  String get discardAction => 'Discard';
+
+  @override
+  String discardConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: 'file',
+    );
+    return 'The following $_temp0 will be discarded:';
+  }
+
+  @override
+  String get discardWarning => 'This action cannot be undone.';
+
+  @override
+  String discardUntrackedWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count untracked files',
+      one: '1 untracked file',
+    );
+    return '$_temp0 will be permanently deleted from disk.';
+  }
 }

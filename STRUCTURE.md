@@ -44,7 +44,8 @@ lib/
 │   ├── update_service.dart          # UpdateInfo, UpdateService — auto-update: check GitHub releases, download, install
 │   ├── git_service.dart             # GitService — Git: check installed, resolve absolute path (cross-platform)
 │   ├── git_branch_service.dart      # GitBranchService — shared git branch operations (switch, create, delete, publish, clean stale, getRemoteUrl, openInBrowser)
-│   └── shortcut_service.dart        # ShortcutSpec (ctrl/meta/shift/alt + triggerKeyId, matches/format/toJson) + ShortcutActions ids + platform-aware defaults
+│   ├── shortcut_service.dart        # ShortcutSpec (ctrl/meta/shift/alt + triggerKeyId, matches/format/toJson) + ShortcutActions ids + platform-aware defaults
+│   └── git_discard_service.dart     # DiscardItem + DiscardOutcome + GitDiscardService.discard() — revert tracked via git checkout HEAD, delete untracked
 │
 ├── providers/
 │   ├── theme_provider.dart          # ThemeState + ThemeNotifier (Notifier) — theme mode, seed color, closeBehavior, windowSize
@@ -141,6 +142,7 @@ lib/
 │   ├── git_branch_dialog.dart       # GitBranchDialog (StatefulWidget) — shared Git Branches dialog (Other Projects + Odoo Workspace)
 │   ├── vscode_install_dialog.dart   # VscodeInstallDialog (StatefulWidget) — VSCode installer (brew/winget/apt)
 │   ├── shortcut_capture_dialog.dart # ShortcutCaptureDialog (StatefulWidget) — Focus + onKeyEvent, capture key combo, validate modifier required
+│   ├── discard_confirm_dialog.dart  # DiscardConfirmDialog (StatelessWidget) — list files to discard + warning, returns bool via Navigator.pop
 │   └── ansi_parser.dart             # AnsiParser — static ANSI escape code parser cho terminal log output
 │
 └── templates/

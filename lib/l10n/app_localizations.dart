@@ -3357,6 +3357,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Include at least one modifier key (Ctrl, Cmd, Shift, or Alt).'**
   String get shortcutsInvalidHint;
+
+  /// No description provided for @discardSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Selected'**
+  String get discardSelected;
+
+  /// No description provided for @discardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard Changes'**
+  String get discardTitle;
+
+  /// No description provided for @discardAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardAction;
+
+  /// No description provided for @discardConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The following {count, plural, one{file} other{{count} files}} will be discarded:'**
+  String discardConfirmMessage(int count);
+
+  /// No description provided for @discardWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone.'**
+  String get discardWarning;
+
+  /// No description provided for @discardUntrackedWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 untracked file} other{{count} untracked files}} will be permanently deleted from disk.'**
+  String discardUntrackedWarning(int count);
 }
 
 class _AppLocalizationsDelegate

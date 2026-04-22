@@ -1847,4 +1847,26 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get shortcutsInvalidHint =>
       'Phải có ít nhất một phím bổ trợ (Ctrl, Cmd, Shift hoặc Alt).';
+
+  @override
+  String get discardSelected => 'Discard Selected';
+
+  @override
+  String get discardTitle => 'Discard Changes';
+
+  @override
+  String get discardAction => 'Discard';
+
+  @override
+  String discardConfirmMessage(int count) {
+    return 'Các file sau sẽ bị discard ($count file):';
+  }
+
+  @override
+  String get discardWarning => 'Hành động này không thể hoàn tác.';
+
+  @override
+  String discardUntrackedWarning(int count) {
+    return '$count file untracked sẽ bị xóa vĩnh viễn khỏi ổ đĩa.';
+  }
 }

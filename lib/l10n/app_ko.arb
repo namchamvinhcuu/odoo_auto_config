@@ -609,5 +609,12 @@
   "shortcutsCaptureTitle": "단축키 설정",
   "shortcutsCaptureFor": "\"{action}\"에 대한 키 조합을 누르세요:",
   "shortcutsCaptureHint": "키 조합을 누르세요...",
-  "shortcutsInvalidHint": "보조 키(Ctrl, Cmd, Shift, Alt) 중 하나 이상을 포함해야 합니다."
+  "shortcutsInvalidHint": "보조 키(Ctrl, Cmd, Shift, Alt) 중 하나 이상을 포함해야 합니다.",
+
+  "discardSelected": "Discard Selected",
+  "discardTitle": "Discard Changes",
+  "discardAction": "Discard",
+  "discardConfirmMessage": "다음 {count}개 파일의 변경 사항이 폐기됩니다:",
+  "discardWarning": "이 작업은 취소할 수 없습니다.",
+  "discardUntrackedWarning": "추적되지 않은 파일 {count}개가 디스크에서 영구적으로 삭제됩니다."
 }
