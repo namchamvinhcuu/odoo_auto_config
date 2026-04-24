@@ -1,30 +1,161 @@
-# CLAUDE.md
+# CLAUDE.md — Workspace Configuration (Flutter desktop)
 
-Hướng dẫn làm việc cho Claude trong repo `odoo_auto_config`. Gồm 2 phần:
+Hướng dẫn làm việc cho Claude trong dự án `odoo_auto_config` — gồm **Behavioral Principles** + pointer tới knowledge base.
 
-1. **Behavioral Principles** — nguyên tắc hành xử (bắt buộc tuân thủ).
-2. **Project Knowledge Base** — tổng hợp nghiệp vụ đã phân tích, dùng làm context cho các session sau.
+**Project Knowledge Base** sống trong Obsidian vault tại `./.obsidian-vault/` (symlink, atomic notes tổ chức theo `Architecture/` / `Features/` / `Knowledge-Base/` / `Fix-History/`). Khi cần reference về tech stack, modules, skills, bugs — đọc vault qua [`./.obsidian-vault/Index.md`](.obsidian-vault/Index.md).
+
+### ⚙️ Per-machine setup (nếu `.obsidian-vault` chưa tồn tại)
+
+Vault path khác nhau trên mỗi máy (sync qua OneDrive). Symlink `.obsidian-vault` resolve việc này — tạo 1 lần trên mỗi máy:
+
+```bash
+# Mac mini M4 (OneDrive trên external drive)
+ln -s /Volumes/Data/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
+
+# Linux Mint (OneDrive synced via rclone hoặc tương tự)
+ln -s ~/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
+```
+
+Verify: `ls .obsidian-vault/Index.md` → phải resolve được. Symlink `.obsidian-vault` đã trong `.gitignore`.
+
+Nếu vault chưa sync về máy hiện tại → restore từ OneDrive trước khi code.
+
+### 📦 Archive
+
+Snapshot cũ của CLAUDE.md + STRUCTURE.md (trước 2026-04-25) lưu tại [ARCHIVE.md](ARCHIVE.md). Không đọc để làm context thường — chỉ reference khi cần trace lịch sử.
 
 ---
 
 # PHẦN 1 — BEHAVIORAL PRINCIPLES
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific knowledge in `.obsidian-vault/`.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+**Ordering = session lifecycle.** Đọc tuần tự 1→10 để biết cần làm gì ở từng phase:
 
-## 1. Think Before Coding
+| Phase | Principles | Mục đích |
+|-------|-----------|----------|
+| 🗣️ Communication | #1 Ask in Vietnamese | Ngôn ngữ giao tiếp |
+| ⚙️ Environment | #2 Flutter SDK via FVM, #9 Upstream Framework Reference | Setup tooling + tra cứu source |
+| 🧠 Plan | #3 Think Before Coding, #4 Goal-Driven, #10 Vault-First Debug | Phân tích, success criteria, investigation |
+| ✍️ Code | #5 Simplicity First, #6 Surgical Changes | Khi viết/sửa code |
+| ✅ Verify | #7 Test-Driven Quality | Xác nhận hoạt động đúng |
+| 📝 Document | #8 Knowledge Loop | Lưu lại tri thức |
+
+**Tradeoff:** caution over speed. Trivial tasks: dùng judgment.
+
+---
+
+## 1. Ask in Vietnamese
+
+**Every clarifying question or user-facing prompt must be in Vietnamese.**
+
+Khi hỏi user về:
+
+- Clarifying questions về task mơ hồ → tiếng Việt
+- Presenting alternatives ("A hay B?") → tiếng Việt
+- Requesting missing info (file paths, config values, credentials) → tiếng Việt
+- Surfacing tradeoffs với recommendation → tiếng Việt
+- Confirming destructive actions → tiếng Việt
+
+**KHÔNG áp dụng cho** (giữ ngôn ngữ project):
+
+- Code, variable/function/identifier names
+- Commit messages, PR titles, CHANGELOG entries
+- Code comments (theo convention module)
+- File / vault note names
+- Error messages copy từ tools/logs
+
+**Why:** User là người Việt; hỏi tiếng Anh tốn thêm parsing step → response chậm và kém chính xác hơn.
+
+## 2. Flutter SDK via FVM — Luôn dùng version đúng project
+
+**KHI cần chạy Flutter (build, test, run, pub), LUÔN dùng FVM-resolved `flutter`. KHÔNG dùng system flutter.**
+
+### Mandatory workflow
+
+```bash
+# 1) Verify FVM resolves đúng version
+which flutter
+# Mac mini M4: ~/fvm/default/bin/flutter (symlink → 3.41.6)
+# Linux Mint:  ~/fvm/default/bin/flutter (symlink → 3.41.6)
+
+# 2) Verify .fvmrc match
+cat .fvmrc            # → {"flutter": "3.41.6"}
+flutter --version     # phải hiện 3.41.6
+```
+
+Nếu `which flutter` KHÔNG trỏ tới `~/fvm/default/bin/` → PATH sai, sửa `~/.zshrc` (Mac) hoặc `~/.bashrc` (Linux).
+
+### Common commands (auto-resolve qua FVM)
+
+```bash
+fvm flutter pub get                  # install dependencies
+fvm flutter run -d macos             # run trên Mac mini M4
+fvm flutter run -d linux             # run trên Linux Mint
+fvm flutter run -d windows           # run trên Windows
+fvm flutter test                     # unit + widget tests
+fvm flutter analyze                  # static analysis (lint + type check)
+fvm flutter gen-l10n                 # generate localization delegate
+fvm flutter build macos --release    # release macOS (DMG + ZIP)
+fvm flutter build linux --release    # release Linux (AppImage / deb / rpm)
+fvm flutter build windows --release  # release Windows (MSIX + EVB portable)
+```
+
+⚠️ Flag `-d` bắt buộc cho `run` — `fvm flutter run macOS` (không `-d`) báo "Target file not found".
+
+### Tại sao
+
+- Breaking changes giữa Flutter minor versions (3.40 → 3.41 thay đổi widget API)
+- Pub packages có Flutter version constraint — sai version → packages reject
+- Reproducibility cross-machine: cùng command trên Mac mini M4 + Linux Mint cho cùng kết quả
+
+### Red flags — dừng lại
+
+- `which flutter` trả `/usr/local/bin/flutter` hoặc `/opt/homebrew/bin/flutter` → đang dùng system flutter
+- `flutter --version` không match `.fvmrc`
+- Build fail "requires Flutter SDK >= X.Y.Z" → version mismatch
+
+→ Cheatsheet chi tiết: [[Knowledge-Base/Skill-Flutter-Dev]].
+
+### Autonomy với Flutter commands
+
+`flutter pub get`, `flutter test`, `flutter analyze`, `flutter gen-l10n`, hot reload trên local dev → **auto-run, KHÔNG cần confirm**. Xem Principle #7 cho chi tiết.
+
+## 3. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
 Before implementing:
 
 - State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
+- If multiple interpretations exist, present them — don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 
-## 2. Simplicity First
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Chuyển yêu cầu mơ hồ thành outcome có thể verify trước khi code:
+
+- "Add validation" → "Input X bị reject với message Y; input Z pass qua"
+- "Fix the bug" → "Reproduce ở bước A, sau fix không còn + regression guard"
+- "Refactor X" → "Behavior identical trước/sau; diff không đụng logic branch"
+- "Add feature" → "Path A/B/C trên UI/API trả kết quả mong đợi"
+
+Success criteria KHÔNG nhất thiết là tests — có thể là manual repro, diff review, screenshot widget render, log output. Tests là phương tiện mạnh nhất nhưng không phải duy nhất (chi tiết: Principle #7).
+
+Multi-step tasks → state plan ngắn:
+
+```
+1. [Step] → verify: [check cụ thể]
+2. [Step] → verify: [check cụ thể]
+3. [Step] → verify: [check cụ thể]
+```
+
+Strong criteria → loop độc lập. Weak criteria ("make it work") → phải hỏi user liên tục.
+
+## 5. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
@@ -36,7 +167,7 @@ Before implementing:
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-## 3. Surgical Changes
+## 6. Surgical Changes
 
 **Touch only what you must. Clean up only your own mess.**
 
@@ -45,34 +176,258 @@ When editing existing code:
 - Don't "improve" adjacent code, comments, or formatting.
 - Don't refactor things that aren't broken.
 - Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
+- If you notice unrelated dead code, mention it — don't delete it.
 
 When your changes create orphans:
 
 - Remove imports/variables/functions that YOUR changes made unused.
 - Don't remove pre-existing dead code unless asked.
 
-The test: Every changed line should trace directly to the user's request.
+The test: every changed line should trace directly to user's request.
 
-## 4. Goal-Driven Execution
+## 7. Test-Driven Quality — Flutter testing
 
-**Define success criteria. Loop until verified.**
+**Không task nào hoàn thành khi chưa verify hoạt động.** Sau khi implement bất kỳ logic nào:
 
-Transform tasks into verifiable goals:
+### Verify methods (theo loại change)
 
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
+| Change type | Verify command | Notes |
+|-------------|----------------|-------|
+| Pure Dart logic (helper, validator, parser) | `fvm flutter test test/<file>_test.dart` | Unit test |
+| Widget render / interaction | `fvm flutter test` (widget test) | UI render + tap |
+| State management (Riverpod) | Widget test với `ProviderScope.overrides` | Test notifier behavior |
+| Navigation / dialog flow | Manual `fvm flutter run -d <platform>` | Full app flow desktop |
+| Static checks | `fvm flutter analyze` | Type errors, lint |
+| UI visual change | `fvm flutter run -d <platform>` + manual repro | Visual confirm |
+| Cross-platform Process.run | [[Knowledge-Base/Skill-Audit-RunInShell]] script | Bắt buộc sau refactor |
 
-For multi-step tasks, state a brief plan:
+### Autonomy — auto-run trên local dev (KHÔNG cần confirm)
 
+#### A. Filesystem / git read-only
+
+- `ls`, `find`, `grep`, `cat`, `head`, `tail` — list/search/read
+- Native tools: Read, Glob, Grep
+- Git read-only: `git status`, `git log`, `git diff`, `git show`, `git blame`
+- Source lookup Flutter SDK / pub packages (Principle #9)
+
+#### B. Test + verify execution
+
+- `fvm flutter test` (any file or all tests)
+- `fvm flutter analyze`
+- `fvm flutter gen-l10n`
+- `dart format <file>`, `dart fix --apply`
+- `dart analyze <file>`
+- Audit `runInShell` script (xem [[Knowledge-Base/Skill-Audit-RunInShell]])
+
+#### C. Pub / build (development)
+
+- `fvm flutter pub get`, `fvm flutter pub upgrade <specific-package>`
+- `fvm flutter clean` (xóa build cache)
+- Hot reload (`r`) / hot restart (`R`) trong session đang chạy
+- Debug build local: `fvm flutter run -d <macos|linux|windows>`
+
+#### D. Ephemeral temp files
+
+- Redirect output `/tmp/*` cho stdout/stderr capture
+- `mktemp` cho scratch data (diff XML/JSON, inspect log dài)
+- Delete/rewrite `/tmp/*` do Claude tạo trong session
+
+**Workflow:** verify/test/search → **chạy luôn**, report kết quả. KHÔNG hỏi "bạn muốn tôi chạy test không?" / "có cần capture log không?". Default là CHẠY.
+
+### KHÔNG auto-run — confirm trước
+
+- `fvm flutter build <platform> --release` → user confirm (build artifact, có thể distribute)
+- `bash release.sh` / `.\release.ps1` → bump version + tag + push, user confirm
+- `fvm flutter pub upgrade` (toàn bộ, không specific package) → có thể break version constraints
+- Destructive filesystem: `rm -rf`, xóa folder lớn, overwrite uncommitted work
+- Destructive git: `push --force`, `reset --hard`, `branch -D`
+- Git commit / push — luôn cần user explicit request
+
+### Completion criteria
+
+- `fvm flutter test` output: `All tests passed!` với count > 0 (nếu có tests)
+- `fvm flutter analyze` output: `No issues found!`
+- Manual repro: bug không còn / feature hoạt động đúng theo success criteria
+- Cross-platform Process call: pass audit script (xem [[Fix-History/RunInShell-Audit]])
+- ❌ KHÔNG dùng "code compiles" làm proof — phải actually run + verify behavior
+
+### Exception
+
+Skip verify CHỈ khi:
+
+- User explicitly nói "no tests needed"
+- Trivial typo (1-2 ký tự, không ảnh hưởng logic)
+- Comment-only changes
+- UI visual tweak — confirm visually qua `fvm flutter run` thay vì test
+
+## 8. Knowledge Loop — Vòng lặp tri thức
+
+**Sau khi thực hiện thay đổi code hoặc giải quyết yêu cầu**, LUÔN thực hiện 5 bước (bắt buộc):
+
+### Step 1 — Kiểm tra tính mới
+
+Logic vừa code là **nghiệp vụ quan trọng** hoặc **kỹ thuật khó** → tạo/cập nhật vault note:
+
+| Loại kiến thức | Folder + naming |
+|---------------|-----------------|
+| Reusable skill / operational know-how | `.obsidian-vault/Knowledge-Base/Skill-<Name>.md` |
+| Multi-step workflow | `.obsidian-vault/Knowledge-Base/Workflow-<Name>.md` |
+| Business feature mới | `.obsidian-vault/Features/<Feature>.md` |
+| Architecture pattern | `.obsidian-vault/Architecture/<Topic>.md` |
+| Fix pattern | xem Step 2 |
+
+File đã tồn tại → update section thay vì tạo mới.
+
+### Step 2 — Ghi nhật ký Fix
+
+Vừa **sửa bug** → tạo file trong `Fix-History/`. Hiện vault dùng naming ngắn gọn (tên bug, không prefix `Fix-`). Content structure:
+
+```markdown
+# Fix — <Tên bug ngắn>
+
+## Symptom
+[Triệu chứng + error log]
+
+## Root cause
+[Nguyên nhân gốc]
+
+## Fix
+[Diff/pattern/workaround + code]
+
+## Related
+- [[Index]]
+- [[…related notes]]
 ```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+
+Xem template mẫu: [[Fix-History/RunInShell-Audit]] hoặc [[Fix-History/Git-Porcelain-Parsing]].
+
+### Step 3 — Cập nhật liên kết
+
+- Add link vào `.obsidian-vault/Index.md` section đúng (Architecture / Features / Knowledge-Base / Fix-History)
+- Add `## Related` section trong file mới link tới atomic notes liên quan với `[[ ]]`
+- Bidirectional: file target cũng add `[[new-file]]` vào Related
+
+### Step 4 — Update Change-Log + Current-State
+
+**A. Change-Log (chronological session log) — APPEND:**
+
+- Monthly file: `.obsidian-vault/Change-Log/YYYY-MM.md` (VD: `Change-Log/2026-04.md`)
+- Append entry MỚI ở **TOP** (reverse chronological)
+- Refresh `Change-Log.md` (root TOC): copy 3 entries gần nhất inline, cũ hơn chỉ giữ link
+
+**B. Current-State (live snapshot) — OVERWRITE:**
+
+- File: `.obsidian-vault/Current-State.md`
+- Overwrite các sections: Active focus, Version (nếu bump), In-flight work (✅/⏳), Open questions, Known issues, Modules touched, Next session priorities, Last test run
+- KHÔNG append — always re-write để reflect TRẠNG THÁI HIỆN TẠI
+
+**Rollover tháng mới:** tạo `Change-Log/YYYY-MM.md` mới + add link vào `Change-Log.md` "Monthly archives" + append entry đầu tháng vào file mới.
+
+### Step 5 — Báo cáo
+
+Cuối câu trả lời có thay đổi documentation:
+
+> "Tôi đã cập nhật tài liệu tại **Tên-file.md** để lưu giữ ngữ cảnh này."
+
+Nhiều file → list hết: "Tôi đã cập nhật [[file-1]], [[file-2]], [[file-3]]..."
+
+**Why:** Knowledge loop đảm bảo session work không bị mất. Session sau đọc vault (đặc biệt `Current-State.md`) sẽ thấy đầy đủ context — không phải "rediscover" cùng pattern hoặc hỏi lại user.
+
+## 9. Upstream Framework Reference — tra cứu source thật
+
+**Khi cần verify Flutter / package API (widget property, class signature, package method) — LUÔN query trong source thật. KHÔNG đoán.**
+
+### Source locations (per-machine)
+
+| Source | Mac mini M4 | Linux Mint |
+|--------|-------------|------------|
+| Flutter SDK | `~/fvm/versions/3.41.6/packages/flutter/lib/` | same |
+| Material widgets | `~/fvm/versions/3.41.6/packages/flutter/lib/src/material/` | same |
+| Cupertino widgets | `~/fvm/versions/3.41.6/packages/flutter/lib/src/cupertino/` | same |
+| Pub packages | `~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/` | same |
+
+Resolve dynamic:
+
+```bash
+FLUTTER_SDK=$(dirname $(dirname $(readlink -f $(which flutter))))
+echo $FLUTTER_SDK
+# Cả Mac mini M4 và Linux Mint: ~/fvm/versions/3.41.6
+ls $FLUTTER_SDK/packages/flutter/lib/src/widgets/
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+### Common pub package paths (dự án này)
+
+```bash
+# Riverpod (state management)
+ls ~/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/lib/
+
+# window_manager (desktop window control)
+ls ~/.pub-cache/hosted/pub.dev/window_manager-0.5.1/lib/
+
+# system_tray
+ls ~/.pub-cache/hosted/pub.dev/system_tray-2.0.3/lib/
+
+# file_picker
+ls ~/.pub-cache/hosted/pub.dev/file_picker-8.0.0/lib/
+```
+
+### Mandatory workflow khi nghi vấn API
+
+1. **Xác định target:** widget / class / package nghi vấn?
+2. **Grep / read source:**
+   ```bash
+   grep -rn "class CircleAvatar" ~/fvm/versions/3.41.6/packages/flutter/lib/src/material/
+   grep -rn "class WindowManager" ~/.pub-cache/hosted/pub.dev/window_manager-0.5.1/lib/
+   ```
+3. **Đối chiếu với code custom** trong `lib/` để phát hiện sai lệch.
+4. Chỉ đưa fix sau khi xác nhận source.
+
+### Tại sao bắt buộc
+
+- Flutter API thay đổi giữa minor versions (3.40 → 3.41: `WidgetState` rename, `MaterialState` deprecated)
+- Pub package major bump = breaking changes (Riverpod 2 → 3 thay đổi `Notifier` API)
+- Đoán dựa training data (cutoff 2026-01) → fix sai → bugs mới
+
+### Red flags — dừng lại
+
+- "Tôi nghĩ widget này có property X..." → grep trước
+- "Riverpod chắc có method Y..." → đọc source
+- "API version này vẫn dùng Z..." → check changelog hoặc source
+
+→ Nếu không verify được, **nói rõ là đang đoán**, không khẳng định.
+
+## 10. Vault-First Debug — đọc vault TRƯỚC khi đọc code
+
+**Khi user báo lỗi (screenshot, traceback, mô tả) — KHÔNG đọc code ngay. Quét `.obsidian-vault/` TRƯỚC.**
+
+### Thứ tự investigation bắt buộc
+
+1. **Quét `.obsidian-vault/` lần lượt:**
+   - `Architecture/` — hiểu flow nghiệp vụ liên quan ([[Architecture/Multi-Instance-IPC]], [[Architecture/Dialog-System]], [[Architecture/State-Management-Riverpod]], etc.)
+   - `Fix-History/` — tìm bug tương tự đã fix, xem root cause + pattern. Grep theo keyword triệu chứng.
+   - `Knowledge-Base/` — pattern / gotcha về Flutter / Riverpod / cross-platform Process
+   - `Features/` — context business logic
+2. **Đối chiếu source thật** (Principle #9 nếu cần check Flutter / package source)
+3. **Xác định:**
+   - Bug cùng root cause với bug cũ? → tái sử dụng fix pattern
+   - Flow nào bị impact? Logic đã tested có ảnh hưởng?
+4. **Propose fix tôn trọng logic cũ** — không patch triệu chứng làm hỏng flow khác
+
+### Tại sao bắt buộc
+
+Vault chứa: mental model (architecture), lịch sử quyết định (tại sao code viết như vậy), pattern fix đã tested. Đọc code cold không có context → dễ:
+
+- **Fix bề mặt:** patch triệu chứng, không root cause → bug tái xuất hiện
+- **Sửa hỏng business rule:** không biết constraint đã document
+- **Rediscover bug đã fix:** lãng phí thời gian phân tích cũ
+- **Break logic cũ:** fix mới invalidate pattern đã thông qua
+
+### Exception
+
+Skip vault scan CHỈ khi:
+
+- Lỗi trivial (typo 1-2 ký tự)
+- User explicitly bảo "fix nhanh, không cần đọc context"
 
 ---
 
@@ -80,839 +435,39 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-# PHẦN 2 — PROJECT Knowledge Base
-
-# Workspace Configuration - Project Context
-
-## Tổng quan
-
-Flutter desktop app (macOS/Linux/Windows) giúp developer thiết lập và quản lý môi trường phát triển.
-Hỗ trợ Odoo projects và các dự án ngôn ngữ khác (Flutter, React, NextJS, .NET, Rust, Go, Java...).
-Cung cấp GUI để quản lý project, Python/venv, nginx reverse proxy, Docker, và sinh cấu hình VSCode debug.
-
-## Tech Stack
-
-- **Flutter** SDK ^3.9.2 (FVM managed)
-- **flutter_riverpod** 2.6.1 - state management (Notifier/AsyncNotifier, tách business logic khỏi UI)
-- **file_picker** 8.0.0 - chọn thư mục/file (macOS/Linux; Windows dùng native PowerShell dialog)
-- **path** 1.9.0 - xử lý đường dẫn cross-platform
-- **window_manager** 0.5.1 - control window size, min size, center, animation resize
-- **system_tray** 2.0.3 - system tray icon, menu, minimize to tray
-- **msix** 3.16.13 - build MSIX installer cho Windows
-- **flutter_launcher_icons** 0.14.4 - generate app icon đa nền tảng
-
-## Tên ứng dụng
-
-- Display name: **Workspace Configuration** (tất cả ARB, main.dart, pubspec.yaml, Info.plist)
-- Package name: `odoo_auto_config` (giữ nguyên, không ảnh hưởng user)
-- macOS CFBundleName: "Workspace Configuration" (có dấu cách)
-- App icon: `workspaces.png` (512x512)
-
-## Kiến trúc
-
-> Chi tiết cây thư mục + mô tả chức năng từng file: xem **[STRUCTURE.md](STRUCTURE.md)**
-> File đó được cập nhật tự động mỗi khi thêm/bớt file.
-
-## Navigation (4 tabs)
-
-1. **Odoo Projects** - odoo_projects/odoo_projects_screen.dart (class OdooProjectsScreen, icon: folder_special)
-2. **Other Projects** - other_projects/other_projects_screen.dart (class OtherProjectsScreen, icon: workspaces)
-3. **Profiles** - profile/profile_screen.dart (icon: person)
-4. **Settings** - settings/settings_screen.dart (icon: settings)
-   - Tab 0 **Theme**: ngôn ngữ, theme mode, accent color, preview
-   - Tab 1 **Docker**: trạng thái + cài đặt
-   - Tab 2 **Python**: Python installations + cài đặt + Venv Manager (nhúng VenvScreen)
-   - Tab 3 **PostgreSQL**: 2 phần:
-     1. Client Tools: phát hiện 6 tools (psql, pg_dump, pg_restore, createdb, dropdb, pg_isready),
-        hiện path từng tool, cài tự động (brew install libpq / apt install postgresql-client / winget)
-     2. Server Status: phát hiện Docker containers (running+stopped, lọc internal port 5432) + local service
-        (brew services/systemctl/sc query/Postgres.app), xác minh bằng pg_isready -t 1, chạy song song
-        Controls: Start/Stop/Restart cho Docker containers, Start cho local service
-        Setup: Dialog tạo PostgreSQL Docker project (docker-compose.yml, .env, postgresql.conf)
-        Nếu chưa có server nào → hiện nút "Setup PostgreSQL Docker"
-   - Tab 4 **Nginx**: config record (init/import/edit/delete) + port check (80/443)
-   - Tab 5 **Git**: Danh sách Git accounts (name, username, email, token) + default account
-     CRUD qua dialog. Lưu `gitAccounts` + `defaultGitAccount` vào settings
-
-> Python Check và VSCode Config **ẩn khỏi menu** nhưng code giữ nguyên.
-
-## Các pattern chính
-
-- **Package imports** — LUÔN dùng `package:odoo_auto_config/` thay vì relative `../`
-  VD: `import 'package:odoo_auto_config/providers/theme_provider.dart'` thay vì `import '../../providers/theme_provider.dart'`
-  Chỉ dùng relative cho sibling files cùng thư mục (VD: `import 'docker_tab.dart'`)
-  KHÔNG dùng barrel files — import chính xác file cần dùng
-- **Immutable models** với `fromJson()`/`toJson()` + `copyWith()` (nullable field dùng `Function()`)
-- **Stateless services** - static methods, không giữ state
-- **Riverpod** — state management: `Notifier` cho sync state (theme, locale), `AsyncNotifier` cho async data (profiles, projects...)
-  `ConsumerWidget` cho stateless screens, `ConsumerStatefulWidget` cho screens cần UI controllers (TabController, TextEditingController...)
-  Business logic trong `lib/providers/`, UI chỉ watch state + dispatch actions. KHÔNG dùng `StateNotifier` (legacy)
-  **QUAN TRỌNG**: Trong `Notifier.build()`, KHÔNG gọi async method trực tiếp (sẽ crash "uninitialized provider").
-  Phải dùng `Future.microtask(() => asyncMethod())` để schedule sau khi build() return:
-  ```dart
-  @override
-  MyState build() {
-    Future.microtask(() => loadData()); // ĐÚNG
-    // loadData(); // SAI — state chưa sẵn sàng
-    return const MyState();
-  }
-  ```
-- **Real-time logging** - `LogOutput` widget shared cho tất cả dialog có log output
-  Hỗ trợ: `height` (fixed) hoặc `maxHeight` (flexible), `ansiColors: true` cho ANSI parsing,
-  `scrollController` optional. KHÔNG copy-paste Container inline — luôn dùng `LogOutput`
-- **SelectionArea** - wrap toàn bộ app tại main.dart, cho phép select + copy text bất kỳ
-- **Dialog-based workflows** - Quick Create, Edit, Nginx Setup, Install Python/Docker/mkcert
-- **AppDialog.show()** - LUÔN dùng `AppDialog.show()` thay `showDialog()` cho mọi dialog trong app.
-  `barrierDismissible: false` → KHÔNG đóng khi click ngoài.
-  **ESC cho phép theo mặc định** → dialog idle có thể tắt bằng ESC.
-  Dialog có process: chỉ cần gọi `context.setDialogRunning(true/false)` — KHÔNG cần wrap `PopScope`.
-  PopScope + closeButton disable LOGIC đều TẬP TRUNG trong `AppDialog.show()` qua `DialogProcessController`
-  (InheritedNotifier). Sau này thay đổi hành vi guard chỉ cần sửa `app_constants.dart`, không đụng 26 dialog.
-
-  ```dart
-  // Trong dialog:
-  Future<void> _install() async {
-    setState(() => _installing = true);
-    context.setDialogRunning(true);       // signal controller
-    try {
-      await doWork();
-    } finally {
-      if (mounted) {
-        setState(() => _installing = false);
-        context.setDialogRunning(false);  // release
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(                   // KHÔNG wrap PopScope
-      title: Row([
-        Text('...'),
-        const Spacer(),
-        AppDialog.closeButton(context),   // auto-disable khi running
-      ]),
-      ...
-    );
-  }
-  ```
-
-  Tự động wrap `_DraggableDialog` → dialog kéo di chuyển **CHỈ từ vùng title bar** (top 80px).
-  Content bên dưới (TextField, log output, SelectionArea) giữ nguyên khả năng bôi chọn + copy text —
-  không bị cướp pointer move thành drag.
-  `_DraggableDialog` dùng `Listener.onPointerMove` + `ValueNotifier` (KHÔNG `GestureDetector.onPanUpdate`)
-  để tránh gesture arena cướp tap của buttons (Linux/desktop với chuột precise pointer nhạy pan ~2px).
-  `Listener` đặt **BÊN TRONG** `Transform.translate` — `localPosition.dy` luôn đúng so với dialog đang
-  hiển thị kể cả sau khi đã kéo đi chỗ khác (nếu đặt ngoài thì sau lần kéo đầu tiên title area bị dịch
-  → không detect được nữa). Track `_canDrag` theo `onPointerDown.localPosition.dy < 80`.
-
-- **Dialog close button** - `AppDialog.closeButton(context)`: icon X, nền đỏ, chữ trắng, góc trên bên phải
-  **Auto-disable** khi `context.setDialogRunning(true)` được gọi — không cần truyền `enabled:` thủ công.
-  Hỗ trợ `onClose:` để custom close behavior (VD: return value khi pop).
-  Hỗ trợ `enabled:` (optional override) — khi cần override explicit, truyền `enabled: false/true`.
-  KHÔNG dùng footer Close/Cancel button nữa.
-  Close-only dialog: xóa `actions:`, thêm closeButton vào title Row
-  Cancel+Action dialog: xóa Cancel, thêm closeButton vào title Row, giữ action button trong `actions:`
-- **Port conflict detection** - kiểm tra trùng port giữa các Odoo project
-- **Cross-platform** - PlatformService abstract paths; mỗi service có branch cho 3 OS
-- **Responsive layout** - Row cho header (Spacer đẩy nút sang phải), Wrap cho card actions
-- **Window size** - 3 preset: Small (800x600 min), Medium (1100x750), Large (1400x900 default)
-  Persisted vào settings JSON (`windowSize`). Lần đầu = Large, lần sau = size đã chọn trước đó.
-  Animation ease-out cubic 200ms khi chuyển size, guard chống spam click
-- **List/Grid view** - Shared static `ProjectsScreen.gridView`, persisted vào settings JSON
-  Grid default, responsive columns: S=3, M=4, L=5. Scale icon/button theo cell width
-- **Favourite** - Star icon (IconButton với hover), sort favourite lên đầu rồi by name A-Z
-- **Grid card click** - Single click = chọn card (hiện primary border), double click = mở VSCode
-  `selectedPath` state quản lý ở screen level, truyền xuống grid view qua callback
-- **Grid context menu** - Right-click hiện menu (favourite, git pull/commit/selective pull, VSCode, Visual Studio (.NET only), folder, edit, delete)
-- **Grid tooltip** - Hover hiện description (hoặc path nếu không có description)
-- **Open in Visual Studio** (.NET projects only, Windows only):
-  - Hiện thêm nút/menu "Open in Visual Studio" bên cạnh "Open in VSCode" cho .NET projects
-  - Tìm file `.sln` trong thư mục project → mở bằng `devenv.exe` (tìm qua `vswhere.exe`)
-  - Nếu nhiều `.sln` → dialog cho user chọn. Nếu không có `.sln` → hiện thông báo
-  - UI: context menu (grid), icon button (list view). macOS/Linux không hiện option này
-  - Detect Visual Studio: `vswhere.exe -latest -property productPath`
-  - Helper `_isDotNet(type)`: check `.net`, `dotnet`, `c#` (case-insensitive)
-- **Auto-detect project type** - Import workspace tự động nhận diện từ marker files
-- **Nginx status** - Lưu `nginxSubdomain` vào model JSON (không derive từ tên project)
-  Khi setup: lưu subdomain. Khi remove: xóa subdomain. Check bằng `hasNginx` getter.
-
-## Hành vi khi khởi động
-
-- Check Docker installed + daemon running (retry 3 lần, mỗi lần cách 5s - phòng trường hợp auto-start after login)
-- Nếu Docker không cài hoặc daemon chưa chạy → hiện MaterialBanner với nút "Go to Settings" + "Dismiss"
-- Docker chưa running → **poll mỗi 10 giây** tự động. Banner tự biến mất khi Docker start. Dismiss = dừng poll
-- Nếu Docker running + nginx container stopped → tự động `docker start <container>`
-- Check GitHub CLI (gh) installed → nếu chưa có → tự động install (brew/winget/apt/dnf)
-- `HomeScreen.navigateToSettings(settingsTab: N)` để chuyển tab từ bất kỳ screen nào
-- **Sidebar layout**: NavigationRail trailing wrap `SingleChildScrollView` tránh overflow size S
-  Thứ tự dưới tabs: New Window → divider → version → Check Update → User Manual
-  Back/Forward buttons comment out (dùng mouse buttons), tìm `TODO: re-enable back/forward`
-- **User Manual**: Mở browser đến GitHub README (public repo). i18n 3 ngôn ngữ
-
-## Tính năng System Tray (Multi-Instance)
-
-- **Package**: `system_tray 2.0.3` — macOS, Windows, Linux
-- **Icon**: `assets/tray_icon.png` (512x512, package tự resize), `.ico` cho Windows
-  `title: ''` — chỉ hiện icon, KHÔNG hiện text cạnh icon
-- **Single tray icon**: chỉ instance đầu tiên (tray owner) tạo tray icon
-  Các instance khác skip tray init. Tray owner xác định bằng `.tray.lock` file lock.
-- **Close behavior**: **TẠM TẮT minimize to tray** — click X = thoát app hẳn
-  Code cũ (hideToTray) được comment out, tìm bằng `TODO: re-enable minimize to tray when ready`
-  Các file đã comment out: `home_screen.dart`, `win32_window.cpp`, `flutter_window.cpp`, `main.cpp`, `AppDelegate.swift`
-  Khi bật lại: uncomment tất cả `TODO: re-enable` + đổi `SetQuitOnClose(true)` → `false` + `return true` → `false`
-- **Tray menu** (SubMenu style):
-  ```
-  Show  ▸  Instance 1, Instance 2, ...
-  ──────────
-  New Window
-  ──────────
-  Quit All
-  ```
-- **Events**: click/double-click → show tray owner's window, right-click → menu
-- **Hỗ trợ**: macOS + Windows + Linux. `TrayService.supported` = tất cả desktop
-- **macOS**: dùng `windowManager.setPreventClose(true)` + `onWindowClose` callback
-  `applicationShouldTerminateAfterLastWindowClosed` hiện return `true` (tạm tắt tray, bật lại → `false`)
-- **Windows**: WM_CLOSE intercept hiện **comment out** (tạm tắt tray)
-  `main.cpp`: `SetQuitOnClose(true)` (tạm tắt tray, bật lại → `false`)
-  **KHÔNG dùng `setSkipTaskbar`** trên Windows — gây native crash
-- **Multi-instance**: Không còn single-instance enforcement
-  Windows: đã xóa mutex. Linux: `G_APPLICATION_NON_UNIQUE`
-- **Linux CI**: cần `libayatana-appindicator3-dev` (đã thêm vào workflow)
-
-## Tính năng Keyboard Shortcuts
-
-In-app customizable shortcuts (chỉ fire khi app đang focus).
-
-- **Storage**: `~/.config/odoo_auto_config/odoo_auto_config.json` > `settings.shortcuts`
-  Format: `{ "actionId": {ctrl, meta, shift, alt, key} }` — `key` là `LogicalKeyboardKey.keyId` (int)
-- **Default per-platform**: macOS dùng `meta` (Cmd), Windows/Linux dùng `ctrl`. Default init khi chưa có setting
-- **UI**: Settings > **Shortcuts** (tab thứ 7) — list actions, nút Change/Reset mỗi action, Reset All
-- **Capture dialog**: `ShortcutCaptureDialog` (`lib/widgets/shortcut_capture_dialog.dart`)
-  Dùng `HardwareKeyboard.instance.addHandler` (KHÔNG Focus.onKeyEvent — xem Lessons Learned UI/Layout).
-  Validate: bắt buộc có ít nhất 1 modifier để tránh user tự khóa mình (VD: bind "Enter" đơn)
-- **Dispatcher**: `home_screen._handleKeyEvent` gọi `shortcutProvider.notifier.findAction(event)`
-  → nếu match → `_dispatchAction(actionId)` → chuyển vào switch case
-- **Pause khi capture**: `shortcutProvider.state.capturing` flag. `shortcuts_tab._change()` wrap
-  `AppDialog.show()` bằng try/finally set/reset flag. `findAction` return null khi capturing → không
-  trigger action trong lúc user đang set combo
-- **Thêm action mới**:
-  1. Thêm id vào `ShortcutActions` + `ShortcutActions.all`
-  2. Thêm default vào `ShortcutService.defaults()`
-  3. Thêm case trong `home_screen._dispatchAction()`
-  4. Thêm label (l10n hoặc `ShortcutService.defaultActionLabel()`)
-- **Actions đã có**: `newWindow` (mở instance mới qua `InstanceService.launchNewInstance()`)
-
-## Tính năng Auto-Update
-
-- **Phát hiện version**: Đọc từ `lib/generated/version.dart` (compiled Dart const)
-  File này PHẢI được generate trước khi build (CI workflow và release.sh tự động làm)
-- **Kiểm tra GitHub**: Query `api.github.com/repos/namchamvinhcuu/workspace-configuration/releases/latest`
-  So sánh semver: currentVersion vs tag_name. Hiện MaterialBanner nếu có update
-- **Download + Install** (theo platform):
-  - **macOS**: Tải `.zip` (KHÔNG phải .dmg) → `ditto -xk` unzip → shell script replace .app → relaunch
-    DMG chỉ dùng cho user tải manual. ZIP dùng cho auto-update (đơn giản, không cần mount/unmount)
-  - **Linux**: Tải `.AppImage` → shell script replace → relaunch
-  - **Windows**: Tải `.msix` → `Add-AppPackage -ForceApplicationShutdown` → `Start-Process` relaunch
-    Relaunch dùng `Start-Process ('shell:AppsFolder\' + PackageFamilyName + '!App')`
-    KHÔNG dùng `explorer.exe` (sẽ mở OneDrive/Documents thay vì app)
-- **Multi-instance update**: Trước `exit(0)`, gọi `InstanceService.signalQuitAll()` + delay 1s
-  Đảm bảo tất cả instance khác thoát trước khi binary bị thay thế
-- **Download timeout**: curl `--connect-timeout 15` + `--max-time 300` (5 phút max)
-- **Xử lý lỗi**: Download/install fail → hiện SnackBar thông báo
-  Log: macOS + Linux `/tmp/wsc_update.log`, Windows `%TEMP%\wsc_update.log`
-- **Public repo**: Releases publish lên `namchamvinhcuu/workspace-configuration` (public)
-  Code dev tại `namchamvinhcuu/odoo_auto_config` (private)
-- **QUAN TRỌNG**: Khi release, `assets/version.json` phải khớp với version tag
-  CI workflow tự động generate từ `$GITHUB_REF_NAME`. Local release qua `release.sh` cũng tự động update
-- **MSIX version**: Không hardcode `msix_version` trong pubspec.yaml. Tự động derive từ `version` field
-  (VD: version 1.2.0+1 → msix_version 1.2.0.1). release.sh/ps1 chỉ cần update `version`
-
-## Tính năng Nginx
-
-- **Init project**: Tạo structure (conf.d/, certs/, nginx.conf, docker-compose.yml, .gitignore)
-  Dùng mkcert để tạo SSL cert. App có thể cài mkcert tự động (brew/winget/apt).
-- **Import**: Chọn folder nginx có sẵn, tự detect conf.d bên trong
-- **Config record**: Chỉ 1 record duy nhất. Hiện info card (confDir, domainSuffix, containerName)
-  Có nút Edit (chuyển sang form) và Delete (confirm + option xóa folder)
-- **Port check**: Tự động check port 80/443 khi hiện info card
-  macOS/Linux: `lsof`, Windows: `netstat + tasklist`. Hiện process name + PID
-  Phân biệt docker vs local: nếu docker container running + process là docker runtime → xanh (OK)
-  Nếu process khác (local nginx, apache, ...) → cam (warning) + nút Kill Process
-  Nếu là local nginx → hiện thêm hướng dẫn disable auto-start (brew services stop / systemctl disable)
-- **Container controls**: Start (khi stopped), Stop (khi running), Restart. Error hiện inline card đỏ
-- **Nginx config record**: 3 trạng thái: empty (chưa config), info card (đã config), edit form
-- **Setup per project**: Dialog với subdomain (fill sẵn, có thể sửa ngắn gọn) + port (Other Projects)
-  Validation: ký tự hợp lệ (a-z, 0-9, -), trùng domain, trùng port
-- **Link existing**: Chọn từ danh sách conf có sẵn trong conf.d/
-- **Remove**: Xóa conf file + hosts entry + reload container
-- **Hosts file**: macOS (osascript), Linux (pkexec), Windows (PowerShell RunAs/UAC)
-- **Conf templates**: Odoo (3 location: /, /websocket, /longpolling), Generic (1 location: /)
-- **Chỉ Docker**: Không hỗ trợ nginx cài local (structure khác nhau tùy OS, quá nhiều biến thể)
-
-## Tính năng Git
-
-- **Git Pull**:
-  - Odoo Projects: chạy `git-repositories.sh` (macOS/Linux) hoặc `.ps1` (Windows) — pull hàng loạt repos trong addons/
-  - Other Projects: chạy `git pull` trực tiếp (single repo, check .git tồn tại)
-- **Selective Pull** (chỉ Odoo Projects) — **UI đã ẩn** (code giữ nguyên, dùng Workspace View thay thế):
-  - Scan `addons/` tìm repos có `.git`, user search + chọn repos cụ thể qua Autocomplete
-  - Selection persist vào settings (`selectivePull_<projectPath>`)
-  - Nút Clear list + remove từng repo, Pull chạy tuần tự cho repos đã chọn
-  - Ẩn ở 3 nơi: grid card, list view, context menu (comment out, không xóa code)
-- **Git Commit**:
-  - Other Projects: `git status --porcelain` → checkbox list files → `git add --` từng file → `git commit` → optional `git push`
-  - Odoo Projects: scan `addons/` tìm repos có changes → checkbox list repos → `git add -A` + `git commit` + optional `git push` cho mỗi repo
-  - Reload status sau khi commit để hiện file/repo còn lại
-- **Git Discard** (Sourcetree-style, destructive — áp dụng cho `SimpleGitCommitDialog` + `RepoCommitDialog`):
-  - Button "Discard Selected" cạnh Select All trong header list file (dùng chung checkbox với Commit)
-  - Mở `DiscardConfirmDialog` (`lib/widgets/discard_confirm_dialog.dart`) — liệt kê file + cảnh báo "cannot be undone" + cảnh báo riêng untracked sẽ bị xóa vĩnh viễn
-  - Shared service: `GitDiscardService.discard()` (`lib/services/git_discard_service.dart`)
-    Tracked (M/A/D/R/MM/...): `git checkout HEAD -- <files>` (1 lệnh duy nhất, revert cả staged + unstaged)
-    Untracked (`??`): `File.delete()` hoặc `Directory.delete(recursive)` (permanent, không trash)
-  - Sau discard → reload status qua `_loadStatus()` để update list
-  - KHÔNG áp dụng cho batch dialogs (`WorkspaceCommitDialog`, `GitCommitDialog` Odoo multi-repo) — user phải vào per-repo để discard, tránh destructive action chạy nhiều repo cùng lúc
-- **Git Repositories Script** (`git-repositories.sh` / `.ps1`):
-  - Template trong `odoo_templates.dart` với params `token` và `org`
-  - Tạo tự động khi Quick Create Odoo project
-  - Token đọc từ Git account (dropdown chọn account), org nhập khi tạo project
-  - Edit project (Info dialog > Edit): dropdown chọn account + sửa org, save vào file script
-- **Git Branches Dialog** — shared `GitBranchDialog` (`lib/widgets/git_branch_dialog.dart`):
-  - Dùng chung cho cả Other Projects (`SwitchBranchDialog` wrapper) và Odoo Workspace (`RepoBranchDialog` wrapper)
-  - Sub-dialogs inject qua builder callbacks: `pullDialogBuilder`, `commitDialogBuilder`, `prDialogBuilder`, `pruneDialogBuilder`
-  - Stateful dialog 2 cột: Local + Remote, click branch để switch
-  - Tính năng: Switch, Create (`git checkout -b`), Delete (`git branch -d/-D`), Clean stale (`git fetch --prune` + tìm gone branches), Commit, Pull, PR, Publish, View on GitHub
-  - **Action bar** (giữa dialog): Pull (disable khi không có remote), Commit (disable khi không có changes), PR (ẩn khi trên main/master), + Create
-  - **View on GitHub**: button trên title bar, `GitBranchService.getRemoteUrl()` (SSH→HTTPS conversion) + `openInBrowser()`
-  - **Pull branch khác** (icon trên mỗi branch tile): stash → checkout target → pull → checkout back → stash pop, mở dialog log
-  - **Publish branch**: `git push -u origin <branch>`, hiện khi branch chưa có remote, tự ẩn sau publish
-  - **Create PR** (`CreatePRDialog` / `RepoCreatePRDialog`): check `gh` CLI, chọn base branch, nhập title/body, auto push trước
-    Proactive diff check: `git fetch origin <base>` + `git rev-list --count origin/<base>..HEAD` khi mở dialog + khi đổi base
-    Nếu no changes → hiện inline "There are no changes" UI, ẩn form title/body/create
-    Dropdown base branch: filter `origin/` prefix đúng cách, lọc current branch ra khỏi list
-    Detect PR đã tồn tại (URL từ stderr) → hiện "PR already exists. New commits have been pushed."
-    Check uncommitted changes → cảnh báo + cho commit trước hoặc continue
-    Nút "View in Browser" mở PR URL (cross-platform: open/start/xdg-open)
-  - **GH CLI Authentication** — 3 cấp ưu tiên:
-    1. `gh auth login` (native auth) → KHÔNG truyền `GH_TOKEN`, để gh tự quản lý (hỗ trợ `gh auth switch` multi-account)
-    2. Project-specific token (chỉ Odoo) → đọc TOKEN từ `git-repositories.sh`/`.ps1` trong project root
-       `RepoCreatePRDialog` derive project path: `p.dirname(p.dirname(repoPath))` (addons/repoName → project root)
-    3. Default account token → `StorageService.getDefaultGitToken()`
-    4. Không có gì → hiện warning icon `key_off` + mô tả + nút "Go to Git Settings" (tab 5)
-       Check auth: `gh auth status` (exitCode 0 = đã login). `GH_TOKEN` env var chỉ truyền khi gh chưa native authed
-       Pattern: `environment: (!_ghNativeAuth && _token != null) ? {'GH_TOKEN': _token!} : null`
-       `hasOpenPR` trong `git_branch_service.dart` cũng check `gh auth status` trước khi pass `GH_TOKEN`
-  - **GH CLI path (Windows MSIX)**: `PlatformService.ghPath` có fallback `where.exe gh` khi `File.exists()` không tìm thấy
-    (MSIX app có thể không thấy file qua `File.exists()` dù file tồn tại)
-  - **Divider** tách main/master xuống cuối danh sách local và remote
-  - **Current branch chip** hiện trong title dialog
-  - **Mouse cursor** pointer cho branch tiles (dùng `InkWell.mouseCursor`, KHÔNG `MouseRegion`)
-  - Branch chip hiện ở giữa card (trên tên project), type badge lên top-left grid card
-  - Màu theo branch: main/master=xanh lá, dev=cam, feature/feat=xanh dương, hotfix/fix=đỏ
-  - Không cho delete main/master
-  - Parse branches dùng `%(refname)` (KHÔNG `%(refname:short)`)
-- **Vị trí UI**: List view (IconButton), Grid view (chỉ Git Pull, commit trong context menu), Context menu (đầy đủ)
-  Selective Pull đã ẩn khỏi cả 3 nơi (comment out), dùng Workspace View thay thế
-- **Log output**: Dùng `Text.rich` (KHÔNG dùng `RichText`) trong `SelectionArea` để copy text được
-  `RichText` là render-level widget, không tham gia `SelectionArea`. `Text.rich` wrapper đúng cách
-- **Parse git status**: Dùng `substring(0,2)` cho status + `substring(3)` cho filename.
-  QUAN TRỌNG: output phải dùng `.trimRight()` (KHÔNG dùng `.trim()` vì sẽ xóa space đầu dòng đầu tiên → mất ký tự status)
-  Handle rename format `old -> new`
-- **git add**: Add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files)
-- **Commit message**: TextField với `minLines: 3`, `maxLines: 8` (tự scroll khi vượt 8 dòng, KHÔNG dùng `maxLines: null` sẽ overflow)
-
-## Lưu trữ dữ liệu
-
-Tất cả data lưu tại: `~/.config/odoo_auto_config/odoo_auto_config.json`
-Gồm: profiles, projects, workspaces, registered*venvs, settings
-Settings gồm: theme, locale, gridView, nginx (confDir, domainSuffix, containerName),
-gitAccounts (danh sách accounts), defaultGitAccount, gitToken (tương thích ngược),
-selectivePull*<path> (selection per project)
-
-## Lệnh thường dùng
-
-```bash
-# Chạy debug
-fvm flutter run -d macos   # hoặc linux, windows
-# LƯU Ý: `fvm flutter run macOS` (không có -d) sẽ báo lỗi "Target file not found"
-
-# Build release
-fvm flutter build macos --release
-
-# Gen l10n (sau khi sửa file ARB)
-fvm flutter gen-l10n
-
-# Analyze
-fvm flutter analyze
-
-# Generate app icons (sau khi đổi file icon)
-fvm dart run flutter_launcher_icons
-# Cần flutter clean + restart sau khi đổi icon (macOS cache)
-
-# Build DMG
-APP_PATH="build/macos/Build/Products/Release/odoo_auto_config.app"
-DMG_PATH="build/Workspace Configuration.dmg"
-TMP_DIR=$(mktemp -d)
-cp -R "$APP_PATH" "$TMP_DIR/Workspace Configuration.app"
-ln -s /Applications "$TMP_DIR/Applications"
-hdiutil create -volname "Workspace Configuration" -srcfolder "$TMP_DIR" -ov -format UDZO "$DMG_PATH"
-rm -rf "$TMP_DIR"
-
-# Release (macOS/Linux)
-bash release.sh          # auto bump patch: 1.1.3 → 1.1.4
-bash release.sh minor    # bump minor: 1.1.3 → 1.2.0
-bash release.sh major    # bump major: 1.1.3 → 2.0.0
-bash release.sh 2.0.0    # chỉ định version cụ thể
-
-# Release (Windows PowerShell)
-.\release.ps1            # auto bump patch
-.\release.ps1 minor
-.\release.ps1 2.0.0
-```
-
-## Đa ngôn ngữ (i18n)
-
-- **Ngôn ngữ hỗ trợ**: English (default), Vietnamese (`vi`), Korean (`ko`)
-- **ARB files**: `lib/l10n/app_en.arb`, `app_vi.arb`, `app_ko.arb`
-- **Generated files**: `lib/l10n/app_localizations*.dart` (KHÔNG sửa thủ công)
-- **Extension**: `context.l10n.keyName` qua `lib/l10n/l10n_extension.dart`
-- **Log messages**: giữ nguyên tiếng Anh (technical output)
-- Khi thêm string mới: thêm vào cả 3 file ARB, chạy `fvm flutter gen-l10n`. KHÔNG BAO GIỜ hardcode string user-visible
-- Lưu ý dịch thuật: "Theme Mode" tiếng Việt là "Tùy chỉnh giao diện" (không phải "Chế độ giao diện")
-- **Thuật ngữ Git/tech giữ nguyên English cả 3 ngôn ngữ** — KHÔNG dịch:
-  Pull, Push, Commit, Merge, Branch, Checkout, Stash, Rebase, Cherry-pick,
-  PR, Create Branch, Delete Branch, Force Delete, Clean stale, Publish,
-  Setup Nginx, Docker, PostgreSQL...
-  Developer dùng hàng ngày bất kể ngôn ngữ, dịch ra sẽ gây nhầm lẫn.
-- **Mô tả ngữ cảnh/mục đích** thì dịch theo ngôn ngữ:
-  VD: "Cập nhật {current} với code từ {source}" (VI), "Update {current} with code from {source}" (EN)
-
-## Lưu ý Cross-Platform
-
-### Shell scripts cross-platform
-
-- `sed -i` khác nhau: macOS (BSD) cần `sed -i ''`, Linux (GNU) dùng `sed -i`
-  Trong release.sh: dùng `$OSTYPE` check để chọn đúng variant
-
-### QUAN TRỌNG: App được build và cài đặt để chạy độc lập (DMG/MSIX/bundle)
-
-- **MỌI thay đổi code PHẢI tính đến release mode**, không chỉ debug
-- macOS GUI app (.app) KHÔNG có PATH từ shell (~/.zshrc không được load)
-- Tất cả external binary (docker, mkcert, python, code, ...) PHẢI resolve absolute path
-- Test trên release build (DMG) trước khi xác nhận tính năng hoạt động
-- KHÔNG dùng hardcode `'docker'`, `'mkcert'`, ... mà phải qua PlatformService
-
-### Tất cả OS — VÔ CÙNG QUAN TRỌNG
-
-- **Process.run / Process.start PHẢI có `runInShell: true`** (AOT mode)
-  Không có → fail im lặng trên release build cả 3 OS. Debug mode có thể chạy bình thường → dễ bỏ sót
-  **SAU MỖI REFACTOR**: chạy audit script kiểm tra toàn bộ codebase:
-  ```bash
-  python3 -c "
-  import re, glob
-  files = glob.glob('lib/**/*.dart', recursive=True)
-  for f in files:
-      with open(f) as fh:
-          lines = fh.readlines()
-      i = 0
-      while i < len(lines):
-          line = lines[i]
-          if 'Process.run(' in line or 'Process.start(' in line:
-              call = line; j = i + 1
-              pc = line.count('(') - line.count(')')
-              while pc > 0 and j < len(lines):
-                  call += lines[j]; pc += lines[j].count('(') - lines[j].count(')'); j += 1
-              if 'runInShell' not in call:
-                  print(f'{f}:{i+1}: {line.strip()[:80]}')
-          i += 1
-  "
-  ```
-- window_manager cần **full restart** (không hot reload) khi thêm mới
-- App icon cần `flutter clean` + rebuild sau khi thay đổi
-- External binaries PHẢI resolve qua PlatformService (dockerPath, ghPath, mkcertPath, pythonCandidates, ...)
-- **KHÔNG BAO GIỜ hardcode separator `/` hoặc `\` khi nối đường dẫn local file system**
-  Luôn dùng `p.join()` từ `package:path/path.dart` (import as `p`)
-  VD: `p.join(baseDir, 'conf.d')` thay vì `'$baseDir/conf.d'`
-  `p.dirname(path)` thay vì `path.substring(0, path.length - N)`
-  CHỈ NGOẠI LỆ: paths bên trong Docker container (nginx conf, docker-compose volumes) luôn dùng `/` vì container là Linux
-- **Process output (winget/brew/apt)**: dùng `utf8.decoder` thay vì `SystemEncoding().decoder`
-  Dùng `CommandRunner.cleanLine()` để strip ANSI codes, spinner chars, và progress bars
-- **StorageService.updateSettings()** — LUÔN dùng cho write settings (atomic trong \_synchronized lock)
-  KHÔNG dùng pattern cũ `loadSettings → modify → saveSettings` (race condition giữa các provider)
-
-### macOS
-
-- App Sandbox PHẢI tắt trong cả DebugProfile và Release entitlements
-- **GUI app (.app) không load ~/.zshrc** → PATH rất tối giản
-  Fix: PlatformService resolve absolute paths cho tất cả binaries:
-  - Python: pyenv shims, pyenv versions, homebrew, /usr/local/bin, /usr/bin
-  - Docker: /usr/local/bin/docker, ~/.orbstack/bin/docker, /opt/homebrew/bin/docker,
-    /Applications/Docker.app/.../docker, /Applications/OrbStack.app/.../docker
-  - VSCode: `open -a "Visual Studio Code"` (tránh PATH issue)
-- Hosts: `osascript` với `with administrator privileges` (native password dialog)
-- Sau khi copy/rename .app: cần `xattr -cr` (KHÔNG cần codesign, chỉ xattr là đủ)
-- **Docker install**: dialog cho chọn OrbStack (mặc định) hoặc Docker Desktop
-  OrbStack: `brew install --cask orbstack`, Docker Desktop: `brew install --cask docker`
-  Lưu lựa chọn vào settings `dockerRuntime` (`'orbstack'` hoặc `'docker'`)
-- **Start Docker**: `DockerInstallService.startDaemon()` — đọc `dockerRuntime` từ settings
-  Ưu tiên app đã chọn, fallback app còn lại. Mặc định = orbstack
-  Dùng `open -a <AppName>` — KHÔNG check path `/Applications/` (miss nếu cài external drive)
-  Tất cả screens gọi chung `startDaemon()` — 1 chỗ sửa, cả app cập nhật
-
-### Windows
-
-- **2 phương thức phân phối**: MSIX (installer) + EVB portable (single .exe)
-  Detect: `_isWindowsMsix` = exe path chứa `WindowsApps`
-  CI build: `build-portable.ps1` dùng Enigma Virtual Box v11.30 pack single .exe
-  Auto-update: MSIX → download `.msix` + `Add-AppPackage`, Portable → download `.exe` + `Copy-Item` (không tự relaunch vì SmartScreen)
-- MSIX cần `runFullTrust` capability để Process.run hoạt động
-- Native file/folder picker bằng PowerShell + COM (IFileOpenDialog)
-- Open VSCode: `cmd /c code` (qua PATH)
-- Hosts: `C:\Windows\System32\drivers\etc\hosts`, PowerShell `Start-Process -Verb RunAs` (UAC)
-- Port check: `netstat -ano` + `tasklist /FI "PID eq ..."`
-- Docker/Python install: `winget`
-- mkcert install: `winget install FiloSottile.mkcert`
-
-### Windows - CHƯA TEST (cần kiểm tra khi có điều kiện)
-
-| Chức năng          | Rủi ro     | Chi tiết                                                       |
-| ------------------ | ---------- | -------------------------------------------------------------- |
-| Hosts file edit    | CAO        | PowerShell RunAs + UAC, escape string chưa verify thực tế      |
-| mkcert install     | TRUNG BÌNH | `winget install FiloSottile.mkcert` - chưa verify package name |
-| Docker install     | TRUNG BÌNH | `winget install Docker.DockerDesktop` - cần restart sau cài    |
-| Port check         | TRUNG BÌNH | `netstat -ano` output format có thể khác giữa Windows versions |
-| Kill process       | TRUNG BÌNH | `taskkill /F /PID` - cần quyền admin cho system processes      |
-| Native file picker | THẤP       | Đã test trước đó, dùng PowerShell COM                          |
-| nginx conf write   | THẤP       | File.writeAsString cross-platform                              |
-
-- macOS: đã test OK
-- Linux: đã test OK (2026-03-29)
-- Windows system tray: đã test OK (2026-04-05) — hide to tray, show from tray, single instance, exit mode
-
-### Linux
-
-- **Hỗ trợ 2 package manager**: `PlatformService.linuxPackageManager` detect `/usr/bin/apt` vs `/usr/bin/dnf`
-  Helpers: `PlatformService.isApt`, `PlatformService.isDnf`. Cached, chỉ detect 1 lần
-- Python install: `pkexec apt/dnf install` (graphical sudo, không cần terminal)
-- Hosts: `pkexec` (polkit graphical sudo)
-- Port check: `lsof -i :PORT`
-- Docker install: apt=`docker.io docker-compose-v2`, dnf=Docker CE repo + `docker-ce docker-compose-plugin`
-- **CI build**: `.deb` + `.rpm` bằng `fpm` (Ruby gem). Install path `/opt/workspace-configuration/`
-  Files: `packaging/workspace-configuration.desktop`, `packaging/postinst.sh`
-
-## Quyết định thiết kế
-
-- **Nginx chỉ Docker**: Không hỗ trợ nginx local vì conf structure khác nhau tùy OS/cách cài
-- **1 nginx record**: Mỗi PC chỉ cần 1 container nginx, không cần nhiều record
-- **nginxSubdomain lưu trong model**: Để track status chính xác, không phụ thuộc tên project
-  (user có thể đặt subdomain khác tên project, VD: "pltax" cho project "polish-tax-odoo")
-- **Link existing conf**: Cho phép gán conf đã có vào project mà không tạo/sửa file
-- **Settings tabbed**: Theme / Docker / Python+Venv / PostgreSQL / Nginx / Git - để mở rộng thêm framework sau
-- **Project Info dialog gộp**: Info + Edit + Nginx + Database trong 1 dialog. Toggle edit mode bằng icon bút chì.
-  Không còn nút Edit riêng. `_ImportProjectDialog` chỉ dùng cho import
-- **Hidden screens**: Python Check và VSCode Config ẩn khỏi NavigationRail nhưng giữ code
-  (Python Check nhúng vào Settings > Python, VSCode Config có thể dùng riêng nếu cần)
-- **VSCode settings.json**: Quick Create tự động tạo `.vscode/settings.json` cùng `launch.json`
-  Template trong `OdooTemplates.vscodeSettings()`. Nội dung: `python.analysis.extraPaths` (../odoo, ../odoo/addons, ../addons),
-  `files.exclude` (\*.pyc, **pycache**, .venv), `files.watcherInclude`, `python.languageServer: "None"`
-
-## Tính năng Odoo Workspace View
-
-Dialog chuyên biệt quản lý **pinned repos** trong `addons/` của 1 Odoo project.
-File: `lib/screens/odoo_workspace_dialog.dart`
-
-- **Mở từ**: List view (IconButton workspaces), Grid view (grid button), Context menu (Workspace View)
-- **Pinned repos**: KHÔNG hiện tất cả repos. User search + add repos quan tâm, persist vào settings
-  Storage key: `workspaceRepos_<projectPath>` (danh sách pin), `workspaceSelected_<projectPath>` (selection)
-- **Search dropdown**: `RawAutocomplete` — click/focus hiện toàn bộ repos chưa pin, gõ để lọc
-  Có nút dropdown arrow + counter `3 / 30`. Giữ focus sau khi add để tiếp tục thêm
-- **Mỗi repo hiện**: tên module, branch (color coded, clickable → mở branch dialog), changed files count, ahead/behind, nút Pull/Publish hoặc Push/Remove
-- **`_RepoInfo.hasUpstream`**: detect qua `git rev-list @{upstream}..HEAD` — nếu fail → `hasUpstream = false`
-  Repo không có upstream hiện nút Publish (cloud_upload xanh lá) thay vì Push
-- **Per-repo Branch Dialog** (`RepoBranchDialog`): thin wrapper → shared `GitBranchDialog`
-  Inject `RepoGitPullDialog`, `RepoCommitDialog`, `RepoCreatePRDialog`, `RepoPruneDialog`
-  Sau đóng dialog → reload repo status
-- **Selection**: ban đầu deselect all, user select repos nào → persist cho lần sau
-  Add repo mới → sort A-Z. Remove repo → xóa khỏi cả pin list và selection
-- **Lazy loading repos**: Lần mở dialog đầu tiên chỉ load batch 8 repos (`_kBatchSize`),
-  scroll gần cuối (200px) → tự động load batch tiếp (`_onScroll` + `_loadNextBatch`).
-  Nút Refresh (`_loadPinnedRepos(loadAll: true)`) load tất cả repos cùng lúc.
-  Mỗi `_RepoInfo` có flag `loaded` — repo chưa loaded hiện `CircularProgressIndicator` thay vì status.
-- **Batch actions toolbar** (dùng `Wrap` để tự xuống dòng):
-  - **Pull Selected**: pull tất cả repos đã select
-  - **Git Commit**: kiểm tra repos có thay đổi →
-    Không có → hiện dialog thông báo "No changes to commit"
-    Có → mở `_WorkspaceCommitDialog` riêng (danh sách repos + changed count, message, push after commit, log)
-  - **Switch Branch** — **ẨN** (comment out, code giữ nguyên `_switchBranchAll` + `_BranchPickerDialog`):
-    dialog chọn branch gộp unique từ tất cả repos, hoặc nhập tên tạo branch mới
-    Thử checkout existing → checkout -b từ origin → checkout -b mới
-    Lý do ẩn: chưa có nhu cầu dùng, dùng per-repo branch dialog thay thế
-  - **Publish Branch**: hiện khi có selected repos chưa có upstream → batch `git push -u origin`
-  - **Publish Modules** (`_PublishModulesDialog`): scan addons/ tìm module chưa có `.git`,
-    checkbox chọn modules → tạo GitHub repo private trong org, tự tạo `.gitignore`/`README.md` nếu thiếu,
-    git init → add → commit → push. Đọc org/token từ `git-repositories.sh`/`.ps1`.
-    Handle: repo đã tồn tại (422), remote đã có (set-url), thiếu org/token (hiện lỗi).
-    Sau đóng dialog → reload workspace view.
-- **Log output**: ANSI color coded, auto-scroll, SelectionArea + Text.rich, height 180px
-- **Cross-platform**: chỉ dùng `git` commands, `runInShell: true`, `p.join()` cho paths
-- **Grid columns** (odoo_projects_screen + other_projects_screen): L=4, M=3, S=2. Quick actions dùng `Wrap` thay `Row`
-- **Grid card layout** (other_projects): top-left=type badge, top-right=star, giữa=branch chip (clickable), dưới=tên project
-
-### Refactoring — Đã hoàn thành
-
-Branch: `refactor/core-clean-structure`
-
-- Phase 1: tách dialog ra file riêng, rename projects→odoo_projects, workspaces→other_projects
-- Phase 2: Riverpod migration — 8 providers, tất cả screens dùng ConsumerWidget/ConsumerStatefulWidget
-- Phase 3: tách settings tabs (6 tab files), ANSI shared utility, GitBranchService, list/grid view widgets
-- Kết quả: không còn file code nào > 1000 dòng (trừ l10n generated)
-
-### Roadmap — Chưa triển khai
-
-- **Cherry-pick**: Chọn 1 hoặc nhiều commits cụ thể từ branch khác để copy vào branch hiện tại
-  UI: click branch → hiện danh sách commits (`git log --oneline <current>..<target>`) → checkbox chọn → cherry-pick tuần tự
-  Dùng `git cherry-pick <hash>`, hiện dialog log output, xử lý conflict
-- **File system watcher**: `Directory.watch()` chỉ watch `addons/` của project đang mở, tự refresh khi file thay đổi
-- **Switch Branch filter**: chỉ hiện branches chung giữa các repos (hiện gộp unique)
-- **Lưu ý**: Flutter multi-window phức tạp, file watcher khác nhau trên 3 OS
-
-### Multi-Instance — Đang triển khai
-
-Cho phép mở nhiều cửa sổ app (separate processes) để thao tác nhiều projects cùng lúc.
-
-**Kiến trúc:**
-
-- Mỗi instance là 1 OS process riêng (Flutter không hỗ trợ true multi-window)
-- **Single tray icon** — instance đầu tiên giữ quyền via file lock, các instance khác không tạo tray
-- **Close behavior forced = "tray"** — bỏ lựa chọn "Exit app", luôn minimize to tray
-- **Quit = Quit All** — tắt tất cả instances cùng lúc
-- **File-based IPC** — giao tiếp giữa instances qua file system
-
-**IPC Directory** (`~/.config/odoo_auto_config/instances/`):
-
-- `<pid>.json` — registry mỗi instance: `{pid, label, started}`
-- `.tray.lock` — exclusive file lock (tray owner giữ open)
-- `<pid>.show` — signal file: show window của instance đó
-- `.quit_all` — signal file: tất cả instances exit
-
-**Tray menu** (submenu style):
+## 📂 Project knowledge location (Obsidian-first workflow)
 
 ```
-Show  ▸  Instance 1
-         Instance 2
-──────────
-New Window
-──────────
-Quit All
+./.obsidian-vault/                # symlink → Obsidian vault path (per-machine)
+├── Index.md                      # knowledge map (read 1st khi navigate)
+├── Current-State.md              # live snapshot — OVERWRITTEN end-of-session
+├── Change-Log.md                 # TOC + 3 entries gần nhất inline
+├── Change-Log/
+│   └── YYYY-MM.md                # monthly archives (APPEND new entry at top)
+├── Architecture/                 # patterns, flows, hierarchy (10 notes)
+├── Features/                     # business capabilities (20 notes)
+├── Knowledge-Base/               # principles + skills + workflows + rules (25 notes)
+└── Fix-History/                  # bug fixes (24 notes)
 ```
 
-**Tray ownership:**
+Symlink target tuỳ máy — xem section "Per-machine setup" ở đầu file. Nếu symlink không tồn tại → restore vault từ OneDrive trước khi tiếp tục.
 
-- Startup: try acquire `.tray.lock` (exclusive). Thành công → init tray, làm tray owner
-- Thất bại → skip tray init (instance khác đã owns)
-- Click/double-click tray icon → show tray owner's window
-- Tray owner watch `instances/` directory → rebuild menu khi instance thêm/bớt
+### Vault Read Order (đầu session)
 
-**Show signaling:**
+1. `CLAUDE.md` (file này) — auto-loaded, principles + protocol
+2. `MEMORY.md` — auto-loaded user/feedback memory
+3. `./.obsidian-vault/Current-State.md` — dự án ĐANG ở đâu (active focus, version, in-flight, next)
+4. `./.obsidian-vault/Index.md` — knowledge map khi cần navigate
+5. `./.obsidian-vault/Change-Log.md` — 3 entries gần nhất. Đọc `Change-Log/YYYY-MM.md` nếu cần lịch sử sâu
+6. Atomic notes — on-demand khi `Current-State` hoặc task reference
 
-- Tray owner tạo file `<pid>.show` → target instance detect via `Directory.watch()` → show window → delete file
+### Vault Write Order (cuối session, nếu có code/doc change)
 
-**Quit All signaling:**
+Áp dụng 5 steps Principle #8 Knowledge Loop:
 
-- Tray owner tạo `.quit_all` → tất cả instances detect → cleanup → `exit(0)`
+1. Step 1-3: Update atomic notes + bidirectional links + `Index.md`
+2. Step 4A — Change-Log: APPEND ở TOP của `Change-Log/YYYY-MM.md` + refresh `Change-Log.md` 3 entries
+3. Step 4B — Current-State: OVERWRITE `Current-State.md`
+4. Step 5: Báo user "Đã cập nhật [[file-1]], [[file-2]]..."
 
-**Instance launcher** (`InstanceService.launchNewInstance()`):
-
-- macOS: chạy binary trực tiếp với `--child-instance` flag (`ProcessStartMode.detached`)
-  AppDelegate detect flag → set `NSApp.setActivationPolicy(.accessory)` → child KHÔNG hiện Dock icon
-  KHÔNG dùng `open -n -a` vì tạo LaunchServices instance riêng → 2 Dock icons
-- Windows: `Platform.resolvedExecutable` trực tiếp (bypass MSIX App Model single-instance)
-  KHÔNG dùng `shell:AppsFolder` — chỉ activate cửa sổ cũ, không tạo instance mới
-- Linux: `$APPIMAGE` hoặc `Platform.resolvedExecutable`
-- UI: nút "New Window" trong NavigationRail + trong tray menu
-
-**Cross-process storage:**
-
-- `StorageService._synchronized()` dùng cả in-process Future lock + cross-process `RandomAccessFile.lock(FileLock.exclusive)`
-- Lock file: `~/.config/odoo_auto_config/.lock`
-- `_readConfig()` có retry 1 lần khi JSON bị corrupt (instance khác đang write) → tránh crash
-
-**Stale PID cleanup** (crash recovery):
-
-- macOS/Linux: `kill -0 <pid>` (exit code 0 = alive)
-- Windows: `tasklist /FI "PID eq <pid>"`
-- Dead PIDs → xóa `.json` registry file
-
-**Native changes:**
-
-- Windows `main.cpp`: xóa mutex `WorkspaceConfiguration_SingleInstance`
-- Linux `my_application.cc`: `G_APPLICATION_DEFAULT_FLAGS` → `G_APPLICATION_NON_UNIQUE`
-- macOS: không thay đổi native (dùng `open -n` để mở instance mới)
-
-**Files chính:**
-
-- `lib/services/instance_service.dart` — **MỚI**: registry, IPC, PID check, launch
-- `lib/services/tray_service.dart` — **REFACTOR LỚN**: ownership, submenu, watcher, signals
-- `lib/services/storage_service.dart` — thêm cross-process file lock
-- `lib/screens/home_screen.dart` — always hide-to-tray, nút "New Window"
-- `lib/screens/settings/theme_tab.dart` — xóa close behavior toggle
-- `lib/providers/theme_provider.dart` — hardcode closeBehavior='tray'
-
-**Đã triển khai:**
-
-- **Settings sync**: `StorageService.startConfigWatcher()` — file watcher detect thay đổi config từ instance khác
-  Debounce 500ms, ignore self-writes (1s window). Reload tất cả 7 providers khi config thay đổi
-
-**Future enhancements (chưa làm):**
-
-- Per-instance quit (submenu Quit ▸ [Instance 1, ..., All]) + auto-transfer tray ownership
-- Instance label hiện tên project/tab thay vì "Instance N"
-
-## Quy tắc làm việc
-
-- **Sau mỗi task hoàn thành**: LUÔN tóm tắt những gì đã thay đổi + liệt kê danh sách đầy đủ các file đã sửa
-
-## Lessons Learned — KHÔNG lặp lại các lỗi này
-
-### UI / Layout
-
-- **KHÔNG BAO GIỜ hardcode số** cho UI dimensions — luôn dùng constants từ `app_constants.dart`:
-  **Spacing**: `AppSpacing.xxs(2)/xs(4)/sm(8)/md(12)/lg(16)/xl(20)/xxl(24)/xxxl(32)`
-  **Font**: `AppFontSize.xs(11)/sm(12)/md(13)/lg(16)/xl(17)/xxl(18)/title(28)`
-  **Icon**: `AppIconSize.sm(14)/md(16)/statusIcon(18)/lg(24)/xl(28)/xxl(40)/xxxl(48)/feature(64)`
-  **Radius**: `AppRadius.sm(4)/md(8)/lg(12)/xl(24)` + `smallBorderRadius/mediumBorderRadius/largeBorderRadius`
-  **Dialog width**: `AppDialog.widthSm(500)/widthMd(700)/widthLg(800)/widthXl(900)`
-  **Dialog height**: `AppDialog.heightSm(400)/heightMd(450)/heightLg(700)/heightXl(750)`
-  **List container**: `AppDialog.listHeightSm(120)/listHeight(150)`
-  **Log output**: `AppDialog.logHeightSm(180)/logHeightMd(200)/logHeightLg(250)/logHeightXl(350)`
-  **CircularProgressIndicator trong button**: `SizedBox(width: AppIconSize.md, height: AppIconSize.md)`
-  Nếu cần giá trị mới → thêm constant vào `app_constants.dart` TRƯỚC, rồi dùng constant đó
-- **Dialog content PHẢI wrap `ConstrainedBox` + `SingleChildScrollView`** — tránh overflow khi nội dung dài
-  `SingleChildScrollView` + `Column(mainAxisSize: MainAxisSize.min)` KHÔNG tự scroll vì Column request đúng height nó cần.
-  PHẢI thêm `ConstrainedBox(maxHeight)` để giới hạn vùng hiển thị, khi đó `SingleChildScrollView` mới scroll được.
-  Pattern chuẩn:
-  ```dart
-  content: SizedBox(
-    width: AppDialog.widthLg,
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-      ),
-      child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [...]),
-      ),
-    ),
-  ),
-  ```
-- **Grid card top row** dùng `Stack` + `Align` cho elements ở các góc (branch top-left, star top-right).
-  KHÔNG dùng `Row` + `Spacer`/`Flexible` — gây lỗi vị trí khi có/không có conditional children
-- **Dialog responsive** dùng `Builder` + `MediaQuery.of(context).size.width`.
-  KHÔNG dùng `LayoutBuilder` trong `AlertDialog.content` → lỗi "Cannot hit test a render box with no size"
-  Rộng (>900px): 2 cột + `widthLg`. Hẹp: 1 cột stacked + `widthMd`
-- **TextField commit message**: `maxLines: 8`, `minLines: 3`. KHÔNG dùng `maxLines: null` → overflow layout
-- **`Text.rich`** thay `RichText` trong `SelectionArea` để copy text được.
-  `RichText` là render-level widget, không tham gia `SelectionArea`
-- **`SingleChildScrollView` + `Column`** thay `ListView.builder` cho text selection
-- **`GestureDetector`** wrap cả Checkbox + label để click label cũng toggle
-- **Output-log luôn mở dialog riêng** — KHÔNG nhúng inline. Dùng `_GitActionDialog` pattern:
-  auto-run khi mở, `LinearProgressIndicator`, `SelectionArea` + `Text.rich` cho copy text,
-  ANSI color parsing, auto-scroll, Close disabled khi running
-- **SnackBar bị chìm sau dialog** — dùng dialog thông báo thay SnackBar khi context đang có dialog mở
-- **KHÔNG dùng `showDialog()` trực tiếp** — luôn dùng `AppDialog.show()` để tất cả dialog có
-  `barrierDismissible: false` (không đóng khi click ngoài) + draggable + PopScope/closeButton logic
-  TẬP TRUNG tại 1 chỗ (`app_constants.dart`). Dialog process chỉ cần gọi `context.setDialogRunning(true/false)`,
-  KHÔNG wrap PopScope thủ công trong từng dialog
-- **Close button process dialog** — dùng `enabled: !_running` thay vì `onClose: _running ? null : ...`
-  Pattern cũ bị bug: khi `onClose: null`, fallback default `Navigator.pop` → vẫn cho đóng
-- **Key capture trong dialog** — KHÔNG dùng `Focus(autofocus: true, onKeyEvent: ...)` vì `AppDialog.show()`
-  đã wrap content trong `Focus(autofocus: true)` để handle ESC → nested Focus bị outer Focus giành primary
-  focus → inner onKeyEvent không fire các lần sau. Thay bằng `HardwareKeyboard.instance.addHandler(_h)` trong
-  `initState` + `removeHandler(_h)` trong `dispose`. Handler return `true` để consume (trừ ESC → return `false`
-  để AppDialog's CallbackShortcuts xử lý).
-- **Pause global key dispatcher khi capture shortcut** — nếu app có `HardwareKeyboard.addHandler` global dispatch
-  các shortcut đã đăng ký, khi user bấm combo trùng shortcut hiện tại trong capture dialog → action fire
-  (VD: launch new window) → cửa sổ mới cướp focus → capture dialog kẹt. Fix: thêm flag `capturing` trong
-  provider state, global dispatcher check flag → skip. Capture dialog flow: wrap `AppDialog.show()` bằng
-  try/finally, `setCapturing(true)` trước, `setCapturing(false)` trong finally.
-
-### Git operations
-
-- **Parse `git status --porcelain`**: dùng `.trimRight()` KHÔNG `.trim()` — sẽ xóa space đầu dòng đầu = mất status char
-- **`git add`**: add từng file một với `git add -- <file>` (tránh shell argument issues khi nhiều files + `runInShell: true`)
-- **Parse branches**: dùng `git branch -a --format=%(refname)` KHÔNG `%(refname:short)` — vì `origin` bị lọt vào local
-  `refs/heads/` → local, `refs/remotes/origin/` → remote
-- **Highlight branch**: chỉ highlight current ở cột local (`!isRemote && branch == _current`)
-
-### Auto-update
-
-- **macOS**: dùng `.zip` + `ditto -xk` KHÔNG dùng `.dmg` (mount/unmount/codesign phức tạp và hay fail)
-  `xattr -cr` là đủ, KHÔNG cần `codesign`
-- **Windows MSIX**: `Add-AppPackage -ForceApplicationShutdown` + relaunch qua `Start-Process ('shell:AppsFolder\' + PackageFamilyName + '!App')`
-  KHÔNG dùng `explorer.exe shell:AppsFolder\` (mở nhầm OneDrive/Documents thay vì app)
-  KHÔNG dùng `Platform.resolvedExecutable` vì MSIX thay đổi exe path mỗi version
-- **`msix_version`**: KHÔNG hardcode — để package `msix` tự derive từ `version` field trong pubspec.yaml
-- **CI zip path**: `ditto` output phải nằm trong `build/` (không dùng `cd` + relative path → sai vị trí)
-- **Windows MSIX relaunch**: KHÔNG dùng `shell:AppsFolder` trong detached PowerShell — không có shell context nên URI không resolve
-  Dùng `Get-AppxPackage` → `InstallLocation` → tìm exe → `Start-Process` trực tiếp
-  Script phải đợi PID exit trước (như macOS/Linux), dùng `-ForceUpdateFromAnyVersion` cho safety
-
-### Code quality & Cross-platform
-
-- **Windows path có spaces** — `Process.run` tự handle quoting nhưng `Process.start` thì KHÔNG
-  PlatformService path getters (`ghPath`, `mkcertPath`) trả về path nguyên bản, **KHÔNG pre-quote**
-  Cho `gh` CLI: LUÔN dùng `PlatformService.runGh()` / `PlatformService.startGh()` — helper xử lý:
-  Windows + path có spaces → `runInShell: false` (CreateProcess handle spaces đúng)
-  macOS/Linux hoặc path không có spaces → `runInShell: true` (cần cho PATH resolution)
-- **Dart `replaceFirst` KHÔNG hỗ trợ backreference `$1`** — `$1` được chèn literal, phá hỏng output
-  LUÔN dùng `replaceFirstMapped(regex, (m) => '${m[1]}...')` khi cần preserve captured groups
-- **`fvm flutter analyze` phải luôn "No issues found!"** — fix TẤT CẢ issues, kể cả info level (curly_braces, unused vars...)
-  KHÔNG BAO GIỜ bỏ qua với lý do "chỉ là info warning"
-- **SAU MỖI REFACTOR / TẠO FILE MỚI**: chạy audit `runInShell` + path separator cho TOÀN BỘ codebase
-  Bug thực tế: refactor lớn tạo 19 Process calls thiếu runInShell — debug chạy OK nhưng release build fail im lặng
-- **`StorageService.updateSettings()` — LUÔN dùng cho write settings** — atomic read-modify-write trong `_synchronized` lock
-  Pattern đúng: `await StorageService.updateSettings((settings) { settings['key'] = value; });`
-  KHÔNG BAO GIỜ dùng pattern cũ `loadSettings → modify → saveSettings` (race condition: 2 provider cùng load → cái sau ghi đè mất data cái trước)
-  `loadSettings()` chỉ dùng cho read-only (startup, load preferences)
-- **`StorageService` có `_synchronized` lock** — serialize tất cả write operations để tránh race condition
-  Tất cả save/add/remove methods đều wrap trong `_synchronized`, read-modify-write trong cùng 1 lock
-- **Xóa project/workspace phải cleanup nginx** — nếu `hasNginx` thì gọi `NginxService.removeNginx(sub)` trước khi xóa
-  Wrap try-catch để không block việc xóa nếu nginx cleanup fail
-- Khi edit workspace/project: phải preserve `favourite` và `nginxSubdomain` từ object gốc (dùng `copyWith`)
-- **Dialog reload**: Khi dialog con đóng (VD: Commit dialog đóng → quay lại Branches dialog), phải reload status trong dialog cha.
-  Khi dialog cha đóng, phải reload data ở parent screen (dùng `.then()` sau `showDialog`)
-- **Branch status trên grid/list**: hiện `changed count ↑` (cam) + `behind count ↓` (cyan) cạnh branch name
-  Load async song song với branch detection trong `_loadBranches`
-  `git status --porcelain` cho changed, `git rev-list --count HEAD..@{upstream}` cho behind (sau `git fetch --quiet`)
-
-### System Tray (Windows)
-
-- **`window_manager 0.5.1` + Flutter 3.41**: `setPreventClose(true)` KHÔNG hoạt động trên Windows
-  Plugin intercept `WM_CLOSE` nhưng `onWindowClose` Dart callback không bao giờ fire
-  PHẢI xử lý `WM_CLOSE` ở native C++ (`flutter_window.cpp`) thay vì dựa vào Dart callback
-- **KHÔNG dùng `windowManager.setSkipTaskbar()`** trên Windows — gây native crash (process exit không log)
-  Chỉ dùng `windowManager.show()` / `windowManager.hide()` / `windowManager.focus()`
-- **`SetQuitOnClose(false)`** trong `main.cpp` — bắt buộc khi dùng tray, nếu `true` thì `PostQuitMessage`
-  sẽ thoát app ngay khi window bị destroy
-- **Phân biệt minimize vs close trên Windows**: dùng flag `_isMinimizing` trong `onWindowEvent`
-  `minimize` event fire trước `hide` khi minimize, nhưng KHÔNG fire khi nhấn X → dùng để phân biệt
-- **Single instance**: Named mutex trong `main.cpp`, `FindWindow` + `ShowWindow` để activate cái cũ
-  Tránh duplicate instance khi click taskbar icon hoặc chạy exe lần 2
-
-### Multi-instance
-
-- **Windows launch**: KHÔNG dùng `shell:AppsFolder` / `Get-AppxPackage` — MSIX App Model single-instance
-  chỉ activate cửa sổ cũ, không tạo process mới. Dùng `Platform.resolvedExecutable` trực tiếp để bypass
-- **macOS Dock icon**: KHÔNG dùng `open -n -a` để launch child instance (tạo 2 Dock icons)
-  Phải chạy binary trực tiếp với `--child-instance` flag + AppDelegate set `.accessory` activation policy
-- **Cross-process JSON corruption**: `_readConfig()` PHẢI có try-catch cho `FormatException`
-  Khi instance A đang write config JSON, instance B có thể đọc được file bị cắt ngang (partial write)
-  → `jsonDecode` throw `FormatException` → crash nếu không catch
-  Fix: retry 1 lần sau 100ms delay. Nếu vẫn fail → return empty map (benign failure)
-- **Nginx link path**: PHẢI có try-catch quanh `updateProject`/`updateWorkspace`
-  Path "link existing" trong `_setupNginx` từng thiếu try-catch → crash khi cross-process write conflict
-
-### Process / Shell
-
-- **`runInShell: true`** bắt buộc cho mọi `Process.run` trong AOT/release mode
-- **`hdiutil`** không có `runInShell: true` → fail im lặng trong release build
-- **Shell script template**: header (token/org) dùng string interpolation `'''`, body dùng raw string `r'''` để tránh Dart interpret `$`
+**Key distinction:** Change-Log = lịch sử (append), Current-State = hiện tại (overwrite). Đừng trộn 2 mục đích này.
