@@ -48,3 +48,19 @@ app.*.map.json
 .fvm/
 .vscode/
 .obsidian-vault
+
+# Claude Code per-machine settings (chứa absolute paths cá nhân)
+.claude/settings.local.json
+
+# Secrets (defensive — chưa có file nào nhưng tránh leak tương lai)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+secrets/
+credentials.json
+*.credentials
