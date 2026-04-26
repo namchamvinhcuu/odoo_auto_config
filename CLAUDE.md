@@ -1,49 +1,12 @@
 # CLAUDE.md — Workspace Configuration (Flutter desktop)
 
-Hướng dẫn làm việc cho Claude trong dự án — gồm **Behavioral Principles** + pointer tới knowledge base. **Portable across máy:** principles không hardcode version/path, mọi giá trị resolve dynamic từ `.fvmrc` / `pubspec.lock` / FVM symlink.
+Hướng dẫn làm việc cho Claude trong dự án  — gồm **Behavioral Principles** + pointer tới knowledge base. **Portable across máy:** principles không hardcode version/path, mọi giá trị resolve dynamic từ `.fvmrc` / `pubspec.lock` / FVM symlink.
 
 **Project Knowledge Base** sống trong Obsidian vault tại `./.obsidian-vault/` (symlink, atomic notes tổ chức theo `Architecture/` / `Features/` / `Knowledge-Base/` / `Fix-History/`). Khi cần reference về tech stack, modules, skills, bugs — đọc vault qua [`./.obsidian-vault/Index.md`](.obsidian-vault/Index.md).
 
-### 🤖 Bootstrap protocol — setup vault symlink (Claude Code)
+### ⚙️ Per-machine setup (nếu `.obsidian-vault` chưa tồn tại)
 
-**Đầu mỗi session, Claude PHẢI verify `.obsidian-vault` resolve được trước khi đọc vault.**
-
-```bash
-ls .obsidian-vault/Index.md   # OK → tiếp tục session bình thường
-                              # Fail → chạy bootstrap dưới đây
-```
-
-Nếu fail (symlink chưa tồn tại / broken / vault chưa sync), thực hiện theo thứ tự:
-
-1. **Hỏi user vault path cho dự án này** (tiếng Việt theo Principle #1):
-
-   > "Symlink `.obsidian-vault` chưa tồn tại. Bạn cho tôi biết path Obsidian vault dành cho dự án này trên máy hiện tại (folder chứa `Index.md`) — tôi sẽ tạo symlink."
-
-   User trả lời → Claude chạy với explicit path:
-
-   ```bash
-   bash scripts/setup-vault.sh "<user-path>"     # macOS / Linux
-   pwsh scripts/setup-vault.ps1 -VaultPath "<user-path>"  # Windows
-   ```
-
-2. **Hoặc user tự chạy script không argument** → script prompt nhập path:
-
-   ```bash
-   bash scripts/setup-vault.sh
-   pwsh scripts/setup-vault.ps1
-   ```
-
-3. **Script verify** path có marker `Index.md` → `ln -s`. Path sai → báo lỗi, KHÔNG tạo symlink rỗng.
-
-4. **Vault chưa sync về máy** (folder OneDrive có nhưng không có `Index.md`) → báo user restore vault từ OneDrive trước.
-
-> ⚠️ **KHÔNG auto-detect path.** User code nhiều dự án (mỗi dự án có vault Obsidian riêng) → auto-detect dễ link nhầm vault dự án A sang dự án B. Bắt buộc user nhập explicit.
-
-→ Code script: [scripts/setup-vault.sh](scripts/setup-vault.sh) + [scripts/setup-vault.ps1](scripts/setup-vault.ps1).
-
-### ⚙️ Per-machine setup (manual fallback)
-
-Nếu không dùng bootstrap script, tạo symlink thủ công 1 lần per máy. **Đây là chỗ duy nhất CLAUDE.md chấp nhận hardcode path** (vì bản chất là machine-specific config):
+Vault path khác nhau trên mỗi máy (sync qua OneDrive). Symlink `.obsidian-vault` resolve việc này — tạo 1 lần trên mỗi máy. **Đây là chỗ duy nhất CLAUDE.md chấp nhận hardcode path** (vì bản chất là machine-specific config):
 
 ```bash
 # Mac mini M4 (OneDrive trên external drive)
@@ -52,8 +15,7 @@ ln -s /Volumes/Data/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.o
 # Linux Mint (OneDrive synced via rclone hoặc tương tự)
 ln -s ~/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
 
-# Windows (PowerShell, cần Developer Mode hoặc admin)
-New-Item -ItemType SymbolicLink -Path .obsidian-vault -Target "$env:OneDrive\Obsidian_Vault\Nam-Dev\Workspace-Configuration"
+# Máy mới: thay path OneDrive theo cấu hình thực tế của máy đó
 ```
 
 Verify: `ls .obsidian-vault/Index.md` → phải resolve được. Symlink `.obsidian-vault` đã trong `.gitignore`.
@@ -68,14 +30,14 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Ordering = session lifecycle.** Đọc tuần tự 1→15 để biết cần làm gì ở từng phase:
 
-| Phase            | Principles                                                                                                                                                                     | Mục đích                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| 🗣️ Communication | #1 Ask in Vietnamese                                                                                                                                                           | Ngôn ngữ giao tiếp                            |
-| ⚙️ Environment   | #2 Flutter SDK via FVM, #3 Upstream Framework Reference                                                                                                                        | Setup tooling + tra cứu source                |
-| 🧠 Plan          | #4 Think Before Coding, #5 Goal-Driven, #6 Vault-First Debug                                                                                                                   | Phân tích, success criteria, investigation    |
-| ✍️ Code          | #7 Simplicity First, #8 Surgical Changes, #9 Riverpod + SOLID, #10 i18n Proactive, #11 No Hardcoded UI Values, #12 Cross-Platform Process Safety, #13 Comment Out Don't Delete | Khi viết/sửa code                             |
-| ✅ Verify        | #14 Test-Driven Quality                                                                                                                                                        | Xác nhận hoạt động đúng + zero analyze issues |
-| 📝 Document      | #15 Knowledge Loop                                                                                                                                                             | Lưu lại tri thức                              |
+| Phase | Principles | Mục đích |
+|-------|-----------|----------|
+| 🗣️ Communication | #1 Ask in Vietnamese | Ngôn ngữ giao tiếp |
+| ⚙️ Environment | #2 Flutter SDK via FVM, #3 Upstream Framework Reference | Setup tooling + tra cứu source |
+| 🧠 Plan | #4 Think Before Coding, #5 Goal-Driven, #6 Vault-First Debug | Phân tích, success criteria, investigation |
+| ✍️ Code | #7 Simplicity First, #8 Surgical Changes, #9 Riverpod + SOLID, #10 i18n Proactive, #11 No Hardcoded UI Values, #12 Cross-Platform Process Safety, #13 Comment Out Don't Delete | Khi viết/sửa code |
+| ✅ Verify | #14 Test-Driven Quality | Xác nhận hoạt động đúng + zero analyze issues |
+| 📝 Document | #15 Knowledge Loop | Lưu lại tri thức |
 
 **Tradeoff:** caution over speed. Trivial tasks: dùng judgment.
 
@@ -174,12 +136,12 @@ fvm flutter build windows --release  # release Windows (MSIX + EVB portable)
 
 ### Source locations (resolve dynamic, không hardcode version)
 
-| Source            | Resolve pattern                                         | Lý do dùng dynamic                  |
-| ----------------- | ------------------------------------------------------- | ----------------------------------- |
-| Flutter SDK       | `$(dirname $(dirname $(readlink -f $(which flutter))))` | Version từ `.fvmrc`, đổi → path đổi |
-| Material widgets  | `<FLUTTER_SDK>/packages/flutter/lib/src/material/`      | Cùng SDK, sub-folder                |
-| Cupertino widgets | `<FLUTTER_SDK>/packages/flutter/lib/src/cupertino/`     | Cùng SDK, sub-folder                |
-| Pub packages      | `~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/`      | Version từ `pubspec.lock`           |
+| Source | Resolve pattern | Lý do dùng dynamic |
+|--------|-----------------|---------------------|
+| Flutter SDK | `$(dirname $(dirname $(readlink -f $(which flutter))))` | Version từ `.fvmrc`, đổi → path đổi |
+| Material widgets | `<FLUTTER_SDK>/packages/flutter/lib/src/material/` | Cùng SDK, sub-folder |
+| Cupertino widgets | `<FLUTTER_SDK>/packages/flutter/lib/src/cupertino/` | Cùng SDK, sub-folder |
+| Pub packages | `~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/` | Version từ `pubspec.lock` |
 
 ### Mandatory workflow khi nghi vấn API
 
@@ -529,16 +491,16 @@ Desktop Flutter chạy 3 OS (macOS/Linux/Windows). 1 sai sót `runInShell` hoặ
 
 ### Verify methods (theo loại change)
 
-| Change type                                 | Verify command                                   | Notes                              |
-| ------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
-| Pure Dart logic (helper, validator, parser) | `fvm flutter test test/<file>_test.dart`         | Unit test                          |
-| Widget render / interaction                 | `fvm flutter test` (widget test)                 | UI render + tap                    |
-| State management (Riverpod)                 | Widget test với `ProviderScope.overrides`        | Test notifier behavior             |
-| Navigation / dialog flow                    | Manual `fvm flutter run -d <platform>`           | Full app flow desktop              |
-| Static checks                               | `fvm flutter analyze`                            | **Zero issues** — kể cả info level |
-| UI visual change                            | `fvm flutter run -d <platform>` + manual repro   | Visual confirm                     |
-| i18n change                                 | `fvm flutter gen-l10n` + run + switch locale     | Verify cả en + vi                  |
-| Cross-platform Process.run                  | [[Knowledge-Base/Skill-Audit-RunInShell]] script | Bắt buộc sau refactor              |
+| Change type | Verify command | Notes |
+|-------------|----------------|-------|
+| Pure Dart logic (helper, validator, parser) | `fvm flutter test test/<file>_test.dart` | Unit test |
+| Widget render / interaction | `fvm flutter test` (widget test) | UI render + tap |
+| State management (Riverpod) | Widget test với `ProviderScope.overrides` | Test notifier behavior |
+| Navigation / dialog flow | Manual `fvm flutter run -d <platform>` | Full app flow desktop |
+| Static checks | `fvm flutter analyze` | **Zero issues** — kể cả info level |
+| UI visual change | `fvm flutter run -d <platform>` + manual repro | Visual confirm |
+| i18n change | `fvm flutter gen-l10n` + run + switch locale | Verify cả en + vi |
+| Cross-platform Process.run | [[Knowledge-Base/Skill-Audit-RunInShell]] script | Bắt buộc sau refactor |
 
 ### Autonomy — auto-run trên local dev (KHÔNG cần confirm)
 
@@ -609,13 +571,13 @@ Skip verify CHỈ khi:
 
 Logic vừa code là **nghiệp vụ quan trọng** hoặc **kỹ thuật khó** → tạo/cập nhật vault note:
 
-| Loại kiến thức                        | Folder + naming                                     |
-| ------------------------------------- | --------------------------------------------------- |
-| Reusable skill / operational know-how | `.obsidian-vault/Knowledge-Base/Skill-<Name>.md`    |
-| Multi-step workflow                   | `.obsidian-vault/Knowledge-Base/Workflow-<Name>.md` |
-| Business feature mới                  | `.obsidian-vault/Features/<Feature>.md`             |
-| Architecture pattern                  | `.obsidian-vault/Architecture/<Topic>.md`           |
-| Fix pattern                           | xem Step 2                                          |
+| Loại kiến thức | Folder + naming |
+|---------------|-----------------|
+| Reusable skill / operational know-how | `.obsidian-vault/Knowledge-Base/Skill-<Name>.md` |
+| Multi-step workflow | `.obsidian-vault/Knowledge-Base/Workflow-<Name>.md` |
+| Business feature mới | `.obsidian-vault/Features/<Feature>.md` |
+| Architecture pattern | `.obsidian-vault/Architecture/<Topic>.md` |
+| Fix pattern | xem Step 2 |
 
 File đã tồn tại → update section thay vì tạo mới.
 
@@ -627,19 +589,15 @@ Vừa **sửa bug** → tạo file trong `Fix-History/`. Hiện vault dùng nami
 # Fix — <Tên bug ngắn>
 
 ## Symptom
-
 [Triệu chứng + error log]
 
 ## Root cause
-
 [Nguyên nhân gốc]
 
 ## Fix
-
 [Diff/pattern/workaround + code]
 
 ## Related
-
 - [[Index]]
 - [[…related notes]]
 ```
