@@ -1,12 +1,49 @@
 # CLAUDE.md — Workspace Configuration (Flutter desktop)
 
-Hướng dẫn làm việc cho Claude trong dự án `odoo_auto_config` — gồm **Behavioral Principles** + pointer tới knowledge base.
+Hướng dẫn làm việc cho Claude trong dự án — gồm **Behavioral Principles** + pointer tới knowledge base. **Portable across máy:** principles không hardcode version/path, mọi giá trị resolve dynamic từ `.fvmrc` / `pubspec.lock` / FVM symlink.
 
 **Project Knowledge Base** sống trong Obsidian vault tại `./.obsidian-vault/` (symlink, atomic notes tổ chức theo `Architecture/` / `Features/` / `Knowledge-Base/` / `Fix-History/`). Khi cần reference về tech stack, modules, skills, bugs — đọc vault qua [`./.obsidian-vault/Index.md`](.obsidian-vault/Index.md).
 
-### ⚙️ Per-machine setup (nếu `.obsidian-vault` chưa tồn tại)
+### 🤖 Bootstrap protocol — setup vault symlink (Claude Code)
 
-Vault path khác nhau trên mỗi máy (sync qua OneDrive). Symlink `.obsidian-vault` resolve việc này — tạo 1 lần trên mỗi máy:
+**Đầu mỗi session, Claude PHẢI verify `.obsidian-vault` resolve được trước khi đọc vault.**
+
+```bash
+ls .obsidian-vault/Index.md   # OK → tiếp tục session bình thường
+                              # Fail → chạy bootstrap dưới đây
+```
+
+Nếu fail (symlink chưa tồn tại / broken / vault chưa sync), thực hiện theo thứ tự:
+
+1. **Hỏi user vault path cho dự án này** (tiếng Việt theo Principle #1):
+
+   > "Symlink `.obsidian-vault` chưa tồn tại. Bạn cho tôi biết path Obsidian vault dành cho dự án này trên máy hiện tại (folder chứa `Index.md`) — tôi sẽ tạo symlink."
+
+   User trả lời → Claude chạy với explicit path:
+
+   ```bash
+   bash scripts/setup-vault.sh "<user-path>"     # macOS / Linux
+   pwsh scripts/setup-vault.ps1 -VaultPath "<user-path>"  # Windows
+   ```
+
+2. **Hoặc user tự chạy script không argument** → script prompt nhập path:
+
+   ```bash
+   bash scripts/setup-vault.sh
+   pwsh scripts/setup-vault.ps1
+   ```
+
+3. **Script verify** path có marker `Index.md` → `ln -s`. Path sai → báo lỗi, KHÔNG tạo symlink rỗng.
+
+4. **Vault chưa sync về máy** (folder OneDrive có nhưng không có `Index.md`) → báo user restore vault từ OneDrive trước.
+
+> ⚠️ **KHÔNG auto-detect path.** User code nhiều dự án (mỗi dự án có vault Obsidian riêng) → auto-detect dễ link nhầm vault dự án A sang dự án B. Bắt buộc user nhập explicit.
+
+→ Code script: [scripts/setup-vault.sh](scripts/setup-vault.sh) + [scripts/setup-vault.ps1](scripts/setup-vault.ps1).
+
+### ⚙️ Per-machine setup (manual fallback)
+
+Nếu không dùng bootstrap script, tạo symlink thủ công 1 lần per máy. **Đây là chỗ duy nhất CLAUDE.md chấp nhận hardcode path** (vì bản chất là machine-specific config):
 
 ```bash
 # Mac mini M4 (OneDrive trên external drive)
@@ -14,15 +51,14 @@ ln -s /Volumes/Data/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.o
 
 # Linux Mint (OneDrive synced via rclone hoặc tương tự)
 ln -s ~/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
+
+# Windows (PowerShell, cần Developer Mode hoặc admin)
+New-Item -ItemType SymbolicLink -Path .obsidian-vault -Target "$env:OneDrive\Obsidian_Vault\Nam-Dev\Workspace-Configuration"
 ```
 
 Verify: `ls .obsidian-vault/Index.md` → phải resolve được. Symlink `.obsidian-vault` đã trong `.gitignore`.
 
 Nếu vault chưa sync về máy hiện tại → restore từ OneDrive trước khi code.
-
-### 📦 Archive
-
-Snapshot cũ của CLAUDE.md + STRUCTURE.md (trước 2026-04-25) lưu tại [ARCHIVE.md](ARCHIVE.md). Không đọc để làm context thường — chỉ reference khi cần trace lịch sử.
 
 ---
 
@@ -30,16 +66,16 @@ Snapshot cũ của CLAUDE.md + STRUCTURE.md (trước 2026-04-25) lưu tại [AR
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific knowledge in `.obsidian-vault/`.
 
-**Ordering = session lifecycle.** Đọc tuần tự 1→10 để biết cần làm gì ở từng phase:
+**Ordering = session lifecycle.** Đọc tuần tự 1→15 để biết cần làm gì ở từng phase:
 
-| Phase | Principles | Mục đích |
-|-------|-----------|----------|
-| 🗣️ Communication | #1 Ask in Vietnamese | Ngôn ngữ giao tiếp |
-| ⚙️ Environment | #2 Flutter SDK via FVM, #9 Upstream Framework Reference | Setup tooling + tra cứu source |
-| 🧠 Plan | #3 Think Before Coding, #4 Goal-Driven, #10 Vault-First Debug | Phân tích, success criteria, investigation |
-| ✍️ Code | #5 Simplicity First, #6 Surgical Changes | Khi viết/sửa code |
-| ✅ Verify | #7 Test-Driven Quality | Xác nhận hoạt động đúng |
-| 📝 Document | #8 Knowledge Loop | Lưu lại tri thức |
+| Phase            | Principles                                                                                                                                                                     | Mục đích                                      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| 🗣️ Communication | #1 Ask in Vietnamese                                                                                                                                                           | Ngôn ngữ giao tiếp                            |
+| ⚙️ Environment   | #2 Flutter SDK via FVM, #3 Upstream Framework Reference                                                                                                                        | Setup tooling + tra cứu source                |
+| 🧠 Plan          | #4 Think Before Coding, #5 Goal-Driven, #6 Vault-First Debug                                                                                                                   | Phân tích, success criteria, investigation    |
+| ✍️ Code          | #7 Simplicity First, #8 Surgical Changes, #9 Riverpod + SOLID, #10 i18n Proactive, #11 No Hardcoded UI Values, #12 Cross-Platform Process Safety, #13 Comment Out Don't Delete | Khi viết/sửa code                             |
+| ✅ Verify        | #14 Test-Driven Quality                                                                                                                                                        | Xác nhận hoạt động đúng + zero analyze issues |
+| 📝 Document      | #15 Knowledge Loop                                                                                                                                                             | Lưu lại tri thức                              |
 
 **Tradeoff:** caution over speed. Trivial tasks: dùng judgment.
 
@@ -67,6 +103,8 @@ Khi hỏi user về:
 
 **Why:** User là người Việt; hỏi tiếng Anh tốn thêm parsing step → response chậm và kém chính xác hơn.
 
+---
+
 ## 2. Flutter SDK via FVM — Luôn dùng version đúng project
 
 **KHI cần chạy Flutter (build, test, run, pub), LUÔN dùng FVM-resolved `flutter`. KHÔNG dùng system flutter.**
@@ -74,17 +112,24 @@ Khi hỏi user về:
 ### Mandatory workflow
 
 ```bash
-# 1) Verify FVM resolves đúng version
+# 1) Verify FVM resolves đúng version (mọi máy: ~/fvm/default/bin/flutter)
 which flutter
-# Mac mini M4: ~/fvm/default/bin/flutter (symlink → 3.41.6)
-# Linux Mint:  ~/fvm/default/bin/flutter (symlink → 3.41.6)
+# → ~/fvm/default/bin/flutter (symlink tới version theo .fvmrc)
 
-# 2) Verify .fvmrc match
-cat .fvmrc            # → {"flutter": "3.41.6"}
-flutter --version     # phải hiện 3.41.6
+# 2) Đọc version pin từ project (KHÔNG hardcode trong CLAUDE.md)
+cat .fvmrc            # → {"flutter": "X.Y.Z"} - version dự án pin
+flutter --version     # phải match X.Y.Z
+
+# 3) Nếu chưa cài đúng version
+fvm install
+fvm use --force
 ```
 
-Nếu `which flutter` KHÔNG trỏ tới `~/fvm/default/bin/` → PATH sai, sửa `~/.zshrc` (Mac) hoặc `~/.bashrc` (Linux).
+Nếu `which flutter` KHÔNG trỏ tới `~/fvm/default/bin/` → PATH sai, sửa `~/.zshrc` (Mac) hoặc `~/.bashrc` (Linux):
+
+```bash
+export PATH="$HOME/fvm/default/bin:$PATH"
+```
 
 ### Common commands (auto-resolve qua FVM)
 
@@ -119,9 +164,62 @@ fvm flutter build windows --release  # release Windows (MSIX + EVB portable)
 
 ### Autonomy với Flutter commands
 
-`flutter pub get`, `flutter test`, `flutter analyze`, `flutter gen-l10n`, hot reload trên local dev → **auto-run, KHÔNG cần confirm**. Xem Principle #7 cho chi tiết.
+`flutter pub get`, `flutter test`, `flutter analyze`, `flutter gen-l10n`, hot reload trên local dev → **auto-run, KHÔNG cần confirm**. Xem Principle #14 cho chi tiết.
 
-## 3. Think Before Coding
+---
+
+## 3. Upstream Framework Reference — tra cứu source thật
+
+**Khi cần verify Flutter / package API (widget property, class signature, package method) — LUÔN query trong source thật. KHÔNG đoán.**
+
+### Source locations (resolve dynamic, không hardcode version)
+
+| Source            | Resolve pattern                                         | Lý do dùng dynamic                  |
+| ----------------- | ------------------------------------------------------- | ----------------------------------- |
+| Flutter SDK       | `$(dirname $(dirname $(readlink -f $(which flutter))))` | Version từ `.fvmrc`, đổi → path đổi |
+| Material widgets  | `<FLUTTER_SDK>/packages/flutter/lib/src/material/`      | Cùng SDK, sub-folder                |
+| Cupertino widgets | `<FLUTTER_SDK>/packages/flutter/lib/src/cupertino/`     | Cùng SDK, sub-folder                |
+| Pub packages      | `~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/`      | Version từ `pubspec.lock`           |
+
+### Mandatory workflow khi nghi vấn API
+
+```bash
+# 1) Resolve Flutter SDK path
+FLUTTER_SDK=$(dirname $(dirname $(readlink -f $(which flutter))))
+echo $FLUTTER_SDK
+ls $FLUTTER_SDK/packages/flutter/lib/src/widgets/
+
+# 2) Grep widget / class trong Flutter source
+grep -rn "class CircleAvatar" $FLUTTER_SDK/packages/flutter/lib/src/material/
+
+# 3) Resolve pub package version từ pubspec.lock + grep
+PKG=flutter_riverpod
+PKG_DIR=$(ls -d ~/.pub-cache/hosted/pub.dev/$PKG-*/lib/ 2>/dev/null | sort -V | tail -1)
+echo $PKG_DIR
+grep -rn "class Notifier" $PKG_DIR
+
+# 4) Đối chiếu với code custom trong lib/ → phát hiện sai lệch
+# 5) Chỉ đưa fix sau khi xác nhận source
+```
+
+### Tại sao bắt buộc
+
+- Flutter API thay đổi giữa minor versions (`WidgetState` rename, `MaterialState` deprecated, ...)
+- Pub package major bump = breaking changes (Riverpod 2 → 3 thay đổi `Notifier` API)
+- Đoán dựa training data → fix sai → bugs mới
+- Hardcode version trong CLAUDE.md → stale khi project bump → false reference
+
+### Red flags — dừng lại
+
+- "Tôi nghĩ widget này có property X..." → grep trước
+- "Riverpod chắc có method Y..." → đọc source
+- "API version này vẫn dùng Z..." → check changelog hoặc source
+
+→ Nếu không verify được, **nói rõ là đang đoán**, không khẳng định.
+
+---
+
+## 4. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
@@ -132,7 +230,9 @@ Before implementing:
 - If a simpler approach exists, say so. Push back when warranted.
 - If something is unclear, stop. Name what's confusing. Ask.
 
-## 4. Goal-Driven Execution
+---
+
+## 5. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**
 
@@ -143,7 +243,7 @@ Chuyển yêu cầu mơ hồ thành outcome có thể verify trước khi code:
 - "Refactor X" → "Behavior identical trước/sau; diff không đụng logic branch"
 - "Add feature" → "Path A/B/C trên UI/API trả kết quả mong đợi"
 
-Success criteria KHÔNG nhất thiết là tests — có thể là manual repro, diff review, screenshot widget render, log output. Tests là phương tiện mạnh nhất nhưng không phải duy nhất (chi tiết: Principle #7).
+Success criteria KHÔNG nhất thiết là tests — có thể là manual repro, diff review, screenshot widget render, log output. Tests là phương tiện mạnh nhất nhưng không phải duy nhất (chi tiết: Principle #14).
 
 Multi-step tasks → state plan ngắn:
 
@@ -155,7 +255,44 @@ Multi-step tasks → state plan ngắn:
 
 Strong criteria → loop độc lập. Weak criteria ("make it work") → phải hỏi user liên tục.
 
-## 5. Simplicity First
+---
+
+## 6. Vault-First Debug — đọc vault TRƯỚC khi đọc code
+
+**Khi user báo lỗi (screenshot, traceback, mô tả) — KHÔNG đọc code ngay. Quét `.obsidian-vault/` TRƯỚC.**
+
+### Thứ tự investigation bắt buộc
+
+1. **Quét `.obsidian-vault/` lần lượt:**
+   - `Architecture/` — hiểu flow nghiệp vụ liên quan ([[Architecture/Multi-Instance-IPC]], [[Architecture/Dialog-System]], [[Architecture/State-Management-Riverpod]], etc.)
+   - `Fix-History/` — tìm bug tương tự đã fix, xem root cause + pattern. Grep theo keyword triệu chứng.
+   - `Knowledge-Base/` — pattern / gotcha về Flutter / Riverpod / cross-platform Process
+   - `Features/` — context business logic
+2. **Đối chiếu source thật** (Principle #3 nếu cần check Flutter / package source)
+3. **Xác định:**
+   - Bug cùng root cause với bug cũ? → tái sử dụng fix pattern
+   - Flow nào bị impact? Logic đã tested có ảnh hưởng?
+4. **Propose fix tôn trọng logic cũ** — không patch triệu chứng làm hỏng flow khác
+
+### Tại sao bắt buộc
+
+Vault chứa: mental model (architecture), lịch sử quyết định (tại sao code viết như vậy), pattern fix đã tested. Đọc code cold không có context → dễ:
+
+- **Fix bề mặt:** patch triệu chứng, không root cause → bug tái xuất hiện
+- **Sửa hỏng business rule:** không biết constraint đã document
+- **Rediscover bug đã fix:** lãng phí thời gian phân tích cũ
+- **Break logic cũ:** fix mới invalidate pattern đã thông qua
+
+### Exception
+
+Skip vault scan CHỈ khi:
+
+- Lỗi trivial (typo 1-2 ký tự)
+- User explicitly bảo "fix nhanh, không cần đọc context"
+
+---
+
+## 7. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
@@ -167,7 +304,9 @@ Strong criteria → loop độc lập. Weak criteria ("make it work") → phải
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-## 6. Surgical Changes
+---
+
+## 8. Surgical Changes
 
 **Touch only what you must. Clean up only your own mess.**
 
@@ -185,21 +324,221 @@ When your changes create orphans:
 
 The test: every changed line should trace directly to user's request.
 
-## 7. Test-Driven Quality — Flutter testing
+---
 
-**Không task nào hoàn thành khi chưa verify hoạt động.** Sau khi implement bất kỳ logic nào:
+## 9. Riverpod + SOLID — State Management Standard
+
+**Code mới PHẢI dùng Riverpod (Notifier/AsyncNotifier) cho state. Tách logic khỏi UI. Widget file > 500 dòng → split.**
+
+### Rules
+
+- **State management:** Riverpod 2.x — `Notifier`/`AsyncNotifier` cho mutable state, `Provider` cho immutable derived value. KHÔNG dùng `setState` cho non-trivial state, KHÔNG dùng `StatefulWidget` mới (trừ animation/controller stateful).
+- **Layer separation:**
+  - `lib/notifiers/` — Riverpod notifiers (state + state mutations)
+  - `lib/services/` hoặc `lib/repositories/` — IO, network, Process.run, file system
+  - `lib/widgets/` hoặc `lib/screens/` — chỉ render. Nhận state qua `ref.watch`, gửi action qua `ref.read(notifierProvider.notifier).method()`
+- **File size limit:** widget file > 500 dòng → red flag. Tách subwidget cùng folder, suffix `_section.dart` / `_card.dart` / `_form.dart` theo role.
+
+### Detect violations
+
+```bash
+# Widget mới có setState (cho non-trivial state)
+grep -rn "setState(" lib/widgets/ lib/screens/
+
+# IO trực tiếp trong widget
+grep -rn "Process\.run\|http\.get\|File(" lib/widgets/ lib/screens/
+
+# File widget > 500 dòng
+find lib/widgets lib/screens -name "*.dart" -exec wc -l {} + | awk '$1 > 500'
+```
+
+### Why
+
+SOLID: Single Responsibility (widget render, notifier state, service IO). Test được Riverpod notifier với `ProviderScope.overrides` mà không cần widget. File nhỏ → đọc/diff dễ, conflict ít khi merge.
+
+→ Reference: [[Architecture/State-Management-Riverpod]], [[Knowledge-Base/Skill-Riverpod-Notifier]] (nếu vault có).
+
+---
+
+## 10. i18n Proactive — Localization First
+
+**Mọi string user-facing PHẢI vào ARB files trước khi commit. KHÔNG hardcode string trong widget build.**
+
+### Rules
+
+- **ARB files:** `lib/l10n/intl_en.arb`, `intl_vi.arb`, ... cho mỗi locale supported (đọc `pubspec.yaml` → `flutter.generate` để xác định locale list).
+- **Add string:** thêm vào TẤT CẢ ARB files (en + vi + locales khác). Thiếu 1 file = missing translation runtime.
+- **Trong widget:** `Text(AppLocalizations.of(context)!.keyName)`, KHÔNG `Text("Hello")`.
+- **Sau add:** chạy `fvm flutter gen-l10n` để regenerate delegate.
+- **Key naming:** camelCase mô tả ngữ nghĩa, thống nhất pattern hiện tại (xem ARB files để follow convention).
+
+### Detect violations
+
+```bash
+# Raw string literal trong widget (heuristic, có false positive)
+grep -rn 'Text("' lib/widgets/ lib/screens/ | grep -v 'l10n\|test'
+grep -rn "Text('" lib/widgets/ lib/screens/ | grep -v 'l10n\|test'
+
+# AppBar/Dialog title hardcode
+grep -rn 'title: Text("' lib/
+```
+
+### Exceptions (KHÔNG cần i18n)
+
+- Logger / debug print: keep raw English (developer-only)
+- Const technical strings (URL, env key, command name, regex pattern)
+- Test fixtures
+- Identifier hiển thị literal (version number, hash, ID)
+
+### Why
+
+Project support nhiều locale (en, vi, ...). Hardcode 1 string = 1 missing translation = bug khi user switch locale. Add string vào ARB sau khi commit code → dễ quên → ship feature thiếu i18n.
+
+→ Reference: [[Knowledge-Base/Skill-i18n-ARB]] (nếu vault có).
+
+---
+
+## 11. No Hardcoded UI Values — Constants Discipline
+
+**UI dimensions (padding, radius, size, spacing) PHẢI lấy từ `AppConstants`. KHÔNG hardcode raw `double`/`int` trong widget.**
+
+### Rules
+
+- **Padding/margin:** `EdgeInsets.all(AppConstants.padding16)`, KHÔNG `EdgeInsets.all(16)`
+- **Radius:** `BorderRadius.circular(AppConstants.radiusMedium)`, KHÔNG `BorderRadius.circular(8)`
+- **Sizes:** `SizedBox(height: AppConstants.spacingS)`, KHÔNG `SizedBox(height: 12)`
+- **Dialog:** dùng `AppDialog.show<T>` với size hint S/M/L → auto responsive width per breakpoint, wrap `SingleChildScrollView` để tránh overflow
+- **Colors:** `Theme.of(context).colorScheme.X` hoặc `AppColors.X`, KHÔNG `Color(0xFF...)` raw trong widget
+
+### Detect violations
+
+```bash
+# Raw EdgeInsets / SizedBox với số
+grep -rn 'EdgeInsets\.all([0-9]' lib/
+grep -rn 'EdgeInsets\.symmetric.*: [0-9]' lib/
+grep -rn 'SizedBox(height: [0-9]' lib/
+grep -rn 'SizedBox(width: [0-9]' lib/
+
+# Hardcode color
+grep -rn 'Color(0x' lib/ | grep -v 'app_constants\|app_colors\|theme'
+
+# Raw radius
+grep -rn 'BorderRadius\.circular([0-9]' lib/
+```
+
+### Exceptions
+
+- File `app_constants.dart` / `app_colors.dart` / `app_theme.dart` (đó là nơi định nghĩa)
+- Animation duration / curve constants nội bộ widget animation
+- Trị 0 (`EdgeInsets.zero`, `SizedBox.shrink`)
+
+### Why
+
+Single source of truth → đổi spacing/theme 1 lần ảnh hưởng toàn app. Tránh inconsistency (file A dùng 12, file B dùng 14 → UI vỡ rhythm). Responsive: `AppConstants` có thể tính theo breakpoint, raw value cứng nhắc.
+
+→ Reference: `lib/core/constants/app_constants.dart`, [[Knowledge-Base/Skill-Responsive-Layout]] (nếu vault có).
+
+---
+
+## 12. Cross-Platform Process Safety
+
+**Mọi `Process.run` / `Process.start` PHẢI cân nhắc `runInShell` + path separator + executable resolution per platform. Sau refactor đụng tới Process call → BẮT BUỘC chạy audit script.**
+
+### Rules
+
+- **`runInShell`:**
+  - Windows: `true` cho `.bat`/`.cmd`/builtin (`dir`, `where`, ...)
+  - Linux/macOS: thường `false`, trừ khi cần shell expansion (`*`, `~`, `$VAR`)
+  - Wrong flag → command silent fail trên platform sai
+- **Path separator:** dùng `path.join(...)` (package `path`), KHÔNG concat string `'foo/bar'`. Windows = `\`, POSIX = `/`.
+- **Executable resolution:**
+  - `which` (Linux/macOS) vs `where` (Windows) → wrap qua helper hoặc cache absolute path từ user settings
+  - `Platform.isWindows ? 'where' : 'which'`
+- **Environment vars:** `Platform.environment['HOME'] ?? Platform.environment['USERPROFILE']`
+- **Line endings:** parse stdout split `\n` thường OK, nhưng git porcelain Windows trả `\r\n` → strip `\r`
+
+### Mandatory after Process refactor
+
+Chạy audit script (xem [[Knowledge-Base/Skill-Audit-RunInShell]]) — script tự grep `Process.run`/`Process.start` và check flag/path conformance qua 3 OS.
+
+### Detect violations
+
+```bash
+# Hardcoded path separator
+grep -rn "'/.*'" lib/services/ lib/repositories/ | grep -v "http\|https"
+grep -rn '\\\\' lib/services/ lib/repositories/
+
+# Process.run thiếu cân nhắc runInShell
+grep -rn "Process\.run\|Process\.start" lib/ | grep -v "runInShell"
+
+# Hardcoded which/where
+grep -rn "'which'\|'where'" lib/ | grep -v "Platform.is"
+```
+
+### Why
+
+Desktop Flutter chạy 3 OS (macOS/Linux/Windows). 1 sai sót `runInShell` hoặc path = command fail trên 1 OS, pass 2 OS còn lại → bug khó detect khi dev chỉ test 1 máy. Đặc biệt nguy hiểm: Windows sai `runInShell=false` cho builtin → silent fail không log, user không biết.
+
+→ Reference: [[Knowledge-Base/Skill-Audit-RunInShell]], [[Fix-History/RunInShell-Audit]], [[Fix-History/Git-Porcelain-Parsing]].
+
+---
+
+## 13. Comment Out, Don't Delete — Tắt tạm tính năng
+
+**Khi tắt tạm feature (theo user request hoặc theo phase rollout), COMMENT OUT + thêm TODO marker. KHÔNG delete code.**
+
+### Rules
+
+- **Tắt UI tạm:** comment out widget block + `// TODO(disable-YYYY-MM): re-enable khi <điều kiện>`
+- **Tắt method tạm:** comment + TODO + reason ngắn
+- **Tắt route/feature flag:** comment usage + giữ implementation
+- **Delete CHỈ KHI:**
+  - User explicit "xóa hẳn"
+  - Feature đã thay thế bằng implementation mới (cleanup sau migration)
+  - Refactor được user approve trong session
+
+### Format TODO marker
+
+```dart
+// TODO(disable-2026-04): tắt tạm theo yêu cầu, re-enable khi backend ready
+// Widget gốc:
+// ElevatedButton(
+//   onPressed: _onSubmit,
+//   child: Text(AppLocalizations.of(context)!.submit),
+// ),
+```
+
+→ Grep `TODO\(disable-` thấy ngay tất cả pending re-enable.
+
+### Exception (delete được)
+
+- Dead code rõ ràng (unused import, orphan method, unreachable branch) — delete OK, không cần comment
+- Code chỉ commit chưa push → revert / `git reset` thay vì comment
+
+### Why
+
+- Tắt tạm = thường re-enable sau → comment giữ context (logic, prop, callback) ngay tại chỗ
+- Delete + git history vẫn còn nhưng "khuất tầm mắt" → dễ quên implement lại khi tới phase enable
+- TODO marker grep được → review nhanh trước release: "feature nào đang tắt?"
+
+---
+
+## 14. Test-Driven Quality — Flutter testing + Zero analyze issues
+
+**Không task nào hoàn thành khi chưa verify hoạt động + `fvm flutter analyze` PASS với 0 issue (kể cả info level).**
 
 ### Verify methods (theo loại change)
 
-| Change type | Verify command | Notes |
-|-------------|----------------|-------|
-| Pure Dart logic (helper, validator, parser) | `fvm flutter test test/<file>_test.dart` | Unit test |
-| Widget render / interaction | `fvm flutter test` (widget test) | UI render + tap |
-| State management (Riverpod) | Widget test với `ProviderScope.overrides` | Test notifier behavior |
-| Navigation / dialog flow | Manual `fvm flutter run -d <platform>` | Full app flow desktop |
-| Static checks | `fvm flutter analyze` | Type errors, lint |
-| UI visual change | `fvm flutter run -d <platform>` + manual repro | Visual confirm |
-| Cross-platform Process.run | [[Knowledge-Base/Skill-Audit-RunInShell]] script | Bắt buộc sau refactor |
+| Change type                                 | Verify command                                   | Notes                              |
+| ------------------------------------------- | ------------------------------------------------ | ---------------------------------- |
+| Pure Dart logic (helper, validator, parser) | `fvm flutter test test/<file>_test.dart`         | Unit test                          |
+| Widget render / interaction                 | `fvm flutter test` (widget test)                 | UI render + tap                    |
+| State management (Riverpod)                 | Widget test với `ProviderScope.overrides`        | Test notifier behavior             |
+| Navigation / dialog flow                    | Manual `fvm flutter run -d <platform>`           | Full app flow desktop              |
+| Static checks                               | `fvm flutter analyze`                            | **Zero issues** — kể cả info level |
+| UI visual change                            | `fvm flutter run -d <platform>` + manual repro   | Visual confirm                     |
+| i18n change                                 | `fvm flutter gen-l10n` + run + switch locale     | Verify cả en + vi                  |
+| Cross-platform Process.run                  | [[Knowledge-Base/Skill-Audit-RunInShell]] script | Bắt buộc sau refactor              |
 
 ### Autonomy — auto-run trên local dev (KHÔNG cần confirm)
 
@@ -208,7 +547,7 @@ The test: every changed line should trace directly to user's request.
 - `ls`, `find`, `grep`, `cat`, `head`, `tail` — list/search/read
 - Native tools: Read, Glob, Grep
 - Git read-only: `git status`, `git log`, `git diff`, `git show`, `git blame`
-- Source lookup Flutter SDK / pub packages (Principle #9)
+- Source lookup Flutter SDK / pub packages (Principle #3)
 
 #### B. Test + verify execution
 
@@ -246,7 +585,7 @@ The test: every changed line should trace directly to user's request.
 ### Completion criteria
 
 - `fvm flutter test` output: `All tests passed!` với count > 0 (nếu có tests)
-- `fvm flutter analyze` output: `No issues found!`
+- `fvm flutter analyze` output: `No issues found!` — **KHÔNG chấp nhận info/warning level dư**
 - Manual repro: bug không còn / feature hoạt động đúng theo success criteria
 - Cross-platform Process call: pass audit script (xem [[Fix-History/RunInShell-Audit]])
 - ❌ KHÔNG dùng "code compiles" làm proof — phải actually run + verify behavior
@@ -260,7 +599,9 @@ Skip verify CHỈ khi:
 - Comment-only changes
 - UI visual tweak — confirm visually qua `fvm flutter run` thay vì test
 
-## 8. Knowledge Loop — Vòng lặp tri thức
+---
+
+## 15. Knowledge Loop — Vòng lặp tri thức
 
 **Sau khi thực hiện thay đổi code hoặc giải quyết yêu cầu**, LUÔN thực hiện 5 bước (bắt buộc):
 
@@ -268,13 +609,13 @@ Skip verify CHỈ khi:
 
 Logic vừa code là **nghiệp vụ quan trọng** hoặc **kỹ thuật khó** → tạo/cập nhật vault note:
 
-| Loại kiến thức | Folder + naming |
-|---------------|-----------------|
-| Reusable skill / operational know-how | `.obsidian-vault/Knowledge-Base/Skill-<Name>.md` |
-| Multi-step workflow | `.obsidian-vault/Knowledge-Base/Workflow-<Name>.md` |
-| Business feature mới | `.obsidian-vault/Features/<Feature>.md` |
-| Architecture pattern | `.obsidian-vault/Architecture/<Topic>.md` |
-| Fix pattern | xem Step 2 |
+| Loại kiến thức                        | Folder + naming                                     |
+| ------------------------------------- | --------------------------------------------------- |
+| Reusable skill / operational know-how | `.obsidian-vault/Knowledge-Base/Skill-<Name>.md`    |
+| Multi-step workflow                   | `.obsidian-vault/Knowledge-Base/Workflow-<Name>.md` |
+| Business feature mới                  | `.obsidian-vault/Features/<Feature>.md`             |
+| Architecture pattern                  | `.obsidian-vault/Architecture/<Topic>.md`           |
+| Fix pattern                           | xem Step 2                                          |
 
 File đã tồn tại → update section thay vì tạo mới.
 
@@ -286,15 +627,19 @@ Vừa **sửa bug** → tạo file trong `Fix-History/`. Hiện vault dùng nami
 # Fix — <Tên bug ngắn>
 
 ## Symptom
+
 [Triệu chứng + error log]
 
 ## Root cause
+
 [Nguyên nhân gốc]
 
 ## Fix
+
 [Diff/pattern/workaround + code]
 
 ## Related
+
 - [[Index]]
 - [[…related notes]]
 ```
@@ -333,102 +678,6 @@ Nhiều file → list hết: "Tôi đã cập nhật [[file-1]], [[file-2]], [[f
 
 **Why:** Knowledge loop đảm bảo session work không bị mất. Session sau đọc vault (đặc biệt `Current-State.md`) sẽ thấy đầy đủ context — không phải "rediscover" cùng pattern hoặc hỏi lại user.
 
-## 9. Upstream Framework Reference — tra cứu source thật
-
-**Khi cần verify Flutter / package API (widget property, class signature, package method) — LUÔN query trong source thật. KHÔNG đoán.**
-
-### Source locations (per-machine)
-
-| Source | Mac mini M4 | Linux Mint |
-|--------|-------------|------------|
-| Flutter SDK | `~/fvm/versions/3.41.6/packages/flutter/lib/` | same |
-| Material widgets | `~/fvm/versions/3.41.6/packages/flutter/lib/src/material/` | same |
-| Cupertino widgets | `~/fvm/versions/3.41.6/packages/flutter/lib/src/cupertino/` | same |
-| Pub packages | `~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/` | same |
-
-Resolve dynamic:
-
-```bash
-FLUTTER_SDK=$(dirname $(dirname $(readlink -f $(which flutter))))
-echo $FLUTTER_SDK
-# Cả Mac mini M4 và Linux Mint: ~/fvm/versions/3.41.6
-ls $FLUTTER_SDK/packages/flutter/lib/src/widgets/
-```
-
-### Common pub package paths (dự án này)
-
-```bash
-# Riverpod (state management)
-ls ~/.pub-cache/hosted/pub.dev/flutter_riverpod-2.6.1/lib/
-
-# window_manager (desktop window control)
-ls ~/.pub-cache/hosted/pub.dev/window_manager-0.5.1/lib/
-
-# system_tray
-ls ~/.pub-cache/hosted/pub.dev/system_tray-2.0.3/lib/
-
-# file_picker
-ls ~/.pub-cache/hosted/pub.dev/file_picker-8.0.0/lib/
-```
-
-### Mandatory workflow khi nghi vấn API
-
-1. **Xác định target:** widget / class / package nghi vấn?
-2. **Grep / read source:**
-   ```bash
-   grep -rn "class CircleAvatar" ~/fvm/versions/3.41.6/packages/flutter/lib/src/material/
-   grep -rn "class WindowManager" ~/.pub-cache/hosted/pub.dev/window_manager-0.5.1/lib/
-   ```
-3. **Đối chiếu với code custom** trong `lib/` để phát hiện sai lệch.
-4. Chỉ đưa fix sau khi xác nhận source.
-
-### Tại sao bắt buộc
-
-- Flutter API thay đổi giữa minor versions (3.40 → 3.41: `WidgetState` rename, `MaterialState` deprecated)
-- Pub package major bump = breaking changes (Riverpod 2 → 3 thay đổi `Notifier` API)
-- Đoán dựa training data (cutoff 2026-01) → fix sai → bugs mới
-
-### Red flags — dừng lại
-
-- "Tôi nghĩ widget này có property X..." → grep trước
-- "Riverpod chắc có method Y..." → đọc source
-- "API version này vẫn dùng Z..." → check changelog hoặc source
-
-→ Nếu không verify được, **nói rõ là đang đoán**, không khẳng định.
-
-## 10. Vault-First Debug — đọc vault TRƯỚC khi đọc code
-
-**Khi user báo lỗi (screenshot, traceback, mô tả) — KHÔNG đọc code ngay. Quét `.obsidian-vault/` TRƯỚC.**
-
-### Thứ tự investigation bắt buộc
-
-1. **Quét `.obsidian-vault/` lần lượt:**
-   - `Architecture/` — hiểu flow nghiệp vụ liên quan ([[Architecture/Multi-Instance-IPC]], [[Architecture/Dialog-System]], [[Architecture/State-Management-Riverpod]], etc.)
-   - `Fix-History/` — tìm bug tương tự đã fix, xem root cause + pattern. Grep theo keyword triệu chứng.
-   - `Knowledge-Base/` — pattern / gotcha về Flutter / Riverpod / cross-platform Process
-   - `Features/` — context business logic
-2. **Đối chiếu source thật** (Principle #9 nếu cần check Flutter / package source)
-3. **Xác định:**
-   - Bug cùng root cause với bug cũ? → tái sử dụng fix pattern
-   - Flow nào bị impact? Logic đã tested có ảnh hưởng?
-4. **Propose fix tôn trọng logic cũ** — không patch triệu chứng làm hỏng flow khác
-
-### Tại sao bắt buộc
-
-Vault chứa: mental model (architecture), lịch sử quyết định (tại sao code viết như vậy), pattern fix đã tested. Đọc code cold không có context → dễ:
-
-- **Fix bề mặt:** patch triệu chứng, không root cause → bug tái xuất hiện
-- **Sửa hỏng business rule:** không biết constraint đã document
-- **Rediscover bug đã fix:** lãng phí thời gian phân tích cũ
-- **Break logic cũ:** fix mới invalidate pattern đã thông qua
-
-### Exception
-
-Skip vault scan CHỈ khi:
-
-- Lỗi trivial (typo 1-2 ký tự)
-- User explicitly bảo "fix nhanh, không cần đọc context"
-
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
@@ -444,10 +693,10 @@ Skip vault scan CHỈ khi:
 ├── Change-Log.md                 # TOC + 3 entries gần nhất inline
 ├── Change-Log/
 │   └── YYYY-MM.md                # monthly archives (APPEND new entry at top)
-├── Architecture/                 # patterns, flows, hierarchy (10 notes)
-├── Features/                     # business capabilities (20 notes)
-├── Knowledge-Base/               # principles + skills + workflows + rules (25 notes)
-└── Fix-History/                  # bug fixes (24 notes)
+├── Architecture/                 # patterns, flows, hierarchy
+├── Features/                     # business capabilities
+├── Knowledge-Base/               # principles + skills + workflows + rules
+└── Fix-History/                  # bug fixes
 ```
 
 Symlink target tuỳ máy — xem section "Per-machine setup" ở đầu file. Nếu symlink không tồn tại → restore vault từ OneDrive trước khi tiếp tục.
@@ -463,7 +712,7 @@ Symlink target tuỳ máy — xem section "Per-machine setup" ở đầu file. N
 
 ### Vault Write Order (cuối session, nếu có code/doc change)
 
-Áp dụng 5 steps Principle #8 Knowledge Loop:
+Áp dụng 5 steps Principle #15 Knowledge Loop:
 
 1. Step 1-3: Update atomic notes + bidirectional links + `Index.md`
 2. Step 4A — Change-Log: APPEND ở TOP của `Change-Log/YYYY-MM.md` + refresh `Change-Log.md` 3 entries
