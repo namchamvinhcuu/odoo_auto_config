@@ -59,9 +59,11 @@ Symlink .obsidian-vault chưa tồn tại cho dự án này.
 Nhập path tới Obsidian vault dành cho DỰ ÁN NÀY (folder chứa $Marker).
 Mỗi dự án có vault riêng — KHÔNG dùng path của dự án khác.
 
-Ví dụ format (thay theo cấu hình OneDrive trên máy bạn):
-  Windows OneDrive:  %OneDrive%\Obsidian_Vault\<project>\<vault>
-  Windows USERPROFILE: %USERPROFILE%\OneDrive\Obsidian_Vault\<project>\<vault>
+Ví dụ format (thay theo nơi vault đang nằm trên máy bạn — internal drive,
+external drive, cloud sync folder, ...):
+  Internal:    %USERPROFILE%\Documents\Obsidian_Vault\<project>\<vault>
+  External:    D:\Obsidian_Vault\<project>\<vault>
+  Cloud sync:  %USERPROFILE%\<CloudFolder>\Obsidian_Vault\<project>\<vault>
 
 "@ | Write-Host
 

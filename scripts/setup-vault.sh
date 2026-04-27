@@ -55,10 +55,11 @@ Symlink .obsidian-vault chưa tồn tại cho dự án này.
 Nhập path tới Obsidian vault dành cho DỰ ÁN NÀY (folder chứa $MARKER).
 Mỗi dự án có vault riêng — KHÔNG dùng path của dự án khác.
 
-Ví dụ format (thay theo cấu hình OneDrive trên máy bạn):
-  macOS modern:  ~/Library/CloudStorage/OneDrive-Personal/Obsidian_Vault/<project>/<vault>
-  macOS extern:  /Volumes/Data/OneDrive/Obsidian_Vault/<project>/<vault>
-  Linux:         ~/OneDrive/Obsidian_Vault/<project>/<vault>
+Ví dụ format (thay theo nơi vault đang nằm trên máy bạn — internal drive,
+external drive, cloud sync folder, ...):
+  Internal:      ~/Documents/Obsidian_Vault/<project>/<vault>
+  External:      /Volumes/<DriveName>/Obsidian_Vault/<project>/<vault>
+  Cloud sync:    ~/<CloudFolder>/Obsidian_Vault/<project>/<vault>
 
 EOF
 read -r -p "Vault path: " custom

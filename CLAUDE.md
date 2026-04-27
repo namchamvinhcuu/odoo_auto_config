@@ -6,21 +6,24 @@ Hướng dẫn làm việc cho Claude trong dự án  — gồm **Behavioral Pri
 
 ### ⚙️ Per-machine setup (nếu `.obsidian-vault` chưa tồn tại)
 
-Vault path khác nhau trên mỗi máy (sync qua OneDrive). Symlink `.obsidian-vault` resolve việc này — tạo 1 lần trên mỗi máy. **Đây là chỗ duy nhất CLAUDE.md chấp nhận hardcode path** (vì bản chất là machine-specific config):
+Vault path khác nhau trên mỗi máy (mỗi máy có thể sync qua cloud provider khác nhau, hoặc đặt trên drive khác nhau). Symlink `.obsidian-vault` resolve việc này — tạo 1 lần trên mỗi máy bằng script bootstrap (xem [[Knowledge-Base/Skill-Setup-Vault-Symlink]]):
 
 ```bash
-# Mac mini M4 (OneDrive trên external drive)
-ln -s /Volumes/Data/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
+# macOS / Linux — script prompt user nhập vault path explicit
+bash scripts/setup-vault.sh
 
-# Linux Mint (OneDrive synced via rclone hoặc tương tự)
-ln -s ~/OneDrive/Obsidian_Vault/Nam-Dev/Workspace-Configuration ./.obsidian-vault
+# Hoặc explicit path (skip prompt)
+bash scripts/setup-vault.sh /path/to/vault
 
-# Máy mới: thay path OneDrive theo cấu hình thực tế của máy đó
+# Windows
+pwsh scripts/setup-vault.ps1
 ```
+
+Script tạo `ln -s <vault-path> ./.obsidian-vault` sau khi verify path có `Index.md`. **Không hardcode tên cloud provider hay folder cụ thể** — user nhập path thực tế trên máy hiện tại (internal drive, external drive, cloud sync folder bất kỳ, ... — chỗ nào vault đang sống thì nhập chỗ đó).
 
 Verify: `ls .obsidian-vault/Index.md` → phải resolve được. Symlink `.obsidian-vault` đã trong `.gitignore`.
 
-Nếu vault chưa sync về máy hiện tại → restore từ OneDrive trước khi code.
+Nếu vault chưa có trên máy hiện tại → restore từ source (cloud sync / backup / clone từ máy khác) trước khi code.
 
 ---
 
@@ -657,7 +660,7 @@ Nhiều file → list hết: "Tôi đã cập nhật [[file-1]], [[file-2]], [[f
 └── Fix-History/                  # bug fixes
 ```
 
-Symlink target tuỳ máy — xem section "Per-machine setup" ở đầu file. Nếu symlink không tồn tại → restore vault từ OneDrive trước khi tiếp tục.
+Symlink target tuỳ máy — xem section "Per-machine setup" ở đầu file. Nếu symlink không tồn tại → chạy `bash scripts/setup-vault.sh` (hoặc `.ps1`) để tạo, hoặc restore vault từ source trước khi tiếp tục.
 
 ### Vault Read Order (đầu session)
 
