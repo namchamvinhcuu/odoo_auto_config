@@ -281,15 +281,15 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
   Color _statusColor(String status) {
     switch (status) {
       case 'M':
-        return const Color(0xFFE5E510);
+        return AppGitStatusColors.modified;
       case 'A':
-        return const Color(0xFF0DBC79);
+        return AppGitStatusColors.added;
       case 'D':
-        return const Color(0xFFCD3131);
+        return AppGitStatusColors.deleted;
       case '??':
         return Colors.grey;
       case 'R':
-        return const Color(0xFF2472C8);
+        return AppGitStatusColors.renamed;
       default:
         return Colors.grey.shade300;
     }

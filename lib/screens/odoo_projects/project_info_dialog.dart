@@ -245,7 +245,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
     final selected = await AppDialog.show<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Select Database'),
+        title: Text(context.l10n.selectDatabase),
         children: _databases!.map((db) => SimpleDialogOption(
           onPressed: () => Navigator.pop(ctx, db),
           child: Row(
@@ -437,7 +437,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
         const SizedBox(height: AppSpacing.lg),
         const Divider(),
         const SizedBox(height: AppSpacing.sm),
-        Text('Database', style: Theme.of(context).textTheme.titleSmall),
+        Text(context.l10n.databaseSection, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
@@ -453,7 +453,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
               child: FilledButton.tonalIcon(
                 onPressed: _selectDatabase,
                 icon: const Icon(Icons.list),
-                label: const Text('Import Database'),
+                label: Text(context.l10n.importDatabase),
               ),
             ),
           ],
@@ -528,7 +528,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
           const SizedBox(height: AppSpacing.lg),
           const Divider(),
           const SizedBox(height: AppSpacing.sm),
-          Text('Git Repositories',
+          Text(context.l10n.gitRepositoriesSection,
               style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: AppSpacing.md),
           if (_gitAccounts.isNotEmpty)
@@ -555,7 +555,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
               },
             )
           else
-            Text('No Git accounts configured. Add in Settings > Git.',
+            Text(context.l10n.noGitAccountsConfigured,
                 style: TextStyle(color: Colors.grey.shade500, fontSize: AppFontSize.md)),
           const SizedBox(height: AppSpacing.md),
           TextField(

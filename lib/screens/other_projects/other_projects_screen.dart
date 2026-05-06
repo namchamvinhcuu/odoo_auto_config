@@ -136,7 +136,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       await ref.read(otherProjectsProvider.notifier).addWorkspace(workspace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cloned and added "${workspace.name}"')),
+          SnackBar(content: Text(context.l10n.clonedAndAdded(workspace.name))),
         );
       }
     }

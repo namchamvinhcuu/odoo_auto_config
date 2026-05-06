@@ -616,5 +616,16 @@
   "discardAction": "Discard",
   "discardConfirmMessage": "Các file sau sẽ bị discard ({count} file):",
   "discardWarning": "Hành động này không thể hoàn tác.",
-  "discardUntrackedWarning": "{count} file untracked sẽ bị xóa vĩnh viễn khỏi ổ đĩa."
+  "discardUntrackedWarning": "{count} file untracked sẽ bị xóa vĩnh viễn khỏi ổ đĩa.",
+
+  "errorPrefix": "Lỗi: {error}",
+  "updateUpToDate": "v{version} — đã là phiên bản mới nhất",
+  "selectDatabase": "Chọn Database",
+  "databaseSection": "Database",
+  "importDatabase": "Import Database",
+  "gitRepositoriesSection": "Git Repositories",
+  "noGitAccountsConfigured": "Chưa cấu hình tài khoản Git. Thêm tại Settings > Git.",
+  "demoData": "Demo data",
+  "clonedAndAdded": "Đã clone và thêm \"{name}\"",
+  "clonedIntoWorkspace": "Đã clone \"{repo}\" vào \"{key}\""
 }

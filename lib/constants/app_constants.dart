@@ -262,6 +262,15 @@ class AppLogColors {
   static const Color terminalBg = Color(0xFF1E1E1E);
 }
 
+/// Colors for git status indicators in commit dialogs.
+/// Values match xterm 256-color palette (consistent with [AnsiParser]).
+class AppGitStatusColors {
+  static const Color modified = Color(0xFFE5E510); // yellow — 'M'
+  static const Color added = Color(0xFF0DBC79); // green — 'A'
+  static const Color deleted = Color(0xFFCD3131); // red — 'D'
+  static const Color renamed = Color(0xFF2472C8); // blue — 'R'
+}
+
 /// NavigationRail constants
 class AppNav {
   static const double minExtendedWidth = 220;

@@ -3393,6 +3393,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 untracked file} other{{count} untracked files}} will be permanently deleted from disk.'**
   String discardUntrackedWarning(int count);
+
+  /// No description provided for @errorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorPrefix(String error);
+
+  /// No description provided for @updateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'v{version} — up to date'**
+  String updateUpToDate(String version);
+
+  /// No description provided for @selectDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Database'**
+  String get selectDatabase;
+
+  /// No description provided for @databaseSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get databaseSection;
+
+  /// No description provided for @importDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Database'**
+  String get importDatabase;
+
+  /// No description provided for @gitRepositoriesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Repositories'**
+  String get gitRepositoriesSection;
+
+  /// No description provided for @noGitAccountsConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No Git accounts configured. Add in Settings > Git.'**
+  String get noGitAccountsConfigured;
+
+  /// No description provided for @demoData.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo data'**
+  String get demoData;
+
+  /// No description provided for @clonedAndAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloned and added \"{name}\"'**
+  String clonedAndAdded(String name);
+
+  /// No description provided for @clonedIntoWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloned \"{repo}\" into \"{key}\"'**
+  String clonedIntoWorkspace(String repo, String key);
 }
 
 class _AppLocalizationsDelegate

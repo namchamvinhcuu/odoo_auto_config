@@ -249,7 +249,7 @@ class _CreateDbDialogState extends State<CreateDbDialog> {
                   ),
                   const SizedBox(width: AppSpacing.md),
                   FilterChip(
-                    label: const Text('Demo data'),
+                    label: Text(context.l10n.demoData),
                     selected: _demoData,
                     onSelected: _creating ? null : (v) => setState(() => _demoData = v),
                   ),

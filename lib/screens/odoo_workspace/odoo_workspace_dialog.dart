@@ -374,7 +374,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     await _addRepo(repoKey);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cloned "${result.repoName}" into "$repoKey"')),
+        SnackBar(content: Text(context.l10n.clonedIntoWorkspace(result.repoName, repoKey))),
       );
     }
   }

@@ -1886,4 +1886,43 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0 will be permanently deleted from disk.';
   }
+
+  @override
+  String errorPrefix(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String updateUpToDate(String version) {
+    return 'v$version — up to date';
+  }
+
+  @override
+  String get selectDatabase => 'Select Database';
+
+  @override
+  String get databaseSection => 'Database';
+
+  @override
+  String get importDatabase => 'Import Database';
+
+  @override
+  String get gitRepositoriesSection => 'Git Repositories';
+
+  @override
+  String get noGitAccountsConfigured =>
+      'No Git accounts configured. Add in Settings > Git.';
+
+  @override
+  String get demoData => 'Demo data';
+
+  @override
+  String clonedAndAdded(String name) {
+    return 'Cloned and added \"$name\"';
+  }
+
+  @override
+  String clonedIntoWorkspace(String repo, String key) {
+    return 'Cloned \"$repo\" into \"$key\"';
+  }
 }

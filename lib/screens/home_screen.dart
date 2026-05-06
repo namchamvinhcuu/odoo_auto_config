@@ -164,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WindowListener {
       ref.read(updateProvider.notifier).checkForUpdate();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('v$appVersion — up to date')),
+        SnackBar(content: Text(context.l10n.updateUpToDate(appVersion))),
       );
     }
   }

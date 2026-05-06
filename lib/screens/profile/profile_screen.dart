@@ -45,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
             child: asyncState.when(
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              error: (e, _) => Center(child: Text(context.l10n.errorPrefix(e.toString()))),
               data: (state) {
                 if (state.profiles.isEmpty) {
                   return Center(

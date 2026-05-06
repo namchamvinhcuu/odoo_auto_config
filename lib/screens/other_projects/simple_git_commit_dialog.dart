@@ -294,15 +294,15 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
   Color _statusColor(String status) {
     switch (status) {
       case 'M':
-        return const Color(0xFFE5E510); // yellow
+        return AppGitStatusColors.modified;
       case 'A':
-        return const Color(0xFF0DBC79); // green
+        return AppGitStatusColors.added;
       case 'D':
-        return const Color(0xFFCD3131); // red
+        return AppGitStatusColors.deleted;
       case '??':
         return Colors.grey;
       case 'R':
-        return const Color(0xFF2472C8); // blue
+        return AppGitStatusColors.renamed;
       default:
         return Colors.grey.shade300;
     }

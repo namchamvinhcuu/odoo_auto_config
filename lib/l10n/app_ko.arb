@@ -616,5 +616,16 @@
   "discardAction": "Discard",
   "discardConfirmMessage": "다음 {count}개 파일의 변경 사항이 폐기됩니다:",
   "discardWarning": "이 작업은 취소할 수 없습니다.",
-  "discardUntrackedWarning": "추적되지 않은 파일 {count}개가 디스크에서 영구적으로 삭제됩니다."
+  "discardUntrackedWarning": "추적되지 않은 파일 {count}개가 디스크에서 영구적으로 삭제됩니다.",
+
+  "errorPrefix": "오류: {error}",
+  "updateUpToDate": "v{version} — 최신 버전입니다",
+  "selectDatabase": "데이터베이스 선택",
+  "databaseSection": "데이터베이스",
+  "importDatabase": "데이터베이스 가져오기",
+  "gitRepositoriesSection": "Git 리포지토리",
+  "noGitAccountsConfigured": "구성된 Git 계정이 없습니다. 설정 > Git에서 추가하세요.",
+  "demoData": "데모 데이터",
+  "clonedAndAdded": "\"{name}\" 복제 후 추가됨",
+  "clonedIntoWorkspace": "\"{repo}\"을(를) \"{key}\"에 복제함"
 }

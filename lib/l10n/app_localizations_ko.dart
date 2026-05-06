@@ -1839,4 +1839,42 @@ class AppLocalizationsKo extends AppLocalizations {
   String discardUntrackedWarning(int count) {
     return '추적되지 않은 파일 $count개가 디스크에서 영구적으로 삭제됩니다.';
   }
+
+  @override
+  String errorPrefix(String error) {
+    return '오류: $error';
+  }
+
+  @override
+  String updateUpToDate(String version) {
+    return 'v$version — 최신 버전입니다';
+  }
+
+  @override
+  String get selectDatabase => '데이터베이스 선택';
+
+  @override
+  String get databaseSection => '데이터베이스';
+
+  @override
+  String get importDatabase => '데이터베이스 가져오기';
+
+  @override
+  String get gitRepositoriesSection => 'Git 리포지토리';
+
+  @override
+  String get noGitAccountsConfigured => '구성된 Git 계정이 없습니다. 설정 > Git에서 추가하세요.';
+
+  @override
+  String get demoData => '데모 데이터';
+
+  @override
+  String clonedAndAdded(String name) {
+    return '\"$name\" 복제 후 추가됨';
+  }
+
+  @override
+  String clonedIntoWorkspace(String repo, String key) {
+    return '\"$repo\"을(를) \"$key\"에 복제함';
+  }
 }

@@ -1869,4 +1869,43 @@ class AppLocalizationsVi extends AppLocalizations {
   String discardUntrackedWarning(int count) {
     return '$count file untracked sẽ bị xóa vĩnh viễn khỏi ổ đĩa.';
   }
+
+  @override
+  String errorPrefix(String error) {
+    return 'Lỗi: $error';
+  }
+
+  @override
+  String updateUpToDate(String version) {
+    return 'v$version — đã là phiên bản mới nhất';
+  }
+
+  @override
+  String get selectDatabase => 'Chọn Database';
+
+  @override
+  String get databaseSection => 'Database';
+
+  @override
+  String get importDatabase => 'Import Database';
+
+  @override
+  String get gitRepositoriesSection => 'Git Repositories';
+
+  @override
+  String get noGitAccountsConfigured =>
+      'Chưa cấu hình tài khoản Git. Thêm tại Settings > Git.';
+
+  @override
+  String get demoData => 'Demo data';
+
+  @override
+  String clonedAndAdded(String name) {
+    return 'Đã clone và thêm \"$name\"';
+  }
+
+  @override
+  String clonedIntoWorkspace(String repo, String key) {
+    return 'Đã clone \"$repo\" vào \"$key\"';
+  }
 }

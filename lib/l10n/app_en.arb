@@ -725,5 +725,20 @@
   "@discardConfirmMessage": { "placeholders": { "count": { "type": "int" } } },
   "discardWarning": "This action cannot be undone.",
   "discardUntrackedWarning": "{count, plural, one{1 untracked file} other{{count} untracked files}} will be permanently deleted from disk.",
-  "@discardUntrackedWarning": { "placeholders": { "count": { "type": "int" } } }
+  "@discardUntrackedWarning": { "placeholders": { "count": { "type": "int" } } },
+
+  "errorPrefix": "Error: {error}",
+  "@errorPrefix": { "placeholders": { "error": { "type": "String" } } },
+  "updateUpToDate": "v{version} — up to date",
+  "@updateUpToDate": { "placeholders": { "version": { "type": "String" } } },
+  "selectDatabase": "Select Database",
+  "databaseSection": "Database",
+  "importDatabase": "Import Database",
+  "gitRepositoriesSection": "Git Repositories",
+  "noGitAccountsConfigured": "No Git accounts configured. Add in Settings > Git.",
+  "demoData": "Demo data",
+  "clonedAndAdded": "Cloned and added \"{name}\"",
+  "@clonedAndAdded": { "placeholders": { "name": { "type": "String" } } },
+  "clonedIntoWorkspace": "Cloned \"{repo}\" into \"{key}\"",
+  "@clonedIntoWorkspace": { "placeholders": { "repo": { "type": "String" }, "key": { "type": "String" } } }
 }
