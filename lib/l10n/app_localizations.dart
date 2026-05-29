@@ -610,6 +610,12 @@ abstract class AppLocalizations {
   /// **'Open folder'**
   String get openFolder;
 
+  /// No description provided for @openInTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Terminal'**
+  String get openInTerminal;
+
   /// No description provided for @openInBrowser.
   ///
   /// In en, this message translates to:
@@ -675,6 +681,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not open VSCode'**
   String get couldNotOpenVscode;
+
+  /// No description provided for @couldNotOpenTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open Terminal'**
+  String get couldNotOpenTerminal;
 
   /// No description provided for @editProject.
   ///

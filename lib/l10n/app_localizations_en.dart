@@ -290,6 +290,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openFolder => 'Open folder';
 
   @override
+  String get openInTerminal => 'Open in Terminal';
+
+  @override
   String get openInBrowser => 'Open in browser';
 
   @override
@@ -329,6 +332,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get couldNotOpenVscode => 'Could not open VSCode';
+
+  @override
+  String get couldNotOpenTerminal => 'Could not open Terminal';
 
   @override
   String get editProject => 'Edit Project';

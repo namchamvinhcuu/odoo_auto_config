@@ -18,6 +18,7 @@ class OdooProjectGridView extends StatelessWidget {
     required this.onSelect,
     required this.onOpenInVscode,
     required this.onOpenInFileManager,
+    required this.onOpenInTerminal,
     required this.onOpenInBrowser,
     required this.onRemove,
   });
@@ -33,6 +34,7 @@ class OdooProjectGridView extends StatelessWidget {
   final ValueChanged<ProjectInfo> onSelect;
   final ValueChanged<ProjectInfo> onOpenInVscode;
   final ValueChanged<ProjectInfo> onOpenInFileManager;
+  final ValueChanged<ProjectInfo> onOpenInTerminal;
   final ValueChanged<ProjectInfo> onOpenInBrowser;
   final ValueChanged<ProjectInfo> onRemove;
 
@@ -319,6 +321,17 @@ class OdooProjectGridView extends StatelessWidget {
               ],
             ),
           ),
+        if (exists)
+          PopupMenuItem(
+            value: 'terminal',
+            child: Row(
+              children: [
+                const Icon(Icons.terminal, size: AppIconSize.md),
+                const SizedBox(width: AppSpacing.sm),
+                Text(context.l10n.openInTerminal),
+              ],
+            ),
+          ),
         PopupMenuItem(
           value: 'delete',
           child: Row(
@@ -348,6 +361,8 @@ class OdooProjectGridView extends StatelessWidget {
         onGitCommit(proj);
       case 'folder':
         onOpenInFileManager(proj);
+      case 'terminal':
+        onOpenInTerminal(proj);
       case 'delete':
         onRemove(proj);
     }

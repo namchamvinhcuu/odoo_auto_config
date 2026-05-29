@@ -290,6 +290,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get openFolder => 'Mở thư mục';
 
   @override
+  String get openInTerminal => 'Mở trong Terminal';
+
+  @override
   String get openInBrowser => 'Mở trên trình duyệt';
 
   @override
@@ -329,6 +332,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get couldNotOpenVscode => 'Không thể mở VSCode';
+
+  @override
+  String get couldNotOpenTerminal => 'Không thể mở Terminal';
 
   @override
   String get editProject => 'Sửa dự án';

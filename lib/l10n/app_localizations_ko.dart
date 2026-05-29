@@ -286,6 +286,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get openFolder => '폴더 열기';
 
   @override
+  String get openInTerminal => '터미널에서 열기';
+
+  @override
   String get openInBrowser => '브라우저에서 열기';
 
   @override
@@ -325,6 +328,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get couldNotOpenVscode => 'VSCode를 열 수 없습니다';
+
+  @override
+  String get couldNotOpenTerminal => '터미널을 열 수 없습니다';
 
   @override
   String get editProject => '프로젝트 편집';
