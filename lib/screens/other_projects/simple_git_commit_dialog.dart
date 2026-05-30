@@ -291,23 +291,6 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
     }
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'M':
-        return AppGitStatusColors.modified;
-      case 'A':
-        return AppGitStatusColors.added;
-      case 'D':
-        return AppGitStatusColors.deleted;
-      case '??':
-        return Colors.grey;
-      case 'R':
-        return AppGitStatusColors.renamed;
-      default:
-        return Colors.grey.shade300;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final allSelected =
@@ -445,7 +428,7 @@ class _SimpleGitCommitDialogState extends State<SimpleGitCommitDialog> {
                                 style: TextStyle(
                                   fontFamily: 'monospace',
                                   fontWeight: FontWeight.bold,
-                                  color: _statusColor(status),
+                                  color: AppGitStatusColors.fromStatus(status),
                                   fontSize: AppFontSize.md,
                                 ),
                               ),

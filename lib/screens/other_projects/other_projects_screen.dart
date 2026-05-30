@@ -182,7 +182,15 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   Future<void> _openInTerminal(String path) async {
     try {
       if (Platform.isMacOS) {
-        await Process.run('open', ['-a', 'Terminal', path], runInShell: true);
+        // Ưu tiên iTerm2 (hỗ trợ Shift+Enter), fallback Terminal mặc định.
+        final iterm = await Process.run('open', [
+          '-a',
+          'iTerm',
+          path,
+        ], runInShell: true);
+        if (iterm.exitCode != 0) {
+          await Process.run('open', ['-a', 'Terminal', path], runInShell: true);
+        }
       } else if (Platform.isWindows) {
         // start /d <path> cmd → mở cửa sổ cmd mới tại thư mục dự án
         await Process.run('cmd', [

@@ -269,6 +269,24 @@ class AppGitStatusColors {
   static const Color added = Color(0xFF0DBC79); // green — 'A'
   static const Color deleted = Color(0xFFCD3131); // red — 'D'
   static const Color renamed = Color(0xFF2472C8); // blue — 'R'
+
+  /// Map git porcelain status code → color. `??` = untracked, fallback = unknown.
+  static Color fromStatus(String status) {
+    switch (status) {
+      case 'M':
+        return modified;
+      case 'A':
+        return added;
+      case 'D':
+        return deleted;
+      case '??':
+        return Colors.grey;
+      case 'R':
+        return renamed;
+      default:
+        return Colors.grey.shade300;
+    }
+  }
 }
 
 /// NavigationRail constants
