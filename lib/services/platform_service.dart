@@ -571,6 +571,93 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
     }
   }
 
+  /// Open [path] in VSCode, cross-platform.
+  ///
+  /// Caller chịu trách nhiệm check [isVscodeInstalled] và hiển thị
+  /// install dialog trước khi gọi (helper này KHÔNG check — chỉ launch).
+  ///
+  /// - macOS: `open -a "Visual Studio Code" <path>`.
+  /// - Windows: `cmd /c code <path>`.
+  /// - Linux: `code <path>`.
+  ///
+  /// Returns `true` nếu launch OK, `false` nếu Process.run fail.
+  static Future<bool> openInVscode(String path) async {
+    try {
+      if (isMacOS) {
+        await Process.run('open', [
+          '-a',
+          'Visual Studio Code',
+          path,
+        ], runInShell: true);
+      } else if (isWindows) {
+        await Process.run('cmd', ['/c', 'code', path], runInShell: true);
+      } else {
+        await Process.run('code', [path], runInShell: true);
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Open a terminal window at [path], cross-platform.
+  ///
+  /// - macOS: ưu tiên iTerm2 (`open -a iTerm`) vì hỗ trợ Shift+Enter,
+  ///   fallback Terminal mặc định khi iTerm chưa cài.
+  /// - Windows: `cmd /c start "" /d <path> cmd`.
+  /// - Linux: detect terminal emulator qua `which` lần lượt
+  ///   `x-terminal-emulator` → `gnome-terminal` → `konsole` → `xfce4-terminal`.
+  ///
+  /// Returns `true` nếu launch thành công, `false` nếu mọi attempt fail.
+  /// Caller chịu trách nhiệm hiển thị error UI (vd SnackBar).
+  static Future<bool> openInTerminal(String path) async {
+    try {
+      if (isMacOS) {
+        final iterm = await Process.run('open', [
+          '-a',
+          'iTerm',
+          path,
+        ], runInShell: true);
+        if (iterm.exitCode == 0) return true;
+        final terminal = await Process.run('open', [
+          '-a',
+          'Terminal',
+          path,
+        ], runInShell: true);
+        return terminal.exitCode == 0;
+      }
+      if (isWindows) {
+        final result = await Process.run('cmd', [
+          '/c',
+          'start',
+          '',
+          '/d',
+          path,
+          'cmd',
+        ], runInShell: true);
+        return result.exitCode == 0;
+      }
+      // Linux: thử các terminal emulator phổ biến (Mint/GNOME/KDE/XFCE).
+      const candidates = <List<String>>[
+        ['x-terminal-emulator', '--working-directory='],
+        ['gnome-terminal', '--working-directory='],
+        ['konsole', '--workdir'],
+        ['xfce4-terminal', '--working-directory='],
+      ];
+      for (final c in candidates) {
+        final found = await Process.run('which', [c[0]], runInShell: true);
+        if (found.exitCode == 0) {
+          final args = c[1].endsWith('=') ? ['${c[1]}$path'] : [c[1], path];
+          await Process.start(c[0], args, runInShell: true);
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static String venvActivateScript(String venvPath) {
     if (isWindows) {
       return '$venvPath\\Scripts\\activate.bat';

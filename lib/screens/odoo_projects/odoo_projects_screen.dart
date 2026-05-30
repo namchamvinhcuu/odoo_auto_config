@@ -135,54 +135,11 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
   }
 
   Future<void> _openInTerminal(String path) async {
-    try {
-      if (Platform.isMacOS) {
-        // Ưu tiên iTerm2 (hỗ trợ Shift+Enter), fallback Terminal mặc định.
-        final iterm = await Process.run('open', [
-          '-a',
-          'iTerm',
-          path,
-        ], runInShell: true);
-        if (iterm.exitCode != 0) {
-          await Process.run('open', ['-a', 'Terminal', path], runInShell: true);
-        }
-      } else if (Platform.isWindows) {
-        // start /d <path> cmd → mở cửa sổ cmd mới tại thư mục dự án
-        await Process.run('cmd', [
-          '/c',
-          'start',
-          '',
-          '/d',
-          path,
-          'cmd',
-        ], runInShell: true);
-      } else {
-        // Linux: thử lần lượt các terminal emulator phổ biến (Mint/GNOME/KDE/XFCE)
-        const candidates = <List<String>>[
-          ['x-terminal-emulator', '--working-directory='],
-          ['gnome-terminal', '--working-directory='],
-          ['konsole', '--workdir'],
-          ['xfce4-terminal', '--working-directory='],
-        ];
-        String? exe;
-        List<String>? args;
-        for (final c in candidates) {
-          final found = await Process.run('which', [c[0]], runInShell: true);
-          if (found.exitCode == 0) {
-            exe = c[0];
-            args = c[1].endsWith('=') ? ['${c[1]}$path'] : [c[1], path];
-            break;
-          }
-        }
-        if (exe == null) throw const ProcessException('terminal', []);
-        await Process.start(exe, args!, runInShell: true);
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.couldNotOpenTerminal)),
-        );
-      }
+    final ok = await PlatformService.openInTerminal(path);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotOpenTerminal)),
+      );
     }
   }
 
@@ -196,20 +153,11 @@ class _OdooProjectsScreenState extends ConsumerState<OdooProjectsScreen> {
       );
       return;
     }
-    try {
-      if (Platform.isMacOS) {
-        await Process.run('open', ['-a', 'Visual Studio Code', path], runInShell: true);
-      } else if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'code', path], runInShell: true);
-      } else {
-        await Process.run('code', [path], runInShell: true);
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.couldNotOpenVscode)),
-        );
-      }
+    final ok = await PlatformService.openInVscode(path);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.couldNotOpenVscode)),
+      );
     }
   }
 
