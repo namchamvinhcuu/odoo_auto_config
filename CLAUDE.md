@@ -4,8 +4,10 @@ Behavioral principles cho Claude trong dự án Flutter desktop (cấu hình Odo
 
 **Knowledge base ngoài file này:**
 - 📚 `./.obsidian-vault/` — symlink Obsidian vault (atomic notes: `Architecture/` / `Features/` / `Knowledge-Base/` / `Fix-History/` / `Change-Log/`). Vào qua `Index.md`.
-- 🛠 `./.claude/agents/` — sub-agents (vault-curator / vault-debugger / flutter-reviewer / flutter-test-writer).
-- 📐 `./.claude/references/` — discipline chung (sub-agent / review / test) áp dụng tự động cho sub-agents.
+- 🛠 `./.claude/agents/` — sub-agents (`vault-curator` / `vault-debugger` / `flutter-reviewer` / `flutter-test-writer`) đã có procedure đầy đủ trong body.
+- 📐 `./.claude/references/{sub-agent,review,test}-discipline.md` — discipline chung áp dụng tự động cho sub-agents.
+
+**Priority khi conflict:** Project CLAUDE.md > `references/` > agent body.
 
 ### Per-machine setup (nếu `.obsidian-vault` chưa có)
 
@@ -62,18 +64,15 @@ Why: breaking changes giữa minor versions, pub package version constraint, rep
 
 Khi nghi vấn Flutter / pub package API — query source thật, KHÔNG đoán theo training data.
 
-**Sources (dynamic resolve, không hardcode version):**
-
 ```bash
 FLUTTER_SDK=$(dirname $(dirname $(readlink -f $(which flutter))))
 # Flutter widgets: $FLUTTER_SDK/packages/flutter/lib/src/{material,cupertino,widgets}/
 # Pub package:    ~/.pub-cache/hosted/pub.dev/<pkg>-<version>/lib/  (version từ pubspec.lock)
-grep -rn "class CircleAvatar" $FLUTTER_SDK/packages/flutter/lib/src/material/
 ```
 
-**Why:** Flutter API đổi giữa minor versions (`WidgetState` rename, `MaterialState` deprecated…); pub major bump = breaking (Riverpod 2→3 `Notifier` API); hardcode version → stale.
+**Why:** Flutter API đổi giữa minor versions (`WidgetState` rename, `MaterialState` deprecated…); pub major bump = breaking (Riverpod 2→3 `Notifier` API).
 
-Không verify được → **nói rõ là đang đoán**, không khẳng định. Sub-agents có upstream lookup table riêng trong `.claude/references/sub-agent-discipline.md`.
+Không verify được → **nói rõ đang đoán**, không khẳng định. Sub-agents có upstream lookup table riêng trong `references/sub-agent-discipline.md`.
 
 ---
 
@@ -99,18 +98,11 @@ Success criteria KHÔNG nhất thiết là tests — có thể manual repro / di
 
 ---
 
-## 6. Vault-First Debug — đọc vault TRƯỚC khi đọc code
+## 6. Vault-First Debug — spawn `vault-debugger` TRƯỚC khi sửa
 
-User báo lỗi (screenshot / traceback / mô tả) → quét `.obsidian-vault/` TRƯỚC:
+User báo lỗi (screenshot / traceback / mô tả) → **spawn `vault-debugger`** (đọc vault `Architecture/` + `Fix-History/` + `Knowledge-Base/` + `Features/` rồi đối chiếu source) → main session áp diff đề xuất → spawn `flutter-reviewer` confirm.
 
-1. `Architecture/` — flow nghiệp vụ liên quan ([[Architecture/Multi-Instance-IPC]], [[Architecture/Dialog-System]], [[Architecture/State-Management-Riverpod]]…)
-2. `Fix-History/` — bug tương tự đã fix (grep theo keyword triệu chứng)
-3. `Knowledge-Base/` — gotcha / pattern Flutter / Riverpod / cross-platform Process
-4. `Features/` — context business logic
-
-Đối chiếu source thật (#3) → xác định cùng root cause không → propose fix tôn trọng logic cũ.
-
-**Why:** vault chứa mental model + lịch sử quyết định + pattern đã tested. Đọc code cold dễ fix bề mặt / rediscover bug / break logic khác.
+**Why:** vault chứa mental model + lịch sử quyết định + pattern đã tested. Đọc code cold dễ fix bề mặt / rediscover bug / break logic khác. Procedure đầy đủ trong `agents/vault-debugger.md` + `references/sub-agent-discipline.md#Vault-First entry`.
 
 Skip CHỈ khi: typo trivial 1-2 ký tự; user explicit "fix nhanh, không cần context".
 
@@ -197,14 +189,12 @@ grep -rn 'Color(0x' lib/ | grep -v 'app_constants\|app_colors\|theme'
 - **Env vars:** `Platform.environment['HOME'] ?? ...['USERPROFILE']`.
 - **Line endings:** git porcelain Windows trả `\r\n` → strip `\r` khi parse.
 
-**Mandatory:** sau refactor Process → chạy audit script [[Knowledge-Base/Skill-Audit-RunInShell]] (grep + check conformance 3 OS).
-
 ```bash
 grep -rn "Process\.run\|Process\.start" lib/ | grep -v "runInShell"
 grep -rn "'which'\|'where'" lib/ | grep -v "Platform.is"
 ```
 
-Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. References: [[Knowledge-Base/Skill-Audit-RunInShell]], [[Fix-History/RunInShell-Audit]], [[Fix-History/Git-Porcelain-Parsing]].
+Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. Mandatory audit sau refactor: [[Knowledge-Base/Skill-Audit-RunInShell]]. References: [[Fix-History/RunInShell-Audit]], [[Fix-History/Git-Porcelain-Parsing]].
 
 ---
 
@@ -226,11 +216,11 @@ Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. 
 
 ---
 
-## 14. Test-Driven Quality — Verify + zero analyze issues
+## 14. Test-Driven Quality — spawn `flutter-test-writer` + zero analyze issues
 
-**Không task nào hoàn thành khi chưa verify hoạt động + `fvm flutter analyze` PASS với 0 issue (kể cả info level).**
+**Mọi tác vụ thay đổi logic → spawn `flutter-test-writer`** (agent body có FVM detect, infra detect, runner table, AAA/regression guard, PASS verbatim, Verdict ✅/❌). Main session loop fix-test cho tới `✅ ALL PASS` mới end task. Procedure đầy đủ ở `agents/flutter-test-writer.md` + `references/test-discipline.md`.
 
-**Verify methods theo loại change:**
+**Verify methods theo loại change (Flutter-specific):**
 
 | Change | Verify |
 | --- | --- |
@@ -243,7 +233,7 @@ Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. 
 | Cross-platform Process | Audit script [[Knowledge-Base/Skill-Audit-RunInShell]] |
 | Static checks | `fvm flutter analyze` — **0 issue** kể cả info |
 
-### Autonomy — cross-stack rules + Flutter extras
+### Autonomy — cross-stack rules + Flutter extras (main session boundary)
 
 Áp dụng "Auto-run trên local dev — KHÔNG hỏi confirm" + "VẪN phải confirm trước" của user-global CLAUDE.md. Flutter-specific extension:
 
@@ -252,91 +242,48 @@ Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. 
 
 ### Completion criteria
 
-- `fvm flutter test` → `All tests passed!` (count > 0 nếu có tests)
-- `fvm flutter analyze` → `No issues found!` (không chấp nhận info/warning level dư)
-- Manual repro: bug không còn / feature đúng theo success criteria
-- Cross-platform Process: pass audit script
-- ❌ KHÔNG dùng "code compiles" làm proof
+- Test-writer Verdict `✅ ALL PASS` (count > 0 nếu logic change) — chi tiết PASS pattern trong `test-discipline.md`.
+- `fvm flutter analyze` → `No issues found!` (không chấp nhận info/warning level dư).
+- Manual repro: bug không còn / feature đúng theo success criteria.
+- Cross-platform Process: pass audit script.
+- ❌ KHÔNG dùng "code compiles" làm proof.
 
-### Exception (skip verify)
-
-User explicit "no tests needed"; trivial typo (1-2 ký tự); comment-only changes; UI visual tweak (confirm visually qua `fvm flutter run`).
-
-Test patterns chi tiết (AAA, regression guard, isolation, PASS verbatim) ở `.claude/references/test-discipline.md` — flutter-test-writer áp dụng tự động.
+**Skip verify CHỈ khi:** user explicit "no tests needed"; trivial typo 1-2 ký tự; comment-only; UI visual tweak (confirm visually qua `fvm flutter run`).
 
 ---
 
-## 15. Knowledge Loop — Vòng lặp tri thức
+## 15. Knowledge Loop — spawn `vault-curator` end-of-session
 
-**Sau thay đổi code / giải quyết yêu cầu** — bắt buộc 5 bước:
+**Sau code change cần persist** — main session:
 
-### Step 1 — Atomic notes (logic mới/khó)
+1. **Prep scratch** `/tmp/<task-slug>-summary.md` (format trong `agents/vault-curator.md#Input bắt buộc`): Type (bug-fix/feature/refactor/skill) + Diff summary + Tested (PASS verbatim) + Modules touched + Open questions + Related skill/fix-history.
+2. **Spawn `vault-curator`** — agent xử lý: tạo Atomic notes (Skill/Feature), Fix-History (nếu bug-fix), Cross-links Index, Change-Log APPEND `YYYY-MM.md`, Current-State OVERWRITE, STRUCTURE.md sync (nếu có).
+3. **Báo cáo cuối câu trả lời:** "Tôi đã cập nhật tài liệu tại [[File-1]], [[File-2]]…" (đọc từ `/tmp/<task-slug>-curator.md`).
 
-| Loại | Folder + naming |
-| --- | --- |
-| Reusable skill / know-how | `Knowledge-Base/Skill-<Name>.md` |
-| Multi-step workflow | `Knowledge-Base/Workflow-<Name>.md` |
-| Business feature mới | `Features/<Feature>.md` |
-| Architecture pattern | `Architecture/<Topic>.md` |
-| Fix pattern | xem Step 2 |
+**Distinction:** Change-Log = lịch sử (APPEND) · Current-State = hiện tại (OVERWRITE). Đừng trộn — curator enforce.
 
-File đã có → update section, đừng tạo trùng.
-
-### Step 2 — Fix-History (vừa sửa bug)
-
-`./.obsidian-vault/Fix-History/<Tên-Bug>.md` (ngắn gọn, không prefix `Fix-`). Structure: `## Symptom` (triệu chứng + error log) · `## Root cause` (nguyên nhân gốc) · `## Fix` (diff/pattern/workaround + link code) · `## Related` ([[Index]] + atomic notes).
-
-Template mẫu: [[Fix-History/RunInShell-Audit]] / [[Fix-History/Git-Porcelain-Parsing]].
-
-### Step 3 — Liên kết
-
-- Add link vào `Index.md` đúng section.
-- `## Related` trong file mới link tới atomic notes liên quan với `[[ ]]`.
-- Bidirectional — file target add `[[new-file]]` vào Related. Không orphan file.
-
-### Step 4 — Change-Log (APPEND) + Current-State (OVERWRITE)
-
-**A. Change-Log — APPEND:**
-- `.obsidian-vault/Change-Log/YYYY-MM.md` — entry MỚI ở TOP (reverse chronological).
-- `Change-Log.md` root TOC — refresh 3 entries gần nhất inline, cũ hơn chỉ giữ link.
-- Cross-month → tạo file mới + add link vào "Monthly archives".
-
-**B. Current-State — OVERWRITE:**
-- `.obsidian-vault/Current-State.md` — re-write sections: Active focus, Version (nếu bump), In-flight ✅/⏳, Open questions, Known issues, Modules touched, Next priorities, Last test run.
-- KHÔNG append — luôn reflect TRẠNG THÁI HIỆN TẠI. Session sau đọc đầu tiên.
-
-**Distinction:** Change-Log = lịch sử (append) · Current-State = hiện tại (overwrite). Đừng trộn.
-
-### Step 5 — Báo cáo
-
-Cuối câu trả lời có doc change: "Tôi đã cập nhật tài liệu tại [[File-1]], [[File-2]]…"
-
-**Why:** session sau đọc vault (đặc biệt `Current-State.md`) thấy đầy đủ context — không phải "rediscover" pattern hoặc hỏi lại user.
+**Skip curator CHỈ khi:** session read-only/exploratory không code change; typo/comment-only.
 
 ---
 
-**Guidelines working if:** ít unnecessary changes, ít rewrites do overcomplication, clarifying questions đến TRƯỚC implementation chứ không phải sau mistake.
-
----
-
-## 📂 Vault Layout & Protocol
+## 📂 Vault Layout & Load Order
 
 ```
 ./.obsidian-vault/
 ├── Index.md                  # knowledge map (đọc khi navigate)
 ├── Current-State.md          # live snapshot — OVERWRITE end-of-session
 ├── Change-Log.md             # TOC + 3 entries gần nhất inline
-├── Change-Log/
-│   └── YYYY-MM.md            # monthly archives (APPEND at top)
+├── Change-Log/YYYY-MM.md     # monthly archives (APPEND at top)
 ├── Architecture/             # patterns, flows, hierarchy
 ├── Features/                 # business capabilities
 ├── Knowledge-Base/           # principles + skills + workflows + rules
 └── Fix-History/              # bug fixes
 ```
 
-**Đầu session — load order:**
-1. `CLAUDE.md` (auto) → 2. `MEMORY.md` (auto) → 3. `Current-State.md` → 4. `Index.md` → 5. `Change-Log.md` (3 entries gần nhất; đọc `Change-Log/YYYY-MM.md` nếu cần lịch sử sâu) → 6. Atomic notes on-demand.
+**Đầu session — load order:** `CLAUDE.md` (auto) → `MEMORY.md` (auto) → `Current-State.md` → `Index.md` → `Change-Log.md` (3 entries gần nhất; đọc `Change-Log/YYYY-MM.md` nếu cần lịch sử sâu) → Atomic notes on-demand.
 
-**Cuối session — write protocol:** áp dụng 5 steps #15 Knowledge Loop. Báo cáo file đã update.
+**Cuối session — write protocol:** spawn `vault-curator` (xem #15). Sub-agents (`reviewer` / `test-writer` / `debugger`) KHÔNG ghi vault — chỉ trả output về main.
 
-Sub-agents (`.claude/agents/`) áp dụng discipline chung trong `.claude/references/` tự động — main session KHÔNG cần lặp lại convention scratch file / scope honesty / severity tier / PASS verbatim trong prompt.
+---
+
+**Guidelines working if:** ít unnecessary changes, ít rewrites do overcomplication, clarifying questions đến TRƯỚC implementation chứ không phải sau mistake.
