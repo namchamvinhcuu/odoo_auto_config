@@ -30,11 +30,13 @@ Vault path tuỳ máy + cloud provider. User tự tạo symlink (machine-specifi
 
 Bias toward caution over speed. Trivial tasks → judgment.
 
+> **Cross-stack rules sống ở global `~/.claude/CLAUDE.md`** (symlink → `shared/global/CLAUDE.md`) và KHÔNG lặp lại ở đây: orchestration spawn-first, Test-Driven Quality mandate, auto-run autonomy, "KHÔNG auto-run", dev vs production, memory 3-tầng, ngôn ngữ giao tiếp. File này chỉ chứa phần **Flutter/vault-specific extend** — không loosen ranh giới an toàn của global.
+
 ---
 
 ## 1. Ask in Vietnamese
 
-Mọi câu hỏi / clarification / present alternatives / confirm destructive action → **tiếng Việt**.
+Mọi câu hỏi / clarification / present alternatives / confirm destructive → **tiếng Việt** — quy tắc đầy đủ ở global `~/.claude/CLAUDE.md` §Ask in Vietnamese.
 
 **Không áp dụng cho:** code, identifier, commit message, PR title, comment (theo convention module), error message copy từ tool/log.
 
@@ -280,7 +282,9 @@ Why: desktop chạy 3 OS, sai 1 flag = fail 1 OS pass 2 OS → bug khó detect. 
 └── Fix-History/              # bug fixes
 ```
 
-**Đầu session — load order:** `CLAUDE.md` (auto) → `MEMORY.md` (auto) → `Current-State.md` → `Index.md` → `Change-Log.md` (3 entries gần nhất; đọc `Change-Log/YYYY-MM.md` nếu cần lịch sử sâu) → Atomic notes on-demand.
+> **Memory contract:** vault = tầng **L3 (durable knowledge)**. Episodic ("đã làm gì khi nào") → **AgentMemory (L2)**, KHÔNG chép tay vào vault. Chi tiết: `.claude/references/memory-contract.md` + global `~/.claude/CLAUDE.md` §Memory & context.
+
+**Đầu session — load order:** `CLAUDE.md` (auto) → `MEMORY.md` (auto, L1) → AgentMemory context (auto-inject nếu server có; resume sâu `/handoff`·`/recall <topic>`) → `Current-State.md` (**slim ≤30KB — ảnh chụp hiện tại, KHÔNG phải lịch sử**) → `Index.md` → `Change-Log.md` (3 entries; lịch sử sâu → `Change-Log/YYYY-MM.md` hoặc `/recall`) → Atomic notes on-demand.
 
 **Cuối session — write protocol:** spawn `vault-curator` (xem #15). Sub-agents (`reviewer` / `test-writer` / `debugger`) KHÔNG ghi vault — chỉ trả output về main.
 
