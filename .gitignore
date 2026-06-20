@@ -65,3 +65,5 @@ app.*.map.json
 secrets/
 credentials.json
 *.credentials
+# Claude harness (per-machine symlink, không portable)
+/CLAUDE.md
