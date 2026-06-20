@@ -52,6 +52,7 @@ app.*.map.json
 # Claude Code per-machine: symlinks tới GGDrive/claude-agents + settings merged
 # (xem /Volumes/Data/GGDrive/Dev/claude-agents/README.md — setup-agents.sh script)
 .claude/
+CLAUDE.md
 
 # Secrets (defensive — chưa có file nào nhưng tránh leak tương lai)
 .env
