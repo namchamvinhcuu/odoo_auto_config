@@ -41,9 +41,9 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
-# Check tag doesn't exist
+# Check this version wasn't already released (tag created by CI on main merge)
 if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-  echo "Error: Tag v$VERSION already exists."
+  echo "Error: Tag v$VERSION already exists (already released)."
   exit 1
 fi
 
@@ -68,12 +68,15 @@ const String appVersion = '$VERSION';
 EOF
 echo "Updated lib/generated/version.dart → $VERSION"
 
-# Commit, tag, push
+# Commit + push the version bump on the current branch.
+# Releasing is triggered by merging this into main — CI reads the version from
+# pubspec.yaml, creates tag v$VERSION, and builds/publishes. No local tagging.
+BRANCH="$(git branch --show-current)"
 git add "$PUBSPEC" assets/version.json lib/generated/version.dart
 git commit -m "release v$VERSION"
-git tag "v$VERSION"
-git push origin "$(git branch --show-current)" --tags
+git push origin "$BRANCH"
 
 echo ""
-echo "Done! v$VERSION pushed. GitHub Actions will build & release."
+echo "Done! v$VERSION committed & pushed to '$BRANCH'."
+echo "→ Merge '$BRANCH' into main to build & release (CI creates tag v$VERSION)."
 echo "Track: https://github.com/namchamvinhcuu/odoo_auto_config/actions"
