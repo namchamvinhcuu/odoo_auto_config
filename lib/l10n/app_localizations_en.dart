@@ -191,6 +191,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gitPull => 'Git Pull';
 
   @override
+  String get gitFetchFailed =>
+      'Fetch failed — remote status may be outdated. Check network/credentials and retry.';
+
+  @override
   String gitPullTitle(String name) {
     return 'Git Pull — $name';
   }

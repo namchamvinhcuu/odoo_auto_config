@@ -191,6 +191,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get gitPull => 'Git Pull';
 
   @override
+  String get gitFetchFailed =>
+      'Fetch lỗi — trạng thái remote có thể chưa cập nhật. Kiểm tra mạng/credential rồi thử lại.';
+
+  @override
   String gitPullTitle(String name) {
     return 'Git Pull — $name';
   }

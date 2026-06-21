@@ -10,12 +10,14 @@ class OtherProjectsState {
   final Map<String, String> branches;
   final Map<String, int> changedCount;
   final Map<String, int> behindCount;
+  final Map<String, bool> fetchFailed;
 
   const OtherProjectsState({
     this.workspaces = const [],
     this.branches = const {},
     this.changedCount = const {},
     this.behindCount = const {},
+    this.fetchFailed = const {},
   });
 
   OtherProjectsState copyWith({
@@ -23,12 +25,14 @@ class OtherProjectsState {
     Map<String, String>? branches,
     Map<String, int>? changedCount,
     Map<String, int>? behindCount,
+    Map<String, bool>? fetchFailed,
   }) {
     return OtherProjectsState(
       workspaces: workspaces ?? this.workspaces,
       branches: branches ?? this.branches,
       changedCount: changedCount ?? this.changedCount,
       behindCount: behindCount ?? this.behindCount,
+      fetchFailed: fetchFailed ?? this.fetchFailed,
     );
   }
 }
@@ -73,6 +77,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
     final branches = Map<String, String>.from(current.branches);
     final changed = Map<String, int>.from(current.changedCount);
     final behind = Map<String, int>.from(current.behindCount);
+    final fetchFailed = Map<String, bool>.from(current.fetchFailed);
 
     try {
       // Current branch
@@ -95,6 +100,14 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
             .trimRight().split('\n').where((l) => l.isNotEmpty).length;
       }
 
+      // Fetch quietly so @{upstream} reflects new remote commits.
+      // Track failure so the UI can warn instead of silently showing 0 behind.
+      final fetchResult = await Process.run(
+        'git', ['fetch', '--quiet'],
+        workingDirectory: path, runInShell: true,
+      );
+      fetchFailed[path] = fetchResult.exitCode != 0;
+
       // Behind remote
       final behindResult = await Process.run(
         'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
@@ -109,6 +122,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       branches: branches,
       changedCount: changed,
       behindCount: behind,
+      fetchFailed: fetchFailed,
     ));
   }
 

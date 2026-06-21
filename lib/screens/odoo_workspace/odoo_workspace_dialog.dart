@@ -225,13 +225,16 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           : LineSplitter.split(output).length;
     }
 
-    // Fetch quietly for ahead/behind
-    await Process.run(
+    // Fetch quietly for ahead/behind. Track failure so the UI can warn
+    // instead of silently showing 0 behind (a failed fetch leaves the
+    // remote-tracking ref stale).
+    final fetchResult = await Process.run(
       'git',
       ['fetch', '--quiet'],
       workingDirectory: repo.path,
       runInShell: true,
     );
+    repo.fetchFailed = fetchResult.exitCode != 0;
 
     // Ahead
     final aheadResult = await Process.run(
@@ -1299,6 +1302,18 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                   ),
                 const SizedBox(width: AppSpacing.md),
                 // Status indicators
+                if (repo.fetchFailed)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: Tooltip(
+                      message: context.l10n.gitFetchFailed,
+                      child: const Icon(
+                        Icons.sync_problem,
+                        size: AppIconSize.md,
+                        color: Colors.amber,
+                      ),
+                    ),
+                  ),
                 if (repo.changedFiles > 0)
                   _statusBadge('${repo.changedFiles} \u2191', Colors.orange),
                 if (repo.aheadCount > 0)

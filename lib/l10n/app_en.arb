@@ -64,6 +64,7 @@
   "selectSlnFile": "Select solution file",
   "couldNotOpenVisualStudio": "Could not open Visual Studio",
   "gitPull": "Git Pull",
+  "gitFetchFailed": "Fetch failed — remote status may be outdated. Check network/credentials and retry.",
   "gitPullTitle": "Git Pull — {name}",
   "@gitPullTitle": { "placeholders": { "name": { "type": "String" } } },
   "gitPullNoScript": "git-repositories script not found in project directory (.sh or .ps1)",

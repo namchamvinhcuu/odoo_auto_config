@@ -61,6 +61,7 @@
   "selectSlnFile": "Chọn solution file",
   "couldNotOpenVisualStudio": "Không thể mở Visual Studio",
   "gitPull": "Git Pull",
+  "gitFetchFailed": "Fetch lỗi — trạng thái remote có thể chưa cập nhật. Kiểm tra mạng/credential rồi thử lại.",
   "gitPullTitle": "Git Pull — {name}",
   "gitPullNoScript": "Không tìm thấy script git-repositories trong thư mục dự án (.sh hoặc .ps1)",
   "gitPullRunning": "Đang chạy...",

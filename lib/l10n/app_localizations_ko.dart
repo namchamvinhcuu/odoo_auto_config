@@ -187,6 +187,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gitPull => 'Git Pull';
 
   @override
+  String get gitFetchFailed =>
+      'Fetch 실패 — 원격 상태가 최신이 아닐 수 있습니다. 네트워크/자격 증명을 확인 후 다시 시도하세요.';
+
+  @override
   String gitPullTitle(String name) {
     return 'Git Pull — $name';
   }

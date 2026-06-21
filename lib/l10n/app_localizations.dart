@@ -442,6 +442,12 @@ abstract class AppLocalizations {
   /// **'Git Pull'**
   String get gitPull;
 
+  /// No description provided for @gitFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch failed — remote status may be outdated. Check network/credentials and retry.'**
+  String get gitFetchFailed;
+
   /// No description provided for @gitPullTitle.
   ///
   /// In en, this message translates to:

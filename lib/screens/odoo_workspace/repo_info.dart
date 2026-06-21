@@ -7,6 +7,7 @@ class RepoInfo {
   int aheadCount = 0;
   int behindCount = 0;
   bool hasUpstream = true;
+  bool fetchFailed = false;
   bool selected = false;
   bool loaded = false;
 

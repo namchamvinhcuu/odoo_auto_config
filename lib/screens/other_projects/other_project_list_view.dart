@@ -178,6 +178,17 @@ class OtherProjectListView extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (state.fetchFailed[ws.path] == true) ...[
+                                Tooltip(
+                                  message: context.l10n.gitFetchFailed,
+                                  child: const Icon(
+                                    Icons.sync_problem,
+                                    size: AppIconSize.sm,
+                                    color: Colors.amber,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
                               if ((state.changedCount[ws.path] ?? 0) > 0) ...[
                                 Text(
                                   '${state.changedCount[ws.path]}↑',
