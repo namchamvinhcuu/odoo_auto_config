@@ -70,14 +70,18 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
   }
 
   Future<void> loadBranchStatus(String path) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
+    if (state.valueOrNull == null) return;
     if (!Directory(p.join(path, '.git')).existsSync()) return;
 
-    final branches = Map<String, String>.from(current.branches);
-    final changed = Map<String, int>.from(current.changedCount);
-    final behind = Map<String, int>.from(current.behindCount);
-    final fetchFailed = Map<String, bool>.from(current.fetchFailed);
+    // Compute values for THIS path only into locals. Don't snapshot the whole
+    // state up-front and write it back wholesale — the git calls below each
+    // await (yielding the event loop), so a concurrent loadBranchStatus for
+    // another repo could finish in between and its stale snapshot would clobber
+    // our fresh result (and vice-versa). We merge a single key at the end.
+    String? branchValue;
+    int? changedValue;
+    int? behindValue;
+    bool? fetchFailedValue;
 
     try {
       // Current branch
@@ -87,7 +91,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       );
       if (result.exitCode == 0) {
         final branch = (result.stdout as String).trim();
-        if (branch.isNotEmpty) branches[path] = branch;
+        if (branch.isNotEmpty) branchValue = branch;
       }
 
       // Changed files
@@ -96,7 +100,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
         workingDirectory: path, runInShell: true,
       );
       if (statusResult.exitCode == 0) {
-        changed[path] = (statusResult.stdout as String)
+        changedValue = (statusResult.stdout as String)
             .trimRight().split('\n').where((l) => l.isNotEmpty).length;
       }
 
@@ -106,7 +110,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
         'git', ['fetch', '--quiet'],
         workingDirectory: path, runInShell: true,
       );
-      fetchFailed[path] = fetchResult.exitCode != 0;
+      fetchFailedValue = fetchResult.exitCode != 0;
 
       // Behind remote
       final behindResult = await Process.run(
@@ -114,15 +118,27 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
         workingDirectory: path, runInShell: true,
       );
       if (behindResult.exitCode == 0) {
-        behind[path] = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
+        behindValue = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
       }
     } catch (_) {}
 
-    state = AsyncData(current.copyWith(
-      branches: branches,
-      changedCount: changed,
-      behindCount: behind,
-      fetchFailed: fetchFailed,
+    // Re-read the latest state and merge only THIS path's keys, so concurrent
+    // updates for other repos are preserved instead of being overwritten.
+    final latest = state.valueOrNull;
+    if (latest == null) return;
+    state = AsyncData(latest.copyWith(
+      branches: branchValue == null
+          ? null
+          : {...latest.branches, path: branchValue},
+      changedCount: changedValue == null
+          ? null
+          : {...latest.changedCount, path: changedValue},
+      behindCount: behindValue == null
+          ? null
+          : {...latest.behindCount, path: behindValue},
+      fetchFailed: fetchFailedValue == null
+          ? null
+          : {...latest.fetchFailed, path: fetchFailedValue},
     ));
   }
 
