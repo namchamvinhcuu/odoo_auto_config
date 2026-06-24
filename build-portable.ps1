@@ -25,21 +25,63 @@ if (-not (Test-Path $InputExe)) {
     exit 1
 }
 
-# Download Enigma Virtual Box if not present
+# Download Enigma Virtual Box if not present (retry + integrity check — the
+# upstream download is occasionally corrupt/partial, which makes the silent
+# installer fail with "file or directory is corrupted and unreadable").
 if (-not (Test-Path $EvbConsole)) {
     Write-Host "[1/3] Downloading Enigma Virtual Box..." -ForegroundColor Yellow
     $EvbUrl = "https://enigmaprotector.com/assets/files/enigmavb.exe"
     $EvbInstaller = "$env:TEMP\enigmavb_installer.exe"
-
-    Invoke-WebRequest -Uri $EvbUrl -OutFile $EvbInstaller -UseBasicParsing
-    Write-Host "  Installing EVB silently..." -ForegroundColor Gray
+    $MinInstallerBytes = 1MB   # a real EVB installer is several MB; smaller = failed/HTML download
+    $MaxAttempts = 3
+    # Optional pinned SHA256 of the installer. The URL serves the latest EVB
+    # build (a moving target) so this is empty by default; the actual hash is
+    # logged each run — paste a known-good value here to enforce exact match.
+    $EvbSha256 = ""
 
     New-Item -ItemType Directory -Force -Path $EvbDir | Out-Null
-    Start-Process -FilePath $EvbInstaller -ArgumentList "/VERYSILENT", "/DIR=$((Resolve-Path $EvbDir).Path)" -Wait -NoNewWindow
-    Remove-Item $EvbInstaller -Force -ErrorAction SilentlyContinue
+    $installed = $false
 
-    if (-not (Test-Path $EvbConsole)) {
-        Write-Host "ERROR: EVB installation failed" -ForegroundColor Red
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            Write-Host "  Attempt $attempt/$MaxAttempts : downloading installer..." -ForegroundColor Gray
+            Remove-Item $EvbInstaller -Force -ErrorAction SilentlyContinue
+            Invoke-WebRequest -Uri $EvbUrl -OutFile $EvbInstaller -UseBasicParsing -TimeoutSec 120
+
+            # Integrity check: exists, large enough, valid PE (MZ header)
+            if (-not (Test-Path $EvbInstaller)) { throw "Installer was not downloaded" }
+            $size = (Get-Item $EvbInstaller).Length
+            if ($size -lt $MinInstallerBytes) {
+                throw "Downloaded installer too small ($size bytes) - likely partial/corrupt"
+            }
+            $fs = [System.IO.File]::OpenRead($EvbInstaller)
+            $magic = New-Object byte[] 2
+            $null = $fs.Read($magic, 0, 2)
+            $fs.Close()
+            if ($magic[0] -ne 0x4D -or $magic[1] -ne 0x5A) {   # 'MZ'
+                throw "Downloaded file is not a valid Windows executable (bad MZ header)"
+            }
+
+            $sha = (Get-FileHash $EvbInstaller -Algorithm SHA256).Hash
+            Write-Host "  Downloaded $([math]::Round($size/1MB,1)) MB, SHA256=$sha" -ForegroundColor Gray
+            if ($EvbSha256 -and ($sha -ne $EvbSha256)) {
+                throw "SHA256 mismatch (expected $EvbSha256, got $sha)"
+            }
+
+            Write-Host "  Installing EVB silently..." -ForegroundColor Gray
+            Start-Process -FilePath $EvbInstaller -ArgumentList "/VERYSILENT", "/DIR=$((Resolve-Path $EvbDir).Path)" -Wait -NoNewWindow
+
+            if (Test-Path $EvbConsole) { $installed = $true; break }
+            throw "EVB console not found after install"
+        } catch {
+            Write-Host "  Attempt $attempt failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            if ($attempt -lt $MaxAttempts) { Start-Sleep -Seconds (5 * $attempt) }
+        }
+    }
+
+    Remove-Item $EvbInstaller -Force -ErrorAction SilentlyContinue
+    if (-not $installed) {
+        Write-Host "ERROR: EVB installation failed after $MaxAttempts attempts" -ForegroundColor Red
         exit 1
     }
     Write-Host "  EVB installed to $EvbDir" -ForegroundColor Green
