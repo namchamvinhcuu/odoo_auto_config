@@ -1,9 +1,16 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/models/workspace_info.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
+
+/// Number of repos to fetch git status for per parallel batch.
+/// Bounds concurrent `git fetch` calls so many private-repo refreshes don't
+/// trigger a credential-prompt storm or hit remote rate limits at once.
+/// Mirrors the Odoo Workspace dashboard (`_kBatchSize` in odoo_workspace_dialog).
+const _kBatchSize = 8;
 
 class OtherProjectsState {
   final List<WorkspaceInfo> workspaces;
@@ -43,7 +50,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
     final workspaces = await _loadWorkspaces();
     final initialState = OtherProjectsState(workspaces: workspaces);
     // Schedule branch loading after state is set
-    Future.microtask(() => _loadBranches(workspaces));
+    Future.microtask(() => loadBranches(workspaces));
     return initialState;
   }
 
@@ -60,12 +67,19 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
   Future<void> reload() async {
     final workspaces = await _loadWorkspaces();
     state = AsyncData(OtherProjectsState(workspaces: workspaces));
-    _loadBranches(workspaces);
+    loadBranches(workspaces);
   }
 
-  Future<void> _loadBranches(List<WorkspaceInfo> workspaces) async {
-    for (final ws in workspaces) {
-      await loadBranchStatus(ws.path);
+  @visibleForTesting
+  Future<void> loadBranches(List<WorkspaceInfo> workspaces) async {
+    // Load repos in parallel batches instead of one-at-a-time. The per-repo
+    // `git fetch` is network I/O, so sequential loading made refresh time grow
+    // linearly with the number of projects. Batching caps concurrent fetches
+    // (see _kBatchSize). Safe against the behind-count clobber race because
+    // loadBranchStatus merges only its own path into the latest state.
+    for (var i = 0; i < workspaces.length; i += _kBatchSize) {
+      final batch = workspaces.skip(i).take(_kBatchSize);
+      await Future.wait(batch.map((ws) => loadBranchStatus(ws.path)));
     }
   }
 
