@@ -743,5 +743,17 @@
   "clonedAndAdded": "Cloned and added \"{name}\"",
   "@clonedAndAdded": { "placeholders": { "name": { "type": "String" } } },
   "clonedIntoWorkspace": "Cloned \"{repo}\" into \"{key}\"",
-  "@clonedIntoWorkspace": { "placeholders": { "repo": { "type": "String" }, "key": { "type": "String" } } }
+  "@clonedIntoWorkspace": { "placeholders": { "repo": { "type": "String" }, "key": { "type": "String" } } },
+  "runOdooServer": "Run Odoo server & open browser",
+  "odooServerTitle": "Odoo Server — {name}",
+  "@odooServerTitle": { "placeholders": { "name": { "type": "String" } } },
+  "odooLaunchConfigMissing": "Could not find the Python interpreter or odoo-bin. Check .vscode/launch.json.",
+  "serverStatusStarting": "Starting…",
+  "serverStatusRunning": "Running",
+  "serverStatusStopped": "Stopped",
+  "serverStatusError": "Error",
+  "serverStatusIdle": "Idle",
+  "stopServer": "Stop",
+  "restartServer": "Restart",
+  "clearLogs": "Clear"
 }

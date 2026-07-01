@@ -6,8 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
-import 'package:odoo_auto_config/services/nginx_service.dart';
+import 'package:odoo_auto_config/services/odoo_launch_config_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
+import 'odoo_server_log_dialog.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
@@ -199,8 +200,28 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     return repos;
   }
 
-  Future<void> _loadRepoStatus(RepoInfo repo) async {
-    // Branch
+  /// Load a repo's git status in two phases so the list appears instantly:
+  ///   phase 1 — local-only ops (branch/changed/ahead/behind vs cached ref),
+  ///             ~8ms/repo → mark `loaded` so the tile renders immediately;
+  ///   phase 2 — `git fetch` (network, ~1s on private HTTPS) then recompute
+  ///             ahead/behind against the fresh remote, `syncing` shows a
+  ///             spinner until done.
+  /// Set [doFetch] false to skip the network phase (e.g. in tests).
+  Future<void> _loadRepoStatus(RepoInfo repo, {bool doFetch = true}) async {
+    await _loadLocalStatus(repo);
+    repo.loaded = true;
+    repo.syncing = doFetch;
+    if (mounted) setState(() {});
+
+    if (doFetch) {
+      await _syncRepoStatus(repo);
+      repo.syncing = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  /// Phase 1 — local git only (no network). Fast.
+  Future<void> _loadLocalStatus(RepoInfo repo) async {
     final branchResult = await Process.run(
       'git',
       ['rev-parse', '--abbrev-ref', 'HEAD'],
@@ -211,7 +232,6 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       repo.branch = (branchResult.stdout as String).trim();
     }
 
-    // Changed files
     final statusResult = await Process.run(
       'git',
       ['status', '--porcelain'],
@@ -225,9 +245,13 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
           : LineSplitter.split(output).length;
     }
 
-    // Fetch quietly for ahead/behind. Track failure so the UI can warn
-    // instead of silently showing 0 behind (a failed fetch leaves the
-    // remote-tracking ref stale).
+    await _computeAheadBehind(repo);
+  }
+
+  /// Phase 2 — fetch (network) then recompute ahead/behind vs fresh remote.
+  /// Track fetch failure so the UI can warn instead of silently showing 0
+  /// behind (a failed fetch leaves the remote-tracking ref stale).
+  Future<void> _syncRepoStatus(RepoInfo repo) async {
     final fetchResult = await Process.run(
       'git',
       ['fetch', '--quiet'],
@@ -235,8 +259,11 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       runInShell: true,
     );
     repo.fetchFailed = fetchResult.exitCode != 0;
+    await _computeAheadBehind(repo);
+  }
 
-    // Ahead
+  /// Ahead/behind counts against the current remote-tracking ref.
+  Future<void> _computeAheadBehind(RepoInfo repo) async {
     final aheadResult = await Process.run(
       'git',
       ['rev-list', '--count', '@{upstream}..HEAD'],
@@ -251,7 +278,6 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       repo.hasUpstream = false;
     }
 
-    // Behind
     final behindResult = await Process.run(
       'git',
       ['rev-list', '--count', 'HEAD..@{upstream}'],
@@ -262,9 +288,6 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
       repo.behindCount =
           int.tryParse((behindResult.stdout as String).trim()) ?? 0;
     }
-
-    repo.loaded = true;
-    if (mounted) setState(() {});
   }
 
   // ── Pin / Unpin ──
@@ -703,22 +726,30 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     }
   }
 
+  /// Run the Odoo server (like VSCode F5) then open the browser once it's up.
+  ///
+  /// Resolves python/odoo-bin from `.vscode/launch.json` and opens the server
+  /// log dialog which starts/restarts the process and auto-opens the browser.
   Future<void> _openProjectInBrowser() async {
     if (!widget.hasNginx) return;
     _dismissSearchFocus();
-    final nginx = await NginxService.loadSettings();
-    final suffix = (nginx['domainSuffix'] ?? '').toString();
-    final dotSuffix = suffix.startsWith('.') ? suffix : '.$suffix';
-    final url = 'https://${widget.nginxSubdomain}$dotSuffix';
-    try {
-      if (Platform.isMacOS) {
-        await Process.run('open', [url], runInShell: true);
-      } else if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'start', url], runInShell: true);
-      } else {
-        await Process.run('xdg-open', [url], runInShell: true);
-      }
-    } catch (_) {}
+    final config = await OdooLaunchConfigService.resolve(widget.projectPath);
+    if (!mounted) return;
+    if (!config.isRunnable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.odooLaunchConfigMissing)),
+      );
+      return;
+    }
+    await AppDialog.show(
+      context: context,
+      builder: (_) => OdooServerLogDialog(
+        projectName: widget.projectName,
+        projectPath: widget.projectPath,
+        nginxSubdomain: widget.nginxSubdomain,
+        config: config,
+      ),
+    );
   }
 
   // ── Build ──
@@ -791,7 +822,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                 minimumSize: const Size(AppIconSize.xl, AppIconSize.xl),
                 padding: EdgeInsets.zero,
               ),
-              tooltip: context.l10n.openInBrowser,
+              tooltip: context.l10n.runOdooServer,
             ),
             const SizedBox(width: AppSpacing.sm),
           ],
@@ -1302,6 +1333,15 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                   ),
                 const SizedBox(width: AppSpacing.md),
                 // Status indicators
+                if (repo.syncing)
+                  const Padding(
+                    padding: EdgeInsets.only(right: AppSpacing.sm),
+                    child: SizedBox(
+                      width: AppIconSize.sm,
+                      height: AppIconSize.sm,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 if (repo.fetchFailed)
                   Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.sm),

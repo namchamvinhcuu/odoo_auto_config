@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/models/project_info.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/odoo_launch_config_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/postgres_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
@@ -137,35 +137,10 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
       }
     }
 
-    // Try to find python + odoo-bin from .vscode/launch.json
-    final launchFile = File(p.join(projPath, '.vscode', 'launch.json'));
-    if (await launchFile.exists()) {
-      try {
-        final content = await launchFile.readAsString();
-        final json = jsonDecode(content) as Map<String, dynamic>;
-        final configs = json['configurations'] as List?;
-        if (configs != null && configs.isNotEmpty) {
-          final config = configs.first as Map<String, dynamic>;
-          _pythonPath = config['python']?.toString();
-          _odooBinPath = config['program']?.toString();
-          // Resolve ${workspaceFolder}
-          if (_odooBinPath != null) {
-            _odooBinPath =
-                _odooBinPath!.replaceAll(r'${workspaceFolder}', projPath);
-          }
-        }
-      } catch (_) {}
-    }
-
-    // Fallback: look for common paths
-    _odooBinPath ??= await _findFile([
-      p.join(projPath, 'odoo', 'odoo-bin'),
-      p.join(projPath, 'odoo-bin'),
-    ]);
-    _pythonPath ??= await _findFile([
-      PlatformService.venvPython(p.join(projPath, 'venv')),
-      PlatformService.venvPython(p.join(projPath, '.venv')),
-    ]);
+    // Resolve python + odoo-bin from .vscode/launch.json (with fallbacks).
+    final launchConfig = await OdooLaunchConfigService.resolve(projPath);
+    _pythonPath = launchConfig.python;
+    _odooBinPath = launchConfig.odooBin;
 
     if (mounted) setState(() {});
   }
@@ -201,14 +176,6 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
       }
     } catch (_) {}
   }
-
-  Future<String?> _findFile(List<String> candidates) async {
-    for (final path in candidates) {
-      if (await File(path).exists()) return path;
-    }
-    return null;
-  }
-
 
   void _showCreateDbDialog() {
     AppDialog.show(

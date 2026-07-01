@@ -630,5 +630,16 @@
   "noGitAccountsConfigured": "Chưa cấu hình tài khoản Git. Thêm tại Settings > Git.",
   "demoData": "Demo data",
   "clonedAndAdded": "Đã clone và thêm \"{name}\"",
-  "clonedIntoWorkspace": "Đã clone \"{repo}\" vào \"{key}\""
+  "clonedIntoWorkspace": "Đã clone \"{repo}\" vào \"{key}\"",
+  "runOdooServer": "Chạy Odoo server & mở trình duyệt",
+  "odooServerTitle": "Odoo Server — {name}",
+  "odooLaunchConfigMissing": "Không tìm thấy Python interpreter hoặc odoo-bin. Kiểm tra .vscode/launch.json.",
+  "serverStatusStarting": "Đang khởi động…",
+  "serverStatusRunning": "Đang chạy",
+  "serverStatusStopped": "Đã dừng",
+  "serverStatusError": "Lỗi",
+  "serverStatusIdle": "Chưa chạy",
+  "stopServer": "Dừng",
+  "restartServer": "Khởi động lại",
+  "clearLogs": "Xóa log"
 }

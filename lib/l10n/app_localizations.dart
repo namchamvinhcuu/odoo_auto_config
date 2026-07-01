@@ -3471,6 +3471,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cloned \"{repo}\" into \"{key}\"'**
   String clonedIntoWorkspace(String repo, String key);
+
+  /// No description provided for @runOdooServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Odoo server & open browser'**
+  String get runOdooServer;
+
+  /// No description provided for @odooServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Odoo Server — {name}'**
+  String odooServerTitle(String name);
+
+  /// No description provided for @odooLaunchConfigMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not find the Python interpreter or odoo-bin. Check .vscode/launch.json.'**
+  String get odooLaunchConfigMissing;
+
+  /// No description provided for @serverStatusStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting…'**
+  String get serverStatusStarting;
+
+  /// No description provided for @serverStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get serverStatusRunning;
+
+  /// No description provided for @serverStatusStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get serverStatusStopped;
+
+  /// No description provided for @serverStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get serverStatusError;
+
+  /// No description provided for @serverStatusIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get serverStatusIdle;
+
+  /// No description provided for @stopServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopServer;
+
+  /// No description provided for @restartServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get restartServer;
+
+  /// No description provided for @clearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearLogs;
 }
 
 class _AppLocalizationsDelegate
