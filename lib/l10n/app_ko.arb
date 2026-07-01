@@ -630,5 +630,16 @@
   "noGitAccountsConfigured": "구성된 Git 계정이 없습니다. 설정 > Git에서 추가하세요.",
   "demoData": "데모 데이터",
   "clonedAndAdded": "\"{name}\" 복제 후 추가됨",
-  "clonedIntoWorkspace": "\"{repo}\"을(를) \"{key}\"에 복제함"
+  "clonedIntoWorkspace": "\"{repo}\"을(를) \"{key}\"에 복제함",
+  "runOdooServer": "Odoo 서버 실행 및 브라우저 열기",
+  "odooServerTitle": "Odoo 서버 — {name}",
+  "odooLaunchConfigMissing": "Python 인터프리터 또는 odoo-bin을 찾을 수 없습니다. .vscode/launch.json을 확인하세요.",
+  "serverStatusStarting": "시작 중…",
+  "serverStatusRunning": "실행 중",
+  "serverStatusStopped": "중지됨",
+  "serverStatusError": "오류",
+  "serverStatusIdle": "대기",
+  "stopServer": "중지",
+  "restartServer": "재시작",
+  "clearLogs": "지우기"
 }

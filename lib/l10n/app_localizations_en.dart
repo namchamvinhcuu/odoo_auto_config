@@ -1935,4 +1935,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String clonedIntoWorkspace(String repo, String key) {
     return 'Cloned \"$repo\" into \"$key\"';
   }
+
+  @override
+  String get runOdooServer => 'Run Odoo server & open browser';
+
+  @override
+  String odooServerTitle(String name) {
+    return 'Odoo Server — $name';
+  }
+
+  @override
+  String get odooLaunchConfigMissing =>
+      'Could not find the Python interpreter or odoo-bin. Check .vscode/launch.json.';
+
+  @override
+  String get serverStatusStarting => 'Starting…';
+
+  @override
+  String get serverStatusRunning => 'Running';
+
+  @override
+  String get serverStatusStopped => 'Stopped';
+
+  @override
+  String get serverStatusError => 'Error';
+
+  @override
+  String get serverStatusIdle => 'Idle';
+
+  @override
+  String get stopServer => 'Stop';
+
+  @override
+  String get restartServer => 'Restart';
+
+  @override
+  String get clearLogs => 'Clear';
 }

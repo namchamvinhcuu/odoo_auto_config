@@ -1918,4 +1918,40 @@ class AppLocalizationsVi extends AppLocalizations {
   String clonedIntoWorkspace(String repo, String key) {
     return 'Đã clone \"$repo\" vào \"$key\"';
   }
+
+  @override
+  String get runOdooServer => 'Chạy Odoo server & mở trình duyệt';
+
+  @override
+  String odooServerTitle(String name) {
+    return 'Odoo Server — $name';
+  }
+
+  @override
+  String get odooLaunchConfigMissing =>
+      'Không tìm thấy Python interpreter hoặc odoo-bin. Kiểm tra .vscode/launch.json.';
+
+  @override
+  String get serverStatusStarting => 'Đang khởi động…';
+
+  @override
+  String get serverStatusRunning => 'Đang chạy';
+
+  @override
+  String get serverStatusStopped => 'Đã dừng';
+
+  @override
+  String get serverStatusError => 'Lỗi';
+
+  @override
+  String get serverStatusIdle => 'Chưa chạy';
+
+  @override
+  String get stopServer => 'Dừng';
+
+  @override
+  String get restartServer => 'Khởi động lại';
+
+  @override
+  String get clearLogs => 'Xóa log';
 }

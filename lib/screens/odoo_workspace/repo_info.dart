@@ -11,6 +11,11 @@ class RepoInfo {
   bool selected = false;
   bool loaded = false;
 
+  /// True while the background `git fetch` + behind-count refresh is running
+  /// (phase 2). The tile shows local status immediately (phase 1) and a small
+  /// spinner until the fresh remote counts arrive.
+  bool syncing = false;
+
   RepoInfo({
     required this.name,
     required this.path,

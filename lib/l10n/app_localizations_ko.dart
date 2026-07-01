@@ -1887,4 +1887,40 @@ class AppLocalizationsKo extends AppLocalizations {
   String clonedIntoWorkspace(String repo, String key) {
     return '\"$repo\"을(를) \"$key\"에 복제함';
   }
+
+  @override
+  String get runOdooServer => 'Odoo 서버 실행 및 브라우저 열기';
+
+  @override
+  String odooServerTitle(String name) {
+    return 'Odoo 서버 — $name';
+  }
+
+  @override
+  String get odooLaunchConfigMissing =>
+      'Python 인터프리터 또는 odoo-bin을 찾을 수 없습니다. .vscode/launch.json을 확인하세요.';
+
+  @override
+  String get serverStatusStarting => '시작 중…';
+
+  @override
+  String get serverStatusRunning => '실행 중';
+
+  @override
+  String get serverStatusStopped => '중지됨';
+
+  @override
+  String get serverStatusError => '오류';
+
+  @override
+  String get serverStatusIdle => '대기';
+
+  @override
+  String get stopServer => '중지';
+
+  @override
+  String get restartServer => '재시작';
+
+  @override
+  String get clearLogs => '지우기';
 }
