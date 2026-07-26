@@ -254,6 +254,20 @@ class GitActionColors {
   static const Color refresh = Colors.teal;
 }
 
+/// Glyphs + colors for the repo sync badges shown next to a branch name.
+/// The three states must stay visually distinct: "changed" and "ahead" both
+/// used `↑` before, so a repo whose only pending work was an unpushed commit
+/// looked identical to one with dirty files.
+class GitSyncBadge {
+  static const String changed = '*'; // uncommitted files
+  static const String ahead = '↑'; // ↑ commits not pushed yet
+  static const String behind = '↓'; // ↓ commits not pulled yet
+
+  static const Color changedColor = Colors.orange;
+  static const Color aheadColor = Colors.green;
+  static const Color behindColor = Colors.cyan;
+}
+
 /// Colors used in log output
 class AppLogColors {
   static const Color success = Colors.greenAccent;

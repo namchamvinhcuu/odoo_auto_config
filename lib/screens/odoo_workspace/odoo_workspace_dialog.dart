@@ -1355,11 +1355,25 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                     ),
                   ),
                 if (repo.changedFiles > 0)
-                  _statusBadge('${repo.changedFiles} \u2191', Colors.orange),
+                  _statusBadge(
+                    '${repo.changedFiles} ${GitSyncBadge.changed}',
+                    GitSyncBadge.changedColor,
+                    tooltip: context.l10n.workspaceViewChanged(
+                      repo.changedFiles,
+                    ),
+                  ),
                 if (repo.aheadCount > 0)
-                  _statusBadge('${repo.aheadCount} \u2191', Colors.green),
+                  _statusBadge(
+                    '${repo.aheadCount} ${GitSyncBadge.ahead}',
+                    GitSyncBadge.aheadColor,
+                    tooltip: context.l10n.workspaceViewAhead(repo.aheadCount),
+                  ),
                 if (repo.behindCount > 0)
-                  _statusBadge('${repo.behindCount} \u2193', Colors.cyan),
+                  _statusBadge(
+                    '${repo.behindCount} ${GitSyncBadge.behind}',
+                    GitSyncBadge.behindColor,
+                    tooltip: context.l10n.workspaceViewBehind(repo.behindCount),
+                  ),
                 // Per-repo actions
                 const SizedBox(width: AppSpacing.md),
                 _repoActionButton(
@@ -1404,8 +1418,8 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
-  Widget _statusBadge(String text, Color color) {
-    return Padding(
+  Widget _statusBadge(String text, Color color, {String? tooltip}) {
+    final badge = Padding(
       padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -1427,6 +1441,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
         ),
       ),
     );
+    return tooltip == null ? badge : Tooltip(message: tooltip, child: badge);
   }
 
   Widget _repoActionButton({

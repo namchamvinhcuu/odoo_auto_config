@@ -16,6 +16,7 @@ class OtherProjectsState {
   final List<WorkspaceInfo> workspaces;
   final Map<String, String> branches;
   final Map<String, int> changedCount;
+  final Map<String, int> aheadCount;
   final Map<String, int> behindCount;
   final Map<String, bool> fetchFailed;
 
@@ -23,6 +24,7 @@ class OtherProjectsState {
     this.workspaces = const [],
     this.branches = const {},
     this.changedCount = const {},
+    this.aheadCount = const {},
     this.behindCount = const {},
     this.fetchFailed = const {},
   });
@@ -31,6 +33,7 @@ class OtherProjectsState {
     List<WorkspaceInfo>? workspaces,
     Map<String, String>? branches,
     Map<String, int>? changedCount,
+    Map<String, int>? aheadCount,
     Map<String, int>? behindCount,
     Map<String, bool>? fetchFailed,
   }) {
@@ -38,6 +41,7 @@ class OtherProjectsState {
       workspaces: workspaces ?? this.workspaces,
       branches: branches ?? this.branches,
       changedCount: changedCount ?? this.changedCount,
+      aheadCount: aheadCount ?? this.aheadCount,
       behindCount: behindCount ?? this.behindCount,
       fetchFailed: fetchFailed ?? this.fetchFailed,
     );
@@ -94,6 +98,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
     // our fresh result (and vice-versa). We merge a single key at the end.
     String? branchValue;
     int? changedValue;
+    int? aheadValue;
     int? behindValue;
     bool? fetchFailedValue;
 
@@ -126,6 +131,17 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       );
       fetchFailedValue = fetchResult.exitCode != 0;
 
+      // Ahead of remote — commits made locally but not pushed yet. Counted
+      // after the fetch above so it also drops back to 0 when someone else
+      // (or another machine) already pushed the same commits.
+      final aheadResult = await Process.run(
+        'git', ['rev-list', '--count', '@{upstream}..HEAD'],
+        workingDirectory: path, runInShell: true,
+      );
+      if (aheadResult.exitCode == 0) {
+        aheadValue = int.tryParse((aheadResult.stdout as String).trim()) ?? 0;
+      }
+
       // Behind remote
       final behindResult = await Process.run(
         'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
@@ -147,6 +163,9 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       changedCount: changedValue == null
           ? null
           : {...latest.changedCount, path: changedValue},
+      aheadCount: aheadValue == null
+          ? null
+          : {...latest.aheadCount, path: aheadValue},
       behindCount: behindValue == null
           ? null
           : {...latest.behindCount, path: behindValue},

@@ -1515,17 +1515,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String workspaceViewChanged(int count) {
-    return '$count개 변경';
+    return '커밋되지 않은 파일 $count개';
   }
 
   @override
   String workspaceViewBehind(int count) {
-    return '$count개 뒤처짐';
+    return '가져와야 할 커밋 $count개';
   }
 
   @override
   String workspaceViewAhead(int count) {
-    return '$count개 앞섬';
+    return '푸시하지 않은 커밋 $count개';
   }
 
   @override

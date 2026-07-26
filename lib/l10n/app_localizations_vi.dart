@@ -1543,17 +1543,17 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String workspaceViewChanged(int count) {
-    return '$count thay đổi';
+    return '$count file chưa commit';
   }
 
   @override
   String workspaceViewBehind(int count) {
-    return '$count phía sau';
+    return '$count commit chưa pull';
   }
 
   @override
   String workspaceViewAhead(int count) {
-    return '$count phía trước';
+    return '$count commit chưa push';
   }
 
   @override

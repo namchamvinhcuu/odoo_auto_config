@@ -191,12 +191,36 @@ class OtherProjectGridView extends StatelessWidget {
                                   ],
                                   if ((state.changedCount[ws.path] ?? 0) >
                                       0) ...[
-                                    Text(
-                                      '${state.changedCount[ws.path]}↑',
-                                      style: const TextStyle(
-                                        fontSize: AppFontSize.xs,
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.bold,
+                                    Tooltip(
+                                      message: context.l10n
+                                          .workspaceViewChanged(
+                                            state.changedCount[ws.path]!,
+                                          ),
+                                      child: Text(
+                                        '${state.changedCount[ws.path]}${GitSyncBadge.changed}',
+                                        style: const TextStyle(
+                                          fontSize: AppFontSize.xs,
+                                          color: GitSyncBadge.changedColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
+                                  if ((state.aheadCount[ws.path] ?? 0) > 0) ...[
+                                    Tooltip(
+                                      message: context.l10n.workspaceViewAhead(
+                                        state.aheadCount[ws.path]!,
+                                      ),
+                                      child: Text(
+                                        '${state.aheadCount[ws.path]}${GitSyncBadge.ahead}',
+                                        style: const TextStyle(
+                                          fontSize: AppFontSize.xs,
+                                          color: GitSyncBadge.aheadColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(
@@ -205,12 +229,17 @@ class OtherProjectGridView extends StatelessWidget {
                                   ],
                                   if ((state.behindCount[ws.path] ?? 0) >
                                       0) ...[
-                                    Text(
-                                      '${state.behindCount[ws.path]}↓',
-                                      style: const TextStyle(
-                                        fontSize: AppFontSize.xs,
-                                        color: Colors.cyan,
-                                        fontWeight: FontWeight.bold,
+                                    Tooltip(
+                                      message: context.l10n.workspaceViewBehind(
+                                        state.behindCount[ws.path]!,
+                                      ),
+                                      child: Text(
+                                        '${state.behindCount[ws.path]}${GitSyncBadge.behind}',
+                                        style: const TextStyle(
+                                          fontSize: AppFontSize.xs,
+                                          color: GitSyncBadge.behindColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(

@@ -2845,19 +2845,19 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceViewChanged.
   ///
   /// In en, this message translates to:
-  /// **'{count} changed'**
+  /// **'{count} uncommitted file(s)'**
   String workspaceViewChanged(int count);
 
   /// No description provided for @workspaceViewBehind.
   ///
   /// In en, this message translates to:
-  /// **'{count} behind'**
+  /// **'{count} commit(s) to pull'**
   String workspaceViewBehind(int count);
 
   /// No description provided for @workspaceViewAhead.
   ///
   /// In en, this message translates to:
-  /// **'{count} ahead'**
+  /// **'{count} commit(s) not pushed yet'**
   String workspaceViewAhead(int count);
 
   /// No description provided for @workspaceViewNewBranch.

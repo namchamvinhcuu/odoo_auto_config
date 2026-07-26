@@ -51,7 +51,7 @@ void main() {
 
   /// Tạo 1 bộ {bare remote, local clone, pusher clone} dưới [tmp]/[name].
   /// local clone có commit "initial" đã push. Trả về path của local clone.
-  Future<({String local, String pusher, String remote})> _makeRepo(
+  Future<({String local, String pusher, String remote})> makeRepo(
       String name) async {
     final remotePath = p.join(tmp.path, '$name-remote.git');
     final localPath = p.join(tmp.path, '$name-local');
@@ -72,7 +72,7 @@ void main() {
 
   /// Clone [remote] vào [pusher], tạo [count] commit mới, push thẳng lên remote.
   /// Sau đó local (chưa fetch) sẽ behind [count] commit.
-  Future<void> _pushCommits(String remote, String pusher, int count) async {
+  Future<void> pushCommits(String remote, String pusher, int count) async {
     await _git(['clone', remote, pusher], tmp.path);
     await _configIdentity(pusher);
     for (var i = 0; i < count; i++) {
@@ -84,7 +84,7 @@ void main() {
   }
 
   /// Mô phỏng "pull": local fetch + merge fast-forward lên upstream để catch up.
-  Future<void> _pull(String local) async {
+  Future<void> pullRepo(String local) async {
     await _git(['pull', '--ff-only', 'origin', 'main'], local);
   }
 
@@ -92,8 +92,8 @@ void main() {
       'behind-count clears to zero after pull '
       '(regression: behind-count-stale-after-pull)', () async {
     // Arrange: remote đi trước local 2 commit → local behind 2.
-    final repo = await _makeRepo('repoP');
-    await _pushCommits(repo.remote, repo.pusher, 2);
+    final repo = await makeRepo('repoP');
+    await pushCommits(repo.remote, repo.pusher, 2);
 
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -110,7 +110,7 @@ void main() {
     );
 
     // Act: user pull → local catch up với upstream → tải lại branch status.
-    await _pull(repo.local);
+    await pullRepo(repo.local);
     await notifier.loadBranchStatus(repo.local);
 
     // Assert: behind phải về 0, badge không còn stale.
@@ -126,10 +126,10 @@ void main() {
       'concurrent loadBranchStatus cho 2 path không clobber lẫn nhau '
       '(regression: behind-count-stale-after-pull)', () async {
     // Arrange: 2 repo độc lập, cả hai đều behind upstream trước pull.
-    final repoA = await _makeRepo('repoA');
-    final repoB = await _makeRepo('repoB');
-    await _pushCommits(repoA.remote, repoA.pusher, 1); // A behind 1
-    await _pushCommits(repoB.remote, repoB.pusher, 3); // B behind 3
+    final repoA = await makeRepo('repoA');
+    final repoB = await makeRepo('repoB');
+    await pushCommits(repoA.remote, repoA.pusher, 1); // A behind 1
+    await pushCommits(repoB.remote, repoB.pusher, 3); // B behind 3
 
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -144,8 +144,8 @@ void main() {
     expect(seeded?.behindCount[repoB.local], 3);
 
     // Cả hai repo pull → catch up → behind git thật giờ = 0 cho cả hai.
-    await _pull(repoA.local);
-    await _pull(repoB.local);
+    await pullRepo(repoA.local);
+    await pullRepo(repoB.local);
 
     // Act: gọi ĐỒNG THỜI loadBranchStatus cho A và B. Với bug cũ (snapshot toàn
     // bộ map ở đầu), call kết thúc SAU ghi đè key của repo kia bằng giá trị

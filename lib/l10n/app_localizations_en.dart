@@ -1547,17 +1547,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String workspaceViewChanged(int count) {
-    return '$count changed';
+    return '$count uncommitted file(s)';
   }
 
   @override
   String workspaceViewBehind(int count) {
-    return '$count behind';
+    return '$count commit(s) to pull';
   }
 
   @override
   String workspaceViewAhead(int count) {
-    return '$count ahead';
+    return '$count commit(s) not pushed yet';
   }
 
   @override
