@@ -19,6 +19,7 @@ import 'package:odoo_auto_config/screens/home_screen.dart';
 import 'import_workspace_dialog.dart';
 import 'simple_git_commit_dialog.dart';
 import 'simple_git_pull_dialog.dart';
+import 'simple_git_push_dialog.dart';
 import 'other_project_grid_view.dart';
 import 'other_project_list_view.dart';
 import 'switch_branch_dialog.dart';
@@ -300,6 +301,25 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     });
   }
 
+  void _runGitPush(WorkspaceInfo ws) {
+    final gitDir = Directory(p.join(ws.path, '.git'));
+    if (!gitDir.existsSync()) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.gitPullNotARepo)));
+      return;
+    }
+    AppDialog.show(
+      context: context,
+      builder: (ctx) =>
+          SimpleGitPushDialog(projectName: ws.name, projectPath: ws.path),
+    ).then((_) {
+      if (mounted) {
+        ref.read(otherProjectsProvider.notifier).loadBranchStatus(ws.path);
+      }
+    });
+  }
+
   Future<void> _setupNginx(WorkspaceInfo ws) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
@@ -513,6 +533,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onToggleFavourite: _toggleFavourite,
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
+      onGitPush: _runGitPush,
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
@@ -538,6 +559,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onToggleFavourite: _toggleFavourite,
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
+      onGitPush: _runGitPush,
       onSelect: (ws) => setState(() => _selectedPath = _selectedPath == ws.path ? null : ws.path),
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),

@@ -68,6 +68,8 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
   bool _isError = false;
   int _changedFiles = 0;
   int _behindRemote = 0;
+  int _aheadRemote = 0;
+  bool _hasUpstream = false;
 
   @override
   void initState() {
@@ -94,6 +96,8 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _remote = result.remote..sort();
       _changedFiles = result.changedFiles;
       _behindRemote = result.behindRemote;
+      _aheadRemote = result.aheadRemote;
+      _hasUpstream = result.hasUpstream;
       _loading = false;
     });
     context.setDialogRunning(false);
@@ -125,6 +129,32 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       });
       context.setDialogRunning(false);
     }
+  }
+
+  /// True when the branch has local commits that are not on the upstream yet
+  /// and nothing is left to commit — the Commit button slot turns into Push.
+  ///
+  /// Without this, a clean tree with unpushed commits showed a *disabled*
+  /// Commit button and no hint at all that a push was still needed.
+  bool get _needsPush =>
+      _hasUpstream && _aheadRemote > 0 && _changedFiles == 0;
+
+  Future<void> _pushCurrentBranch() async {
+    setState(() {
+      _switching = true;
+      _message = null;
+    });
+    context.setDialogRunning(true);
+    final result = await GitBranchService.pushCurrentBranch(widget.path);
+    if (!mounted) return;
+    setState(() {
+      _switching = false;
+      _message = result.output;
+      _isError = !result.success;
+    });
+    context.setDialogRunning(false);
+    // Refresh so the ahead count (and the Push button) clears after success.
+    await _loadBranches();
   }
 
   Future<void> _createBranch() async {
@@ -912,31 +942,52 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    FilledButton.tonalIcon(
-                      onPressed: (_switching || _loading || _changedFiles == 0)
-                          ? null
-                          : () async {
-                              await AppDialog.show(
-                                context: context,
-                                builder: (ctx) => widget.commitDialogBuilder(
-                                  widget.displayName,
-                                  widget.path,
-                                ),
-                              );
-                              if (mounted) {
-                                setState(() => _message = null);
-                                _loadBranches();
-                              }
-                            },
-                      icon: const Icon(
-                        GitActionIcons.commit,
-                        size: AppIconSize.md,
+                    // Commit slot doubles as Push: nothing to commit but local
+                    // commits pending → offer the push instead of a dead button.
+                    if (_needsPush)
+                      FilledButton.tonalIcon(
+                        onPressed: (_switching || _loading)
+                            ? null
+                            : _pushCurrentBranch,
+                        // Same visual language as the ahead badge. Deliberately
+                        // NOT GitActionIcons/Colors.push: those are Icons.commit
+                        // + orange, identical to the Commit button this replaces
+                        // in the same slot (see GitSyncBadge docs).
+                        icon: const Icon(
+                          GitSyncBadge.ahead,
+                          size: AppIconSize.md,
+                        ),
+                        label: Text(context.l10n.push),
+                        style: FilledButton.styleFrom(
+                          foregroundColor: GitSyncBadge.aheadColor,
+                        ),
+                      )
+                    else
+                      FilledButton.tonalIcon(
+                        onPressed: (_switching || _loading || _changedFiles == 0)
+                            ? null
+                            : () async {
+                                await AppDialog.show(
+                                  context: context,
+                                  builder: (ctx) => widget.commitDialogBuilder(
+                                    widget.displayName,
+                                    widget.path,
+                                  ),
+                                );
+                                if (mounted) {
+                                  setState(() => _message = null);
+                                  _loadBranches();
+                                }
+                              },
+                        icon: const Icon(
+                          GitActionIcons.commit,
+                          size: AppIconSize.md,
+                        ),
+                        label: Text(context.l10n.gitBranchCommit),
+                        style: FilledButton.styleFrom(
+                          foregroundColor: GitActionColors.commit,
+                        ),
                       ),
-                      label: Text(context.l10n.gitBranchCommit),
-                      style: FilledButton.styleFrom(
-                        foregroundColor: GitActionColors.commit,
-                      ),
-                    ),
                     // PR button — check uncommitted changes first
                     if (_current != 'main' && _current != 'master') ...[
                       const SizedBox(width: AppSpacing.sm),
@@ -990,7 +1041,10 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                   ],
                 ),
                 // Status info
-                if (!_loading && (_changedFiles > 0 || _behindRemote > 0)) ...[
+                if (!_loading &&
+                    (_changedFiles > 0 ||
+                        _behindRemote > 0 ||
+                        _aheadRemote > 0)) ...[
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
@@ -1022,6 +1076,27 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
                             style: const TextStyle(color: Colors.cyan),
                           ),
                           backgroundColor: Colors.cyan.withValues(alpha: 0.1),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      if ((_changedFiles > 0 || _behindRemote > 0) &&
+                          _aheadRemote > 0)
+                        const SizedBox(width: AppSpacing.sm),
+                      if (_aheadRemote > 0)
+                        Chip(
+                          avatar: const Icon(
+                            GitSyncBadge.ahead,
+                            size: AppIconSize.md,
+                            color: GitSyncBadge.aheadColor,
+                          ),
+                          label: Text(
+                            context.l10n.gitBranchAhead(_aheadRemote),
+                            style: const TextStyle(
+                              color: GitSyncBadge.aheadColor,
+                            ),
+                          ),
+                          backgroundColor: GitSyncBadge.aheadColor.withValues(
+                            alpha: 0.1,
+                          ),
                           visualDensity: VisualDensity.compact,
                         ),
                     ],

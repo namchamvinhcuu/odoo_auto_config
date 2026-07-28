@@ -1,12 +1,28 @@
 name: Build & Release
 
+# Push vào main (có bump version) → build macOS + Linux rồi phát hành.
+# Windows là OPT-IN: push tự động KHÔNG build .msix/.exe (Nam ít dùng Windows). Cần bản Windows thì
+# chạy tay: Actions → Build & Release → Run workflow → bật "include_windows".
+# Đổi lại: release tự động KHÔNG có asset Windows ⇒ user Windows sẽ không auto-update lên bản đó
+# cho tới khi bản Windows được dựng riêng và upload vào cùng tag.
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      include_windows:
+        description: 'Build cả Windows (.msix + .exe portable)? — TẮT mặc định'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+
+# Không cho 2 lần release chạy chồng nhau trên cùng ref (tránh 2 job cùng tạo/ghi 1 release).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   # Derive the release version from pubspec.yaml and decide whether this push
@@ -33,9 +49,15 @@ jobs:
             echo "::notice::New version v$VERSION — will build & release."
           fi
 
+  # Gate `github.ref` là BẮT BUỘC, không chỉ `should_release`: workflow_dispatch chạy được từ
+  # BẤT KỲ branch/tag, và `prepare` đọc version từ pubspec của ref đang dispatch. Không có gate này
+  # thì dispatch từ `dev` sau khi bump version sẽ phát hành bản dựng từ code CHƯA MERGE, rồi lúc
+  # merge vào main lại `should_release=false` ⇒ bản chính thức không bao giờ được build.
   build-linux:
     needs: prepare
-    if: needs.prepare.outputs.should_release == 'true'
+    if: >-
+      ${{ needs.prepare.outputs.should_release == 'true'
+      && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -148,9 +170,12 @@ jobs:
             build/WorkspaceConfiguration-*.deb
             build/WorkspaceConfiguration-*.rpm
 
+  # Cùng lý do gate `github.ref` như build-linux — chỉ phát hành từ main.
   build-macos:
     needs: prepare
-    if: needs.prepare.outputs.should_release == 'true'
+    if: >-
+      ${{ needs.prepare.outputs.should_release == 'true'
+      && github.ref == 'refs/heads/main' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,9 +219,12 @@ jobs:
             build/WorkspaceConfiguration.dmg
             build/WorkspaceConfiguration-macOS.zip
 
+  # Windows OPT-IN — CỐ Ý không gate theo should_release: trường hợp chính là dựng bản Windows
+  # SAU khi version đã release (tag đã tồn tại ⇒ should_release = false), rồi upload asset vào
+  # đúng tag đó. Chỉ chạy khi bấm tay và bật include_windows.
   build-windows:
     needs: prepare
-    if: needs.prepare.outputs.should_release == 'true'
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.include_windows }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -235,6 +263,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.prepare.outputs.version }}
+          # Mặc định action BỎ QUA file không tồn tại và vẫn xanh → release thiếu asset âm thầm.
+          fail_on_unmatched_files: true
           files: |
             build/windows/x64/runner/Release/WorkspaceConfiguration.msix
             build/windows/x64/runner/Release/certificate.pfx
@@ -242,9 +272,17 @@ jobs:
             build/windows/x64/runner/Release/install.bat
             build/WorkspaceConfiguration.exe
 
+  # `always()` là BẮT BUỘC: mặc định một `needs` bị skipped sẽ skip luôn job phụ thuộc, mà
+  # build-windows giờ skipped ở mọi lần push. Các check `result` tường minh mới là điều kiện thật —
+  # linux/macos FAIL thì publish không chạy (không phát hành bản thiếu asset).
   publish-public:
     needs: [prepare, build-linux, build-macos, build-windows]
-    if: needs.prepare.outputs.should_release == 'true'
+    if: >-
+      ${{ always()
+      && needs.prepare.outputs.should_release == 'true'
+      && needs.build-linux.result == 'success'
+      && needs.build-macos.result == 'success'
+      && (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download release assets from private repo
@@ -274,8 +312,12 @@ jobs:
           | Linux (deb) | \`WorkspaceConfiguration-*.deb\` | ~17 MB |
           | Linux (rpm) | \`WorkspaceConfiguration-*.rpm\` | ~17 MB |
           | macOS | \`WorkspaceConfiguration.dmg\` | ~19 MB |
-          | Windows (installer) | \`WorkspaceConfiguration.msix\` | ~14 MB |
-          | Windows (portable) | \`WorkspaceConfiguration.exe\` | ~40 MB |
+          | Windows (installer) | \`WorkspaceConfiguration.msix\` | on request¹ |
+          | Windows (portable) | \`WorkspaceConfiguration.exe\` | on request¹ |
+
+          ¹ Windows builds are not produced automatically. If the files above are
+          missing from this release, the Windows build for this version has not been
+          published yet — see *Assets* below for what is actually available.
 
           ---
 
@@ -305,7 +347,7 @@ jobs:
 
           > If you see \"App is damaged\", run: \`xattr -cr /Applications/Workspace\\ Configuration.app\`
 
-          ### Windows (Installer — MSIX)
+          ### Windows (Installer — MSIX) — *only if the files are attached to this release*
           1. Download **all 4 files** (\`.msix\`, \`.pfx\`, \`.ps1\`, \`.bat\`)
           2. Place them in the **same folder**
           3. Right-click \`install.bat\` > **Run as Administrator**
@@ -318,3 +360,45 @@ jobs:
           ---
           See [README](https://github.com/namchamvinhcuu/workspace-configuration#readme) for full usage guide." \
             assets/*
+
+  # Bản Windows dựng riêng phải tới được repo PUBLIC, không chỉ repo private.
+  # `always()` để job chạy cả khi publish-public bị skip — đó chính là ca chính: dựng Windows SAU
+  # khi version đã release (should_release = false ⇒ publish-public skip, release public đã có sẵn).
+  # Khi publish-public CÓ chạy thì nó nằm trước trong graph nên release public chắc chắn đã tồn tại.
+  # Chỉ upload khi release public CHẮC CHẮN tồn tại: hoặc publish-public vừa tạo thành công, hoặc
+  # version này đã release từ trước (should_release=false ⇒ release public đã có sẵn).
+  # ⚠ KHÔNG dùng `publish-public.result == 'skipped'`: ca lỗi (linux/macos FAIL ⇒ publish-public bị
+  # skip ⇒ chưa có release public) CŨNG là 'skipped' ⇒ sẽ upload vào release không tồn tại → 404.
+  publish-windows-public:
+    needs: [prepare, build-windows, publish-public]
+    if: >-
+      ${{ always()
+      && needs.build-windows.result == 'success'
+      && (needs.publish-public.result == 'success'
+          || needs.prepare.outputs.should_release == 'false') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows assets from private release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ needs.prepare.outputs.version }}"
+          mkdir -p win
+          gh release download "$TAG" \
+            --repo namchamvinhcuu/odoo_auto_config \
+            --dir win \
+            --pattern 'WorkspaceConfiguration.msix' \
+            --pattern 'WorkspaceConfiguration.exe' \
+            --pattern 'certificate.pfx' \
+            --pattern 'install.ps1' \
+            --pattern 'install.bat'
+
+      - name: Upload Windows assets to public release
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          TAG="v${{ needs.prepare.outputs.version }}"
+          # --clobber: chạy lại dispatch cho cùng version thì ghi đè, không lỗi "asset đã tồn tại".
+          gh release upload "$TAG" win/* \
+            --repo namchamvinhcuu/workspace-configuration \
+            --clobber

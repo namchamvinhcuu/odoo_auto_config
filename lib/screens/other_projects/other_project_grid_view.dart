@@ -13,6 +13,7 @@ class OtherProjectGridView extends StatelessWidget {
     required this.onToggleFavourite,
     required this.onGitPull,
     required this.onGitCommit,
+    required this.onGitPush,
     this.selectedPath,
     required this.onSelect,
     required this.onOpenInVscode,
@@ -34,6 +35,7 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onToggleFavourite;
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
+  final ValueChanged<WorkspaceInfo> onGitPush;
   final ValueChanged<WorkspaceInfo> onSelect;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
@@ -192,10 +194,11 @@ class OtherProjectGridView extends StatelessWidget {
                                   if ((state.changedCount[ws.path] ?? 0) >
                                       0) ...[
                                     Text(
-                                      '${state.changedCount[ws.path]}↑',
+                                      '${state.changedCount[ws.path]}'
+                                      '${GitSyncBadge.changed}',
                                       style: const TextStyle(
                                         fontSize: AppFontSize.xs,
-                                        color: Colors.orange,
+                                        color: GitSyncBadge.changedColor,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -206,11 +209,47 @@ class OtherProjectGridView extends StatelessWidget {
                                   if ((state.behindCount[ws.path] ?? 0) >
                                       0) ...[
                                     Text(
-                                      '${state.behindCount[ws.path]}↓',
+                                      '${state.behindCount[ws.path]}'
+                                      '${GitSyncBadge.behind}',
                                       style: const TextStyle(
                                         fontSize: AppFontSize.xs,
-                                        color: Colors.cyan,
+                                        color: GitSyncBadge.behindColor,
                                         fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
+                                  // Committed locally but NOT pushed. Deliberately
+                                  // an upload icon, not an arrow: the orange "N↑"
+                                  // above already means "uncommitted changes", so
+                                  // reusing that glyph would be unreadable.
+                                  if ((state.aheadCount[ws.path] ?? 0) > 0) ...[
+                                    Tooltip(
+                                      message: context.l10n.gitBranchAhead(
+                                        state.aheadCount[ws.path]!,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            GitSyncBadge.ahead,
+                                            size: AppFontSize.md,
+                                            color: GitSyncBadge.aheadColor,
+                                          ),
+                                          const SizedBox(
+                                            width: AppSpacing.xxs,
+                                          ),
+                                          Text(
+                                            '${state.aheadCount[ws.path]}',
+                                            style: const TextStyle(
+                                              fontSize: AppFontSize.xs,
+                                              color: GitSyncBadge.aheadColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(
@@ -270,6 +309,21 @@ class OtherProjectGridView extends StatelessWidget {
                                 boxSize: btnBox,
                                 color: GitActionColors.commit,
                               ),
+                              // Push straight from the card when there are
+                              // unpushed commits — no need to open the branches
+                              // dialog just to notice they exist.
+                              if ((state.aheadCount[ws.path] ?? 0) > 0)
+                                _gridBtn(
+                                  // Same visual language as the ahead badge —
+                                  // NOT GitActionIcons.push, which is the commit
+                                  // glyph (see GitSyncBadge docs).
+                                  icon: GitSyncBadge.ahead,
+                                  tooltip: context.l10n.push,
+                                  onPressed: () => onGitPush(ws),
+                                  iconSize: btnSize,
+                                  boxSize: btnBox,
+                                  color: GitSyncBadge.aheadColor,
+                                ),
                               _gridBtn(
                                 icon: Icons.folder_open,
                                 tooltip: context.l10n.openFolder,

@@ -94,6 +94,11 @@
   "gitCommitAndPush": "Commit & Push",
   "gitCommitOnly": "Commit",
   "gitPushAfterCommit": "Push after commit",
+  "gitPushTitle": "Git Push — {name}",
+  "@gitPushTitle": { "placeholders": { "name": { "type": "String" } } },
+  "gitPushDone": "Pushed!",
+  "gitPushFailed": "Push failed with exit code {code}",
+  "@gitPushFailed": { "placeholders": { "code": { "type": "int" } } },
   "gitSelectAll": "Select all",
   "gitDeselectAll": "Deselect all",
   "gitStagedFiles": "{count} file(s) selected",
@@ -595,6 +600,12 @@
   },
   "gitBranchBehind": "{count} behind",
   "@gitBranchBehind": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "gitBranchAhead": "{count} ahead",
+  "@gitBranchAhead": {
     "placeholders": {
       "count": {"type": "int"}
     }

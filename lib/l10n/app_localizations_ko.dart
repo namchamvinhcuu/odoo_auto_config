@@ -273,6 +273,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gitPushAfterCommit => '커밋 후 푸시';
 
   @override
+  String gitPushTitle(String name) {
+    return 'Git Push — $name';
+  }
+
+  @override
+  String get gitPushDone => '푸시 완료!';
+
+  @override
+  String gitPushFailed(int code) {
+    return '푸시 실패 (exit code $code)';
+  }
+
+  @override
   String get gitSelectAll => '모두 선택';
 
   @override
@@ -1615,6 +1628,11 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String gitBranchBehind(int count) {
     return '$count behind';
+  }
+
+  @override
+  String gitBranchAhead(int count) {
+    return '$count ahead';
   }
 
   @override
