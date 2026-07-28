@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_branch_service.dart';
 import 'package:odoo_auto_config/services/odoo_launch_config_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'odoo_server_log_dialog.dart';
@@ -263,31 +264,16 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   }
 
   /// Ahead/behind counts against the current remote-tracking ref.
+  ///
+  /// Delegates to [GitBranchService.loadUpstreamDivergence] — the counting logic
+  /// is shared with the Git Branches dialog and the Other Projects provider so
+  /// the three paths cannot drift apart again.
   Future<void> _computeAheadBehind(RepoInfo repo) async {
-    final aheadResult = await Process.run(
-      'git',
-      ['rev-list', '--count', '@{upstream}..HEAD'],
-      workingDirectory: repo.path,
-      runInShell: true,
+    // Writes live in RepoInfo.applyDivergence so they are covered by a test
+    // instead of only by this private method.
+    repo.applyDivergence(
+      await GitBranchService.loadUpstreamDivergence(repo.path),
     );
-    if (aheadResult.exitCode == 0) {
-      repo.aheadCount =
-          int.tryParse((aheadResult.stdout as String).trim()) ?? 0;
-      repo.hasUpstream = true;
-    } else {
-      repo.hasUpstream = false;
-    }
-
-    final behindResult = await Process.run(
-      'git',
-      ['rev-list', '--count', 'HEAD..@{upstream}'],
-      workingDirectory: repo.path,
-      runInShell: true,
-    );
-    if (behindResult.exitCode == 0) {
-      repo.behindCount =
-          int.tryParse((behindResult.stdout as String).trim()) ?? 0;
-    }
   }
 
   // ── Pin / Unpin ──
@@ -1355,11 +1341,22 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                     ),
                   ),
                 if (repo.changedFiles > 0)
-                  _statusBadge('${repo.changedFiles} \u2191', Colors.orange),
-                if (repo.aheadCount > 0)
-                  _statusBadge('${repo.aheadCount} \u2191', Colors.green),
+                  _statusBadge(
+                    '${repo.changedFiles} ${GitSyncBadge.changed}',
+                    GitSyncBadge.changedColor,
+                  ),
+                if (repo.hasUpstream && repo.aheadCount > 0)
+                  _statusBadge(
+                    '${repo.aheadCount}',
+                    GitSyncBadge.aheadColor,
+                    icon: GitSyncBadge.ahead,
+                    tooltip: context.l10n.gitBranchAhead(repo.aheadCount),
+                  ),
                 if (repo.behindCount > 0)
-                  _statusBadge('${repo.behindCount} \u2193', Colors.cyan),
+                  _statusBadge(
+                    '${repo.behindCount} ${GitSyncBadge.behind}',
+                    GitSyncBadge.behindColor,
+                  ),
                 // Per-repo actions
                 const SizedBox(width: AppSpacing.md),
                 _repoActionButton(
@@ -1404,28 +1401,48 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
-  Widget _statusBadge(String text, Color color) {
+  /// [icon] and [tooltip] are optional: the "unpushed commits" badge needs a
+  /// glyph of its own because the changed-files badge already uses "N ↑".
+  Widget _statusBadge(
+    String text,
+    Color color, {
+    IconData? icon,
+    String? tooltip,
+  }) {
+    Widget badge = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: AppRadius.smallBorderRadius,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: AppFontSize.md, color: color),
+            const SizedBox(width: AppSpacing.xxs),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: AppFontSize.sm,
+              fontFamily: 'monospace',
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+    if (tooltip != null) {
+      badge = Tooltip(message: tooltip, child: badge);
+    }
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: AppRadius.smallBorderRadius,
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: AppFontSize.sm,
-            fontFamily: 'monospace',
-            color: color,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+      child: badge,
     );
   }
 

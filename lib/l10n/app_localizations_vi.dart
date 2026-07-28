@@ -277,6 +277,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get gitPushAfterCommit => 'Push sau khi commit';
 
   @override
+  String gitPushTitle(String name) {
+    return 'Git Push — $name';
+  }
+
+  @override
+  String get gitPushDone => 'Đã push!';
+
+  @override
+  String gitPushFailed(int code) {
+    return 'Push thất bại với exit code $code';
+  }
+
+  @override
   String get gitSelectAll => 'Chọn tất cả';
 
   @override
@@ -1643,6 +1656,11 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String gitBranchBehind(int count) {
     return '$count behind';
+  }
+
+  @override
+  String gitBranchAhead(int count) {
+    return '$count ahead';
   }
 
   @override

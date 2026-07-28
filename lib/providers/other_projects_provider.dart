@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/models/workspace_info.dart';
+import 'package:odoo_auto_config/services/git_branch_service.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
@@ -17,6 +18,10 @@ class OtherProjectsState {
   final Map<String, String> branches;
   final Map<String, int> changedCount;
   final Map<String, int> behindCount;
+
+  /// Local commits not yet pushed to the upstream, per repo path.
+  /// Drives the "needs push" badge on the project cards.
+  final Map<String, int> aheadCount;
   final Map<String, bool> fetchFailed;
 
   const OtherProjectsState({
@@ -24,6 +29,7 @@ class OtherProjectsState {
     this.branches = const {},
     this.changedCount = const {},
     this.behindCount = const {},
+    this.aheadCount = const {},
     this.fetchFailed = const {},
   });
 
@@ -32,6 +38,7 @@ class OtherProjectsState {
     Map<String, String>? branches,
     Map<String, int>? changedCount,
     Map<String, int>? behindCount,
+    Map<String, int>? aheadCount,
     Map<String, bool>? fetchFailed,
   }) {
     return OtherProjectsState(
@@ -39,6 +46,7 @@ class OtherProjectsState {
       branches: branches ?? this.branches,
       changedCount: changedCount ?? this.changedCount,
       behindCount: behindCount ?? this.behindCount,
+      aheadCount: aheadCount ?? this.aheadCount,
       fetchFailed: fetchFailed ?? this.fetchFailed,
     );
   }
@@ -95,6 +103,7 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
     String? branchValue;
     int? changedValue;
     int? behindValue;
+    int? aheadValue;
     bool? fetchFailedValue;
 
     try {
@@ -126,14 +135,15 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       );
       fetchFailedValue = fetchResult.exitCode != 0;
 
-      // Behind remote
-      final behindResult = await Process.run(
-        'git', ['rev-list', '--count', 'HEAD..@{upstream}'],
-        workingDirectory: path, runInShell: true,
-      );
-      if (behindResult.exitCode == 0) {
-        behindValue = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
-      }
+      // Ahead/behind via the shared helper — do NOT inline `rev-list` here.
+      // Both counts are always assigned: a `0` from "no upstream" must overwrite
+      // the previous branch's number, because leaving these null means "keep the
+      // old map" in copyWith and the badge would stay stale after a switch.
+      // Note this is NOT the `git fetch` failure case (upstream still exists,
+      // rev-list exits 0) — that is reported separately via fetchFailed.
+      final divergence = await GitBranchService.loadUpstreamDivergence(path);
+      behindValue = divergence.behind;
+      aheadValue = divergence.ahead;
     } catch (_) {}
 
     // Re-read the latest state and merge only THIS path's keys, so concurrent
@@ -150,6 +160,9 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       behindCount: behindValue == null
           ? null
           : {...latest.behindCount, path: behindValue},
+      aheadCount: aheadValue == null
+          ? null
+          : {...latest.aheadCount, path: aheadValue},
       fetchFailed: fetchFailedValue == null
           ? null
           : {...latest.fetchFailed, path: fetchFailedValue},

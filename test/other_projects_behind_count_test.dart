@@ -116,6 +116,59 @@ void main() {
     expect(behind, 0);
   });
 
+  // ── Regression cho finding 🟠 (đã fix): behindCount stale ────────────────
+  // `behindValue` để null khi `git rev-list --count HEAD..@{upstream}` exit != 0
+  // → `copyWith(behindCount: null)` = "giữ map cũ" → badge `3↓` của branch
+  // TRƯỚC còn hiện trên branch mới không có upstream; bấm Pull →
+  // `There is no tracking information for the current branch`.
+  //
+  // ⚠ KHÁC hoàn toàn ca `git fetch` fail ở 2 test dưới: fetch fail thì upstream
+  // VẪN tồn tại, `rev-list` exit **0**, và đã có kênh báo riêng `fetchFailed`.
+  // Ca này exit **!= 0** = không có upstream để mà behind ⇒ 0 là giá trị ĐÚNG.
+  //
+  // Điểm mấu chốt: phải có pre-condition (behind 3) và gọi `loadBranchStatus`
+  // HAI LẦN trên CÙNG path + CÙNG container; gọi 1 lần thì map vốn rỗng →
+  // xanh giả.
+  test(
+      'behindCount về 0 sau khi switch sang branch KHÔNG có upstream '
+      '(regression: stale behind badge)', () async {
+    // Arrange: pusher đẩy 3 commit lên remote → local behind 3.
+    await _git(['clone', remotePath, pusherPath], tmp.path);
+    await _configIdentity(pusherPath);
+    for (var i = 0; i < 3; i++) {
+      File(p.join(pusherPath, 'README.md')).writeAsStringSync('v${i + 2}\n');
+      await _git(['add', '.'], pusherPath);
+      await _git(['commit', '-m', 'remote-ahead-${i + 1}'], pusherPath);
+    }
+    await _git(['push', 'origin', 'main'], pusherPath);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(otherProjectsProvider.future);
+    final notifier = container.read(otherProjectsProvider.notifier);
+
+    await notifier.loadBranchStatus(localPath);
+    expect(
+      container.read(otherProjectsProvider).valueOrNull?.behindCount[localPath],
+      3,
+      reason: 'Pre-condition: badge phải đang hiện behind 3 trước khi switch.',
+    );
+
+    // Act: user tạo + switch sang branch mới chưa publish rồi refresh status
+    // cho đúng path đó (other_projects_screen.onSwitched).
+    await _git(['checkout', '-b', 'feature/x'], localPath);
+    await notifier.loadBranchStatus(localPath);
+
+    // Assert: badge phải tắt. Giữ null (bug cũ) → vẫn là 3 → badge + nút Pull
+    // stale trên branch không có upstream.
+    final after = container.read(otherProjectsProvider).valueOrNull;
+    expect(after?.branches[localPath], 'feature/x',
+        reason: 'Pre-condition: đã switch branch thật.');
+    expect(after?.behindCount[localPath], 0,
+        reason: 'Branch mới không có upstream → không thể behind → badge phải '
+            'về 0, KHÔNG giữ 3 của branch cũ.');
+  });
+
   test('fetchFailed=false khi git fetch thành công (remote hợp lệ)', () async {
     // Arrange: localPath đã clone từ bare remote hợp lệ (setUp) → fetch OK.
 

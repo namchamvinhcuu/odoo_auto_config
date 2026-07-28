@@ -586,6 +586,24 @@ abstract class AppLocalizations {
   /// **'Push after commit'**
   String get gitPushAfterCommit;
 
+  /// No description provided for @gitPushTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Git Push — {name}'**
+  String gitPushTitle(String name);
+
+  /// No description provided for @gitPushDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushed!'**
+  String get gitPushDone;
+
+  /// No description provided for @gitPushFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Push failed with exit code {code}'**
+  String gitPushFailed(int code);
+
   /// No description provided for @gitSelectAll.
   ///
   /// In en, this message translates to:
@@ -3021,6 +3039,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} behind'**
   String gitBranchBehind(int count);
+
+  /// No description provided for @gitBranchAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} ahead'**
+  String gitBranchAhead(int count);
 
   /// No description provided for @gitBranchCreateTitle.
   ///

@@ -12,7 +12,16 @@ typedef BranchesResult = ({
   String current,
   int changedFiles,
   int behindRemote,
+  int aheadRemote,
+  bool hasUpstream,
 });
+
+/// Divergence of the current branch against its upstream.
+///
+/// [hasUpstream] false means there is no usable upstream ref — none configured,
+/// detached HEAD, or the ref was pruned away. In that case both counts are `0`,
+/// which is a real value and not "unknown".
+typedef UpstreamDivergence = ({int ahead, int behind, bool hasUpstream});
 
 /// Result of cleaning stale branches (fetch --prune + find gone).
 typedef StaleBranchesResult = ({List<String> staleBranches, String output});
@@ -70,7 +79,54 @@ class GitBranchService {
     );
   }
 
-  /// Load local/remote branches, current branch status (changed files, behind count).
+  /// Single source of truth for ahead/behind counts vs the upstream.
+  ///
+  /// Every git-status code path MUST go through this instead of running
+  /// `rev-list` itself. Three separate implementations used to exist and drifted
+  /// apart three times: one gained an `ahead` count the others lacked, and two
+  /// of them left the previous read's number in place when `rev-list` failed, so
+  /// a stale badge survived a branch switch.
+  ///
+  /// Callers MUST assign all three returned fields unconditionally — never skip
+  /// the assignment on `hasUpstream == false`, or the leftover-value bug returns.
+  ///
+  /// This applies to a value that was actually returned. If the call itself
+  /// throws (git missing from PATH, working dir gone), a caller may deliberately
+  /// keep its previous snapshot instead: `other_projects_provider` does that, and
+  /// it is correct there because *every* field stays stale together — including
+  /// the branch name — so no branch/count mismatch can appear on screen. Do not
+  /// "fix" that catch into writing zeros for this field alone.
+  static Future<UpstreamDivergence> loadUpstreamDivergence(
+    String workingDir,
+  ) async {
+    final aheadResult = await Process.run(
+      'git',
+      ['rev-list', '--count', '@{upstream}..HEAD'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    // Both counts resolve `@{upstream}`, so they fail together. Bailing out here
+    // guarantees the pair can never be half-updated.
+    if (aheadResult.exitCode != 0) {
+      return (ahead: 0, behind: 0, hasUpstream: false);
+    }
+    final ahead = int.tryParse((aheadResult.stdout as String).trim()) ?? 0;
+
+    final behindResult = await Process.run(
+      'git',
+      ['rev-list', '--count', 'HEAD..@{upstream}'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    final behind = behindResult.exitCode == 0
+        ? (int.tryParse((behindResult.stdout as String).trim()) ?? 0)
+        : 0;
+
+    return (ahead: ahead, behind: behind, hasUpstream: true);
+  }
+
+  /// Load local/remote branches, current branch status (changed files,
+  /// behind/ahead count vs upstream).
   static Future<BranchesResult> loadBranches(String workingDir) async {
     // Get branch list
     final result = await Process.run(
@@ -86,6 +142,8 @@ class GitBranchService {
         current: '',
         changedFiles: 0,
         behindRemote: 0,
+        aheadRemote: 0,
+        hasUpstream: false,
       );
     }
 
@@ -131,24 +189,47 @@ class GitBranchService {
           .length;
     }
 
-    // Behind remote count
-    int behind = 0;
-    final behindResult = await Process.run(
-      'git',
-      ['rev-list', '--count', 'HEAD..@{upstream}'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
-    if (behindResult.exitCode == 0) {
-      behind = int.tryParse((behindResult.stdout as String).trim()) ?? 0;
-    }
+    final divergence = await loadUpstreamDivergence(workingDir);
 
     return (
       local: localBranches.toList(),
       remote: remoteBranches.toList(),
       current: current,
       changedFiles: changed,
-      behindRemote: behind,
+      behindRemote: divergence.behind,
+      aheadRemote: divergence.ahead,
+      hasUpstream: divergence.hasUpstream,
+    );
+  }
+
+  /// Push the current branch to its already-configured upstream.
+  ///
+  /// Only valid when the branch has an upstream (see [BranchesResult.hasUpstream]);
+  /// for a brand-new local branch use [publishBranch] instead.
+  static Future<GitResult> pushCurrentBranch(String workingDir) async {
+    final result = await Process.run(
+      'git',
+      ['push'],
+      workingDirectory: workingDir,
+      runInShell: true,
+    );
+    // git push writes progress + rejection reasons to stderr, so surface both
+    // streams instead of swallowing the failure detail.
+    final stdoutText = (result.stdout as String).trim();
+    final stderrText = (result.stderr as String).trim();
+    final output = [
+      stdoutText,
+      stderrText,
+    ].where((s) => s.isNotEmpty).join('\n');
+    if (result.exitCode == 0) {
+      return (
+        success: true,
+        output: output.isEmpty ? 'Pushed to origin' : output,
+      );
+    }
+    return (
+      success: false,
+      output: output.isEmpty ? 'Push failed' : 'Push failed: $output',
     );
   }
 
