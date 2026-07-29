@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 import 'repo_commit_dialog.dart';
@@ -98,11 +99,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     final authed = ghNativeAuth || token != null;
 
     List<String> branches = [];
-    final brResult = await Process.run(
-      'git',
+    final brResult = await runGit(
       ['branch', '-r', '--format=%(refname:short)'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+      workingDir: widget.repoPath,
     );
     if (brResult.exitCode == 0) {
       branches = (brResult.stdout as String)
@@ -142,18 +141,14 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
   }
 
   Future<bool> _checkDiffFor(String base) async {
-    await Process.run(
-      'git',
+    await runGit(
       ['fetch', 'origin', base, '--quiet'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+      workingDir: widget.repoPath,
     );
     if (!mounted) return false;
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['rev-list', '--count', 'origin/$base..HEAD'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+      workingDir: widget.repoPath,
     );
     final count = int.tryParse((result.stdout as String).trim()) ?? 0;
     return count == 0;
@@ -182,11 +177,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     context.setDialogRunning(true);
 
     // Check uncommitted changes
-    final status = await Process.run(
-      'git',
+    final status = await runGit(
       ['status', '--porcelain'],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+      workingDir: widget.repoPath,
     );
     final uncommitted = (status.stdout as String)
         .trimRight()
@@ -240,11 +233,9 @@ class _RepoCreatePRDialogState extends State<RepoCreatePRDialog> {
     // Push first
     _addLine(
         '\x1B[0;33m[~] Pushing ${widget.currentBranch} to origin...\x1B[0m');
-    final push = await Process.start(
-      'git',
+    final push = await startGit(
       ['push', '-u', 'origin', widget.currentBranch],
-      workingDirectory: widget.repoPath,
-      runInShell: true,
+      workingDir: widget.repoPath,
     );
     push.stdout
         .transform(utf8.decoder)

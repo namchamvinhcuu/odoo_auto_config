@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class RepoStatus {
@@ -88,11 +89,9 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
         if (entry is! Directory) continue;
         final gitDir = Directory(p.join(entry.path, '.git'));
         if (!await gitDir.exists()) continue;
-        final result = await Process.run(
-          'git',
+        final result = await runGit(
           ['status', '--porcelain'],
-          workingDirectory: entry.path,
-          runInShell: true,
+          workingDir: entry.path,
         );
         final output = (result.stdout as String).trim();
         if (output.isEmpty) continue;
@@ -134,23 +133,16 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
       _addLine('\x1B[0;34m[*] ${repo.name}\x1B[0m');
 
       // git add -A
-      final addResult = await Process.run(
-        'git',
-        ['add', '-A'],
-        workingDirectory: repo.path,
-        runInShell: true,
-      );
+      final addResult = await runGit(['add', '-A'], workingDir: repo.path);
       if (addResult.exitCode != 0) {
         _addLine('\x1B[0;31m[-] git add failed: ${addResult.stderr}\x1B[0m');
         continue;
       }
 
       // git commit
-      final commitResult = await Process.run(
-        'git',
+      final commitResult = await runGit(
         ['commit', '-m', message],
-        workingDirectory: repo.path,
-        runInShell: true,
+        workingDir: repo.path,
       );
       final commitOut = (commitResult.stdout as String).trim();
       if (commitOut.isNotEmpty) _addLine(commitOut);
@@ -167,12 +159,7 @@ class _GitCommitDialogState extends State<GitCommitDialog> {
       // git push (optional)
       if (_pushAfterCommit) {
         _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
-        final pushProcess = await Process.start(
-          'git',
-          ['push'],
-          workingDirectory: repo.path,
-          runInShell: true,
-        );
+        final pushProcess = await startGit(['push'], workingDir: repo.path);
         pushProcess.stdout
             .transform(utf8.decoder)
             .transform(const LineSplitter())

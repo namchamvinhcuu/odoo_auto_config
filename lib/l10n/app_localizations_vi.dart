@@ -1664,6 +1664,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String gitBranchUnpublished(int count) {
+    return '$count commit trên branch chưa publish';
+  }
+
+  @override
   String get gitBranchCreateTitle => 'Create Branch';
 
   @override

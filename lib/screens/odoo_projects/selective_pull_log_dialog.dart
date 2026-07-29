@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class SelectivePullLogDialog extends StatefulWidget {
@@ -60,11 +60,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
       final repoPath = p.join(widget.projectPath, 'addons', repo);
       _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
       try {
-        final process = await Process.start(
-          'git', ['pull'],
-          workingDirectory: repoPath,
-          runInShell: true,
-        );
+        final process = await startGit(['pull'], workingDir: repoPath);
         final stdout = process.stdout
             .transform(utf8.decoder)
             .transform(const LineSplitter())

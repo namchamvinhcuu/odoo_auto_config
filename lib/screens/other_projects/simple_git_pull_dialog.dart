@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class SimpleGitPullDialog extends StatefulWidget {
@@ -57,20 +58,13 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
     });
   }
 
-  Future<ProcessResult> _git(List<String> args) => Process.run(
-        'git',
+  Future<ProcessResult> _git(List<String> args) => runGit(
         args,
-        workingDirectory: widget.projectPath,
-        runInShell: true,
+        workingDir: widget.projectPath,
       );
 
   Future<void> _runProcess(List<String> args) async {
-    final process = await Process.start(
-      'git',
-      args,
-      workingDirectory: widget.projectPath,
-      runInShell: true,
-    );
+    final process = await startGit(args, workingDir: widget.projectPath);
     process.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
@@ -105,12 +99,7 @@ class _SimpleGitPullDialogState extends State<SimpleGitPullDialog> {
   }
 
   Future<void> _runPullCurrent() async {
-    final process = await Process.start(
-      'git',
-      ['pull'],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
-    );
+    final process = await startGit(['pull'], workingDir: widget.projectPath);
     process.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())

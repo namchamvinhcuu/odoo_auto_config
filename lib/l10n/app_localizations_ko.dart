@@ -1636,6 +1636,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String gitBranchUnpublished(int count) {
+    return '아직 publish되지 않은 브랜치의 커밋 $count개';
+  }
+
+  @override
   String get gitBranchCreateTitle => 'Create Branch';
 
   @override

@@ -1668,6 +1668,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String gitBranchUnpublished(int count) {
+    return '$count commit(s) on a branch not published yet';
+  }
+
+  @override
   String get gitBranchCreateTitle => 'Create Branch';
 
   @override

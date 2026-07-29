@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'repo_info.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
@@ -63,12 +63,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       _addLine('\x1B[0;34m[*] Committing ${repo.name}...\x1B[0m');
 
       // git add -A
-      final addResult = await Process.run(
-        'git',
-        ['add', '-A'],
-        workingDirectory: repo.path,
-        runInShell: true,
-      );
+      final addResult = await runGit(['add', '-A'], workingDir: repo.path);
       if (addResult.exitCode != 0) {
         _addLine(
             '\x1B[0;31m[-] git add failed: ${addResult.stderr}\x1B[0m');
@@ -76,11 +71,9 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       }
 
       // git commit
-      final commitResult = await Process.run(
-        'git',
+      final commitResult = await runGit(
         ['commit', '-m', message],
-        workingDirectory: repo.path,
-        runInShell: true,
+        workingDir: repo.path,
       );
       final commitOut = (commitResult.stdout as String).trim();
       if (commitOut.isNotEmpty) _addLine(commitOut);
@@ -93,12 +86,7 @@ class _WorkspaceCommitDialogState extends State<WorkspaceCommitDialog> {
       // git push (optional)
       if (_pushAfterCommit) {
         _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
-        final pushProcess = await Process.start(
-          'git',
-          ['push'],
-          workingDirectory: repo.path,
-          runInShell: true,
-        );
+        final pushProcess = await startGit(['push'], workingDir: repo.path);
         pushProcess.stdout
             .transform(utf8.decoder)
             .transform(const LineSplitter())

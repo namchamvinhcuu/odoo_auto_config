@@ -86,7 +86,11 @@ class OdooProjectGridView extends StatelessWidget {
                 waitDuration: const Duration(milliseconds: 500),
                 child: InkWell(
                   onTap: () => onSelect(proj),
-                  onDoubleTap: exists ? () => onOpenInVscode(proj) : null,
+                  // NO onDoubleTap here: a double-tap recognizer on the card
+                  // holds the gesture arena for every icon button inside it,
+                  // delaying them ~300ms and merging two quick taps on different
+                  // buttons into one double-tap that opens VSCode instead.
+                  // Open-in-VSCode lives on the project name below.
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(context, details.globalPosition, proj, exists),
                   child: Column(
@@ -148,16 +152,30 @@ class OdooProjectGridView extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.md),
-                              // Project name
-                              Text(
-                                proj.name,
-                                style: TextStyle(
-                                  fontSize: nameSize,
-                                  fontWeight: FontWeight.bold,
+                              // Project name — also the double-tap target for
+                              // "open in VSCode" (see the note on the card
+                              // InkWell above). Full width so the target is the
+                              // whole name row, not just the glyphs: a Column
+                              // gives loose constraints, unlike the Row-Expanded
+                              // the workspace tile puts its name in.
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onDoubleTap: exists
+                                    ? () => onOpenInVscode(proj)
+                                    : null,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    proj.name,
+                                    style: TextStyle(
+                                      fontSize: nameSize,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               // Ports info

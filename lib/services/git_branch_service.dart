@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
@@ -23,6 +25,17 @@ typedef BranchesResult = ({
 /// which is a real value and not "unknown".
 typedef UpstreamDivergence = ({int ahead, int behind, bool hasUpstream});
 
+/// Local-only git status of a working dir: no network, fast.
+typedef LocalGitStatus = ({String branch, int changedFiles});
+
+/// Result of refreshing the remote-tracking ref and re-measuring divergence.
+///
+/// [fetchFailed] is reported separately from the counts on purpose: a failed
+/// fetch leaves the remote-tracking ref stale, so `behind: 0` means "nothing new
+/// that we know of", not "up to date". The UI must warn instead of showing a
+/// confident zero.
+typedef FetchedDivergence = ({bool fetchFailed, UpstreamDivergence divergence});
+
 /// Result of cleaning stale branches (fetch --prune + find gone).
 typedef StaleBranchesResult = ({List<String> staleBranches, String output});
 
@@ -35,11 +48,9 @@ class GitBranchService {
   /// Ensure origin fetches all remote branches, even for repos cloned with
   /// `--single-branch`.
   static Future<void> ensureOriginFetchesAllBranches(String workingDir) async {
-    final currentRefspec = await Process.run(
-      'git',
+    final currentRefspec = await runGit(
       ['config', '--get-all', 'remote.origin.fetch'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (currentRefspec.exitCode != 0) return;
 
@@ -54,29 +65,139 @@ class GitBranchService {
       return;
     }
 
-    await Process.run(
-      'git',
+    await runGit(
       ['config', '--unset-all', 'remote.origin.fetch'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
-    await Process.run(
-      'git',
+    await runGit(
       ['config', '--add', 'remote.origin.fetch', fullRefspec],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
   }
 
   /// Expand fetch refspec if needed, then fetch + prune remote branches.
   static Future<void> fetchAllBranches(String workingDir) async {
     await ensureOriginFetchesAllBranches(workingDir);
-    await Process.run(
-      'git',
+    await runGit(
       ['fetch', '--prune', '--quiet', 'origin'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
+  }
+
+  /// Single source of truth for the local-only part of git status.
+  ///
+  /// Counting changed files used to be written out three times with three
+  /// slightly different line-splitting expressions; only two of them were under
+  /// test. Route every caller through here instead of running the commands again.
+  ///
+  /// Returns an empty branch name if HEAD cannot be resolved (empty repo), and
+  /// `0` changed files if `status` fails — never a leftover from an earlier read.
+  static Future<LocalGitStatus> loadLocalStatus(String workingDir) async {
+    final branchResult = await runGit(
+      ['rev-parse', '--abbrev-ref', 'HEAD'],
+      workingDir: workingDir,
+    );
+    final branch = branchResult.exitCode == 0
+        ? (branchResult.stdout as String).trim()
+        : '';
+
+    final statusResult = await runGit(
+      ['status', '--porcelain'],
+      workingDir: workingDir,
+    );
+    // LineSplitter handles both \n and Windows \r\n.
+    final changedFiles = statusResult.exitCode == 0
+        ? LineSplitter.split((statusResult.stdout as String).trimRight())
+              .where((l) => l.isNotEmpty)
+              .length
+        : 0;
+
+    return (branch: branch, changedFiles: changedFiles);
+  }
+
+  /// Refresh the remote-tracking ref, then measure divergence against it.
+  ///
+  /// These two steps are one unit on purpose. Measuring `behind` without
+  /// fetching first reads a stale remote-tracking ref and silently reports `0`;
+  /// that bug shipped once already. Keeping the fetch and the re-measure inside
+  /// one call makes it impossible to drop the second half by accident.
+  static Future<FetchedDivergence> fetchThenDiverge(String workingDir) async {
+    final fetchResult = await runGit(
+      ['fetch', '--quiet'],
+      workingDir: workingDir,
+    );
+    final divergence = await loadUpstreamDivergence(workingDir);
+    return (
+      fetchFailed: fetchResult.exitCode != 0,
+      divergence: divergence,
+    );
+  }
+
+  /// Count commits on HEAD that exist on no remote at all.
+  ///
+  /// Needed when the branch has no upstream: [loadUpstreamDivergence] reports
+  /// `ahead: 0` there (correctly — there is nothing to be ahead *of*), which
+  /// would otherwise hide a brand-new branch full of unpublished work. Such a
+  /// branch needs Publish, not Push.
+  ///
+  /// Unlike `@{upstream}` this never fails on a valid repo: `--not --remotes`
+  /// resolves to "no remotes" rather than a fatal error.
+  static Future<int> loadUnpublishedCount(String workingDir) async {
+    final result = await runGit(
+      ['rev-list', '--count', 'HEAD', '--not', '--remotes'],
+      workingDir: workingDir,
+    );
+    if (result.exitCode != 0) return 0;
+    return int.tryParse((result.stdout as String).trim()) ?? 0;
+  }
+
+  /// Local half of the "is Publish a real option here?" gate — the rules that
+  /// need no git call. Callers combine it with the remote check, which costs a
+  /// `Process.run`, so the `&&` order matters: keep this first.
+  ///
+  /// A count is only worth showing when the action it invites can actually
+  /// succeed; a badge offering an impossible Publish is worse than no badge.
+  /// Publish is impossible when:
+  ///   - the branch already has an upstream → Push, not Publish;
+  ///   - there is no branch name (`git init` with no commit yet) → nothing to
+  ///     publish, and `HEAD --not --remotes` would count the whole history;
+  ///   - HEAD is detached → `push -u origin HEAD` is rejected as not a full
+  ///     refname.
+  ///
+  /// Extracted as a pure predicate on purpose: inside `loadBranchStatus` the
+  /// empty-branch rule was **unobservable** (an unborn branch also makes the
+  /// count command exit 128, so the count was 0 whether the rule ran or not),
+  /// which meant it could be deleted with every test still green. Here each
+  /// rule has an input that distinguishes it.
+  static bool canPublishBranch({
+    required bool hasUpstream,
+    required String branch,
+  }) {
+    return !hasUpstream && branch.isNotEmpty && branch != 'HEAD';
+  }
+
+  /// The whole "unpublished commits worth offering a Publish for" measurement:
+  /// gate first, count only if the gate passes. Returns 0 whenever Publish
+  /// cannot succeed, so callers can drive both the badge and the button off this
+  /// single number instead of re-deriving the gate per screen.
+  ///
+  /// Every surface showing that badge/button MUST come through here. The gate
+  /// used to be written out at the call site, and the second screen to want the
+  /// same number copied a *different* subset of the rules — the same drift that
+  /// produced four bugs in the ahead/behind counts.
+  ///
+  /// [getRemoteUrl] costs a `Process.run`, so it stays behind the cheap local
+  /// rules — do not hoist it into [canPublishBranch]'s parameters.
+  static Future<int> loadPublishableCount(
+    String workingDir, {
+    required bool hasUpstream,
+    required String branch,
+  }) async {
+    if (!canPublishBranch(hasUpstream: hasUpstream, branch: branch)) return 0;
+    // No remote at all: `HEAD --not --remotes` would count the entire history,
+    // and publishing fails with "'origin' does not appear to be a git repository".
+    if (await getRemoteUrl(workingDir) == null) return 0;
+    return loadUnpublishedCount(workingDir);
   }
 
   /// Single source of truth for ahead/behind counts vs the upstream.
@@ -99,11 +220,9 @@ class GitBranchService {
   static Future<UpstreamDivergence> loadUpstreamDivergence(
     String workingDir,
   ) async {
-    final aheadResult = await Process.run(
-      'git',
+    final aheadResult = await runGit(
       ['rev-list', '--count', '@{upstream}..HEAD'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     // Both counts resolve `@{upstream}`, so they fail together. Bailing out here
     // guarantees the pair can never be half-updated.
@@ -112,11 +231,9 @@ class GitBranchService {
     }
     final ahead = int.tryParse((aheadResult.stdout as String).trim()) ?? 0;
 
-    final behindResult = await Process.run(
-      'git',
+    final behindResult = await runGit(
       ['rev-list', '--count', 'HEAD..@{upstream}'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     final behind = behindResult.exitCode == 0
         ? (int.tryParse((behindResult.stdout as String).trim()) ?? 0)
@@ -129,11 +246,9 @@ class GitBranchService {
   /// behind/ahead count vs upstream).
   static Future<BranchesResult> loadBranches(String workingDir) async {
     // Get branch list
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['branch', '-a', '--format=%(refname)'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode != 0) {
       return (
@@ -162,32 +277,10 @@ class GitBranchService {
       }
     }
 
-    // Detect current branch
-    final headResult = await Process.run(
-      'git',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
-    final current = headResult.exitCode == 0
-        ? (headResult.stdout as String).trim()
-        : '';
-
-    // Changed files count
-    int changed = 0;
-    final statusResult = await Process.run(
-      'git',
-      ['status', '--porcelain'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
-    if (statusResult.exitCode == 0) {
-      changed = (statusResult.stdout as String)
-          .trimRight()
-          .split('\n')
-          .where((l) => l.isNotEmpty)
-          .length;
-    }
+    // Current branch + changed files via the shared local-status helper.
+    final local = await loadLocalStatus(workingDir);
+    final current = local.branch;
+    final changed = local.changedFiles;
 
     final divergence = await loadUpstreamDivergence(workingDir);
 
@@ -207,12 +300,7 @@ class GitBranchService {
   /// Only valid when the branch has an upstream (see [BranchesResult.hasUpstream]);
   /// for a brand-new local branch use [publishBranch] instead.
   static Future<GitResult> pushCurrentBranch(String workingDir) async {
-    final result = await Process.run(
-      'git',
-      ['push'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    final result = await runGit(['push'], workingDir: workingDir);
     // git push writes progress + rejection reasons to stderr, so surface both
     // streams instead of swallowing the failure detail.
     final stdoutText = (result.stdout as String).trim();
@@ -238,12 +326,7 @@ class GitBranchService {
     String workingDir,
     String branch,
   ) async {
-    final result = await Process.run(
-      'git',
-      ['checkout', branch],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    final result = await runGit(['checkout', branch], workingDir: workingDir);
     if (result.exitCode == 0) {
       return (success: true, output: 'Switched to $branch');
     }
@@ -257,11 +340,9 @@ class GitBranchService {
     String name, {
     String? baseBranch,
   }) async {
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['checkout', '-b', name, if (baseBranch != null) baseBranch],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode == 0) {
       return (success: true, output: 'Created and switched to $name');
@@ -275,11 +356,9 @@ class GitBranchService {
     String name, {
     bool force = false,
   }) async {
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['branch', force ? '-D' : '-d', name],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode == 0) {
       final prefix = force ? 'Force deleted' : 'Deleted';
@@ -293,11 +372,9 @@ class GitBranchService {
     String workingDir,
     String name,
   ) async {
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['push', 'origin', '--delete', name],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode == 0) {
       return (success: true, output: 'Deleted remote branch $name');
@@ -351,11 +428,9 @@ class GitBranchService {
     String branch,
   ) async {
     // Create empty commit so the branch has its own commit on GitHub
-    final commit = await Process.run(
-      'git',
+    final commit = await runGit(
       ['commit', '--allow-empty', '-m', 'publish new branch: $branch'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (commit.exitCode != 0) {
       return (
@@ -364,11 +439,9 @@ class GitBranchService {
       );
     }
 
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['push', '-u', 'origin', branch],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode == 0) {
       return (success: true, output: 'Published $branch to origin');
@@ -389,12 +462,7 @@ class GitBranchService {
     await fetchAllBranches(workingDir);
 
     // Find local branches whose upstream is gone
-    final result = await Process.run(
-      'git',
-      ['branch', '-vv'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    final result = await runGit(['branch', '-vv'], workingDir: workingDir);
 
     final gone = <String>[];
     for (final line in (result.stdout as String).split('\n')) {
@@ -428,11 +496,9 @@ class GitBranchService {
     final deleted = <String>[];
     final failed = <String>[];
     for (final branch in branches) {
-      final del = await Process.run(
-        'git',
+      final del = await runGit(
         ['branch', '-D', branch],
-        workingDirectory: workingDir,
-        runInShell: true,
+        workingDir: workingDir,
       );
       if (del.exitCode == 0) {
         deleted.add(branch);
@@ -449,11 +515,9 @@ class GitBranchService {
     String sourceBranch,
     String currentBranch,
   ) async {
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['merge', sourceBranch],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode != 0) {
       final stderr = (result.stderr as String).trim();
@@ -466,12 +530,7 @@ class GitBranchService {
     }
 
     // Push after merge
-    final push = await Process.run(
-      'git',
-      ['push'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    final push = await runGit(['push'], workingDir: workingDir);
     if (push.exitCode == 0) {
       return (
         success: true,
@@ -495,11 +554,9 @@ class GitBranchService {
     String targetBranch,
   ) async {
     // Checkout target
-    var result = await Process.run(
-      'git',
+    var result = await runGit(
       ['checkout', targetBranch],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode != 0) {
       return (
@@ -511,12 +568,7 @@ class GitBranchService {
     }
 
     // Merge current into target
-    result = await Process.run(
-      'git',
-      ['merge', currentBranch],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    result = await runGit(['merge', currentBranch], workingDir: workingDir);
     if (result.exitCode != 0) {
       // Merge failed — stay on target so user can resolve
       final stderr = (result.stderr as String).trim();
@@ -529,20 +581,10 @@ class GitBranchService {
     }
 
     // Push target
-    final push = await Process.run(
-      'git',
-      ['push'],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    final push = await runGit(['push'], workingDir: workingDir);
 
     // Checkout back to original branch
-    await Process.run(
-      'git',
-      ['checkout', currentBranch],
-      workingDirectory: workingDir,
-      runInShell: true,
-    );
+    await runGit(['checkout', currentBranch], workingDir: workingDir);
 
     if (push.exitCode == 0) {
       return (
@@ -562,11 +604,9 @@ class GitBranchService {
   /// Get the HTTPS URL for the remote origin of a git repository.
   /// Returns `null` if no remote is configured or parsing fails.
   static Future<String?> getRemoteUrl(String workingDir) async {
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['remote', 'get-url', 'origin'],
-      workingDirectory: workingDir,
-      runInShell: true,
+      workingDir: workingDir,
     );
     if (result.exitCode != 0) return null;
     var url = (result.stdout as String).trim();

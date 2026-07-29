@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
 // ── Publish Modules Dialog ──
@@ -415,28 +416,21 @@ class _PublishModulesDialogState extends State<PublishModulesDialog> {
 
         var success = true;
         for (final cmd in commands) {
-          final r = await Process.run(
-            cmd.first,
-            cmd.sublist(1),
-            workingDirectory: modulePath,
-            runInShell: true,
-          );
+          final r = await runGit(cmd.sublist(1), workingDir: modulePath);
           if (r.exitCode != 0) {
             final stderr = (r.stderr as String).trimRight();
             // remote add fails if already exists — skip
             if (cmd[1] == 'remote' && stderr.contains('already exists')) {
               _addLog('  [!] Remote origin already exists, updating...',
                   color: Colors.orange);
-              await Process.run(
-                'git',
+              await runGit(
                 [
                   'remote',
                   'set-url',
                   'origin',
                   'https://$_gitToken@github.com/$_gitOrg/$name.git',
                 ],
-                workingDirectory: modulePath,
-                runInShell: true,
+                workingDir: modulePath,
               );
               continue;
             }

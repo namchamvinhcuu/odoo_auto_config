@@ -14,6 +14,7 @@ class OtherProjectGridView extends StatelessWidget {
     required this.onGitPull,
     required this.onGitCommit,
     required this.onGitPush,
+    required this.onGitPublish,
     this.selectedPath,
     required this.onSelect,
     required this.onOpenInVscode,
@@ -36,6 +37,7 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
   final ValueChanged<WorkspaceInfo> onGitPush;
+  final ValueChanged<WorkspaceInfo> onGitPublish;
   final ValueChanged<WorkspaceInfo> onSelect;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
@@ -102,7 +104,11 @@ class OtherProjectGridView extends StatelessWidget {
                 waitDuration: const Duration(milliseconds: 500),
                 child: InkWell(
                   onTap: () => onSelect(ws),
-                  onDoubleTap: exists ? () => onOpenInVscode(ws) : null,
+                  // NO onDoubleTap here: a double-tap recognizer on the card
+                  // holds the gesture arena for the git buttons at the bottom,
+                  // delaying them ~300ms and merging two quick taps on different
+                  // buttons into one double-tap that opens VSCode instead.
+                  // Open-in-VSCode lives on the project name below.
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(context, details.globalPosition, ws, exists),
                   child: Padding(
@@ -256,6 +262,44 @@ class OtherProjectGridView extends StatelessWidget {
                                       width: AppSpacing.xs,
                                     ),
                                   ],
+                                  // Branch that exists on no remote yet: `ahead`
+                                  // is 0 there, so without this a brand-new
+                                  // branch full of work would show nothing.
+                                  if ((state.unpublishedCount[ws.path] ?? 0) >
+                                      0) ...[
+                                    Tooltip(
+                                      message: context.l10n
+                                          .gitBranchUnpublished(
+                                            state.unpublishedCount[ws.path]!,
+                                          ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            GitSyncBadge.unpublished,
+                                            size: AppFontSize.md,
+                                            color:
+                                                GitSyncBadge.unpublishedColor,
+                                          ),
+                                          const SizedBox(
+                                            width: AppSpacing.xxs,
+                                          ),
+                                          Text(
+                                            '${state.unpublishedCount[ws.path]}',
+                                            style: const TextStyle(
+                                              fontSize: AppFontSize.xs,
+                                              color:
+                                                  GitSyncBadge.unpublishedColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
                                   Flexible(
                                     child: Text(
                                       state.branches[ws.path]!,
@@ -275,16 +319,27 @@ class OtherProjectGridView extends StatelessWidget {
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
-                        // Project name - prominent
-                        Text(
-                          ws.name,
-                          style: TextStyle(
-                            fontSize: nameSize,
-                            fontWeight: FontWeight.bold,
+                        // Project name - prominent. Also the double-tap target
+                        // for "open in VSCode" (see the note on the card InkWell
+                        // above); `exists` guard kept as it was.
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onDoubleTap: exists ? () => onOpenInVscode(ws) : null,
+                          // Full width: a Column gives loose constraints, so
+                          // without this the target would be only the glyphs.
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              ws.name,
+                              style: TextStyle(
+                                fontSize: nameSize,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const Spacer(),
                         // Quick action buttons
@@ -323,6 +378,19 @@ class OtherProjectGridView extends StatelessWidget {
                                   iconSize: btnSize,
                                   boxSize: btnBox,
                                   color: GitSyncBadge.aheadColor,
+                                ),
+                              // No upstream: pushing would fail, Publish is the
+                              // action that creates the remote branch.
+                              if ((state.unpublishedCount[ws.path] ?? 0) > 0)
+                                _gridBtn(
+                                  icon: GitActionIcons.publish,
+                                  tooltip: context.l10n.gitBranchPublish(
+                                    state.branches[ws.path] ?? '',
+                                  ),
+                                  onPressed: () => onGitPublish(ws),
+                                  iconSize: btnSize,
+                                  boxSize: btnBox,
+                                  color: GitActionColors.publish,
                                 ),
                               _gridBtn(
                                 icon: Icons.folder_open,

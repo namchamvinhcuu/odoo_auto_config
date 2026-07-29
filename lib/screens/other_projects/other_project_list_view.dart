@@ -14,6 +14,7 @@ class OtherProjectListView extends StatelessWidget {
     required this.onGitPull,
     required this.onGitCommit,
     required this.onGitPush,
+    required this.onGitPublish,
     required this.onOpenInVscode,
     required this.onOpenInVisualStudio,
     required this.onOpenInFileManager,
@@ -33,6 +34,7 @@ class OtherProjectListView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
   final ValueChanged<WorkspaceInfo> onGitPush;
+  final ValueChanged<WorkspaceInfo> onGitPublish;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
@@ -136,6 +138,19 @@ class OtherProjectListView extends StatelessWidget {
                             color: GitSyncBadge.aheadColor,
                           ),
                           tooltip: context.l10n.push,
+                        ),
+                      // No upstream: pushing would fail, Publish creates the
+                      // remote branch.
+                      if ((state.unpublishedCount[ws.path] ?? 0) > 0)
+                        IconButton(
+                          onPressed: () => onGitPublish(ws),
+                          icon: const Icon(
+                            GitActionIcons.publish,
+                            color: GitActionColors.publish,
+                          ),
+                          tooltip: context.l10n.gitBranchPublish(
+                            state.branches[ws.path] ?? '',
+                          ),
                         ),
                       IconButton(
                         onPressed: () => onOpenInVscode(ws),
@@ -246,6 +261,35 @@ class OtherProjectListView extends StatelessWidget {
                                         '${state.aheadCount[ws.path]}',
                                         style: const TextStyle(
                                           color: GitSyncBadge.aheadColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
+                              // Branch that exists on no remote yet: `ahead` is 0
+                              // there, so without this a brand-new branch full of
+                              // work would show nothing.
+                              if ((state.unpublishedCount[ws.path] ?? 0) > 0) ...[
+                                Tooltip(
+                                  message: context.l10n.gitBranchUnpublished(
+                                    state.unpublishedCount[ws.path]!,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        GitSyncBadge.unpublished,
+                                        size: AppIconSize.sm,
+                                        color: GitSyncBadge.unpublishedColor,
+                                      ),
+                                      const SizedBox(width: AppSpacing.xxs),
+                                      Text(
+                                        '${state.unpublishedCount[ws.path]}',
+                                        style: const TextStyle(
+                                          color: GitSyncBadge.unpublishedColor,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
