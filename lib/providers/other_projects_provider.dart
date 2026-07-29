@@ -144,20 +144,14 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       // Commits that exist on no remote at all. Only meaningful when the branch
       // has no upstream — that repo needs Publish, and `ahead` is 0 there.
       //
-      // Two more cases must report 0, or the badge shows a number the user can do
-      // nothing about and offers a Publish that can never succeed:
-      //   - no `origin` at all → the count is the whole history, and publishing
-      //     fails with "'origin' does not appear to be a git repository";
-      //   - detached HEAD → there is no branch name to publish, and
-      //     `push -u origin HEAD` is rejected as not a full refname.
-      final publishable =
-          !fetched.divergence.hasUpstream &&
-          local.branch.isNotEmpty &&
-          local.branch != 'HEAD' &&
-          await GitBranchService.getRemoteUrl(path) != null;
-      unpublishedValue = publishable
-          ? await GitBranchService.loadUnpublishedCount(path)
-          : 0;
+      // Gate + count live together in loadPublishableCount — the Odoo Workspace
+      // tile reads the same number from the same place, so the two screens cannot
+      // end up with different ideas of when Publish is offered.
+      unpublishedValue = await GitBranchService.loadPublishableCount(
+        path,
+        hasUpstream: fetched.divergence.hasUpstream,
+        branch: local.branch,
+      );
     } catch (_) {}
 
     // Re-read the latest state and merge only THIS path's keys, so concurrent

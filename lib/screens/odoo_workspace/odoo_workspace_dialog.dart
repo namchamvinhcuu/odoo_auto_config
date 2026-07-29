@@ -15,6 +15,7 @@ import 'package:odoo_auto_config/services/storage_service.dart';
 import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'repo_info.dart';
+import 'repo_tile.dart';
 import 'repo_branch_dialog.dart';
 import 'branch_picker_dialog.dart';
 import 'workspace_commit_dialog.dart';
@@ -239,7 +240,7 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     // Fetch + re-measure is a single call so the re-measure cannot be dropped.
     final fetched = await GitBranchService.fetchThenDiverge(repo.path);
     repo.fetchFailed = fetched.fetchFailed;
-    repo.applyDivergence(fetched.divergence);
+    await _applyStatus(repo, fetched.divergence);
   }
 
   /// Ahead/behind counts against the current remote-tracking ref.
@@ -248,10 +249,32 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   /// is shared with the Git Branches dialog and the Other Projects provider so
   /// the three paths cannot drift apart again.
   Future<void> _computeAheadBehind(RepoInfo repo) async {
-    // Writes live in RepoInfo.applyDivergence so they are covered by a test
-    // instead of only by this private method.
-    repo.applyDivergence(
+    await _applyStatus(
+      repo,
       await GitBranchService.loadUpstreamDivergence(repo.path),
+    );
+  }
+
+  /// Write a freshly measured status onto [repo] — divergence **and** the
+  /// unpublished count, which depends on `hasUpstream` and so has to be
+  /// re-measured every time the divergence is.
+  ///
+  /// Both load phases go through here for that reason: phase 1 measures locally,
+  /// phase 2 measures again after `git fetch`, and a branch that gained an
+  /// upstream in between must lose its Publish badge. Writes themselves live in
+  /// `RepoInfo.applyDivergence` (public → covered by a test instead of only by
+  /// this private method), which requires the count so it cannot be forgotten.
+  Future<void> _applyStatus(
+    RepoInfo repo,
+    UpstreamDivergence divergence,
+  ) async {
+    repo.applyDivergence(
+      divergence,
+      unpublishedCount: await GitBranchService.loadPublishableCount(
+        repo.path,
+        hasUpstream: divergence.hasUpstream,
+        branch: repo.branch,
+      ),
     );
   }
 
@@ -1221,230 +1244,25 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     );
   }
 
+  /// The tile itself lives in [RepoTile] (public + Stateless) so the "which git
+  /// button shows when" rules can be widget-tested without mounting this dialog.
+  /// Everything that needs State stays here: selection persistence, the child
+  /// dialogs and the git actions.
   Widget _buildRepoTile(RepoInfo repo) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: InkWell(
-        onTap: () {
-          setState(() => repo.selected = !repo.selected);
-          _saveSelection();
-        },
-        onDoubleTap: () => _openPathInVscode(repo.path),
-        borderRadius: AppRadius.mediumBorderRadius,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            children: [
-              // Checkbox
-              Checkbox(
-                value: repo.selected,
-                onChanged: (v) {
-                  setState(() => repo.selected = v ?? false);
-                  _saveSelection();
-                },
-              ),
-              const SizedBox(width: AppSpacing.md),
-              // Repo name
-              Expanded(
-                flex: 3,
-                child: Text(
-                  repo.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: AppFontSize.lg,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              // Loading placeholder or status
-              if (!repo.loaded)
-                const SizedBox(
-                  width: AppIconSize.md,
-                  height: AppIconSize.md,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else ...[
-                // Branch chip (clickable → open branch dialog)
-                if (repo.branch.isNotEmpty)
-                  InkWell(
-                    onTap: () => _openRepoBranchDialog(repo),
-                    mouseCursor: SystemMouseCursors.click,
-                    borderRadius: AppRadius.smallBorderRadius,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _branchColor(
-                          repo.branch,
-                        ).withValues(alpha: 0.15),
-                        borderRadius: AppRadius.smallBorderRadius,
-                      ),
-                      child: Text(
-                        repo.branch,
-                        style: TextStyle(
-                          fontSize: AppFontSize.md,
-                          fontFamily: 'monospace',
-                          color: _branchColor(repo.branch),
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(width: AppSpacing.md),
-                // Status indicators
-                if (repo.syncing)
-                  const Padding(
-                    padding: EdgeInsets.only(right: AppSpacing.sm),
-                    child: SizedBox(
-                      width: AppIconSize.sm,
-                      height: AppIconSize.sm,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                if (repo.fetchFailed)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: Tooltip(
-                      message: context.l10n.gitFetchFailed,
-                      child: const Icon(
-                        Icons.sync_problem,
-                        size: AppIconSize.md,
-                        color: Colors.amber,
-                      ),
-                    ),
-                  ),
-                if (repo.changedFiles > 0)
-                  _statusBadge(
-                    '${repo.changedFiles} ${GitSyncBadge.changed}',
-                    GitSyncBadge.changedColor,
-                  ),
-                if (repo.hasUpstream && repo.aheadCount > 0)
-                  _statusBadge(
-                    '${repo.aheadCount}',
-                    GitSyncBadge.aheadColor,
-                    icon: GitSyncBadge.ahead,
-                    tooltip: context.l10n.gitBranchAhead(repo.aheadCount),
-                  ),
-                if (repo.behindCount > 0)
-                  _statusBadge(
-                    '${repo.behindCount} ${GitSyncBadge.behind}',
-                    GitSyncBadge.behindColor,
-                  ),
-                // Per-repo actions
-                const SizedBox(width: AppSpacing.md),
-                _repoActionButton(
-                  icon: GitActionIcons.pull,
-                  tooltip: context.l10n.gitPull,
-                  color: GitActionColors.pull,
-                  onPressed: () => _pullSingle(repo),
-                ),
-                if (!repo.hasUpstream)
-                  _repoActionButton(
-                    icon: GitActionIcons.publish,
-                    tooltip: context.l10n.gitBranchPublish(repo.branch),
-                    color: GitActionColors.publish,
-                    onPressed: () => _publishSingle(repo),
-                  )
-                else ...[
-                  // Push only when there is something to push — same rule as the
-                  // Other Projects cards. PR stays available regardless.
-                  // Icon/color left as-is: #3 only changed WHEN this shows. Using
-                  // the ahead badge glyph here would make it identical to the
-                  // Publish button two lines up.
-                  if (repo.aheadCount > 0)
-                    _repoActionButton(
-                      icon: GitActionIcons.push,
-                      tooltip: context.l10n.push,
-                      color: GitActionColors.push,
-                      onPressed: () => _pushSingle(repo),
-                    ),
-                  _repoActionButton(
-                    icon: GitActionIcons.pr,
-                    tooltip: context.l10n.gitBranchPR,
-                    color: GitActionColors.pr,
-                    onPressed: () => _createPrSingle(repo),
-                  ),
-                ],
-              ],
-              // Remove from workspace (always visible)
-              _repoActionButton(
-                icon: Icons.close,
-                tooltip: context.l10n.removeFromList,
-                color: GitActionColors.delete,
-                onPressed: () => _removeRepo(repo),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// [icon] and [tooltip] are optional: the "unpushed commits" badge needs a
-  /// glyph of its own because the changed-files badge already uses "N ↑".
-  Widget _statusBadge(
-    String text,
-    Color color, {
-    IconData? icon,
-    String? tooltip,
-  }) {
-    Widget badge = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: AppRadius.smallBorderRadius,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: AppFontSize.md, color: color),
-            const SizedBox(width: AppSpacing.xxs),
-          ],
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: AppFontSize.sm,
-              fontFamily: 'monospace',
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-    if (tooltip != null) {
-      badge = Tooltip(message: tooltip, child: badge);
-    }
-    return Padding(
-      padding: const EdgeInsets.only(right: AppSpacing.sm),
-      child: badge,
-    );
-  }
-
-  Widget _repoActionButton({
-    required IconData icon,
-    required String tooltip,
-    VoidCallback? onPressed,
-    Color? color,
-  }) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(
-        icon,
-        size: AppIconSize.lg,
-        color: onPressed != null ? color : null,
-      ),
-      tooltip: tooltip,
-      padding: const EdgeInsets.all(AppSpacing.xs),
-      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+    return RepoTile(
+      repo: repo,
+      branchColor: _branchColor,
+      onSelectedChanged: (v) {
+        setState(() => repo.selected = v);
+        _saveSelection();
+      },
+      onOpenInVscode: () => _openPathInVscode(repo.path),
+      onOpenBranchDialog: () => _openRepoBranchDialog(repo),
+      onPull: () => _pullSingle(repo),
+      onPublish: () => _publishSingle(repo),
+      onPush: () => _pushSingle(repo),
+      onCreatePr: () => _createPrSingle(repo),
+      onRemove: () => _removeRepo(repo),
     );
   }
 }

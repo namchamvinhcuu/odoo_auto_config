@@ -104,7 +104,11 @@ class OtherProjectGridView extends StatelessWidget {
                 waitDuration: const Duration(milliseconds: 500),
                 child: InkWell(
                   onTap: () => onSelect(ws),
-                  onDoubleTap: exists ? () => onOpenInVscode(ws) : null,
+                  // NO onDoubleTap here: a double-tap recognizer on the card
+                  // holds the gesture arena for the git buttons at the bottom,
+                  // delaying them ~300ms and merging two quick taps on different
+                  // buttons into one double-tap that opens VSCode instead.
+                  // Open-in-VSCode lives on the project name below.
                   onSecondaryTapDown: (details) =>
                       _showGridContextMenu(context, details.globalPosition, ws, exists),
                   child: Padding(
@@ -315,16 +319,27 @@ class OtherProjectGridView extends StatelessWidget {
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
-                        // Project name - prominent
-                        Text(
-                          ws.name,
-                          style: TextStyle(
-                            fontSize: nameSize,
-                            fontWeight: FontWeight.bold,
+                        // Project name - prominent. Also the double-tap target
+                        // for "open in VSCode" (see the note on the card InkWell
+                        // above); `exists` guard kept as it was.
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onDoubleTap: exists ? () => onOpenInVscode(ws) : null,
+                          // Full width: a Column gives loose constraints, so
+                          // without this the target would be only the glyphs.
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              ws.name,
+                              style: TextStyle(
+                                fontSize: nameSize,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const Spacer(),
                         // Quick action buttons

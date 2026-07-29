@@ -151,6 +151,55 @@ class GitBranchService {
     return int.tryParse((result.stdout as String).trim()) ?? 0;
   }
 
+  /// Local half of the "is Publish a real option here?" gate — the rules that
+  /// need no git call. Callers combine it with the remote check, which costs a
+  /// `Process.run`, so the `&&` order matters: keep this first.
+  ///
+  /// A count is only worth showing when the action it invites can actually
+  /// succeed; a badge offering an impossible Publish is worse than no badge.
+  /// Publish is impossible when:
+  ///   - the branch already has an upstream → Push, not Publish;
+  ///   - there is no branch name (`git init` with no commit yet) → nothing to
+  ///     publish, and `HEAD --not --remotes` would count the whole history;
+  ///   - HEAD is detached → `push -u origin HEAD` is rejected as not a full
+  ///     refname.
+  ///
+  /// Extracted as a pure predicate on purpose: inside `loadBranchStatus` the
+  /// empty-branch rule was **unobservable** (an unborn branch also makes the
+  /// count command exit 128, so the count was 0 whether the rule ran or not),
+  /// which meant it could be deleted with every test still green. Here each
+  /// rule has an input that distinguishes it.
+  static bool canPublishBranch({
+    required bool hasUpstream,
+    required String branch,
+  }) {
+    return !hasUpstream && branch.isNotEmpty && branch != 'HEAD';
+  }
+
+  /// The whole "unpublished commits worth offering a Publish for" measurement:
+  /// gate first, count only if the gate passes. Returns 0 whenever Publish
+  /// cannot succeed, so callers can drive both the badge and the button off this
+  /// single number instead of re-deriving the gate per screen.
+  ///
+  /// Every surface showing that badge/button MUST come through here. The gate
+  /// used to be written out at the call site, and the second screen to want the
+  /// same number copied a *different* subset of the rules — the same drift that
+  /// produced four bugs in the ahead/behind counts.
+  ///
+  /// [getRemoteUrl] costs a `Process.run`, so it stays behind the cheap local
+  /// rules — do not hoist it into [canPublishBranch]'s parameters.
+  static Future<int> loadPublishableCount(
+    String workingDir, {
+    required bool hasUpstream,
+    required String branch,
+  }) async {
+    if (!canPublishBranch(hasUpstream: hasUpstream, branch: branch)) return 0;
+    // No remote at all: `HEAD --not --remotes` would count the entire history,
+    // and publishing fails with "'origin' does not appear to be a git repository".
+    if (await getRemoteUrl(workingDir) == null) return 0;
+    return loadUnpublishedCount(workingDir);
+  }
+
   /// Single source of truth for ahead/behind counts vs the upstream.
   ///
   /// Every git-status code path MUST go through this instead of running
