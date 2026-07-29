@@ -610,6 +610,12 @@
       "count": {"type": "int"}
     }
   },
+  "gitBranchUnpublished": "{count} commit(s) on a branch not published yet",
+  "@gitBranchUnpublished": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "gitBranchCreateTitle": "Create Branch",
   "gitBranchBaseBranch": "Base branch",
   "gitBranchNameLabel": "Branch name",

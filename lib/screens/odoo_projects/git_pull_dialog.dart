@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
 class GitPullDialog extends StatefulWidget {
@@ -71,6 +72,10 @@ class _GitPullDialogState extends State<GitPullDialog> {
         args,
         workingDirectory: widget.projectPath,
         runInShell: true,
+        // Not a git call, but the script runs git inside. The env is inherited by
+        // the child, so this keeps a credential prompt from freezing this dialog
+        // the same way it would freeze a direct git call.
+        environment: kGitEnvironment,
       );
       process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
         if (mounted) _addLine(line);

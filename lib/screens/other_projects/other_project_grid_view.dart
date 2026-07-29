@@ -14,6 +14,7 @@ class OtherProjectGridView extends StatelessWidget {
     required this.onGitPull,
     required this.onGitCommit,
     required this.onGitPush,
+    required this.onGitPublish,
     this.selectedPath,
     required this.onSelect,
     required this.onOpenInVscode,
@@ -36,6 +37,7 @@ class OtherProjectGridView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onGitPull;
   final ValueChanged<WorkspaceInfo> onGitCommit;
   final ValueChanged<WorkspaceInfo> onGitPush;
+  final ValueChanged<WorkspaceInfo> onGitPublish;
   final ValueChanged<WorkspaceInfo> onSelect;
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
@@ -256,6 +258,44 @@ class OtherProjectGridView extends StatelessWidget {
                                       width: AppSpacing.xs,
                                     ),
                                   ],
+                                  // Branch that exists on no remote yet: `ahead`
+                                  // is 0 there, so without this a brand-new
+                                  // branch full of work would show nothing.
+                                  if ((state.unpublishedCount[ws.path] ?? 0) >
+                                      0) ...[
+                                    Tooltip(
+                                      message: context.l10n
+                                          .gitBranchUnpublished(
+                                            state.unpublishedCount[ws.path]!,
+                                          ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            GitSyncBadge.unpublished,
+                                            size: AppFontSize.md,
+                                            color:
+                                                GitSyncBadge.unpublishedColor,
+                                          ),
+                                          const SizedBox(
+                                            width: AppSpacing.xxs,
+                                          ),
+                                          Text(
+                                            '${state.unpublishedCount[ws.path]}',
+                                            style: const TextStyle(
+                                              fontSize: AppFontSize.xs,
+                                              color:
+                                                  GitSyncBadge.unpublishedColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: AppSpacing.xs,
+                                    ),
+                                  ],
                                   Flexible(
                                     child: Text(
                                       state.branches[ws.path]!,
@@ -323,6 +363,19 @@ class OtherProjectGridView extends StatelessWidget {
                                   iconSize: btnSize,
                                   boxSize: btnBox,
                                   color: GitSyncBadge.aheadColor,
+                                ),
+                              // No upstream: pushing would fail, Publish is the
+                              // action that creates the remote branch.
+                              if ((state.unpublishedCount[ws.path] ?? 0) > 0)
+                                _gridBtn(
+                                  icon: GitActionIcons.publish,
+                                  tooltip: context.l10n.gitBranchPublish(
+                                    state.branches[ws.path] ?? '',
+                                  ),
+                                  onPressed: () => onGitPublish(ws),
+                                  iconSize: btnSize,
+                                  boxSize: btnBox,
+                                  color: GitActionColors.publish,
                                 ),
                               _gridBtn(
                                 icon: Icons.folder_open,

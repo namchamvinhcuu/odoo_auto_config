@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:odoo_auto_config/services/git_process.dart';
 
 /// One file in a discard operation. Status is the 2-char code from
 /// `git status --porcelain` (e.g. "M", "??", "A", "D", "MM").
@@ -48,12 +49,7 @@ class GitDiscardService {
     if (tracked.isNotEmpty) {
       final args = <String>['checkout', 'HEAD', '--'];
       args.addAll(tracked.map((t) => t.file));
-      final result = await Process.run(
-        'git',
-        args,
-        workingDirectory: repoPath,
-        runInShell: true,
-      );
+      final result = await runGit(args, workingDir: repoPath);
       if (result.exitCode == 0) {
         restored.addAll(tracked.map((t) => t.file));
       } else {

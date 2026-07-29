@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_branch_service.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/odoo_launch_config_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'odoo_server_log_dialog.dart';
@@ -223,29 +224,11 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
 
   /// Phase 1 — local git only (no network). Fast.
   Future<void> _loadLocalStatus(RepoInfo repo) async {
-    final branchResult = await Process.run(
-      'git',
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-      workingDirectory: repo.path,
-      runInShell: true,
-    );
-    if (branchResult.exitCode == 0) {
-      repo.branch = (branchResult.stdout as String).trim();
-    }
-
-    final statusResult = await Process.run(
-      'git',
-      ['status', '--porcelain'],
-      workingDirectory: repo.path,
-      runInShell: true,
-    );
-    if (statusResult.exitCode == 0) {
-      final output = (statusResult.stdout as String).trimRight();
-      repo.changedFiles = output.isEmpty
-          ? 0
-          : LineSplitter.split(output).length;
-    }
-
+    final local = await GitBranchService.loadLocalStatus(repo.path);
+    // Keep the previous name when git could not resolve HEAD, instead of blanking
+    // the label on screen — same rule the Other Projects provider follows.
+    if (local.branch.isNotEmpty) repo.branch = local.branch;
+    repo.changedFiles = local.changedFiles;
     await _computeAheadBehind(repo);
   }
 
@@ -253,14 +236,10 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
   /// Track fetch failure so the UI can warn instead of silently showing 0
   /// behind (a failed fetch leaves the remote-tracking ref stale).
   Future<void> _syncRepoStatus(RepoInfo repo) async {
-    final fetchResult = await Process.run(
-      'git',
-      ['fetch', '--quiet'],
-      workingDirectory: repo.path,
-      runInShell: true,
-    );
-    repo.fetchFailed = fetchResult.exitCode != 0;
-    await _computeAheadBehind(repo);
+    // Fetch + re-measure is a single call so the re-measure cannot be dropped.
+    final fetched = await GitBranchService.fetchThenDiverge(repo.path);
+    repo.fetchFailed = fetched.fetchFailed;
+    repo.applyDivergence(fetched.divergence);
   }
 
   /// Ahead/behind counts against the current remote-tracking ref.
@@ -502,11 +481,9 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
     // Collect all unique branches across pinned repos
     final allBranches = <String>{};
     for (final repo in _repos) {
-      final result = await Process.run(
-        'git',
+      final result = await runGit(
         ['branch', '-a', '--format=%(refname)'],
-        workingDirectory: repo.path,
-        runInShell: true,
+        workingDir: repo.path,
       );
       if (result.exitCode == 0) {
         for (final line in LineSplitter.split(result.stdout as String)) {
@@ -1373,12 +1350,18 @@ class _OdooWorkspaceDialogState extends State<OdooWorkspaceDialog> {
                     onPressed: () => _publishSingle(repo),
                   )
                 else ...[
-                  _repoActionButton(
-                    icon: GitActionIcons.push,
-                    tooltip: context.l10n.push,
-                    color: GitActionColors.push,
-                    onPressed: () => _pushSingle(repo),
-                  ),
+                  // Push only when there is something to push — same rule as the
+                  // Other Projects cards. PR stays available regardless.
+                  // Icon/color left as-is: #3 only changed WHEN this shows. Using
+                  // the ahead badge glyph here would make it identical to the
+                  // Publish button two lines up.
+                  if (repo.aheadCount > 0)
+                    _repoActionButton(
+                      icon: GitActionIcons.push,
+                      tooltip: context.l10n.push,
+                      color: GitActionColors.push,
+                      onPressed: () => _pushSingle(repo),
+                    ),
                   _repoActionButton(
                     icon: GitActionIcons.pr,
                     tooltip: context.l10n.gitBranchPR,

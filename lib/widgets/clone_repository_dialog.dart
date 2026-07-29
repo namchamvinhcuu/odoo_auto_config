@@ -9,6 +9,7 @@ import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/screens/other_projects/import_workspace_dialog.dart';
 import 'package:odoo_auto_config/services/command_runner.dart';
 import 'package:odoo_auto_config/services/git_branch_service.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/git_service.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
@@ -204,7 +205,8 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
 
     try {
       await Directory(targetParentDir).create(recursive: true);
-      final process = await Process.start(git, args, runInShell: true);
+      // No working dir: targetDir is absolute and the repo does not exist yet.
+      final process = await startGitInCurrentDir(args, executable: git);
       final stderrLines = <String>[];
 
       final stdoutDone = process.stdout.transform(utf8.decoder).listen((data) {
@@ -246,11 +248,10 @@ class _CloneRepositoryDialogState extends State<CloneRepositoryDialog> {
       }
 
       await GitBranchService.ensureOriginFetchesAllBranches(targetDir);
-      await Process.run(
-        git,
+      await runGit(
         ['fetch', '--prune', '--quiet', 'origin'],
-        workingDirectory: targetDir,
-        runInShell: true,
+        workingDir: targetDir,
+        executable: git,
       );
 
       final type = await WorkspaceImportHelper.detectType(targetDir);

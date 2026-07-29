@@ -549,6 +549,7 @@
   "gitBranchChanged": "{count} changed",
   "gitBranchBehind": "{count} behind",
   "gitBranchAhead": "{count} ahead",
+  "gitBranchUnpublished": "아직 publish되지 않은 브랜치의 커밋 {count}개",
   "gitBranchCreateTitle": "Create Branch",
   "gitBranchBaseBranch": "Base branch",
   "gitBranchNameLabel": "Branch name",

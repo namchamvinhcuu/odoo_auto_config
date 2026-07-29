@@ -42,7 +42,7 @@ void main() {
     if (tmp.existsSync()) tmp.deleteSync(recursive: true);
   });
 
-  Widget wrap(String path) => MaterialApp(
+  Widget wrap(String path, {String? publishBranch}) => MaterialApp(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -56,6 +56,7 @@ void main() {
           body: SimpleGitPushDialog(
             projectName: 'fixture',
             projectPath: path,
+            publishBranch: publishBranch,
           ),
         ),
       );
@@ -67,6 +68,7 @@ void main() {
     WidgetTester tester, {
     int aheadCommits = 1,
     bool noUpstream = false,
+    String? publishBranch,
   }) async {
     tester.view.physicalSize = const Size(1600, 1200);
     tester.view.devicePixelRatio = 1.0;
@@ -98,7 +100,7 @@ void main() {
         await _git(['commit', '-m', 'local-only-$i'], localPath);
       }
 
-      await tester.pumpWidget(wrap(localPath));
+      await tester.pumpWidget(wrap(localPath, publishBranch: publishBranch));
 
       for (var i = 0; i < 100; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -150,5 +152,48 @@ void main() {
           'như đã push xong.',
     );
     expect(find.textContaining('Pushed!', findRichText: true), findsNothing);
+  });
+
+  // Yêu cầu #2 — Publish cho branch chưa publish. So sánh trực tiếp với test
+  // ngay trên: CÙNG fixture (branch `orphan` chưa có upstream, đã pin
+  // `push.autoSetupRemote=false`), khác DUY NHẤT tham số `publishBranch`.
+  // Không truyền → `push` trần → fatal. Truyền → `push -u origin orphan` → OK.
+  testWidgets(
+      'publishBranch → chạy `push -u origin <branch>`: branch chưa upstream vẫn '
+      'publish được và upstream được tạo', (tester) async {
+    // Arrange + Act
+    await mountAndRunPush(
+      tester,
+      aheadCommits: 1,
+      noUpstream: true,
+      publishBranch: 'orphan',
+    );
+
+    // Assert: (1) UI báo thành công (không còn fatal như khi push trần)...
+    expect(
+      find.textContaining('Pushed!', findRichText: true),
+      findsOneWidget,
+      reason: 'push -u origin orphan phải thành công trên branch chưa publish',
+    );
+    expect(
+      find.textContaining('Push failed with exit code', findRichText: true),
+      findsNothing,
+    );
+
+    // ...(2) và upstream thật sự được set (đó là điểm khác của `-u`), remote có
+    // branch mới — nếu chỉ chạy `push` trần thì cả hai đều không xảy ra.
+    int? ahead;
+    String? remoteBranches;
+    await tester.runAsync(() async {
+      ahead = await aheadOf(localPath);
+      final r = await Process.run(
+        'git',
+        ['branch', '--format=%(refname:short)'],
+        workingDirectory: remotePath,
+      );
+      remoteBranches = (r.stdout as String).trim();
+    });
+    expect(ahead, 0, reason: 'upstream đã set và commit đã lên → ahead = 0');
+    expect(remoteBranches, contains('orphan'));
   });
 }

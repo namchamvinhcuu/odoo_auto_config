@@ -3046,6 +3046,12 @@ abstract class AppLocalizations {
   /// **'{count} ahead'**
   String gitBranchAhead(int count);
 
+  /// No description provided for @gitBranchUnpublished.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} commit(s) on a branch not published yet'**
+  String gitBranchUnpublished(int count);
+
   /// No description provided for @gitBranchCreateTitle.
   ///
   /// In en, this message translates to:

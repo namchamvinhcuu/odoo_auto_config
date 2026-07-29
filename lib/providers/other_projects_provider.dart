@@ -22,6 +22,14 @@ class OtherProjectsState {
   /// Local commits not yet pushed to the upstream, per repo path.
   /// Drives the "needs push" badge on the project cards.
   final Map<String, int> aheadCount;
+
+  /// Whether the current branch has a usable upstream ref.
+  /// False → the repo needs Publish, not Push, and [aheadCount] is 0.
+  final Map<String, bool> hasUpstream;
+
+  /// Commits that exist on no remote at all. Only meaningful where
+  /// [hasUpstream] is false — a brand-new branch full of unpublished work.
+  final Map<String, int> unpublishedCount;
   final Map<String, bool> fetchFailed;
 
   const OtherProjectsState({
@@ -30,6 +38,8 @@ class OtherProjectsState {
     this.changedCount = const {},
     this.behindCount = const {},
     this.aheadCount = const {},
+    this.hasUpstream = const {},
+    this.unpublishedCount = const {},
     this.fetchFailed = const {},
   });
 
@@ -39,6 +49,8 @@ class OtherProjectsState {
     Map<String, int>? changedCount,
     Map<String, int>? behindCount,
     Map<String, int>? aheadCount,
+    Map<String, bool>? hasUpstream,
+    Map<String, int>? unpublishedCount,
     Map<String, bool>? fetchFailed,
   }) {
     return OtherProjectsState(
@@ -47,6 +59,8 @@ class OtherProjectsState {
       changedCount: changedCount ?? this.changedCount,
       behindCount: behindCount ?? this.behindCount,
       aheadCount: aheadCount ?? this.aheadCount,
+      hasUpstream: hasUpstream ?? this.hasUpstream,
+      unpublishedCount: unpublishedCount ?? this.unpublishedCount,
       fetchFailed: fetchFailed ?? this.fetchFailed,
     );
   }
@@ -104,46 +118,46 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
     int? changedValue;
     int? behindValue;
     int? aheadValue;
+    bool? hasUpstreamValue;
+    int? unpublishedValue;
     bool? fetchFailedValue;
 
     try {
-      // Current branch
-      final result = await Process.run(
-        'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
-        workingDirectory: path, runInShell: true,
-      );
-      if (result.exitCode == 0) {
-        final branch = (result.stdout as String).trim();
-        if (branch.isNotEmpty) branchValue = branch;
-      }
+      // Local status (branch + changed files) via the shared helper — do NOT
+      // inline the git commands here, they are measured identically elsewhere.
+      final local = await GitBranchService.loadLocalStatus(path);
+      if (local.branch.isNotEmpty) branchValue = local.branch;
+      changedValue = local.changedFiles;
 
-      // Changed files
-      final statusResult = await Process.run(
-        'git', ['status', '--porcelain'],
-        workingDirectory: path, runInShell: true,
-      );
-      if (statusResult.exitCode == 0) {
-        changedValue = (statusResult.stdout as String)
-            .trimRight().split('\n').where((l) => l.isNotEmpty).length;
-      }
-
-      // Fetch quietly so @{upstream} reflects new remote commits.
-      // Track failure so the UI can warn instead of silently showing 0 behind.
-      final fetchResult = await Process.run(
-        'git', ['fetch', '--quiet'],
-        workingDirectory: path, runInShell: true,
-      );
-      fetchFailedValue = fetchResult.exitCode != 0;
-
-      // Ahead/behind via the shared helper — do NOT inline `rev-list` here.
-      // Both counts are always assigned: a `0` from "no upstream" must overwrite
+      // Fetch + re-measure divergence as ONE unit: measuring behind without
+      // fetching first reads a stale remote-tracking ref and reports 0.
+      // Every count is always assigned — a `0` from "no upstream" must overwrite
       // the previous branch's number, because leaving these null means "keep the
       // old map" in copyWith and the badge would stay stale after a switch.
-      // Note this is NOT the `git fetch` failure case (upstream still exists,
-      // rev-list exits 0) — that is reported separately via fetchFailed.
-      final divergence = await GitBranchService.loadUpstreamDivergence(path);
-      behindValue = divergence.behind;
-      aheadValue = divergence.ahead;
+      // fetchFailed is separate: upstream still exists then, rev-list exits 0.
+      final fetched = await GitBranchService.fetchThenDiverge(path);
+      fetchFailedValue = fetched.fetchFailed;
+      behindValue = fetched.divergence.behind;
+      aheadValue = fetched.divergence.ahead;
+      hasUpstreamValue = fetched.divergence.hasUpstream;
+
+      // Commits that exist on no remote at all. Only meaningful when the branch
+      // has no upstream — that repo needs Publish, and `ahead` is 0 there.
+      //
+      // Two more cases must report 0, or the badge shows a number the user can do
+      // nothing about and offers a Publish that can never succeed:
+      //   - no `origin` at all → the count is the whole history, and publishing
+      //     fails with "'origin' does not appear to be a git repository";
+      //   - detached HEAD → there is no branch name to publish, and
+      //     `push -u origin HEAD` is rejected as not a full refname.
+      final publishable =
+          !fetched.divergence.hasUpstream &&
+          local.branch.isNotEmpty &&
+          local.branch != 'HEAD' &&
+          await GitBranchService.getRemoteUrl(path) != null;
+      unpublishedValue = publishable
+          ? await GitBranchService.loadUnpublishedCount(path)
+          : 0;
     } catch (_) {}
 
     // Re-read the latest state and merge only THIS path's keys, so concurrent
@@ -163,6 +177,12 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
       aheadCount: aheadValue == null
           ? null
           : {...latest.aheadCount, path: aheadValue},
+      hasUpstream: hasUpstreamValue == null
+          ? null
+          : {...latest.hasUpstream, path: hasUpstreamValue},
+      unpublishedCount: unpublishedValue == null
+          ? null
+          : {...latest.unpublishedCount, path: unpublishedValue},
       fetchFailed: fetchFailedValue == null
           ? null
           : {...latest.fetchFailed, path: fetchFailedValue},

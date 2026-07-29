@@ -273,9 +273,18 @@ class GitSyncBadge {
   /// Commits on the remote that are not local yet.
   static const String behind = '↓';
 
+  /// Commits on a branch that exists on NO remote yet — needs Publish, not Push.
+  ///
+  /// Deliberately a different glyph from [ahead]: `GitActionIcons.publish` is
+  /// also `Icons.cloud_upload`, so reusing that here would make "needs push" and
+  /// "never published" look identical. Same green, because both mean "you have
+  /// local work that is not on the server".
+  static const IconData unpublished = Icons.cloud_off;
+
   static const Color changedColor = Colors.orange;
   static const Color aheadColor = Colors.green;
   static const Color behindColor = Colors.cyan;
+  static const Color unpublishedColor = Colors.green;
 }
 
 /// Colors used in log output

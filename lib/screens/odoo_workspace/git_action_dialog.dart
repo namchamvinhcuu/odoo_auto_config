@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'repo_info.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
@@ -85,10 +86,7 @@ class _GitActionDialogState extends State<GitActionDialog> {
 
   Future<void> _pullRepo(RepoInfo repo) async {
     _addLine('\x1B[0;34m[*] Pulling ${repo.name}...\x1B[0m');
-    final process = await Process.start(
-      'git', ['pull'],
-      workingDirectory: repo.path, runInShell: true,
-    );
+    final process = await startGit(['pull'], workingDir: repo.path);
     await _listenProcess(process);
     final exitCode = await process.exitCode;
     if (exitCode == 0) {
@@ -100,10 +98,7 @@ class _GitActionDialogState extends State<GitActionDialog> {
 
   Future<void> _pushRepo(RepoInfo repo) async {
     _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
-    final process = await Process.start(
-      'git', ['push'],
-      workingDirectory: repo.path, runInShell: true,
-    );
+    final process = await startGit(['push'], workingDir: repo.path);
     await _listenProcess(process);
     final exitCode = await process.exitCode;
     if (exitCode == 0) {
@@ -116,11 +111,9 @@ class _GitActionDialogState extends State<GitActionDialog> {
   Future<void> _publishRepo(RepoInfo repo) async {
     _addLine(
         '\x1B[0;36m[>] Publishing ${repo.name} (${repo.branch})...\x1B[0m');
-    final process = await Process.start(
-      'git',
+    final process = await startGit(
       ['push', '-u', 'origin', repo.branch],
-      workingDirectory: repo.path,
-      runInShell: true,
+      workingDir: repo.path,
     );
     await _listenProcess(process);
     final exitCode = await process.exitCode;
@@ -133,21 +126,15 @@ class _GitActionDialogState extends State<GitActionDialog> {
 
   Future<void> _switchRepo(RepoInfo repo, String branch) async {
     _addLine('\x1B[0;34m[*] Switching ${repo.name} to $branch...\x1B[0m');
-    var result = await Process.run(
-      'git', ['checkout', branch],
-      workingDirectory: repo.path, runInShell: true,
-    );
+    var result = await runGit(['checkout', branch], workingDir: repo.path);
     if (result.exitCode != 0) {
-      result = await Process.run(
-        'git', ['checkout', '-b', branch, 'origin/$branch'],
-        workingDirectory: repo.path, runInShell: true,
+      result = await runGit(
+        ['checkout', '-b', branch, 'origin/$branch'],
+        workingDir: repo.path,
       );
     }
     if (result.exitCode != 0) {
-      result = await Process.run(
-        'git', ['checkout', '-b', branch],
-        workingDirectory: repo.path, runInShell: true,
-      );
+      result = await runGit(['checkout', '-b', branch], workingDir: repo.path);
     }
     if (result.exitCode == 0) {
       _addLine('\x1B[0;32m[+] ${repo.name}: switched to $branch\x1B[0m');

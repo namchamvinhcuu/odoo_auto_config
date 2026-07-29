@@ -320,6 +320,32 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     });
   }
 
+  /// Publish a branch that has no upstream yet (Push would fail there).
+  void _runGitPublish(WorkspaceInfo ws) {
+    final gitDir = Directory(p.join(ws.path, '.git'));
+    if (!gitDir.existsSync()) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.gitPullNotARepo)));
+      return;
+    }
+    final branch =
+        ref.read(otherProjectsProvider).valueOrNull?.branches[ws.path] ?? '';
+    if (branch.isEmpty) return;
+    AppDialog.show(
+      context: context,
+      builder: (ctx) => SimpleGitPushDialog(
+        projectName: ws.name,
+        projectPath: ws.path,
+        publishBranch: branch,
+      ),
+    ).then((_) {
+      if (mounted) {
+        ref.read(otherProjectsProvider.notifier).loadBranchStatus(ws.path);
+      }
+    });
+  }
+
   Future<void> _setupNginx(WorkspaceInfo ws) async {
     final nginx = await NginxService.loadSettings();
     final suffix = (nginx['domainSuffix'] ?? '').toString();
@@ -534,6 +560,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
       onGitPush: _runGitPush,
+      onGitPublish: _runGitPublish,
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
@@ -560,6 +587,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onGitPull: _runGitPull,
       onGitCommit: _runGitCommit,
       onGitPush: _runGitPush,
+      onGitPublish: _runGitPublish,
       onSelect: (ws) => setState(() => _selectedPath = _selectedPath == ws.path ? null : ws.path),
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),

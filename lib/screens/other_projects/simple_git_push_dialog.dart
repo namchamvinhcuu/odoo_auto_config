@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
 /// Streams `git push` for one Other Project so unpushed commits can be shipped
@@ -15,10 +15,20 @@ class SimpleGitPushDialog extends StatefulWidget {
   final String projectName;
   final String projectPath;
 
+  /// Set to publish a branch that has no upstream yet: runs
+  /// `push -u origin <branch>` instead of a plain `push`, which would fail with
+  /// "no upstream branch".
+  ///
+  /// Unlike [GitBranchService.publishBranch] this does NOT create an empty
+  /// commit — that helper exists for a fresh branch with no commits of its own,
+  /// and here the branch already has the work we want to publish.
+  final String? publishBranch;
+
   const SimpleGitPushDialog({
     super.key,
     required this.projectName,
     required this.projectPath,
+    this.publishBranch,
   });
 
   @override
@@ -62,11 +72,10 @@ class _SimpleGitPushDialogState extends State<SimpleGitPushDialog> {
     setState(() => _running = true);
     if (mounted) context.setDialogRunning(true);
     try {
-      final process = await Process.start(
-        'git',
-        ['push'],
-        workingDirectory: widget.projectPath,
-        runInShell: true,
+      final branch = widget.publishBranch;
+      final process = await startGit(
+        branch == null ? ['push'] : ['push', '-u', 'origin', branch],
+        workingDir: widget.projectPath,
       );
       process.stdout
           .transform(utf8.decoder)

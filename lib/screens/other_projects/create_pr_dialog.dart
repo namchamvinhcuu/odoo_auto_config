@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/services/platform_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 import 'simple_git_commit_dialog.dart';
@@ -75,11 +76,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
     // Load remote branches
     List<String> branches = [];
-    final brResult = await Process.run(
-      'git',
+    final brResult = await runGit(
       ['branch', '-r', '--format=%(refname:short)'],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
+      workingDir: widget.projectPath,
     );
     if (brResult.exitCode == 0) {
       branches = (brResult.stdout as String)
@@ -121,18 +120,14 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
   }
 
   Future<bool> _checkDiffFor(String base) async {
-    await Process.run(
-      'git',
+    await runGit(
       ['fetch', 'origin', base, '--quiet'],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
+      workingDir: widget.projectPath,
     );
     if (!mounted) return false;
-    final result = await Process.run(
-      'git',
+    final result = await runGit(
       ['rev-list', '--count', 'origin/$base..HEAD'],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
+      workingDir: widget.projectPath,
     );
     final count = int.tryParse((result.stdout as String).trim()) ?? 0;
     return count == 0;
@@ -161,11 +156,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
     context.setDialogRunning(true);
 
     // Check for uncommitted changes
-    final status = await Process.run(
-      'git',
+    final status = await runGit(
       ['status', '--porcelain'],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
+      workingDir: widget.projectPath,
     );
     final uncommitted = (status.stdout as String)
         .trimRight()
@@ -220,11 +213,9 @@ class _CreatePRDialogState extends State<CreatePRDialog> {
 
     // Push current branch first
     _addLine('\x1B[0;33m[~] Pushing ${widget.currentBranch} to origin...\x1B[0m');
-    final push = await Process.start(
-      'git',
+    final push = await startGit(
       ['push', '-u', 'origin', widget.currentBranch],
-      workingDirectory: widget.projectPath,
-      runInShell: true,
+      workingDir: widget.projectPath,
     );
     push.stdout
         .transform(utf8.decoder)

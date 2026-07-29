@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_discard_service.dart';
+import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/discard_confirm_dialog.dart';
 import 'repo_create_pr_dialog.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
@@ -70,21 +70,17 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
     setState(() => _loading = true);
     try {
       // Detect current branch
-      final branchResult = await Process.run(
-        'git',
+      final branchResult = await runGit(
         ['branch', '--show-current'],
-        workingDirectory: widget.repoPath,
-        runInShell: true,
+        workingDir: widget.repoPath,
       );
       if (mounted && branchResult.exitCode == 0) {
         _currentBranch = (branchResult.stdout as String).trim();
       }
 
-      final result = await Process.run(
-        'git',
+      final result = await runGit(
         ['status', '--porcelain'],
-        workingDirectory: widget.repoPath,
-        runInShell: true,
+        workingDir: widget.repoPath,
       );
       if (!mounted) return;
       final output = (result.stdout as String).trimRight();
@@ -189,11 +185,9 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
       _addLine(
           '\x1B[0;34m> git add (${filePaths.length} files)\x1B[0m');
       for (final file in filePaths) {
-        final addResult = await Process.run(
-          'git',
+        final addResult = await runGit(
           ['add', '--', file],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
+          workingDir: widget.repoPath,
         );
         if (addResult.exitCode != 0) {
           _addLine('\x1B[0;31m[-] git add failed for: $file\x1B[0m');
@@ -206,11 +200,9 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
       }
 
       _addLine('\x1B[0;34m> git commit -m "$message"\x1B[0m');
-      final commitProcess = await Process.start(
-        'git',
+      final commitProcess = await startGit(
         ['commit', '-m', message],
-        workingDirectory: widget.repoPath,
-        runInShell: true,
+        workingDir: widget.repoPath,
       );
       commitProcess.stdout
           .transform(utf8.decoder)
@@ -239,11 +231,9 @@ class _RepoCommitDialogState extends State<RepoCommitDialog> {
 
       if (_pushAfterCommit) {
         _addLine('\x1B[0;34m> git push\x1B[0m');
-        final pushProcess = await Process.start(
-          'git',
+        final pushProcess = await startGit(
           ['push'],
-          workingDirectory: widget.repoPath,
-          runInShell: true,
+          workingDir: widget.repoPath,
         );
         pushProcess.stdout
             .transform(utf8.decoder)
