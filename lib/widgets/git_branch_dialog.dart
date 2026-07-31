@@ -78,29 +78,46 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
     _loadBranches(fetch: true);
   }
 
+  // Needs a catch more than the action handlers do: this one runs from
+  // initState, so a repo that has been deleted or a volume that has been
+  // unmounted throws ProcessException before the first frame — and with
+  // _loading stuck true, setDialogRunning stuck true and PopScope holding ESC,
+  // the dialog opens as a spinner that cannot be closed or explained. The catch
+  // has to set _message too, or the user still gets no reason.
   Future<void> _loadBranches({bool fetch = false}) async {
     setState(() => _loading = true);
     if (mounted) context.setDialogRunning(true);
-    if (fetch) {
-      await GitBranchService.fetchAllBranches(widget.path);
-    }
-    final result = await GitBranchService.loadBranches(widget.path);
-    if (!mounted) return;
-    setState(() {
-      _local = result.local
-        ..sort((a, b) {
-          if (a == _current) return -1;
-          if (b == _current) return 1;
-          return a.compareTo(b);
+    try {
+      if (fetch) {
+        await GitBranchService.fetchAllBranches(widget.path);
+      }
+      final result = await GitBranchService.loadBranches(widget.path);
+      if (!mounted) return;
+      setState(() {
+        _local = result.local
+          ..sort((a, b) {
+            if (a == _current) return -1;
+            if (b == _current) return 1;
+            return a.compareTo(b);
+          });
+        _remote = result.remote..sort();
+        _changedFiles = result.changedFiles;
+        _behindRemote = result.behindRemote;
+        _aheadRemote = result.aheadRemote;
+        _hasUpstream = result.hasUpstream;
+        _loading = false;
+      });
+      context.setDialogRunning(false);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _message = e.toString();
+          _isError = true;
         });
-      _remote = result.remote..sort();
-      _changedFiles = result.changedFiles;
-      _behindRemote = result.behindRemote;
-      _aheadRemote = result.aheadRemote;
-      _hasUpstream = result.hasUpstream;
-      _loading = false;
-    });
-    context.setDialogRunning(false);
+        context.setDialogRunning(false);
+      }
+    }
   }
 
   Future<void> _checkout(String branch) async {
@@ -536,15 +553,30 @@ class _GitBranchDialogState extends State<GitBranchDialog> {
       _message = null;
     });
     context.setDialogRunning(true);
-    final result = await GitBranchService.publishBranch(widget.path, branch);
-    if (!mounted) return;
-    setState(() {
-      _switching = false;
-      _message = result.output;
-      _isError = !result.success;
-    });
-    context.setDialogRunning(false);
-    if (result.success) _loadBranches();
+    // Needs the same catch as _mergeBranch: publishBranch throws ProcessException
+    // (not a failing exit code) when widget.path is gone — repo deleted or a
+    // volume unmounted. Uncaught, _switching and setDialogRunning stay true and
+    // the close button is disabled for good, so the user has to kill the app.
+    try {
+      final result = await GitBranchService.publishBranch(widget.path, branch);
+      if (!mounted) return;
+      setState(() {
+        _switching = false;
+        _message = result.output;
+        _isError = !result.success;
+      });
+      context.setDialogRunning(false);
+      if (result.success) _loadBranches();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _switching = false;
+          _message = e.toString();
+          _isError = true;
+        });
+        context.setDialogRunning(false);
+      }
+    }
   }
 
   Future<void> _pullBranch(String branch) async {

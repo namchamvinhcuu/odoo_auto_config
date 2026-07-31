@@ -23,6 +23,24 @@
 // AST. Không bắt được lệnh git chạy GIÁN TIẾP qua shell script / `bash -c`
 // (vd git_pull_dialog chạy script .sh có git bên trong — chỗ đó phải tự truyền
 // `kGitEnvironment`, xem docstring tại đó).
+//
+// ── Phần 2 (mở rộng): `gh` cũng phải mang `kGitEnvironment` ──
+// `gh` spawn git bên dưới ⇒ nếu `runGh`/`startGh` (lib/services/platform_service.dart)
+// không merge `kGitEnvironment` thì lỗ "dialog treo vì git chờ nhập credential"
+// quay lại qua đường gh. Guard này KHÁC guard git ở trên về bản chất: gh KHÔNG có
+// wrapper riêng nên không thể cấm `Process.run`, chỉ có thể đòi 2 wrapper đó
+// truyền env đúng.
+//
+// Vì sao vẫn là quét text mà KHÔNG xanh-giả: `runGh` không nhận `executable`
+// (khác `runGit`), nó tự resolve `ghPath` ⇒ không có seam để chạy thật với một
+// chương trình in-env như `git_process_env_test.dart` làm cho git. Hai lựa chọn
+// trung thực là (a) quét text như dưới, hoặc (b) thêm tham số `executable` cho
+// `runGh`/`startGh` rồi test hành vi thật — (b) là đổi public API nên để main
+// quyết. Guard dưới nói rõ nó chứng minh được gì: mọi nhánh `Process` trong 2
+// wrapper đó truyền đúng biến env đã merge, và thứ tự spread không nuốt quyền
+// override của caller. Nó KHÔNG chứng minh env tới được process con (đó là việc
+// của (b)). Heuristic được test 2 chiều bằng source tổng hợp ngay dưới, nên nó
+// không phải một assert luôn-xanh.
 
 import 'dart:io';
 
@@ -188,6 +206,185 @@ List<GitCallSite> findRawGitCalls(String path, String rawSource) {
     ));
   }
   return result;
+}
+
+// ───────────────────────── phần 2: guard cho `gh` ─────────────────────────
+
+/// Chữ ký 2 wrapper gh. Đổi chữ ký thì guard báo "không tìm thấy" — cố ý: người
+/// đổi phải nhìn lại chỗ này chứ không được để guard im lặng hết tác dụng.
+const kGhWrapperSignatures = [
+  'static Future<ProcessResult> runGh(',
+  'static Future<Process> startGh(',
+];
+
+/// `gh`, `ghPath`, `_ghPath`, `'gh'`, `'/opt/homebrew/bin/gh'` → true.
+/// `ghost`, `github`, `light` → false (theo sau `gh` là chữ thường/số ⇒ bỏ).
+bool executableLooksLikeGh(String expr) =>
+    RegExp(r'(?<![A-Za-z0-9])gh(?![a-z0-9])').hasMatch(expr);
+
+/// Chỉ số ngay SAU dấu `)` đóng của cặp ngoặc mở tại [openParen]; `null` nếu
+/// không cân được.
+///
+/// Cần bước này vì danh sách tham số của Dart chứa `{…}` (named parameters) —
+/// nhảy thẳng tới `{` đầu tiên sau chữ ký sẽ lấy nhầm khối tham số làm thân
+/// method, và guard khi đó KHÔNG BAO GIỜ thấy dòng merge env (xanh/đỏ đều sai).
+int? parenEndAt(String source, int openParen) {
+  var depth = 0;
+  String? quote;
+  for (var i = openParen; i < source.length; i++) {
+    final c = source[i];
+    final escaped = i > 0 && source[i - 1] == r'\';
+    if (quote != null) {
+      if (c == quote && !escaped) quote = null;
+      continue;
+    }
+    if (c == "'" || c == '"') {
+      quote = c;
+    } else if (c == '(') {
+      depth++;
+    } else if (c == ')') {
+      depth--;
+      if (depth == 0) return i + 1;
+    }
+  }
+  return null;
+}
+
+/// Khối `{…}` đầu tiên kể từ [from], cân bằng ngoặc và bỏ qua nội dung string.
+/// `null` nếu không cân được.
+String? braceBlockAt(String source, int from) {
+  final start = source.indexOf('{', from);
+  if (start < 0) return null;
+  var depth = 0;
+  String? quote;
+  for (var i = start; i < source.length; i++) {
+    final c = source[i];
+    final escaped = i > 0 && source[i - 1] == r'\';
+    if (quote != null) {
+      if (c == quote && !escaped) quote = null;
+      continue;
+    }
+    if (c == "'" || c == '"') {
+      quote = c;
+    } else if (c == '{') {
+      depth++;
+    } else if (c == '}') {
+      depth--;
+      if (depth == 0) return source.substring(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/// Argument top-level của mỗi `Process.run/start(...)` trong [snippet].
+List<List<String>> findProcessInvocations(String snippet) {
+  final calls = <List<String>>[];
+  final pattern = RegExp(r'Process\.(?:run|start|runSync|startSync)\s*\(');
+  for (final match in pattern.allMatches(snippet)) {
+    var depth = 1;
+    String? quote;
+    var i = match.end;
+    for (; i < snippet.length && depth > 0; i++) {
+      final c = snippet[i];
+      final escaped = i > 0 && snippet[i - 1] == r'\';
+      if (quote != null) {
+        if (c == quote && !escaped) quote = null;
+        continue;
+      }
+      if (c == "'" || c == '"') {
+        quote = c;
+      } else if (c == '(' || c == '[' || c == '{') {
+        depth++;
+      } else if (c == ')' || c == ']' || c == '}') {
+        depth--;
+      }
+    }
+    calls.add(splitTopLevelArgs(snippet.substring(match.end, i - 1)));
+  }
+  return calls;
+}
+
+/// Giá trị của named argument [name], hoặc `null` nếu không truyền.
+String? namedArg(List<String> args, String name) {
+  for (final a in args) {
+    if (a.startsWith('$name:')) return a.substring(name.length + 1).trim();
+  }
+  return null;
+}
+
+/// Vi phạm env-merge của 2 wrapper gh trong [rawSource]. Rỗng = sạch.
+///
+/// Đòi đúng 3 điều, mỗi điều tương ứng một cách drift đã thấy thật:
+///   1. có `final <env> = {...kGitEnvironment, ...?environment};` — thiếu = quên hẳn;
+///   2. `...?environment` đứng SAU — viết đảo thì env caller truyền vào bị
+///      `kGitEnvironment` ghi đè, tức "override được" chỉ là ảo tưởng;
+///   3. MỌI nhánh `Process` trong thân method dùng đúng biến đó — sửa một nhánh
+///      quên nhánh kia là lỗi cross-platform kinh điển (nhánh Windows
+///      path-có-space là nhánh hay bị bỏ quên). Hằng `kGitEnvironment` trần KHÔNG
+///      được coi là đạt: nó rơi mất env của caller.
+///
+/// Cách viết được chấp nhận cho điều 1: có/không type annotation
+/// (`final Map<String, String> env = …`), có/không type argument
+/// (`= <String, String>{…}`).
+///
+/// GIỚI HẠN đã biết — các dạng tương đương mà guard này SẼ báo "thiếu merge":
+/// `if (environment != null) ...environment` · tách helper
+/// `ghEnvironment(environment)` · inline map ngay tại call site. Nếu ai refactor
+/// sang một trong số đó thì **cập nhật guard**, đừng xoá nó: điều cần canh vẫn
+/// là "mọi nhánh spawn gh mang env đã merge, caller override được".
+List<String> findGhEnvDrift(String rawSource) {
+  final src = stripLineComments(rawSource);
+  final problems = <String>[];
+  for (final sig in kGhWrapperSignatures) {
+    final start = src.indexOf(sig);
+    if (start < 0) {
+      problems.add('$sig → không tìm thấy (đổi chữ ký thì cập nhật guard)');
+      continue;
+    }
+    // Chữ ký kết thúc bằng `(` ⇒ nhảy qua hết danh sách tham số trước khi tìm
+    // thân method (tham số named cũng dùng `{…}`).
+    final afterParams = parenEndAt(src, start + sig.length - 1);
+    final body =
+        afterParams == null ? null : braceBlockAt(src, afterParams);
+    if (body == null) {
+      problems.add('$sig → không cân được ngoặc thân method');
+      continue;
+    }
+    // Type annotation (`final Map<String, String> env = …`) và type argument
+    // (`= <String, String>{…}`) đều tuỳ chọn: cả hai là cách viết tương đương
+    // (thậm chí rõ hơn), guard mà đỏ vì chúng thì thành nhiễu → bị disable.
+    final decl = RegExp(
+      r'(?:final|const|var)\s+(?:[\w.]+(?:<[^>]*>)?\s+)?(\w+)\s*=\s*'
+      r'(?:<[^>]*>\s*)?\{\s*\.\.\.\s*kGitEnvironment\s*,'
+      r'\s*\.\.\.\?\s*environment\s*,?\s*\}',
+    ).firstMatch(body);
+    if (decl == null) {
+      problems.add(
+        '$sig → thiếu `{...kGitEnvironment, ...?environment}` đúng thứ tự '
+        '(spread của caller phải đứng SAU để override được từng key)',
+      );
+      continue;
+    }
+    final envVar = decl.group(1)!;
+    final calls = findProcessInvocations(body);
+    if (calls.length < 2) {
+      problems.add('$sig → chỉ thấy ${calls.length} lần gọi Process; wrapper có '
+          '2 nhánh (Windows path-có-space / mặc định) — guard mất hiệu lực nếu '
+          'không thấy đủ');
+    }
+    for (final args in calls) {
+      final env = namedArg(args, 'environment');
+      // Chỉ chấp nhận ĐÚNG biến đã merge. Hằng `kGitEnvironment` trần KHÔNG được
+      // tha (review 🟠 vòng 3): nhánh đó giữ GIT_TERMINAL_PROMPT nhưng rơi mất
+      // env do caller truyền vào, mà mắt người đọc lại thấy "có kGitEnvironment"
+      // nên tưởng ổn — đúng loại drift guard này sinh ra để bắt.
+      if (env != envVar) {
+        problems.add('$sig → một nhánh Process truyền '
+            '`environment: ${env ?? '(không truyền)'}` thay vì `$envVar`');
+      }
+    }
+  }
+  return problems;
 }
 
 bool isWhitelisted(GitCallSite site, String rawSource) {
@@ -392,6 +589,186 @@ void main() {
               '${violations.map((v) => '  ${v.path}:${v.line} → '
                   'executable=${v.executable} args=${v.args}').join('\n')}',
     );
+  });
+
+  group('gh — runGh/startGh phải merge kGitEnvironment', () {
+    const ghFile = 'lib/services/platform_service.dart';
+
+    /// Wrapper viết ĐÚNG — dùng làm mốc "không báo động sai".
+    const goodSource = '''
+      static Future<ProcessResult> runGh(List<String> args, {
+        String? workingDirectory,
+        Map<String, String>? environment,
+      }) async {
+        final gh = await ghPath;
+        final env = {...kGitEnvironment, ...?environment};
+        if (isWindows && gh.contains(' ')) {
+          return Process.run(gh, args,
+              workingDirectory: workingDirectory, environment: env);
+        }
+        return Process.run(gh, args,
+            workingDirectory: workingDirectory, runInShell: true, environment: env);
+      }
+
+      static Future<Process> startGh(List<String> args, {
+        String? workingDirectory,
+        Map<String, String>? environment,
+      }) async {
+        final gh = await ghPath;
+        final env = {...kGitEnvironment, ...?environment};
+        if (isWindows && gh.contains(' ')) {
+          return Process.start(gh, args,
+              workingDirectory: workingDirectory, environment: env);
+        }
+        return Process.start(gh, args,
+            workingDirectory: workingDirectory, runInShell: true, environment: env);
+      }
+    ''';
+
+    test('source ĐÚNG chuẩn → không vi phạm (guard không nhiễu)', () {
+      expect(findGhEnvDrift(goodSource), isEmpty);
+    });
+
+    test(
+        'cách viết tương đương (type annotation / type argument) KHÔNG bị báo '
+        'thiếu merge (review 🟡 vòng 3)', () {
+      // Arrange — hai dạng rõ-hơn mà guard vòng 2 báo đỏ oan. Guard nhiễu là
+      // guard sẽ bị người sau disable, nên đây là ca chống-nhiễu, không phải nới
+      // lỏng: điều kiện "kGitEnvironment trước, ...?environment sau" vẫn nguyên.
+      final annotated = goodSource.replaceAll(
+        'final env = {...kGitEnvironment, ...?environment};',
+        'final Map<String, String> env = {...kGitEnvironment, ...?environment};',
+      );
+      final typeArgs = goodSource.replaceAll(
+        'final env = {...kGitEnvironment, ...?environment};',
+        'final env = <String, String>{...kGitEnvironment, ...?environment};',
+      );
+
+      // Act + Assert
+      expect(findGhEnvDrift(annotated), isEmpty, reason: 'type annotation');
+      expect(findGhEnvDrift(typeArgs), isEmpty, reason: 'type argument');
+    });
+
+    test('sửa 1 nhánh quên nhánh kia → guard bắt được', () {
+      // Arrange — nhánh Windows path-có-space bị bỏ quên, đúng kiểu drift
+      // cross-platform mà repo này đã dính một lần với runInShell.
+      final src = goodSource.replaceFirst(
+        '''return Process.run(gh, args,
+              workingDirectory: workingDirectory, environment: env);''',
+        '''return Process.run(gh, args,
+              workingDirectory: workingDirectory, environment: environment);''',
+      );
+
+      // Act
+      final problems = findGhEnvDrift(src);
+
+      // Assert
+      expect(problems, hasLength(1));
+      expect(problems.single, contains('environment: environment'));
+    });
+
+    test(
+        'một nhánh truyền HẰNG `kGitEnvironment` thay vì biến đã merge → guard '
+        'bắt được (review 🟠 vòng 3)', () {
+      // Arrange — nhánh Windows dùng thẳng hằng. Đây là drift KHÓ thấy nhất:
+      // mắt người đọc thấy chữ `kGitEnvironment` nên tưởng ổn, nhưng nhánh đó
+      // rơi mất env do caller truyền vào (vd `GH_TOKEN` của create_pr_dialog)
+      // ⇒ đúng thứ điều-3 trong docstring nói phải canh. Guard vòng 2 có mệnh đề
+      // `env != 'kGitEnvironment'` nên bỏ qua ca này — đã sửa.
+      final src = goodSource.replaceFirst(
+        '''return Process.run(gh, args,
+              workingDirectory: workingDirectory, environment: env);''',
+        '''return Process.run(gh, args,
+              workingDirectory: workingDirectory, environment: kGitEnvironment);''',
+      );
+
+      // Act
+      final problems = findGhEnvDrift(src);
+
+      // Assert
+      expect(problems, hasLength(1));
+      expect(problems.single, contains('environment: kGitEnvironment'));
+    });
+
+    test('spread viết đảo thứ tự → guard bắt được (override chỉ là ảo tưởng)',
+        () {
+      // Arrange — `{...?environment, ...kGitEnvironment}`: key caller truyền
+      // vào bị hằng ghi đè, nên GIT_TERMINAL_PROMPT không bao giờ override được.
+      final src = goodSource.replaceAll(
+        '{...kGitEnvironment, ...?environment}',
+        '{...?environment, ...kGitEnvironment}',
+      );
+
+      // Act + Assert — cả 2 wrapper cùng đỏ.
+      expect(findGhEnvDrift(src), hasLength(2));
+    });
+
+    test('bỏ hẳn merge → guard bắt được', () {
+      final src = goodSource
+          .replaceAll('final env = {...kGitEnvironment, ...?environment};', '')
+          .replaceAll('environment: env', 'environment: environment');
+      expect(findGhEnvDrift(src), hasLength(2));
+    });
+
+    test('platform_service.dart THẬT: cả 2 wrapper gh đều merge đúng', () {
+      // Arrange
+      final source = File(ghFile).readAsStringSync();
+
+      // Act
+      final problems = findGhEnvDrift(source);
+
+      // Assert
+      expect(
+        problems,
+        isEmpty,
+        reason: problems.isEmpty
+            ? ''
+            : '`gh` spawn git bên dưới; mất kGitEnvironment là mở lại lỗ dialog '
+                'treo vì git chờ credential:\n  ${problems.join('\n  ')}',
+      );
+      // Invariant thật: env lấy TỪ nguồn duy nhất, không chép literal sang đây.
+      // Cố ý KHÔNG khoá vào chuỗi `show kGitEnvironment;` — thêm symbol vào
+      // `show` hoặc bỏ `show` đều hợp lệ và sẽ làm test đỏ oan (review 🟡 vòng 3).
+      expect(source, matches(RegExp(r"import 'git_process\.dart'[^;]*;")),
+          reason: 'phải import từ git_process.dart, không tự khai env riêng');
+      expect(source, isNot(contains("'GIT_TERMINAL_PROMPT'")),
+          reason: 'chép lại literal = có 2 nguồn sự thật; sửa 1 chỗ quên chỗ kia '
+              'là cách lỗ này quay lại');
+    });
+
+    test('không file nào khác trong lib/ spawn gh thô', () {
+      // Arrange — gh chỉ được chạy qua 2 wrapper trên; nơi khác gọi thẳng
+      // Process là bỏ qua env merge mà guard trên không nhìn tới.
+      final files = Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .where((f) => !f.path.replaceAll(r'\', '/').endsWith(ghFile))
+          .toList();
+
+      // Act
+      final sites = <String>[];
+      for (final file in files) {
+        final src = stripLineComments(file.readAsStringSync());
+        for (final args in findProcessInvocations(src)) {
+          if (args.isNotEmpty && executableLooksLikeGh(args.first)) {
+            sites.add('${file.path} → ${args.first}');
+          }
+        }
+      }
+
+      // Assert
+      expect(sites, isEmpty,
+          reason: 'dùng PlatformService.runGh/startGh:\n  ${sites.join('\n  ')}');
+    });
+
+    test('"ghost"/"github" không bị nhận nhầm là gh', () {
+      expect(executableLooksLikeGh('ghostscript'), isFalse);
+      expect(executableLooksLikeGh('githubCli'), isFalse);
+      expect(executableLooksLikeGh('gh'), isTrue);
+      expect(executableLooksLikeGh('ghPath'), isTrue);
+      expect(executableLooksLikeGh("'/opt/homebrew/bin/gh'"), isTrue);
+    });
   });
 
   test('whitelist vẫn khớp đúng 2 ngoại lệ đã ghi (không rộng hơn)', () async {

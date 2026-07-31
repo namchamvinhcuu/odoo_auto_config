@@ -92,6 +92,14 @@ class GitBranchService {
   ///
   /// Returns an empty branch name if HEAD cannot be resolved (empty repo), and
   /// `0` changed files if `status` fails — never a leftover from an earlier read.
+  ///
+  /// Do NOT reuse this branch name to gate a WRITE. It is for display and for
+  /// comparing against remote refs, and the probe it uses reports two states
+  /// ambiguously: an unborn HEAD comes back `''`, and a detached HEAD comes back
+  /// as the literal `'HEAD'`, which reads like an ordinary branch name. To ask
+  /// "is HEAD actually sitting on branch X" use `symbolic-ref --short HEAD`, as
+  /// [publishBranch] does — see the comment there for the measured exit codes
+  /// and for what went wrong when a weaker probe gated the empty commit.
   static Future<LocalGitStatus> loadLocalStatus(String workingDir) async {
     final branchResult = await runGit(
       ['rev-parse', '--abbrev-ref', 'HEAD'],
@@ -422,21 +430,118 @@ class GitBranchService {
   }
 
   /// Publish a local branch to origin.
-  /// Creates an empty commit to make the branch visible on GitHub.
+  ///
+  /// Creates an empty commit so the branch has its own commit on GitHub — but
+  /// ONLY when [branch] is the branch currently checked out. `git commit` always
+  /// writes to HEAD, so doing it for any other branch put the commit on the
+  /// branch the user was standing on (dirtying e.g. `main`) while [branch] went
+  /// up to origin without a commit of its own — the exact opposite of the point.
+  /// The dialog reaches this method from its `!isCurrent` arm, so that case is
+  /// real, not theoretical. For a non-current branch we just push the ref, which
+  /// is what `SimpleGitPushDialog` does.
   static Future<GitResult> publishBranch(
     String workingDir,
     String branch,
   ) async {
-    // Create empty commit so the branch has its own commit on GitHub
-    final commit = await runGit(
-      ['commit', '--allow-empty', '-m', 'publish new branch: $branch'],
+    // `symbolic-ref --short HEAD` — deliberately none of the obvious
+    // alternatives, and deliberately NO fail-open into the commit.
+    //
+    // Measured rc, git 2.53: normal branch rc=0 + name · **unborn HEAD rc=0 +
+    // name** · detached rc=128 · not a repo rc=128. That unborn case is why:
+    // `rev-parse --abbrev-ref HEAD` exits 128 there, and `branch
+    // --show-current` does not exist before git 2.22 (Debian 10 ships 2.20) and
+    // exits 129 — so both need "rc != 0 ⇒ commit anyway" to keep working, and
+    // that clause is what put the empty commit back on whatever branch the user
+    // happened to be standing on. Here rc != 0 means "HEAD is not on a branch,
+    // or there is no repo", and in neither case may we commit: we just push the
+    // ref, which is what `SimpleGitPushDialog` and `GitActionDialog` do anyway.
+    //
+    // Version floor, checked against git's own source rather than assumed — the
+    // thing to check is the FLAG, not the command: `symbolic-ref` exists in
+    // v1.5.0 but takes no `--short` there, and `--short` is present in
+    // v1.7.10 (2012, `OPT_BOOL(0, "short", …)`). Debian 10, the oldest distro
+    // that motivated this comment, ships 2.20 — so no cliff.
+    //
+    // Cost, accepted: outside a repo the caller now sees 'Push failed: fatal:
+    // not a git repository' instead of 'Commit failed: …' — one notch less
+    // specific, in exchange for no code path that writes a commit because a
+    // *read* failed.
+    final head = await runGit(
+      ['symbolic-ref', '--short', 'HEAD'],
       workingDir: workingDir,
     );
-    if (commit.exitCode != 0) {
-      return (
-        success: false,
-        output: 'Commit failed: ${(commit.stderr as String).trim()}',
+    final isCurrent =
+        head.exitCode == 0 && (head.stdout as String).trim() == branch;
+
+    if (isCurrent) {
+      // `commit --allow-empty` takes whatever is in the index and whatever
+      // in-progress operation the repo is in the middle of, so "empty" holds for
+      // neither. Two separate probes, because these are two separate states and
+      // one does NOT imply the other: a resolved-as-ours merge conflict leaves
+      // MERGE_HEAD set with an index that matches HEAD, so `diff --cached` says
+      // "clean" while the commit would still finish the merge (measured: HEAD
+      // becomes a 2-parent commit and `git merge --abort` then reports "There is
+      // no merge to abort"). Reachable from this very dialog: mergeIntoCurrent
+      // and mergeIntoTarget deliberately leave a conflict in place for the user
+      // to resolve.
+      // One ref per call on purpose: `rev-parse -q --verify A B C` is NOT "any of
+      // these" — it exits 1 with empty output as soon as one ref is missing, so
+      // the combined form would silently never fire and this guard would pass
+      // everything (measured).
+      //
+      // Rebase is absent from this list and that is deliberate, not an omission:
+      // a rebase stops with HEAD detached, so `symbolic-ref` above already
+      // returns 128 and we never reach the commit. Verified for
+      // rebase-with-conflict (`.git/rebase-merge` present, symbolic-ref rc=128).
+      const inProgressRefs = {
+        'MERGE_HEAD': 'a merge',
+        'CHERRY_PICK_HEAD': 'a cherry-pick',
+        'REVERT_HEAD': 'a revert',
+      };
+      for (final entry in inProgressRefs.entries) {
+        final probe = await runGit(
+          ['rev-parse', '-q', '--verify', entry.key],
+          workingDir: workingDir,
+        );
+        if (probe.exitCode == 0) {
+          final what = entry.value;
+          return (
+            success: false,
+            output:
+                'Refusing to publish: this repo is in the middle of $what, and '
+                'publishing would commit it as "publish new branch: $branch". '
+                'Finish it (git commit) or abort it first.',
+          );
+        }
+      }
+
+      // rc 1 is git's "found differences"; any other non-zero is git itself
+      // failing, and that keeps surfacing through the commit below with git's
+      // own message instead of a misleading "you have staged changes".
+      final staged = await runGit(
+        ['diff', '--cached', '--quiet'],
+        workingDir: workingDir,
       );
+      if (staged.exitCode == 1) {
+        return (
+          success: false,
+          output:
+              'Refusing to publish: there are staged changes that would be '
+              'committed as "publish new branch: $branch". Commit or unstage '
+              'them first.',
+        );
+      }
+
+      final commit = await runGit(
+        ['commit', '--allow-empty', '-m', 'publish new branch: $branch'],
+        workingDir: workingDir,
+      );
+      if (commit.exitCode != 0) {
+        return (
+          success: false,
+          output: 'Commit failed: ${(commit.stderr as String).trim()}',
+        );
+      }
     }
 
     final result = await runGit(
