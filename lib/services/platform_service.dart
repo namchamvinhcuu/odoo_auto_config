@@ -1,6 +1,8 @@
 import 'dart:io'
     show Directory, File, Link, Platform, Process, ProcessResult;
 
+import 'git_process.dart' show kGitEnvironment;
+
 class PlatformService {
   /// Run a PowerShell script file with -STA flag (required for WinForms dialogs).
   static Future<String?> _runPsScript(String script) async {
@@ -360,42 +362,47 @@ if (\$result -eq [System.Windows.Forms.DialogResult]::OK) {
   }
 
   /// Run a gh command (Process.run). Handles Windows path-with-spaces issue.
+  ///
+  /// [kGitEnvironment] is applied by default: `gh` spawns real git underneath
+  /// (measured: `gh pr list` runs `git remote -v` and `git config --get-regexp`),
+  /// so without it a gh call can inherit git's interactive credential prompt and
+  /// hang a dialog that has its close button disabled. Callers passing
+  /// [environment] override individual keys, not the whole map.
   static Future<ProcessResult> runGh(
     List<String> args, {
     String? workingDirectory,
     Map<String, String>? environment,
   }) async {
     final gh = await ghPath;
+    final env = {...kGitEnvironment, ...?environment};
     if (isWindows && gh.contains(' ')) {
       // On Windows, runInShell uses cmd /c which splits at spaces.
       // Pass full path without runInShell — CreateProcess handles spaces.
       return Process.run(gh, args,
-          workingDirectory: workingDirectory, environment: environment);
+          workingDirectory: workingDirectory, environment: env);
     }
     return Process.run(gh, args,
-        workingDirectory: workingDirectory,
-        runInShell: true,
-        environment: environment);
+        workingDirectory: workingDirectory, runInShell: true, environment: env);
   }
 
   /// Start a gh process (Process.start) for streaming output.
-  /// Handles Windows path-with-spaces issue.
+  /// Handles Windows path-with-spaces issue. Same [kGitEnvironment] contract as
+  /// [runGh].
   static Future<Process> startGh(
     List<String> args, {
     String? workingDirectory,
     Map<String, String>? environment,
   }) async {
     final gh = await ghPath;
+    final env = {...kGitEnvironment, ...?environment};
     if (isWindows && gh.contains(' ')) {
       // On Windows, runInShell uses cmd /c which splits at spaces.
       // Pass full path without runInShell — CreateProcess handles spaces.
       return Process.start(gh, args,
-          workingDirectory: workingDirectory, environment: environment);
+          workingDirectory: workingDirectory, environment: env);
     }
     return Process.start(gh, args,
-        workingDirectory: workingDirectory,
-        runInShell: true,
-        environment: environment);
+        workingDirectory: workingDirectory, runInShell: true, environment: env);
   }
 
   /// Install GitHub CLI (gh) via brew/winget/apt.

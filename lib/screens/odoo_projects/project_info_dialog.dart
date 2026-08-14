@@ -19,6 +19,13 @@ class ProjectInfoDialog extends StatefulWidget {
   final Future<void> Function(ProjectInfo proj) onNginxSetup;
   final Future<void> Function(ProjectInfo proj) onNginxRemove;
 
+  /// Test-only seam: khi non-null, `_loadDatabases()` gọi hàm này thay vì
+  /// PostgresService/Process.run thật — cho phép widget test verify reload
+  /// callback fires (vd sau khi tạo DB mới) mà không cần Docker/Postgres.
+  /// Mặc định null → hành vi production giữ nguyên.
+  @visibleForTesting
+  final Future<void> Function()? loadDatabasesOverride;
+
   const ProjectInfoDialog({
     super.key,
     required this.project,
@@ -28,6 +35,7 @@ class ProjectInfoDialog extends StatefulWidget {
     required this.onSaved,
     required this.onNginxSetup,
     required this.onNginxRemove,
+    this.loadDatabasesOverride,
   });
 
   @override
@@ -146,6 +154,10 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
   }
 
   Future<void> _loadDatabases() async {
+    if (widget.loadDatabasesOverride != null) {
+      await widget.loadDatabasesOverride!();
+      return;
+    }
     try {
       final servers = await PostgresService.detectServers();
       final dockerServer = servers
@@ -190,6 +202,7 @@ class _ProjectInfoDialogState extends State<ProjectInfoDialog> {
         onCreated: (dbName) {
           setState(() => _dbNameController.text = dbName);
           widget.onDbChanged(dbName);
+          _loadDatabases();
         },
       ),
     );

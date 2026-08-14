@@ -55,6 +55,9 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
   String get _previewDomain =>
       '${_subdomainController.text}${widget.domainSuffix}';
 
+  List<String> get _sortedExistingSubdomains =>
+      widget.existingSubdomains.toList()..sort();
+
   static final _validSubdomain = RegExp(r'^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$');
 
   String? get _subdomainError {
@@ -177,23 +180,33 @@ class _NginxSetupDialogState extends State<NginxSetupDialog> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: AppSpacing.sm),
-              ...(widget.existingSubdomains.toList()..sort()).map(
-                (sub) => Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                  child: InkWell(
-                    onTap: () => _linkExisting(sub),
-                    mouseCursor: SystemMouseCursors.click,
-                    borderRadius: AppRadius.smallBorderRadius,
-                    child: ListTile(
-                      leading: const Icon(Icons.dns, color: Colors.green),
-                      title: Text(sub),
-                      subtitle: Text('$sub${widget.domainSuffix}'),
-                      dense: true,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppRadius.smallBorderRadius,
+              Container(
+                height: AppDialog.listHeight,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade700),
+                  borderRadius: AppRadius.mediumBorderRadius,
+                ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  itemCount: _sortedExistingSubdomains.length,
+                  itemBuilder: (context, i) {
+                    final sub = _sortedExistingSubdomains[i];
+                    return InkWell(
+                      onTap: () => _linkExisting(sub),
+                      mouseCursor: SystemMouseCursors.click,
+                      borderRadius: AppRadius.smallBorderRadius,
+                      child: ListTile(
+                        leading: const Icon(Icons.dns, color: Colors.green),
+                        title: Text(sub),
+                        subtitle: Text('$sub${widget.domainSuffix}'),
+                        dense: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppRadius.smallBorderRadius,
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ],
