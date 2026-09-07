@@ -7,10 +7,11 @@ import 'package:odoo_auto_config/services/git_branch_service.dart';
 import 'package:odoo_auto_config/services/nginx_service.dart';
 import 'package:odoo_auto_config/services/storage_service.dart';
 
-/// Number of repos to fetch git status for per parallel batch.
+/// Max number of repos fetching git status concurrently (worker pool size).
 /// Bounds concurrent `git fetch` calls so many private-repo refreshes don't
 /// trigger a credential-prompt storm or hit remote rate limits at once.
-/// Mirrors the Odoo Workspace dashboard (`_kBatchSize` in odoo_workspace_dialog).
+/// Value mirrors the Odoo Workspace dashboard's `_kBatchSize`, though that
+/// screen still uses sequential batches, not a worker pool.
 const _kBatchSize = 8;
 
 class OtherProjectsState {
@@ -94,20 +95,45 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
 
   @visibleForTesting
   Future<void> loadBranches(List<WorkspaceInfo> workspaces) async {
-    // Load repos in parallel batches instead of one-at-a-time. The per-repo
-    // `git fetch` is network I/O, so sequential loading made refresh time grow
-    // linearly with the number of projects. Batching caps concurrent fetches
-    // (see _kBatchSize). Safe against the behind-count clobber race because
+    // Concurrency-capped worker pool instead of sequential batches: each worker
+    // picks up the next repo as soon as it's free, rather than every repo in
+    // batch N waiting for the slowest repo in batch N-1 (`git fetch` is network
+    // I/O, so 4 sequential batches paid ~4x their slowest single batch in total
+    // wall time). Still bounds concurrent fetches via _kBatchSize (see its doc
+    // comment). Safe against the behind-count clobber race because
     // loadBranchStatus merges only its own path into the latest state.
-    for (var i = 0; i < workspaces.length; i += _kBatchSize) {
-      final batch = workspaces.skip(i).take(_kBatchSize);
-      await Future.wait(batch.map((ws) => loadBranchStatus(ws.path)));
+    var next = 0;
+    Future<void> worker() async {
+      while (next < workspaces.length) {
+        final path = workspaces[next++].path;
+        // loadBranchStatus catches its own git-call errors internally; this
+        // guards the rarer case of it throwing before reaching that point
+        // (e.g. the existsSync check below) so one bad repo can never stop
+        // the pool from picking up the rest.
+        try {
+          await loadBranchStatus(path);
+        } catch (e) {
+          debugPrint('[OtherProjectsProvider] loadBranchStatus threw for $path: $e');
+        }
+      }
     }
+
+    final workerCount =
+        workspaces.length < _kBatchSize ? workspaces.length : _kBatchSize;
+    await Future.wait(List.generate(workerCount, (_) => worker()));
   }
 
   Future<void> loadBranchStatus(String path) async {
     if (state.valueOrNull == null) return;
-    if (!Directory(p.join(path, '.git')).existsSync()) return;
+
+    bool isGitRepo;
+    try {
+      isGitRepo = Directory(p.join(path, '.git')).existsSync();
+    } catch (e) {
+      debugPrint('[OtherProjectsProvider] existsSync failed for $path: $e');
+      return;
+    }
+    if (!isGitRepo) return;
 
     // Compute values for THIS path only into locals. Don't snapshot the whole
     // state up-front and write it back wholesale — the git calls below each
@@ -152,7 +178,9 @@ class OtherProjectsNotifier extends AsyncNotifier<OtherProjectsState> {
         hasUpstream: fetched.divergence.hasUpstream,
         branch: local.branch,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[OtherProjectsProvider] git status failed for $path: $e');
+    }
 
     // Re-read the latest state and merge only THIS path's keys, so concurrent
     // updates for other repos are preserved instead of being overwritten.
