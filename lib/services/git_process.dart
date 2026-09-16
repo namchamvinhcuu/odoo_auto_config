@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'git_service.dart';
 
 /// Environment applied to every git invocation.
 ///
@@ -27,16 +28,21 @@ const Map<String, String> kGitEnvironment = {'GIT_TERMINAL_PROMPT': '0'};
 /// kind of drift that is hard to spot in review.
 ///
 /// Pass [executable] when the git binary is a user-configured path rather than
-/// whatever `git` resolves to on PATH (see `GitService.gitPath`). Grepping for the
+/// the default resolution (see `GitService.gitPath`). Grepping for the
 /// literal `'git'` will not find those call sites — that is how two of them were
 /// missed the first time.
+///
+/// Leaving [executable] unset resolves `GitService.gitPath` instead of the bare
+/// `'git'` literal this used to default to — a GUI-launched build has no
+/// `~/.zshrc` PATH, and bare `'git'` there can resolve to a broken system stub
+/// even when a working git sits elsewhere (see the comment on `gitPath`).
 Future<ProcessResult> runGit(
   List<String> args, {
   required String workingDir,
-  String executable = 'git',
-}) {
+  String? executable,
+}) async {
   return Process.run(
-    executable,
+    executable ?? await GitService.gitPath,
     args,
     workingDirectory: workingDir,
     runInShell: true,
@@ -48,10 +54,10 @@ Future<ProcessResult> runGit(
 Future<Process> startGit(
   List<String> args, {
   required String workingDir,
-  String executable = 'git',
-}) {
+  String? executable,
+}) async {
   return Process.start(
-    executable,
+    executable ?? await GitService.gitPath,
     args,
     workingDirectory: workingDir,
     runInShell: true,
@@ -67,10 +73,10 @@ Future<Process> startGit(
 /// wrong repo. Reach for this only when there is genuinely no repo yet.
 Future<Process> startGitInCurrentDir(
   List<String> args, {
-  String executable = 'git',
-}) {
+  String? executable,
+}) async {
   return Process.start(
-    executable,
+    executable ?? await GitService.gitPath,
     args,
     runInShell: true,
     environment: kGitEnvironment,
