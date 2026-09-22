@@ -69,3 +69,4 @@ credentials.json
 # Claude harness (per-machine symlink, không portable)
 /CLAUDE.md
 .gemini/
+.vault-portal.conf
