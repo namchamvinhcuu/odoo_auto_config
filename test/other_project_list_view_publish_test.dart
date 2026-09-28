@@ -46,6 +46,8 @@ import 'package:odoo_auto_config/screens/other_projects/other_project_list_view.
 const _pushTooltip = 'Push';
 const _pullTooltip = 'Git Pull';
 const _commitTooltip = 'Git Commit';
+const _openFolderTooltip = 'Open folder';
+const _terminalTooltip = 'Open in Terminal';
 String _publishTooltip(String branch) => 'Publish $branch';
 String _unpublishedTooltip(int n) =>
     '$n commit(s) on a branch not published yet';
@@ -55,6 +57,7 @@ void main() {
   late WorkspaceInfo ws;
   late List<WorkspaceInfo> pushed;
   late List<WorkspaceInfo> published;
+  late List<WorkspaceInfo> terminalOpened;
 
   setUp(() {
     // Path phải TỒN TẠI THẬT: `exists` gate cả hàng nút.
@@ -68,6 +71,7 @@ void main() {
     );
     pushed = [];
     published = [];
+    terminalOpened = [];
   });
 
   tearDown(() {
@@ -90,6 +94,7 @@ void main() {
             onOpenInVscode: (_) {},
             onOpenInVisualStudio: (_) {},
             onOpenInFileManager: (_) {},
+            onOpenInTerminal: terminalOpened.add,
             onEdit: (_) {},
             onSetupNginx: (_) {},
             onRemoveNginx: (_) {},
@@ -262,5 +267,100 @@ void main() {
       findsNothing,
       reason: 'Pre-condition: chip branch KHÔNG render ở ca này.',
     );
+  });
+
+  // ── Nút "Open in Terminal" (đồng bộ với grid view — xem đầu file) ────────
+  testWidgets(
+      'path tồn tại → CÓ nút Terminal ngay sau nút Open folder, icon đúng',
+      (tester) async {
+    // Arrange + Act
+    await pumpList(tester, stateWith());
+
+    // Assert — nút tồn tại với đúng icon.
+    expect(find.byTooltip(_terminalTooltip), findsOneWidget);
+    expect(iconOf(tester, _terminalTooltip), Icons.terminal);
+
+    // Assert — thứ tự: Terminal đứng NGAY SAU Open folder trong cùng Row (như
+    // grid view context-menu 'terminal' đã có từ trước — đồng bộ 2 surface,
+    // xem comment đầu file "Vì sao file này tồn tại").
+    final rowFinder = find.ancestor(
+      of: find.byTooltip(_terminalTooltip),
+      matching: find.byType(Row),
+    );
+    expect(rowFinder, findsWidgets);
+    final row = tester.widget<Row>(rowFinder.first);
+    final tooltips = row.children
+        .whereType<IconButton>()
+        .map((b) => b.tooltip)
+        .toList();
+    final folderIdx = tooltips.indexOf(_openFolderTooltip);
+    final terminalIdx = tooltips.indexOf(_terminalTooltip);
+    expect(folderIdx, greaterThanOrEqualTo(0),
+        reason: 'Pre-condition: nút Open folder phải có trong cùng Row.');
+    expect(terminalIdx, folderIdx + 1,
+        reason: 'Terminal phải đứng NGAY SAU Open folder trong hàng nút.');
+  });
+
+  testWidgets('tap Terminal → onOpenInTerminal gọi đúng workspace đó',
+      (tester) async {
+    // Arrange
+    await pumpList(tester, stateWith());
+
+    // Act
+    await tapButton(tester, _terminalTooltip);
+
+    // Assert
+    expect(terminalOpened, [ws]);
+    expect(pushed, isEmpty);
+    expect(published, isEmpty);
+  });
+
+  testWidgets('path KHÔNG tồn tại → KHÔNG có nút Terminal (gate `exists`)',
+      (tester) async {
+    // Arrange: workspace trỏ tới path đã bị xoá (khác `ws`/`tmp` của setUp).
+    final missing = WorkspaceInfo(
+      name: 'proj_missing',
+      path: '${tmp.path}_does_not_exist',
+      type: 'Odoo',
+      description: '',
+      createdAt: '2026-07-29',
+    );
+    final state = OtherProjectsState(workspaces: [missing]);
+    tester.view.physicalSize = const Size(1600, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: OtherProjectListView(
+          workspaces: [missing],
+          state: state,
+          onToggleFavourite: (_) {},
+          onGitPull: (_) {},
+          onGitCommit: (_) {},
+          onGitPush: (_) {},
+          onGitPublish: (_) {},
+          onOpenInVscode: (_) {},
+          onOpenInVisualStudio: (_) {},
+          onOpenInFileManager: (_) {},
+          onOpenInTerminal: terminalOpened.add,
+          onEdit: (_) {},
+          onSetupNginx: (_) {},
+          onRemoveNginx: (_) {},
+          onRemove: (_) {},
+          onSwitchBranch: (_) {},
+          branchColor: (_) => Colors.blue,
+          iconForType: (_) => Icons.apps,
+          colorForType: (_) => Colors.teal,
+        ),
+      ),
+    ));
+
+    // Assert
+    expect(find.byTooltip(_terminalTooltip), findsNothing,
+        reason: 'Row nút chỉ render khi Directory(ws.path).existsSync().');
   });
 }

@@ -965,6 +965,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showFavouritesOnly => 'Favourites only';
 
   @override
+  String get showGitPendingOnly => 'Projects with pending Git changes';
+
+  @override
   String get wsPort => 'Port (optional)';
 
   @override

@@ -1828,6 +1828,12 @@ abstract class AppLocalizations {
   /// **'Favourites only'**
   String get showFavouritesOnly;
 
+  /// No description provided for @showGitPendingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects with pending Git changes'**
+  String get showGitPendingOnly;
+
   /// No description provided for @wsPort.
   ///
   /// In en, this message translates to:
