@@ -34,6 +34,12 @@ bool hasPendingGitWork(WorkspaceInfo w, OtherProjectsState state) {
       (state.unpublishedCount[w.path] ?? 0) > 0;
 }
 
+// Commits on the remote that aren't local yet — top-level for the same
+// unit-testability reason as [hasPendingGitWork].
+bool needsPull(WorkspaceInfo w, OtherProjectsState state) {
+  return (state.behindCount[w.path] ?? 0) > 0;
+}
+
 class OtherProjectsScreen extends ConsumerStatefulWidget {
   const OtherProjectsScreen({super.key});
 
@@ -45,18 +51,21 @@ class OtherProjectsScreen extends ConsumerStatefulWidget {
 class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   static const _favKey = 'otherProjectsFavouritesOnly';
   static const _gitPendingKey = 'otherProjectsGitPendingOnly';
+  static const _pullPendingKey = 'otherProjectsPullPendingOnly';
 
   final _searchController = TextEditingController();
   String _filterType = '';
   String? _selectedPath;
   bool _favouritesOnly = false;
   bool _gitPendingOnly = false;
+  bool _pullPendingOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadFavouritesOnly();
     _loadGitPendingOnly();
+    _loadPullPendingOnly();
   }
 
   Future<void> _loadFavouritesOnly() async {
@@ -89,6 +98,26 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     });
     // Turning the filter ON should show up-to-date results, not whatever
     // ahead/changed/unpublished counts happened to be loaded last.
+    if (value && mounted) {
+      await ref.read(otherProjectsProvider.notifier).reload();
+    }
+  }
+
+  Future<void> _loadPullPendingOnly() async {
+    final settings = await StorageService.loadSettings();
+    final value = settings[_pullPendingKey] as bool? ?? false;
+    if (mounted && value != _pullPendingOnly) {
+      setState(() => _pullPendingOnly = value);
+    }
+  }
+
+  Future<void> _setPullPendingOnly(bool value) async {
+    setState(() => _pullPendingOnly = value);
+    await StorageService.updateSettings((settings) {
+      settings[_pullPendingKey] = value;
+    });
+    // Same reasoning as _setGitPendingOnly: refresh before filtering so a
+    // newly-behind branch shows up immediately.
     if (value && mounted) {
       await ref.read(otherProjectsProvider.notifier).reload();
     }
@@ -141,7 +170,12 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
           _filterType.isEmpty || w.type.toLowerCase() == _filterType;
       final matchFavourite = !_favouritesOnly || w.favourite;
       final matchGitPending = !_gitPendingOnly || hasPendingGitWork(w, state);
-      return matchSearch && matchType && matchFavourite && matchGitPending;
+      final matchPullPending = !_pullPendingOnly || needsPull(w, state);
+      return matchSearch &&
+          matchType &&
+          matchFavourite &&
+          matchGitPending &&
+          matchPullPending;
     }).toList();
   }
 
@@ -805,6 +839,14 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                   color: _gitPendingOnly ? GitSyncBadge.changedColor : null,
                 ),
                 tooltip: context.l10n.showGitPendingOnly,
+              ),
+              IconButton(
+                onPressed: () => _setPullPendingOnly(!_pullPendingOnly),
+                icon: Icon(
+                  Icons.arrow_circle_down,
+                  color: _pullPendingOnly ? GitSyncBadge.behindColor : null,
+                ),
+                tooltip: context.l10n.showPullPendingOnly,
               ),
             ],
           ),

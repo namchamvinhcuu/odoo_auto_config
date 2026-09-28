@@ -1834,6 +1834,12 @@ abstract class AppLocalizations {
   /// **'Projects with pending Git changes'**
   String get showGitPendingOnly;
 
+  /// No description provided for @showPullPendingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects that need a pull'**
+  String get showPullPendingOnly;
+
   /// No description provided for @wsPort.
   ///
   /// In en, this message translates to:

@@ -309,6 +309,7 @@
   "unfavourite": "즐겨찾기 제거",
   "showFavouritesOnly": "즐겨찾기만",
   "showGitPendingOnly": "Git 변경사항 또는 push 대기 중인 프로젝트",
+  "showPullPendingOnly": "pull이 필요한 프로젝트",
 
   "wsPort": "포트 (선택사항)",
   "wsPortHint": "예: 3000, 8080",
