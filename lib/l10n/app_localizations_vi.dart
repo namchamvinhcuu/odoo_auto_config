@@ -964,6 +964,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get showGitPendingOnly => 'Project có thay đổi Git chưa push';
 
   @override
+  String get showPullPendingOnly => 'Project cần pull';
+
+  @override
   String get wsPort => 'Port (tùy chọn)';
 
   @override

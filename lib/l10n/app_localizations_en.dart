@@ -968,6 +968,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showGitPendingOnly => 'Projects with pending Git changes';
 
   @override
+  String get showPullPendingOnly => 'Projects that need a pull';
+
+  @override
   String get wsPort => 'Port (optional)';
 
   @override

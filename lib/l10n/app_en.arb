@@ -340,6 +340,7 @@
   "unfavourite": "Remove from favourites",
   "showFavouritesOnly": "Favourites only",
   "showGitPendingOnly": "Projects with pending Git changes",
+  "showPullPendingOnly": "Projects that need a pull",
 
   "wsPort": "Port (optional)",
   "wsPortHint": "e.g. 3000, 8080",
