@@ -24,6 +24,16 @@ import 'other_project_grid_view.dart';
 import 'other_project_list_view.dart';
 import 'switch_branch_dialog.dart';
 
+// Uncommitted changes, or committed locally but not pushed yet (either on an
+// existing upstream, or on a branch that has never been published). Top-level
+// (not a method) so it can be unit-tested without spinning up the screen and
+// its real StorageService I/O.
+bool hasPendingGitWork(WorkspaceInfo w, OtherProjectsState state) {
+  return (state.changedCount[w.path] ?? 0) > 0 ||
+      (state.aheadCount[w.path] ?? 0) > 0 ||
+      (state.unpublishedCount[w.path] ?? 0) > 0;
+}
+
 class OtherProjectsScreen extends ConsumerStatefulWidget {
   const OtherProjectsScreen({super.key});
 
@@ -34,16 +44,19 @@ class OtherProjectsScreen extends ConsumerStatefulWidget {
 
 class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
   static const _favKey = 'otherProjectsFavouritesOnly';
+  static const _gitPendingKey = 'otherProjectsGitPendingOnly';
 
   final _searchController = TextEditingController();
   String _filterType = '';
   String? _selectedPath;
   bool _favouritesOnly = false;
+  bool _gitPendingOnly = false;
 
   @override
   void initState() {
     super.initState();
     _loadFavouritesOnly();
+    _loadGitPendingOnly();
   }
 
   Future<void> _loadFavouritesOnly() async {
@@ -59,6 +72,26 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     await StorageService.updateSettings((settings) {
       settings[_favKey] = value;
     });
+  }
+
+  Future<void> _loadGitPendingOnly() async {
+    final settings = await StorageService.loadSettings();
+    final value = settings[_gitPendingKey] as bool? ?? false;
+    if (mounted && value != _gitPendingOnly) {
+      setState(() => _gitPendingOnly = value);
+    }
+  }
+
+  Future<void> _setGitPendingOnly(bool value) async {
+    setState(() => _gitPendingOnly = value);
+    await StorageService.updateSettings((settings) {
+      settings[_gitPendingKey] = value;
+    });
+    // Turning the filter ON should show up-to-date results, not whatever
+    // ahead/changed/unpublished counts happened to be loaded last.
+    if (value && mounted) {
+      await ref.read(otherProjectsProvider.notifier).reload();
+    }
   }
 
   void _switchBranch(WorkspaceInfo ws) {
@@ -92,7 +125,10 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     return Colors.cyan;
   }
 
-  List<WorkspaceInfo> _applyFilter(List<WorkspaceInfo> workspaces) {
+  List<WorkspaceInfo> _applyFilter(
+    List<WorkspaceInfo> workspaces,
+    OtherProjectsState state,
+  ) {
     final q = _searchController.text.toLowerCase();
     return workspaces.where((w) {
       final matchSearch =
@@ -104,7 +140,8 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       final matchType =
           _filterType.isEmpty || w.type.toLowerCase() == _filterType;
       final matchFavourite = !_favouritesOnly || w.favourite;
-      return matchSearch && matchType && matchFavourite;
+      final matchGitPending = !_gitPendingOnly || hasPendingGitWork(w, state);
+      return matchSearch && matchType && matchFavourite && matchGitPending;
     }).toList();
   }
 
@@ -564,6 +601,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
       onOpenInVscode: (ws) => _openInVscode(ws.path),
       onOpenInVisualStudio: (ws) => _openInVisualStudio(ws.path),
       onOpenInFileManager: (ws) => _openInFileManager(ws.path),
+      onOpenInTerminal: (ws) => _openInTerminal(ws.path),
       onEdit: _editWorkspace,
       onSetupNginx: _setupNginx,
       onRemoveNginx: _removeNginx,
@@ -760,6 +798,14 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                 ),
                 tooltip: context.l10n.showFavouritesOnly,
               ),
+              IconButton(
+                onPressed: () => _setGitPendingOnly(!_gitPendingOnly),
+                icon: Icon(
+                  Icons.pending_actions,
+                  color: _gitPendingOnly ? GitSyncBadge.changedColor : null,
+                ),
+                tooltip: context.l10n.showGitPendingOnly,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -771,7 +817,7 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                 Expanded(child: Center(child: Text(err.toString()))),
             data: (state) {
               final workspaces = state.workspaces;
-              final filtered = _applyFilter(workspaces);
+              final filtered = _applyFilter(workspaces, state);
               if (workspaces.isEmpty) {
                 return Expanded(
                   child: Center(child: Text(context.l10n.wsEmpty)),

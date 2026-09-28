@@ -18,6 +18,7 @@ class OtherProjectListView extends StatelessWidget {
     required this.onOpenInVscode,
     required this.onOpenInVisualStudio,
     required this.onOpenInFileManager,
+    required this.onOpenInTerminal,
     required this.onEdit,
     required this.onSetupNginx,
     required this.onRemoveNginx,
@@ -38,6 +39,7 @@ class OtherProjectListView extends StatelessWidget {
   final ValueChanged<WorkspaceInfo> onOpenInVscode;
   final ValueChanged<WorkspaceInfo> onOpenInVisualStudio;
   final ValueChanged<WorkspaceInfo> onOpenInFileManager;
+  final ValueChanged<WorkspaceInfo> onOpenInTerminal;
   final ValueChanged<WorkspaceInfo> onEdit;
   final ValueChanged<WorkspaceInfo> onSetupNginx;
   final ValueChanged<WorkspaceInfo> onRemoveNginx;
@@ -167,6 +169,11 @@ class OtherProjectListView extends StatelessWidget {
                         onPressed: () => onOpenInFileManager(ws),
                         icon: const Icon(Icons.folder_open),
                         tooltip: context.l10n.openFolder,
+                      ),
+                      IconButton(
+                        onPressed: () => onOpenInTerminal(ws),
+                        icon: const Icon(Icons.terminal),
+                        tooltip: context.l10n.openInTerminal,
                       ),
                     ],
                     IconButton(

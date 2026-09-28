@@ -308,6 +308,7 @@
   "favourite": "Thêm vào yêu thích",
   "unfavourite": "Bỏ yêu thích",
   "showFavouritesOnly": "Chỉ yêu thích",
+  "showGitPendingOnly": "Project có thay đổi Git chưa push",
 
   "wsPort": "Port (tùy chọn)",
   "wsPortHint": "VD: 3000, 8080",

@@ -947,6 +947,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get showFavouritesOnly => '즐겨찾기만';
 
   @override
+  String get showGitPendingOnly => 'Git 변경사항 또는 push 대기 중인 프로젝트';
+
+  @override
   String get wsPort => '포트 (선택사항)';
 
   @override
