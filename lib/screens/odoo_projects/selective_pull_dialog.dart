@@ -96,8 +96,11 @@ class _SelectivePullDialogState extends State<SelectivePullDialog> {
     AppDialog.show(
       context: context,
       builder: (ctx) => SelectivePullLogDialog(
-        projectPath: widget.projectPath,
-        repos: List.from(_selectedRepos),
+        title: ctx.l10n.gitSelectivePullTitle('${_selectedRepos.length} repos'),
+        repos: [
+          for (final repo in _selectedRepos)
+            (name: repo, path: p.join(widget.projectPath, 'addons', repo)),
+        ],
       ),
     );
   }

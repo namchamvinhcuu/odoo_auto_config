@@ -953,6 +953,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get showPullPendingOnly => 'pull이 필요한 프로젝트';
 
   @override
+  String pullAllProjects(int count) {
+    return '모두 Pull ($count)';
+  }
+
+  @override
+  String pullAllProjectsTitle(int count) {
+    return '모두 Pull — 프로젝트 $count개';
+  }
+
+  @override
   String get wsPort => '포트 (선택사항)';
 
   @override
