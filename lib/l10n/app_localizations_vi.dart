@@ -967,6 +967,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get showPullPendingOnly => 'Project cần pull';
 
   @override
+  String pullAllProjects(int count) {
+    return 'Pull tất cả ($count)';
+  }
+
+  @override
+  String pullAllProjectsTitle(int count) {
+    return 'Pull tất cả — $count project';
+  }
+
+  @override
   String get wsPort => 'Port (tùy chọn)';
 
   @override

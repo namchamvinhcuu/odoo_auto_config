@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 import 'package:odoo_auto_config/constants/app_constants.dart';
-import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_process.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
 
+/// Runs `git pull` sequentially in each repo and streams the log.
 class SelectivePullLogDialog extends StatefulWidget {
-  final String projectPath;
-  final List<String> repos;
+  final String title;
+  final List<({String name, String path})> repos;
 
   const SelectivePullLogDialog({
     super.key,
-    required this.projectPath,
+    required this.title,
     required this.repos,
   });
 
@@ -56,8 +55,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
   Future<void> _run() async {
     setState(() => _running = true);
     if (mounted) context.setDialogRunning(true);
-    for (final repo in widget.repos) {
-      final repoPath = p.join(widget.projectPath, 'addons', repo);
+    for (final (name: repo, path: repoPath) in widget.repos) {
       _addLine('\x1B[0;34m> git pull ($repo)\x1B[0m');
       try {
         final process = await startGit(['pull'], workingDir: repoPath);
@@ -95,8 +93,7 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Text(context.l10n.gitSelectivePullTitle(
-              '${widget.repos.length} repos')),
+          Text(widget.title),
           const Spacer(),
           AppDialog.closeButton(context),
         ],

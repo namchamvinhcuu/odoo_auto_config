@@ -971,6 +971,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showPullPendingOnly => 'Projects that need a pull';
 
   @override
+  String pullAllProjects(int count) {
+    return 'Pull all ($count)';
+  }
+
+  @override
+  String pullAllProjectsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projects',
+      one: '1 project',
+    );
+    return 'Pull all — $_temp0';
+  }
+
+  @override
   String get wsPort => 'Port (optional)';
 
   @override

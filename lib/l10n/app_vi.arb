@@ -310,6 +310,8 @@
   "showFavouritesOnly": "Chỉ yêu thích",
   "showGitPendingOnly": "Project có thay đổi Git chưa push",
   "showPullPendingOnly": "Project cần pull",
+  "pullAllProjects": "Pull tất cả ({count})",
+  "pullAllProjectsTitle": "Pull tất cả — {count} project",
 
   "wsPort": "Port (tùy chọn)",
   "wsPortHint": "VD: 3000, 8080",

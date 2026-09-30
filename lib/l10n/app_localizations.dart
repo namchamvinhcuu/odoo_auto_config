@@ -1840,6 +1840,18 @@ abstract class AppLocalizations {
   /// **'Projects that need a pull'**
   String get showPullPendingOnly;
 
+  /// No description provided for @pullAllProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull all ({count})'**
+  String pullAllProjects(int count);
+
+  /// No description provided for @pullAllProjectsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull all — {count, plural, =1{1 project} other{{count} projects}}'**
+  String pullAllProjectsTitle(int count);
+
   /// No description provided for @wsPort.
   ///
   /// In en, this message translates to:

@@ -16,6 +16,7 @@ import 'package:odoo_auto_config/widgets/clone_repository_dialog.dart';
 import 'package:odoo_auto_config/widgets/nginx_setup_dialog.dart';
 import 'package:odoo_auto_config/widgets/vscode_install_dialog.dart';
 import 'package:odoo_auto_config/screens/home_screen.dart';
+import 'package:odoo_auto_config/screens/odoo_projects/selective_pull_log_dialog.dart';
 import 'import_workspace_dialog.dart';
 import 'simple_git_commit_dialog.dart';
 import 'simple_git_pull_dialog.dart';
@@ -349,6 +350,22 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     ).then((_) {
       if (mounted) {
         ref.read(otherProjectsProvider.notifier).loadBranchStatus(ws.path);
+      }
+    });
+  }
+
+  void _pullAll(List<WorkspaceInfo> targets) {
+    AppDialog.show(
+      context: context,
+      builder: (ctx) => SelectivePullLogDialog(
+        title: ctx.l10n.pullAllProjectsTitle(targets.length),
+        repos: [for (final ws in targets) (name: ws.name, path: ws.path)],
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      final notifier = ref.read(otherProjectsProvider.notifier);
+      for (final ws in targets) {
+        notifier.loadBranchStatus(ws.path);
       }
     });
   }
@@ -709,6 +726,14 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
     final asyncState = ref.watch(otherProjectsProvider);
     final isGridView =
         ref.watch(odooProjectsProvider).valueOrNull?.gridView ?? true;
+    // Pull-all acts on exactly what the "need pull" filter is showing.
+    final loaded = asyncState.valueOrNull;
+    final pullTargets = _pullPendingOnly && loaded != null
+        ? _applyFilter(
+            loaded.workspaces,
+            loaded,
+          ).where((w) => needsPull(w, loaded)).toList()
+        : const <WorkspaceInfo>[];
 
     return Padding(
       padding: AppSpacing.screenPadding,
@@ -848,6 +873,14 @@ class _OtherProjectsScreenState extends ConsumerState<OtherProjectsScreen> {
                 ),
                 tooltip: context.l10n.showPullPendingOnly,
               ),
+              if (pullTargets.isNotEmpty) ...[
+                const SizedBox(width: AppSpacing.sm),
+                FilledButton.tonalIcon(
+                  onPressed: () => _pullAll(pullTargets),
+                  icon: const Icon(Icons.download),
+                  label: Text(context.l10n.pullAllProjects(pullTargets.length)),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
