@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
 import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_process.dart';
+import 'package:odoo_auto_config/services/git_pull_rebase_service.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/pull_rebase_log.dart';
 
 // ── Repo Git Pull Dialog ──
 
@@ -30,6 +32,7 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
   final List<String> _logLines = [];
   final _scrollController = ScrollController();
   bool _running = false;
+  bool _canPullRebase = false;
 
   @override
   void initState() {
@@ -116,10 +119,39 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
     if (!mounted) return;
     if (exitCode == 0) {
       _addLine('\x1B[0;32m[+] ${context.l10n.gitPullDone}\x1B[0m');
-    } else {
-      _addLine(
-        '\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m',
+      return;
+    }
+    _addLine(
+      '\x1B[0;31m[-] ${context.l10n.gitPullFailed(exitCode)}\x1B[0m',
+    );
+    final canRebase =
+        await GitPullRebaseService.canOfferPullRebase(widget.repoPath);
+    if (!mounted || !canRebase) return;
+    _addLine('\x1B[0;33m[!] ${context.l10n.gitDivergedHint}\x1B[0m');
+    setState(() => _canPullRebase = true);
+  }
+
+  Future<void> _pullRebase() async {
+    setState(() {
+      _canPullRebase = false;
+      _running = true;
+    });
+    context.setDialogRunning(true);
+    try {
+      _addLine('\x1B[0;33m[~] git pull --rebase --autostash\x1B[0m');
+      final result = await GitPullRebaseService.pullRebase(
+        widget.repoPath,
+        onOutput: (line) {
+          if (mounted) _addLine(line);
+        },
       );
+      if (mounted) _addLine(pullRebaseResultLine(context.l10n, result));
+    } catch (e) {
+      if (mounted) _addLine('\x1B[0;31m[-] $e\x1B[0m');
+    }
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
     }
   }
 
@@ -204,6 +236,18 @@ class _RepoGitPullDialogState extends State<RepoGitPullDialog> {
                 ansiColors: true,
                 scrollController: _scrollController,
               ),
+              if (_canPullRebase)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _pullRebase,
+                      icon: const Icon(Icons.call_merge),
+                      label: Text(context.l10n.gitPullRebase),
+                    ),
+                  ),
+                ),
           ],
           ),
         ),

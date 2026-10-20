@@ -218,6 +218,36 @@ class AppLocalizationsVi extends AppLocalizations {
   String get gitPullNotARepo => 'Dự án này không phải là git repository';
 
   @override
+  String get gitPullRebase => 'Pull (rebase)';
+
+  @override
+  String get gitPullRebaseAndPush => 'Pull (rebase) rồi push';
+
+  @override
+  String get gitDivergedHint =>
+      'Local và remote đã tách nhánh. Pull (rebase) sẽ đặt các commit local lên trên các commit của remote.';
+
+  @override
+  String get gitPushBehindHint =>
+      'Remote có commit mà máy này chưa có. Pull (rebase) rồi push sẽ lấy về trước rồi push lại.';
+
+  @override
+  String get gitPullRebaseAborted =>
+      'Rebase gặp conflict nên đã huỷ — repo đã trở lại như trước. Hãy xử lý thủ công trong terminal.';
+
+  @override
+  String get gitPullRebaseStashConflict =>
+      'Đã rebase, nhưng thay đổi chưa commit bị conflict với các commit mới. Thay đổi vẫn được giữ trong `git stash list` (autostash). Hãy xử lý các file conflict trước khi commit.';
+
+  @override
+  String get gitPullRebaseStuck =>
+      'Rebase bị dừng và không huỷ được — repo vẫn đang rebase dở. Hãy chạy `git rebase --abort` trong terminal.';
+
+  @override
+  String get gitPullRebaseRefused =>
+      'Repo này đang có rebase hoặc merge dở. Hãy hoàn tất hoặc huỷ nó trong terminal trước.';
+
+  @override
   String get gitSelectivePull => 'Pull chọn lọc';
 
   @override

@@ -68,13 +68,15 @@ const String appVersion = '$Version';
 "@ | Set-Content "lib/generated/version.dart" -Encoding UTF8
 Write-Host "Updated lib/generated/version.dart -> $Version"
 
-# Commit, tag, push
+# Commit + push the version bump on the current branch.
+# Releasing is triggered by merging this into main - CI reads the version from
+# pubspec.yaml, creates tag v$Version, and builds/publishes. No local tagging.
+$branch = git branch --show-current
 git add $pubspec assets/version.json lib/generated/version.dart
 git commit -m "release v$Version"
-git tag "v$Version"
-$branch = git branch --show-current
-git push origin $branch --tags
+git push origin $branch
 
 Write-Host ""
-Write-Host "Done! v$Version pushed. GitHub Actions will build & release."
+Write-Host "Done! v$Version committed & pushed to '$branch'."
+Write-Host "-> Merge '$branch' into main to build & release (CI creates tag v$Version)."
 Write-Host "Track: https://github.com/namchamvinhcuu/odoo_auto_config/actions"

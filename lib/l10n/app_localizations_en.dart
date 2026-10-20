@@ -218,6 +218,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gitPullNotARepo => 'This project is not a git repository';
 
   @override
+  String get gitPullRebase => 'Pull (rebase)';
+
+  @override
+  String get gitPullRebaseAndPush => 'Pull (rebase) & push';
+
+  @override
+  String get gitDivergedHint =>
+      'Local and remote have diverged. Pull (rebase) puts your local commits on top of the remote ones.';
+
+  @override
+  String get gitPushBehindHint =>
+      'The remote has commits you don\'t have yet. Pull (rebase) & push brings them in, then pushes again.';
+
+  @override
+  String get gitPullRebaseAborted =>
+      'Rebase hit a conflict and was cancelled — the repo is back as it was. Resolve it manually in a terminal.';
+
+  @override
+  String get gitPullRebaseStashConflict =>
+      'Rebased, but your uncommitted changes conflicted with the new commits. They are also kept in `git stash list` (autostash). Resolve the conflicted files before committing.';
+
+  @override
+  String get gitPullRebaseStuck =>
+      'Rebase stopped and could not be cancelled — the repo is still mid-rebase. Run `git rebase --abort` in a terminal.';
+
+  @override
+  String get gitPullRebaseRefused =>
+      'A rebase or merge is already in progress in this repo. Finish or abort it in a terminal first.';
+
+  @override
   String get gitSelectivePull => 'Selective Pull';
 
   @override
