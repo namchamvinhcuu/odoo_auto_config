@@ -484,6 +484,54 @@ abstract class AppLocalizations {
   /// **'This project is not a git repository'**
   String get gitPullNotARepo;
 
+  /// No description provided for @gitPullRebase.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull (rebase)'**
+  String get gitPullRebase;
+
+  /// No description provided for @gitPullRebaseAndPush.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull (rebase) & push'**
+  String get gitPullRebaseAndPush;
+
+  /// No description provided for @gitDivergedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Local and remote have diverged. Pull (rebase) puts your local commits on top of the remote ones.'**
+  String get gitDivergedHint;
+
+  /// No description provided for @gitPushBehindHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The remote has commits you don\'t have yet. Pull (rebase) & push brings them in, then pushes again.'**
+  String get gitPushBehindHint;
+
+  /// No description provided for @gitPullRebaseAborted.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebase hit a conflict and was cancelled — the repo is back as it was. Resolve it manually in a terminal.'**
+  String get gitPullRebaseAborted;
+
+  /// No description provided for @gitPullRebaseStashConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebased, but your uncommitted changes conflicted with the new commits. They are also kept in `git stash list` (autostash). Resolve the conflicted files before committing.'**
+  String get gitPullRebaseStashConflict;
+
+  /// No description provided for @gitPullRebaseStuck.
+  ///
+  /// In en, this message translates to:
+  /// **'Rebase stopped and could not be cancelled — the repo is still mid-rebase. Run `git rebase --abort` in a terminal.'**
+  String get gitPullRebaseStuck;
+
+  /// No description provided for @gitPullRebaseRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'A rebase or merge is already in progress in this repo. Finish or abort it in a terminal first.'**
+  String get gitPullRebaseRefused;
+
   /// No description provided for @gitSelectivePull.
   ///
   /// In en, this message translates to:

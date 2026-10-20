@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_process.dart';
+import 'package:odoo_auto_config/services/git_pull_rebase_service.dart';
 import 'repo_info.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/pull_rebase_log.dart';
 
 // ── Git Action Dialog (Pull / Push / Switch Branch) ──
 
@@ -34,6 +37,10 @@ class _GitActionDialogState extends State<GitActionDialog> {
   final List<String> _logLines = [];
   final _scrollController = ScrollController();
   bool _running = false;
+
+  /// Repos whose pull/push failed because the branch diverged from the remote;
+  /// they get one "Pull (rebase) (N)" button once the batch is done.
+  final List<RepoInfo> _rebaseCandidates = [];
 
   @override
   void initState() {
@@ -91,20 +98,74 @@ class _GitActionDialogState extends State<GitActionDialog> {
     final exitCode = await process.exitCode;
     if (exitCode == 0) {
       _addLine('\x1B[0;32m[+] ${repo.name}: done\x1B[0m');
-    } else {
-      _addLine('\x1B[0;31m[-] ${repo.name}: failed (exit $exitCode)\x1B[0m');
+      return;
     }
+    _addLine('\x1B[0;31m[-] ${repo.name}: failed (exit $exitCode)\x1B[0m');
+    final canRebase = await GitPullRebaseService.canOfferPullRebase(repo.path);
+    if (!mounted || !canRebase) return;
+    _addLine(
+      '\x1B[0;33m[!] ${repo.name}: ${context.l10n.gitDivergedHint}\x1B[0m',
+    );
+    _rebaseCandidates.add(repo);
   }
 
-  Future<void> _pushRepo(RepoInfo repo) async {
+  /// [offerRebase] false for the push that follows a pull --rebase, so a second
+  /// rejection cannot loop back into another offer.
+  Future<void> _pushRepo(RepoInfo repo, {bool offerRebase = true}) async {
     _addLine('\x1B[0;36m[>] Pushing ${repo.name}...\x1B[0m');
     final process = await startGit(['push'], workingDir: repo.path);
     await _listenProcess(process);
     final exitCode = await process.exitCode;
     if (exitCode == 0) {
       _addLine('\x1B[0;32m[+] ${repo.name}: pushed\x1B[0m');
-    } else {
-      _addLine('\x1B[0;31m[-] ${repo.name}: push failed\x1B[0m');
+      return;
+    }
+    _addLine('\x1B[0;31m[-] ${repo.name}: push failed\x1B[0m');
+    if (!offerRebase) return;
+    final canRebase =
+        await GitPullRebaseService.canOfferPullRebaseAfterPushRejected(
+      repo.path,
+    );
+    if (!mounted || !canRebase) return;
+    _addLine(
+      '\x1B[0;33m[!] ${repo.name}: ${context.l10n.gitPushBehindHint}\x1B[0m',
+    );
+    _rebaseCandidates.add(repo);
+  }
+
+  /// Pull --rebase every repo collected in [_rebaseCandidates]; for the 'push'
+  /// action, push each one again once its commits are on top of the remote.
+  Future<void> _pullRebaseCandidates() async {
+    final repos = List<RepoInfo>.of(_rebaseCandidates);
+    setState(() {
+      _rebaseCandidates.clear();
+      _running = true;
+    });
+    context.setDialogRunning(true);
+    for (final repo in repos) {
+      // Dialog closed: stop starting new repos, but still reload (onDone).
+      if (!mounted) break;
+      _addLine('\x1B[0;34m[*] git pull --rebase --autostash (${repo.name})\x1B[0m');
+      try {
+        final result = await GitPullRebaseService.pullRebase(
+          repo.path,
+          onOutput: (line) {
+            if (mounted) _addLine(line);
+          },
+        );
+        if (!mounted) break;
+        _addLine(pullRebaseResultLine(context.l10n, result, repo: repo.name));
+        if (widget.action == 'push' && pullRebaseRebased(result)) {
+          await _pushRepo(repo, offerRebase: false);
+        }
+      } catch (e) {
+        if (mounted) _addLine('\x1B[0;31m[-] ${repo.name}: $e\x1B[0m');
+      }
+    }
+    widget.onDone();
+    if (mounted) {
+      setState(() => _running = false);
+      context.setDialogRunning(false);
     }
   }
 
@@ -188,6 +249,21 @@ class _GitActionDialogState extends State<GitActionDialog> {
                 ansiColors: true,
                 scrollController: _scrollController,
               ),
+              if (!_running && _rebaseCandidates.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _pullRebaseCandidates,
+                      icon: const Icon(Icons.call_merge),
+                      label: Text(
+                        '${widget.action == 'push' ? context.l10n.gitPullRebaseAndPush : context.l10n.gitPullRebase}'
+                        ' (${_rebaseCandidates.length})',
+                      ),
+                    ),
+                  ),
+                ),
           ],
           ),
         ),

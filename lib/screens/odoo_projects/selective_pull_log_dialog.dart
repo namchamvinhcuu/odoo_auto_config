@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:odoo_auto_config/constants/app_constants.dart';
+import 'package:odoo_auto_config/l10n/l10n_extension.dart';
 import 'package:odoo_auto_config/services/git_process.dart';
+import 'package:odoo_auto_config/services/git_pull_rebase_service.dart';
 import 'package:odoo_auto_config/widgets/log_output.dart';
+import 'package:odoo_auto_config/widgets/pull_rebase_log.dart';
 
 /// Runs `git pull` sequentially in each repo and streams the log.
 class SelectivePullLogDialog extends StatefulWidget {
@@ -24,6 +27,10 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
   final List<String> _logLines = [];
   final _scrollController = ScrollController();
   bool _running = false;
+
+  /// Repos whose pull failed because the branch diverged from the remote; they
+  /// get one "Pull (rebase) (N)" button once the batch is done.
+  final List<({String name, String path})> _rebaseCandidates = [];
 
   @override
   void initState() {
@@ -76,6 +83,15 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
           _addLine('\x1B[0;32m[+] $repo done\x1B[0m');
         } else {
           _addLine('\x1B[0;31m[-] $repo failed (exit $exitCode)\x1B[0m');
+          final canRebase =
+              await GitPullRebaseService.canOfferPullRebase(repoPath);
+          if (!mounted) return;
+          if (canRebase) {
+            _addLine(
+              '\x1B[0;33m[!] $repo: ${context.l10n.gitDivergedHint}\x1B[0m',
+            );
+            _rebaseCandidates.add((name: repo, path: repoPath));
+          }
         }
       } catch (e) {
         if (mounted) _addLine('\x1B[0;31m[-] $repo: $e\x1B[0m');
@@ -83,6 +99,36 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
     }
     if (mounted) {
       _addLine('\x1B[0;32m[+] Done!\x1B[0m');
+      setState(() => _running = false);
+      context.setDialogRunning(false);
+    }
+  }
+
+  /// Pull --rebase every repo collected in [_rebaseCandidates].
+  Future<void> _pullRebaseCandidates() async {
+    final repos = List.of(_rebaseCandidates);
+    setState(() {
+      _rebaseCandidates.clear();
+      _running = true;
+    });
+    context.setDialogRunning(true);
+    for (final (name: repo, path: repoPath) in repos) {
+      if (!mounted) return;
+      _addLine('\x1B[0;34m> git pull --rebase --autostash ($repo)\x1B[0m');
+      try {
+        final result = await GitPullRebaseService.pullRebase(
+          repoPath,
+          onOutput: (line) {
+            if (mounted) _addLine(line);
+          },
+        );
+        if (!mounted) return;
+        _addLine(pullRebaseResultLine(context.l10n, result, repo: repo));
+      } catch (e) {
+        if (mounted) _addLine('\x1B[0;31m[-] $repo: $e\x1B[0m');
+      }
+    }
+    if (mounted) {
       setState(() => _running = false);
       context.setDialogRunning(false);
     }
@@ -119,6 +165,21 @@ class _SelectivePullLogDialogState extends State<SelectivePullLogDialog> {
                 ansiColors: true,
                 scrollController: _scrollController,
               ),
+              if (!_running && _rebaseCandidates.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _pullRebaseCandidates,
+                      icon: const Icon(Icons.call_merge),
+                      label: Text(
+                        '${context.l10n.gitPullRebase}'
+                        ' (${_rebaseCandidates.length})',
+                      ),
+                    ),
+                  ),
+                ),
           ],
           ),
         ),

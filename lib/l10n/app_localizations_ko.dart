@@ -214,6 +214,36 @@ class AppLocalizationsKo extends AppLocalizations {
   String get gitPullNotARepo => '이 프로젝트는 git 저장소가 아닙니다';
 
   @override
+  String get gitPullRebase => 'Pull (rebase)';
+
+  @override
+  String get gitPullRebaseAndPush => 'Pull (rebase) 후 push';
+
+  @override
+  String get gitDivergedHint =>
+      '로컬과 원격 브랜치가 갈라졌습니다. Pull (rebase)는 로컬 커밋을 원격 커밋 위에 다시 올립니다.';
+
+  @override
+  String get gitPushBehindHint =>
+      '원격에 아직 받지 않은 커밋이 있습니다. Pull (rebase) 후 push는 먼저 받아온 뒤 다시 push합니다.';
+
+  @override
+  String get gitPullRebaseAborted =>
+      'Rebase 중 충돌이 발생하여 취소되었습니다 — 저장소는 이전 상태로 돌아갔습니다. 터미널에서 직접 해결하세요.';
+
+  @override
+  String get gitPullRebaseStashConflict =>
+      'Rebase는 완료되었지만 커밋하지 않은 변경 사항이 새 커밋과 충돌했습니다. 변경 사항은 `git stash list`(autostash)에도 보관되어 있습니다. 커밋하기 전에 충돌한 파일을 해결하세요.';
+
+  @override
+  String get gitPullRebaseStuck =>
+      'Rebase가 중단되었고 취소할 수 없습니다 — 저장소가 아직 rebase 중입니다. 터미널에서 `git rebase --abort`를 실행하세요.';
+
+  @override
+  String get gitPullRebaseRefused =>
+      '이 저장소에서 이미 rebase 또는 merge가 진행 중입니다. 먼저 터미널에서 완료하거나 취소하세요.';
+
+  @override
   String get gitSelectivePull => '선택 Pull';
 
   @override
